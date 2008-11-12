@@ -1,0 +1,9 @@
+# ssu-align's crash exercises, in sqc command format.
+# EPN, Tue Nov 11 15:45:00 2008
+#
+
+# Exercises of ssu-align.
+#
+1  prep      model/arc            @cmbuild@ --wnone -F --rf --enone arc.cm arc.stk
+1  exercise  ssu-align:arc/1      @ssu-align@ -F arc.cm arc.10.fa root 1.params > tmp
+
