@@ -8,8 +8,8 @@ WBETA    1e-07
 NSEQ     21
 EFFNSEQ  21.000
 CLEN     1513
-BCOM     /groups/eddy/home/nawrockie/infernal-1.0rc3/src//cmbuild --wnone -F --rf --enone arc.cm arc.stk
-BDATE    Tue Nov 11 17:22:04 2008
+BCOM     ../infernal-1.0/src//cmbuild --wnone -F --rf --enone arc.cm arc.stk
+BDATE    Wed Nov 12 06:19:35 2008
 NULL     0.000  0.000  0.000  0.000 
 MODEL:
 				[ ROOT    0 ]

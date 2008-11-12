@@ -37,7 +37,7 @@
 #    -S     : only search target sequence file for hits, skip alignment step
 #    -A     : only align  target sequence file, skip initial search step 
 #    -U     : do not truncate seqs to HMM predicted start/end, align full seqs\n\t";
-#    -W <x> : use the HMM forward algorithm for searching, not HMM viterbi
+#    -W     : use the HMM forward algorithm for searching, not HMM viterbi
 #    -B <x> : minimum cmsearch hit bit score to allow for a surviving subsequence (default: 100)
 #    -L <n> : minimum cmsearch hit length    to allow for a surviving subsequence (default: 1)
 #    -N <n> : run in 'prep' mode, split target seq file into multiple files with <n> seqs each
@@ -64,7 +64,7 @@ $options_usage .= "-F     : allow file clobbering\n\t";
 $options_usage .= "-S     : only search target sequence file for hits, skip alignment step\n\t";
 $options_usage .= "-A     : only align  target sequence file, skip initial search step\n\t"; 
 $options_usage .= "-U     : do not truncate seqs to HMM predicted start/end, align full seqs\n\t";
-$options_usage .= "-W <f> : use the HMM forward algorithm for searching, not HMM viterbi\n\t";
+$options_usage .= "-W     : use the HMM forward algorithm for searching, not HMM viterbi\n\t";
 $options_usage .= "-B <x> : minimum cmsearch hit bit score to allow for a surviving subsequence (default: 100)\n\t";
 $options_usage .= "-L <n> : minimum cmsearch hit length    to allow for a surviving subsequence (default: 1)\n\t";
 $options_usage .= "-N <n> : run in 'prep' mode, split target seq file into multiple files with <n> seqs each\n\t";
@@ -73,7 +73,7 @@ $options_usage .= "-P <n> : run in 'prep' mode, split target seq file into <n> f
 ###################
 # Process options #
 ###################
-getopts('FSAUW:B:L:N:P:');
+getopts('FSAUWB:L:N:P:');
 my $do_clobber = 0;
 my $do_viterbi = 1;
 my $do_forward = 0;
@@ -588,13 +588,14 @@ sub search_sequences_with_each_cm() {
     else       { $search_psecs /= 300. } # cmsearch --viterbi does about 100 million dp cells per second;
 
     $Wcalc_psecs = 0;
-    for($i = 0; $i < scalar(@{$indi_cm_clen_Aref}); $i++) { 
-	$Wcalc_psecs += ($indi_cm_clen_Aref->[$i] * $indi_cm_clen_Aref->[$i] * $indi_cm_clen_Aref->[$i] * $indi_cm_nbif_Aref->[$i]);
-    } #$Wcalc_psecs is now roughly the number of DP cells required to fill to calculate W ($clen^3 * $nbif)
-    $Wcalc_psecs /= (1500 * 1500 * 1500 * 30); #$Wcalc_psecs is now fraction of DP cells to calc W for all CMs relative to an avg size SSU CM
-    # we know SSU models in cmsearch take about 60 seconds to calculate W
-    $Wcalc_psecs *= 60.;
-    $search_psecs += $Wcalc_psecs;
+    # OLD CODE (EPN, Wed Nov 12 06:06:50 2008) for predicting W calc time, prior to --hmm-cW option */
+    #for($i = 0; $i < scalar(@{$indi_cm_clen_Aref}); $i++) { 
+    #$Wcalc_psecs += ($indi_cm_clen_Aref->[$i] * $indi_cm_clen_Aref->[$i] * $indi_cm_clen_Aref->[$i] * $indi_cm_nbif_Aref->[$i]);
+    #} #$Wcalc_psecs is now roughly the number of DP cells required to fill to calculate W ($clen^3 * $nbif)
+    #$Wcalc_psecs /= (1500 * 1500 * 1500 * 30); #$Wcalc_psecs is now fraction of DP cells to calc W for all CMs relative to an avg size SSU CM
+    ## we know SSU models in cmsearch take about 60 seconds to calculate W
+    #$Wcalc_psecs *= 60.;
+    #$search_psecs += $Wcalc_psecs;
 
     $tab_file = $out_dir_root . ".tab";
     if   ($do_viterbi) { $alg_flag = "--viterbi"; } 
@@ -724,7 +725,10 @@ sub classify_and_extract_subseqs {
     $ncm_with_at_least_one_seq = 0;
     $index_file = $target_file . ".ssi";
     
-    if(!(-e $index_file)) { system("$sfetch \-\-index $target_file > /dev/null"); }
+    #if index file exists, remove it and remake it (this is the only way to know for sure that the index was created for this specific file)
+    if(-e $index_file)    { system("rm $index_file"); } 
+    if(($? >> 8) != 0)    { printf STDERR ("ERROR, system(\"rm $index_file\" unexpectedly returned non-zero exit status %d.\n", ($? >> 8)); exit($? >> 8); }
+    system("$sfetch \-\-index $target_file > /dev/null"); 
     if(($? >> 8) != 0)    { printf STDERR ("ERROR, system(\"$sfetch \-\-index $target_file > /dev/null\" unexpectedly returned non-zero exit status %d.\n", ($? >> 8)); exit($? >> 8); }
 
     for($m = 0; $m < scalar(@{$indi_cm_name_Aref}); $m++) { 
