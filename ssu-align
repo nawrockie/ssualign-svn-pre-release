@@ -48,32 +48,33 @@ use Cwd 'abs_path';
 #use strict;
 
 my $usage = 
-    "Usage: perl ssu-align.pl\n\t" . 
-    "<SSU rRNA CM file with >= 1 CM>\n\t" .
-    "<target database sequence file name>\n\t" . 
-    "<output root for output files>\n\t" . 
-    "<parameter file minimally defining:\n\t" . 
-    " \$cmsearch = path to 'cmsearch' infernal app\n\t" . 
-    " \$cmalign  = path to 'cmalign' infernal app\n\t" .
-    " \$sfetch   = path to 'esl-sfetch' easel miniapp\n\t" . 
-    " and optionally defining (if -N or -P enabled):\n\t" . 
-    " \$cluster_prefix = prefix for perl ssu-align.pl commands\n\t" .
-    " \$cluster_suffix = suffix for perl ssu-align.pl commands\n\n";
-my $options_usage  = "Options:\n\t";
-$options_usage .= "-F     : allow file clobbering\n\t";
-$options_usage .= "-S     : only search target sequence file for hits, skip alignment step\n\t";
-$options_usage .= "-A     : only align  target sequence file, skip initial search step\n\t"; 
-$options_usage .= "-U     : do not truncate seqs to HMM predicted start/end, align full seqs\n\t";
-$options_usage .= "-W     : use the HMM forward algorithm for searching, not HMM viterbi\n\t";
-$options_usage .= "-B <x> : minimum cmsearch hit bit score to allow for a surviving subsequence (default: 100)\n\t";
-$options_usage .= "-L <n> : minimum cmsearch hit length    to allow for a surviving subsequence (default: 1)\n\t";
-$options_usage .= "-N <n> : run in 'prep' mode, split target seq file into multiple files with <n> seqs each\n\t";
-$options_usage .= "-P <n> : run in 'prep' mode, split target seq file into <n> files with equal number of seqs\n\n";
+    "Usage: ssu-align [-options] <cmfile> <sequence file> <output root> <params file>\n";
+#    "<SSU rRNA CM file with >= 1 CM>\n\t" .
+#    "<target database sequence file name>\n\t" . 
+#    "<output root for output files>\n\t" . 
+#    "<parameter file minimally defining:\n\t" . 
+#    " \$cmsearch = path to 'cmsearch' infernal app\n\t" . 
+#    " \$cmalign  = path to 'cmalign' infernal app\n\t" .
+#    " \$sfetch   = path to 'esl-sfetch' easel miniapp\n\t" . 
+#    " and optionally defining (if -N or -P enabled):\n\t" . 
+#    " \$cluster_prefix = prefix for ssu-align commands\n\t" .
+#    " \$cluster_suffix = suffix for ssu-align commands>\n\n";
+$options_usage  = "where general options are:\n";
+$options_usage .= "  -h     : show brief help on version and usage\n";
+$options_usage .= "  -F     : allow file clobbering\n";
+$options_usage .= "  -s     : only search target sequence file for hits, skip alignment step\n";
+$options_usage .= "  -a     : only align  target sequence file, skip initial search step\n"; 
+$options_usage .= "  -u     : do not truncate seqs to HMM predicted start/end, align full seqs\n";
+$options_usage .= "  -w     : use the HMM forward algorithm for searching, not HMM viterbi\n";
+$options_usage .= "  -b <x> : minimum cmsearch hit bit score to allow for a surviving subsequence (default: 100)\n";
+$options_usage .= "  -l <n> : minimum cmsearch hit length    to allow for a surviving subsequence (default: 1)\n";
+$options_usage .= "  -n <n> : run in 'prep' mode, split target seq file into multiple files with <n> seqs each\n";
+$options_usage .= "  -p <n> : run in 'prep' mode, split target seq file into <n> files with equal number of seqs\n\n";
 
 ###################
 # Process options #
 ###################
-getopts('FSAUWB:L:N:P:');
+getopts('hFsauwb:l:n:p:');
 my $do_clobber = 0;
 my $do_viterbi = 1;
 my $do_forward = 0;
@@ -89,15 +90,16 @@ my $do_align = 1;
 my $do_search = 1;
 
 my $enabled_options = "";
+if (defined $opt_h) { print $usage . "\n"; print $options_usage; exit(1); } 
 if (defined $opt_F) { $do_clobber = 1; } 
-if (defined $opt_S) { $do_align = 0; $enabled_options .= " -S";} 
-if (defined $opt_U) { $do_truncate = 0; $enabled_options .= " -U"; }
-if (defined $opt_A) { $do_search = 0; $enabled_options .= " -A";} 
-if (defined $opt_W) { $do_forward = 1; $do_viterbi = 0; $enabled_options .= " -W";}
-if (defined $opt_B) { $min_bit = $opt_B; $enabled_options .= " -B $opt_B"; } 
-if (defined $opt_L) { $min_len = $opt_L; $enabled_options .= " -L $opt_L"; if($min_len <= 0) { printf STDERR ("ERROR, with -L <n>, <n> must be >= 1."); exit(1); } }
-if (defined $opt_N) { $do_prep = 1; $do_prep_nseq_set = 1;  $prep_nseq  = $opt_N; }
-if (defined $opt_P) { $do_prep = 1; $do_prep_nproc_set = 1; $prep_nproc = $opt_P; }
+if (defined $opt_s) { $do_align = 0; $enabled_options .= " -S";} 
+if (defined $opt_u) { $do_truncate = 0; $enabled_options .= " -U"; }
+if (defined $opt_a) { $do_search = 0; $enabled_options .= " -A";} 
+if (defined $opt_w) { $do_forward = 1; $do_viterbi = 0; $enabled_options .= " -W";}
+if (defined $opt_b) { $min_bit = $opt_B; $enabled_options .= " -B $opt_B"; } 
+if (defined $opt_l) { $min_len = $opt_L; $enabled_options .= " -L $opt_L"; if($min_len <= 0) { printf STDERR ("ERROR, with -L <n>, <n> must be >= 1."); exit(1); } }
+if (defined $opt_n) { $do_prep = 1; $do_prep_nseq_set = 1;  $prep_nseq  = $opt_N; }
+if (defined $opt_p) { $do_prep = 1; $do_prep_nproc_set = 1; $prep_nproc = $opt_P; }
 
 # Check for incompatible option combinations and non-sensical option parameters
 if($do_prep_nseq_set  && $do_prep_nproc_set) { printf STDERR ("ERROR, -N and -P are exclusive options, pick one or the other.\n"); exit(1); }
@@ -105,8 +107,9 @@ if($do_prep_nseq_set  && $prep_nseq < 1)     { printf STDERR ("ERROR, with -N <n
 if($do_prep_nproc_set && $prep_nproc <= 1)   { printf STDERR ("ERROR, with -P <n>, <n> must be at least 2.\n"); exit(1); }
 
 if(scalar(@ARGV) != 4) {   
+    print "Incorrect number of command line arguments.\n";
     print $usage;
-    print $options_usage;
+    print "\nTo see more help on available options, do ssu-align -h\n\n";
     exit(1);
 }
 my ($cm_file, $target_file, $out_root, $params_file) = @ARGV;

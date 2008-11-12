@@ -1,0 +1,544 @@
+This is pdfTeX, Version 3.14159-1.10b (Web2C 7.4.5) (format=pdflatex 2006.1.9)  12 NOV 2008 14:00
+**main
+(./main.tex{/usr/share/texmf/pdftex/config/pdftex.cfg}
+LaTeX2e <2001/06/01>
+Babel <v3.7h> and hyphenation patterns for american, french, german, ngerman, n
+ohyphenation, loaded.
+(/usr/share/texmf/tex/latex/base/article.cls
+Document Class: article 2001/04/21 v1.4e Standard LaTeX document class
+(/usr/share/texmf/tex/latex/base/size11.clo
+File: size11.clo 2001/04/21 v1.4e Standard LaTeX file (size option)
+)
+\c@part=\count79
+\c@section=\count80
+\c@subsection=\count81
+\c@subsubsection=\count82
+\c@paragraph=\count83
+\c@subparagraph=\count84
+\c@figure=\count85
+\c@table=\count86
+\abovecaptionskip=\skip41
+\belowcaptionskip=\skip42
+\bibindent=\dimen102
+)
+(/usr/share/texmf/tex/latex/graphics/graphicx.sty
+Package: graphicx 1999/02/16 v1.0f Enhanced LaTeX Graphics (DPC,SPQR)
+
+(/usr/share/texmf/tex/latex/graphics/keyval.sty
+Package: keyval 1999/03/16 v1.13 key=value parser (DPC)
+\KV@toks@=\toks14
+)
+(/usr/share/texmf/tex/latex/graphics/graphics.sty
+Package: graphics 2001/07/07 v1.0n Standard LaTeX Graphics (DPC,SPQR)
+
+(/usr/share/texmf/tex/latex/graphics/trig.sty
+Package: trig 1999/03/16 v1.09 sin cos tan (DPC)
+)
+(/usr/share/texmf/tex/latex/config/graphics.cfg
+File: graphics.cfg 2001/08/31 v1.1 graphics configuration of teTeX/TeXLive
+)
+Package graphics Info: Driver file: pdftex.def on input line 80.
+
+(/usr/share/texmf/tex/latex/graphics/pdftex.def
+File: pdftex.def 2002/06/19 v0.03k graphics/color for pdftex
+\Gread@gobject=\count87
+))
+\Gin@req@height=\dimen103
+\Gin@req@width=\dimen104
+)
+(/usr/share/texmf/tex/latex/html/html.sty
+(/usr/share/texmf/tex/latex/hyperref/hyperref.sty
+Package: hyperref 2003/01/22 v6.73n Hypertext links for LaTeX
+\@linkdim=\dimen105
+\Hy@linkcounter=\count88
+\Hy@pagecounter=\count89
+
+(/usr/share/texmf/tex/latex/hyperref/pd1enc.def
+File: pd1enc.def 2003/01/22 v6.73n Hyperref: PDFDocEncoding definition (HO)
+)
+(/usr/share/texmf/tex/latex/config/hyperref.cfg
+File: hyperref.cfg 2002/06/06 v1.2 hyperref configuration of TeXLive and teTeX
+)
+Package hyperref Info: Hyper figures OFF on input line 1792.
+Package hyperref Info: Link nesting OFF on input line 1797.
+Package hyperref Info: Hyper index ON on input line 1800.
+Package hyperref Info: Plain pages ON on input line 1805.
+Package hyperref Info: Backreferencing OFF on input line 1812.
+
+Implicit mode ON; LaTeX internals redefined
+Package hyperref Info: Bookmarks ON on input line 1916.
+(/usr/share/texmf/tex/latex/html/url.sty
+Package: url 1999/03/02  ver 1.4  Verb mode for urls, email addresses, and file
+ names
+)
+LaTeX Info: Redefining \url on input line 2055.
+\Fld@menulength=\count90
+\Field@Width=\dimen106
+\Fld@charsize=\dimen107
+\Choice@toks=\toks15
+\Field@toks=\toks16
+Package hyperref Info: Hyper figures OFF on input line 2513.
+Package hyperref Info: Link nesting OFF on input line 2518.
+Package hyperref Info: Hyper index ON on input line 2521.
+Package hyperref Info: backreferencing OFF on input line 2528.
+Package hyperref Info: Link coloring OFF on input line 2533.
+\c@Item=\count91
+\c@Hfootnote=\count92
+)
+*hyperref using default driver hpdftex*
+(/usr/share/texmf/tex/latex/hyperref/hpdftex.def
+File: hpdftex.def 2003/01/22 v6.73n Hyperref driver for pdfTeX
+
+(/usr/share/texmf/tex/latex/psnfss/pifont.sty
+Package: pifont 2002/09/08 PSNFSS-v9.0a Pi font support (SPQR) 
+LaTeX Font Info:    Try loading font information for U+pzd on input line 62.
+
+(/usr/share/texmf/tex/latex/psnfss/upzd.fd
+File: upzd.fd 2001/06/04 font definitions for U/pzd.
+)
+LaTeX Font Info:    Try loading font information for U+psy on input line 63.
+
+(/usr/share/texmf/tex/latex/psnfss/upsy.fd
+File: upsy.fd 2001/06/04 font definitions for U/psy.
+))
+\Fld@listcount=\count93
+\@outlinefile=\write3
+)
+Package: html 1999/07/19 v1.38 hypertext commands for latex2html (nd, hws, rrm)
+
+\c@lpart=\count94
+\c@lchapter=\count95
+\c@chapter=\count96
+\c@lsection=\count97
+\c@lsubsection=\count98
+\c@lsubsubsection=\count99
+\c@lparagraph=\count100
+\c@lsubparagraph=\count101
+\c@lsubsubparagraph=\count102
+\ptrfile=\write4
+)
+(/usr/share/texmf/tex/latex/misc/apalike.sty
+\bibhang=\skip43
+)
+(/usr/share/texmf/tex/latex/preprint/fullpage.sty
+Package: fullpage 1999/02/23 1.1 (PWD)
+\FP@margin=\skip44
+)
+(/usr/share/texmf/tex/latex/psnfss/times.sty
+Package: times 2002/09/08 PSNFSS-v9.0a (SPQR) 
+)
+(/usr/share/texmf/tex/latex/fancyvrb/fancyvrb.sty
+Package: fancyvrb 2000/03/21
+
+Style option: `fancyvrb' v2.7, with DG/SPQR fixes <2000/03/21> (tvz)
+\FV@CodeLineNo=\count103
+\FV@InFile=\read1
+\FV@TabBox=\box26
+\c@FancyVerbLine=\count104
+\FV@StepNumber=\count105
+\FV@OutFile=\write5
+)
+(/usr/share/texmf/tex/latex/tools/verbatim.sty
+Package: verbatim 2001/03/12 v1.5p LaTeX2e package for verbatim enhancements
+\every@verbatim=\toks17
+\verbatim@line=\toks18
+\verbatim@in@stream=\read2
+) (./macros.tex
+\sresavei=\skip45
+\sresaves=\skip46
+) (./main.aux)
+\openout1 = `main.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 18.
+LaTeX Font Info:    ... okay on input line 18.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 18.
+LaTeX Font Info:    ... okay on input line 18.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 18.
+LaTeX Font Info:    ... okay on input line 18.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 18.
+LaTeX Font Info:    ... okay on input line 18.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 18.
+LaTeX Font Info:    ... okay on input line 18.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 18.
+LaTeX Font Info:    ... okay on input line 18.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 18.
+LaTeX Font Info:    ... okay on input line 18.
+LaTeX Font Info:    Try loading font information for OT1+ptm on input line 18.
+
+(/usr/share/texmf/tex/latex/psnfss/ot1ptm.fd
+File: ot1ptm.fd 2001/06/04 font definitions for OT1/ptm.
+)
+(/usr/share/texmf/tex/context/base/supp-pdf.tex
+(/usr/share/texmf/tex/context/base/supp-mis.tex
+loading : Context Support Macros / Missing
+\protectiondepth=\count106
+\scratchcounter=\count107
+\scratchtoks=\toks19
+\scratchdimen=\dimen108
+\scratchskip=\skip47
+\scratchmuskip=\muskip10
+\scratchbox=\box27
+\scratchread=\read3
+\scratchwrite=\write6
+\zeropoint=\dimen109
+\minusone=\count108
+\thousandpoint=\dimen110
+\emptytoks=\toks20
+\nextbox=\box28
+\nextdepth=\dimen111
+\everyline=\toks21
+\!!counta=\count109
+\!!countb=\count110
+\recursecounter=\count111
+)
+loading : Context Support Macros / PDF
+\nofMPsegments=\count112
+\nofMParguments=\count113
+\everyMPtoPDFconversion=\toks22
+)
+Package hyperref Info: Link coloring OFF on input line 18.
+ (/usr/share/texmf/tex/latex/hyperref/nameref.sty
+Package: nameref 2001/01/27 v2.19 Cross-referencing by name of section
+\c@section@level=\count114
+)
+LaTeX Info: Redefining \ref on input line 18.
+LaTeX Info: Redefining \pageref on input line 18.
+ (./main.out) (./main.out)
+\openout3 = `main.out'.
+
+
+(./titlepage.tex
+LaTeX Font Info:    Try loading font information for OT1+phv on input line 12.
+ (/usr/share/texmf/tex/latex/psnfss/ot1phv.fd
+File: ot1phv.fd 2001/06/04 scalable font definitions for OT1/phv.
+)
+Underfull \hbox (badness 10000) in paragraph at lines 7--14
+
+ []
+
+[1
+
+{/usr/share/texmf/dvips/config/pdftex.map}]) (./copyright.tex)
+! pdfTeX warning (ext4): destination with the same identifier (name{page.1}) ha
+s been already used, duplicate ignored
+<to be read again> 
+                   \penalty 
+l.24 \newpage
+              [1]
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <14.4> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 26.
+ (./main.toc
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <10.95> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 1.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <10.95> on input line 3.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <8> on input line 3.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <6> on input line 3.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <10> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 14.
+LaTeX Font Info:    Try loading font information for OT1+pcr on input line 14.
+ (/usr/share/texmf/tex/latex/psnfss/ot1pcr.fd
+File: ot1pcr.fd 2001/06/04 font definitions for OT1/pcr.
+)
+LaTeX Font Info:    Font shape `OT1/pcr/bx/n' in size <10> not available
+(Font)              Font shape `OT1/pcr/b/n' tried instead on input line 14.
+)
+\tf@toc=\write7
+\openout7 = `main.toc'.
+
+
+[2] (./intro.tex) [3] (./install.tex
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <12> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 3.
+ [4]
+Overfull \hbox (7.9716pt too wide) in paragraph at lines 97--104
+[]/ptmr7t@10.95pt/Another com-mon strat-egy (es-pe-cially in mul-ti-plat-form e
+n-vi-ron-ments) is to put pro-grams in an architecture-
+ []
+
+
+Overfull \hbox (18.78485pt too wide) in paragraph at lines 97--104
+/ptmr7t@10.95pt/specific di-rec-tory like /pcrb7t//usr/share/Linux/bin /ptmr7t@
+10.95pt/while keep-ing man pages in a shared, architecture-independent
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 105--106
+
+ []
+
+[5]
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <8> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 185.
+LaTeX Font Info:    Font shape `OT1/pcr/bx/n' in size <8> not available
+(Font)              Font shape `OT1/pcr/b/n' tried instead on input line 185.
+) [6] (./tutorial.tex [7]
+<Figures/trna1-DF6280.pdf, id=247, 300.12125pt x 338.26375pt>
+File: Figures/trna1-DF6280.pdf Graphic file (type pdf)
+
+<use Figures/trna1-DF6280.pdf>
+Overfull \hbox (11.64137pt too wide) in paragraph at lines 93--94
+[][] 
+ []
+
+LaTeX Font Info:    Try loading font information for OMS+ptm on input line 105.
+
+(/usr/share/texmf/tex/latex/psnfss/omsptm.fd
+File: omsptm.fd 
+)
+LaTeX Font Info:    Font shape `OMS/ptm/m/n' in size <10.95> not available
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 105.
+
+Overfull \hbox (7.01341pt too wide) in paragraph at lines 105--109
+[]/ptmr7t@10.95pt/The align-ment is in an in-ter-leaved for-mat, like other com
+-mon align-ment file for-mats such as /ptmrc7t@10.95pt/clustalw/ptmr7t@10.95pt/
+.
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 130--131
+
+ []
+
+[8 <./Figures/trna1-DF6280.pdf
+Warning: pdflatex (file ./Figures/trna1-DF6280.pdf): pdf inclusion: Page Group 
+detected which pdfTeX can't handle. Ignoring it.
+>]
+
+Package hyperref Warning: bookmark level for unknown faq defaults to 0.
+
+LaTeX Font Info:    Font shape `OT1/ptm/bx/sl' in size <10> not available
+(Font)              Font shape `OT1/ptm/b/sl' tried instead on input line 149.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <7> on input line 149.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <5> on input line 149.
+LaTeX Font Info:    Font shape `OT1/pcr/bx/sl' in size <10> not available
+(Font)              Font shape `OT1/pcr/b/sl' tried instead on input line 152.
+
+Package hyperref Warning: bookmark level for unknown faq defaults to 0.
+
+
+Package hyperref Warning: bookmark level for unknown faq defaults to 0.
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 223--224
+
+ []
+
+[9]
+Underfull \hbox (badness 10000) in paragraph at lines 241--242
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 249--250
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 261--262
+
+ []
+
+[10]
+
+Package hyperref Warning: bookmark level for unknown faq defaults to 0.
+
+[11]
+Underfull \hbox (badness 10000) in paragraph at lines 420--421
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 467--468
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 487--488
+
+ []
+
+[12]
+Underfull \hbox (badness 10000) in paragraph at lines 524--525
+
+ []
+
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <9> on input line 540.
+[13]
+Underfull \hbox (badness 10000) in paragraph at lines 608--609
+
+ []
+
+[14]
+Underfull \hbox (badness 10000) in paragraph at lines 643--654
+
+ []
+
+[15]
+Overfull \hbox (44.24498pt too wide) in paragraph at lines 730--741
+[][]/pcrb7t/> cmbuild -F --rsearch  /infernal/matrices/RIBOSUM85-60.mat --call 
+my.rsearch.cm
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 730--741
+
+ []
+
+
+Package hyperref Warning: bookmark level for unknown faq defaults to 0.
+
+LaTeX Font Info:    Font shape `OT1/ptm/bx/sc' in size <10> not available
+(Font)              Font shape `OT1/ptm/b/sc' tried instead on input line 762.
+[16]
+Underfull \hbox (badness 10000) in paragraph at lines 787--810
+
+ []
+
+
+Package hyperref Warning: bookmark level for unknown faq defaults to 0.
+
+
+Package hyperref Warning: bookmark level for unknown faq defaults to 0.
+
+[17]
+Underfull \hbox (badness 10000) in paragraph at lines 887--908
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 948--969
+
+ []
+
+[18]
+Underfull \hbox (badness 10000) in paragraph at lines 1013--1033
+
+ []
+
+[19] [20] <Figures/purine1_full.pdf, id=344, 431.6125pt x 391.4625pt>
+File: Figures/purine1_full.pdf Graphic file (type pdf)
+
+<use Figures/purine1_full.pdf>
+Overfull \hbox (51.28912pt too wide) in paragraph at lines 1158--1159
+[][] 
+ []
+
+[21]
+Underfull \hbox (badness 10000) in paragraph at lines 1165--1166
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1170--1171
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1177--1178
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1189--1190
+
+ []
+
+[22 <./Figures/purine1_full.pdf>]
+File: Figures/purine1_full.pdf Graphic file (type pdf)
+ <use Figures/purine1_full.pdf>
+<Figures/purine2_full.pdf, id=403, 431.6125pt x 391.4625pt>
+File: Figures/purine2_full.pdf Graphic file (type pdf)
+
+<use Figures/purine2_full.pdf> [23 <./Figures/purine2_full.pdf>]
+Underfull \hbox (badness 10000) in paragraph at lines 1268--1269
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1274--1275
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1286--1287
+
+ []
+
+[24]
+Overfull \hbox (20.24498pt too wide) in paragraph at lines 1325--1326
+[][]/pcrb7t/> cmalign -o purine.3.sto --withali purine.2.sto purine.2.cm purine
+.psych.fa 
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1325--1326
+
+ []
+
+<Figures/purine3_full.pdf, id=459, 431.6125pt x 391.4625pt>
+File: Figures/purine3_full.pdf Graphic file (type pdf)
+
+<use Figures/purine3_full.pdf>
+<Figures/purineC_full.pdf, id=460, 431.6125pt x 391.4625pt>
+File: Figures/purineC_full.pdf Graphic file (type pdf)
+
+<use Figures/purineC_full.pdf>
+Underfull \hbox (badness 10000) in paragraph at lines 1368--1369
+
+ []
+
+[25 <./Figures/purine3_full.pdf> <./Figures/purineC_full.pdf>]
+Underfull \hbox (badness 10000) in paragraph at lines 1370--1371
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1372--1373
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1374--1375
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1382--1383
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1405--1406
+
+ []
+
+[26]
+Underfull \hbox (badness 10000) in paragraph at lines 1440--1441
+
+ []
+
+) [27] (./main.bbl) [28] (./main.aux) ) 
+Here is how much of TeX's memory you used:
+ 3541 strings out of 95437
+ 47736 string characters out of 1188002
+ 98823 words of memory out of 1000001
+ 6395 multiletter control sequences out of 10000+50000
+ 42890 words of font info for 80 fonts, out of 500000 for 1000
+ 14 hyphenation exceptions out of 1000
+ 34i,8n,37p,1246b,337s stack positions out of 1500i,500n,5000p,200000b,5000s
+ 569 PDF objects out of 300000
+ 75 named destinations out of 131072
+ 300 words of extra memory for PDF output out of 65536
+{/usr/share/texmf/dvips/tetex/f7b6d320.e
+nc}</usr/share/texmf/fonts/type1/bluesky/cm/cmr10.pfb>{/usr/share/texmf/dvips/p
+snfss/8r.enc}</usr/share/texmf/fonts/type1/urw/times/utmb8a.pfb>{/usr/share/tex
+mf/dvips/tetex/aae443f0.enc}</usr/share/texmf/fonts/type1/bluesky/cm/cmmi10.pfb
+>{/usr/share/texmf/dvips/tetex/bbad153f.enc}</usr/share/texmf/fonts/type1/blues
+ky/cm/cmsy10.pfb></usr/share/texmf/fonts/type1/urw/times/utmr8a.pfb>
+Output written on main.pdf (29 pages, 615426 bytes).
