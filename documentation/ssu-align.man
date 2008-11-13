@@ -27,8 +27,27 @@ The sequence file must be in FASTA format.
 CM files are profiles of RNA consensus secondary structure. A
 CM file is produced by the 
 .B cmbuild 
-program, from a given RNA sequence alignment of known 
+program, from given RNA sequence alignment(s) of known 
 consensus structure.
+
+.PP
+CM files can define the parameters for one or more models.
+The default CM file for 
+.B ssu-align
+contains three CMs. One for archaeal SSU sequences, one for bacterial
+SSU sequences, and one for eukaryotic SSU sequences. These models were
+built from structural alignments from Robin Gutell's Comparative RNA
+Website database (CRW)
+.B CITEME.
+
+The first step of 
+.B ssu-align
+is to use the primary sequence information to search 
+.I seqfile
+for high scoring matches (hits) to each model in 
+.B cmfile.
+Each hit that scores above a minimum bit score threshold is then
+extracted and aligned to the model 
 
 
 .PP
@@ -50,82 +69,30 @@ will first delete the contents of the directory
 and then begin to execute.
 
 .PP
+The behavior of 
 .B ssu-align
-proceeds through two stages.
-The initial stage scans sequences in 
+is dependent on the number of CMs in 
+.B cmfile. 
+If there is only one CM, 
+the primary sequence information from the CM is used to scan 
+the sequences in 
 .I seqfile 
-and defines boundaries of likely SSU sequences.
-These sequences are extracted from 
+and define boundaries of likely SSU sequences.
+These subsequences are extracted from 
 .I seqfile
+and written to a new FASTA file called
+.B FIXME. 
+Finally, these sequences are aligned to the CM using primary sequence
+and secondary structure information. The alignment is saved in
+Stockholm format to 
+.B FIXME.
 
+If there are more than one CMs in 
+.B cmfile,
+the sequences in 
+.I seqfile 
+are scanned by an HMM created from each model 
 
-
-The alignment that 
-.B cmalign
-makes is written in Stockholm format to a file
-.I <output_root>
-It can be redirected to a file
-using the
-.B -o
-option.
-
-.PP
-.B cmalign 
-uses an HMM banding technique to accelerate alignment by default as
-described below for the
-.B --hbanded 
-option. HMM banding can be turned off with the 
-.B --nonbanded
-option.
-
-.PP
-By default, 
-.B cmalign
-computes the alignment with maximum
-expected accuracy that is consistent with constraints (bands) derived
-from an HMM, using a banded version of the Durbin/Holmes optimal accuracy algorithm.
-This behavior can be changed, as described below and in
-the User's Guide, with
-the 
-.B --cyk, 
-.B --sample,
-or
-.B --viterbi 
-options.
-
-.PP
-It is possible to include the fixed training alignment used to build
-the CM within the output alignment of
-.B cmalign.
-This is done using the 
-.B --withali 
-option, as described below and in the User's Guide.
-
-.SH OUTPUT
-
-.B cmalign
-first outputs tabular information on the scores of each sequence being
-aligned, then the alignment itself is printed. The alignment can be
-redirected to an output file 
-.I <f>
-with the 
-.BI -o " <f>"
-option. 
-The tabular output section 
-includes one line per sequences and seven fields per line:  "seq idx": 
-the index of the sequence in the input file, "seq name": the
-sequence name, "len": the length of the sequence, "total": the total
-bit score of the sequence, "struct": an approximation of the
-contribution of the secondary structure to the bit score, "avg prob":
-the average posterior probability (confidence estimate) of each
-aligned residue, and "elapsed": the wall time spent aligning the
-sequence. 
-
-The fields can change if different options are selected. For example
-if the 
-.B "--cyk"
-option is enabled, the "avg prob" field disappears because
-posterior probabilities are not calculated by the CYK algorithm.
 
 .SH OPTIONS
 

@@ -11,8 +11,8 @@
 #             <parameter file minimally defining:
 #                $cmsearch = path to 'cmsearch' infernal app
 #                $cmalign  = path to 'cmalign' infernal app
-#                $sfetch   = path to 'esl-sfetch' easel miniapp
-#              and optionally defining (if -N or -P enabled): 
+#                $esl_sfetch   = path to 'esl-sfetch' easel miniapp
+#              and optionally defining (if -n or -p enabled): 
 #                $cluster_prefix = prefix for perl ssu-align.pl commands
 #                $cluster_suffix = suffix for perl ssu-align.pl commands
 #             
@@ -34,14 +34,15 @@
 #
 # Options from :
 #    -F     : allow file clobbering
-#    -S     : only search target sequence file for hits, skip alignment step
-#    -A     : only align  target sequence file, skip initial search step 
-#    -U     : do not truncate seqs to HMM predicted start/end, align full seqs\n\t";
-#    -W     : use the HMM forward algorithm for searching, not HMM viterbi
-#    -B <x> : minimum cmsearch hit bit score to allow for a surviving subsequence (default: 100)
-#    -L <n> : minimum cmsearch hit length    to allow for a surviving subsequence (default: 1)
-#    -N <n> : run in 'prep' mode, split target seq file into multiple files with <n> seqs each
-#    -P <n> : run in 'prep' mode, split target seq file into <n> files with equal number of seqs
+#    -s     : only search target sequence file for hits, skip alignment step
+#    -a     : only align  target sequence file, skip initial search step 
+#    -u     : do not truncate seqs to HMM predicted start/end, align full seqs\n\t";
+#    -w     : use the HMM forward algorithm for searching, not HMM viterbi
+#    -b <x> : minimum cmsearch hit bit score to allow for a surviving subsequence (default: 100)
+#    -l <n> : minimum cmsearch hit length    to allow for a surviving subsequence (default: 1)
+#    -n <n> : run in 'prep' mode, split target seq file into multiple files with <n> seqs each
+#    -p <n> : run in 'prep' mode, split target seq file into <n> files with equal number of seqs
+#    -r <x> : w/-n or -p, filter alns based on seq identity, allow no 2 seqs > <x> identical
 #
 use Getopt::Std;
 use Cwd 'abs_path';
@@ -55,8 +56,8 @@ my $usage =
 #    "<parameter file minimally defining:\n\t" . 
 #    " \$cmsearch = path to 'cmsearch' infernal app\n\t" . 
 #    " \$cmalign  = path to 'cmalign' infernal app\n\t" .
-#    " \$sfetch   = path to 'esl-sfetch' easel miniapp\n\t" . 
-#    " and optionally defining (if -N or -P enabled):\n\t" . 
+#    " \$esl_sfetch   = path to 'esl-sfetch' easel miniapp\n\t" . 
+#    " and optionally defining (if -n or -p enabled):\n\t" . 
 #    " \$cluster_prefix = prefix for ssu-align commands\n\t" .
 #    " \$cluster_suffix = suffix for ssu-align commands>\n\n";
 $options_usage  = "where general options are:\n";
@@ -69,12 +70,13 @@ $options_usage .= "  -w     : use the HMM forward algorithm for searching, not H
 $options_usage .= "  -b <x> : minimum cmsearch hit bit score to allow for a surviving subsequence (default: 100)\n";
 $options_usage .= "  -l <n> : minimum cmsearch hit length    to allow for a surviving subsequence (default: 1)\n";
 $options_usage .= "  -n <n> : run in 'prep' mode, split target seq file into multiple files with <n> seqs each\n";
-$options_usage .= "  -p <n> : run in 'prep' mode, split target seq file into <n> files with equal number of seqs\n\n";
+$options_usage .= "  -p <n> : run in 'prep' mode, split target seq file into <n> files with equal number of seqs\n";
+$options_usage .= "  -r <x> : filter aln based on seq identity, allow no 2 seqs > <x> identical\n\n";
 
 ###################
 # Process options #
 ###################
-getopts('hFsauwb:l:n:p:');
+getopts('hFsauwb:l:n:p:r:');
 my $do_clobber = 0;
 my $do_viterbi = 1;
 my $do_forward = 0;
@@ -88,24 +90,26 @@ my $prep_nproc = 0;
 my $do_truncate = 1;
 my $do_align = 1;
 my $do_search = 1;
+my $do_filteraln = 0;
+my $filter_id = 0.;
 
 my $enabled_options = "";
 if (defined $opt_h) { print $usage . "\n"; print $options_usage; exit(1); } 
 if (defined $opt_F) { $do_clobber = 1; } 
-if (defined $opt_s) { $do_align = 0; $enabled_options .= " -S";} 
-if (defined $opt_u) { $do_truncate = 0; $enabled_options .= " -U"; }
-if (defined $opt_a) { $do_search = 0; $enabled_options .= " -A";} 
-if (defined $opt_w) { $do_forward = 1; $do_viterbi = 0; $enabled_options .= " -W";}
-if (defined $opt_b) { $min_bit = $opt_B; $enabled_options .= " -B $opt_B"; } 
-if (defined $opt_l) { $min_len = $opt_L; $enabled_options .= " -L $opt_L"; if($min_len <= 0) { printf STDERR ("ERROR, with -L <n>, <n> must be >= 1."); exit(1); } }
+if (defined $opt_s) { $do_align = 0; $enabled_options .= " -s";} 
+if (defined $opt_u) { $do_truncate = 0; $enabled_options .= " -u"; }
+if (defined $opt_a) { $do_search = 0; $enabled_options .= " -a";} 
+if (defined $opt_w) { $do_forward = 1; $do_viterbi = 0; $enabled_options .= " -w";}
+if (defined $opt_b) { $min_bit = $opt_B; $enabled_options .= " -b $opt_B"; } 
+if (defined $opt_l) { $min_len = $opt_L; $enabled_options .= " -l $opt_L"; if($min_len <= 0) { printf STDERR ("ERROR, with -l <n>, <n> must be >= 1."); exit(1); } }
 if (defined $opt_n) { $do_prep = 1; $do_prep_nseq_set = 1;  $prep_nseq  = $opt_N; }
 if (defined $opt_p) { $do_prep = 1; $do_prep_nproc_set = 1; $prep_nproc = $opt_P; }
+if (defined $opt_r) { $do_filteraln = 1; $filter_id = $opt_r; $enabled_options .= " -r $opt_r"; if (($r < 0.) || ($r > 1.)) { printf STDERR("ERROR, with -r <x>, valid range is 0. <= <x> <= 1.0.\n"); exit(1); } }
 
 # Check for incompatible option combinations and non-sensical option parameters
-if($do_prep_nseq_set  && $do_prep_nproc_set) { printf STDERR ("ERROR, -N and -P are exclusive options, pick one or the other.\n"); exit(1); }
-if($do_prep_nseq_set  && $prep_nseq < 1)     { printf STDERR ("ERROR, with -N <n>, <n> must be at least 1.\n"); exit(1); }
-if($do_prep_nproc_set && $prep_nproc <= 1)   { printf STDERR ("ERROR, with -P <n>, <n> must be at least 2.\n"); exit(1); }
-
+if($do_prep_nseq_set  && $do_prep_nproc_set) { printf STDERR ("ERROR, -n and -p are exclusive options, pick one or the other.\n"); exit(1); }
+if($do_prep_nseq_set  && $prep_nseq < 1)     { printf STDERR ("ERROR, with -n <n>, <n> must be at least 1.\n"); exit(1); }
+if($do_prep_nproc_set && $prep_nproc <= 1)   { printf STDERR ("ERROR, with -p <n>, <n> must be at least 2.\n"); exit(1); }
 if(scalar(@ARGV) != 4) {   
     print "Incorrect number of command line arguments.\n";
     print $usage;
@@ -118,8 +122,8 @@ my ($cm_file, $target_file, $out_root, $params_file) = @ARGV;
 # Preliminary stuff #
 #####################
 # not sure if I should make the vars in validate_input_files private with my()
-my ($my_cmsearch, $my_cmalign, $my_sfetch);
-validate_input_files(\$my_cmsearch, \$my_cmalign, \$my_sfetch);
+my ($my_cmsearch, $my_cmalign, $my_esl_sfetch, $my_esl_weight);
+validate_input_files(\$my_cmsearch, \$my_cmalign, \$my_esl_sfetch, \$my_esl_weight, $do_filteraln);
 
 $nseq_target_file = determine_num_seqs($target_file);
 
@@ -130,7 +134,7 @@ my $my_cm_file_copy = $out_dir . "/" . $cm_file;
 
 process_cm_file($do_prep, $my_cm_file_copy, $out_root, \@indi_cm_name_A, \@indi_cm_file_name_A, \@indi_cm_clen_A, \@indi_cm_nbif_A);
 my $ncm = scalar(@indi_cm_file_name_A); 
-if((!$do_search) && ($ncm > 1)) { printf("ERROR, the -A option only works if the CM file contains exactly 1 CM, $cm_file has $ncm CMs in it.\n"); exit(1); }
+if((!$do_search) && ($ncm > 1)) { printf("ERROR, the -a option only works if the CM file contains exactly 1 CM, $cm_file has $ncm CMs in it.\n"); exit(1); }
 
 if($do_prep) { prepare_and_exit($do_align, $cm_file, $params_file, $do_prep_nproc_set, $do_prep_nseq_set, $prep_nproc, $prep_nseq, $target_file, $out_dir, $out_root, $cluster_prefix, $cluster_suffix, $nseq_target_file, scalar(@indi_cm_file_name_A)); } 
 
@@ -142,17 +146,17 @@ if($do_prep) { prepare_and_exit($do_align, $cm_file, $params_file, $do_prep_npro
 my $tab_file;
 my $max_file_name_width; 
 if($do_search) { 
-    search_sequences_with_each_cm($cmsearch, $my_cm_file_copy, $target_file, $out_dir_root, $nseq_target_file, $do_viterbi, \@indi_cm_file_name_A, \@indi_cm_clen_A, \@indi_cm_nbif_A, \$tab_file, \$max_file_name_width);
+    search_sequences_with_each_cm($my_cmsearch, $my_cm_file_copy, $target_file, $out_dir_root, $nseq_target_file, $do_viterbi, \@indi_cm_file_name_A, \@indi_cm_clen_A, \@indi_cm_nbif_A, \$tab_file, \$max_file_name_width);
 }
 else { 
     $max_file_name_width = 30;
 }
-######################################################
-# Step 2: Extract subsequences using ssu-tab2sseq.pl #
-######################################################
+##############################
+# Step 2: Extract subsequences
+##############################
 my %new_target_file_per_cm_name_H = ();
 if($do_search) { 
-    classify_and_extract_subseqs($do_truncate, $min_bit, $min_len, $tab_file, $target_file, $out_dir_root, $sfetch, $max_file_name_width, \@indi_cm_name_A, \%new_target_file_per_cm_name_H); 
+    classify_and_extract_subseqs($do_truncate, $min_bit, $min_len, $tab_file, $target_file, $out_dir_root, $my_esl_sfetch, $max_file_name_width, \@indi_cm_name_A, \%new_target_file_per_cm_name_H); 
 }
 else { 
     $new_target_file_per_cm_name_H{$indi_cm_name_A[0]} = $target_file;
@@ -162,8 +166,9 @@ else {
 # Step 3: Align sequences #
 ###########################
 if($do_align) {
-    align_subseqs($out_dir_root, $cmalign, $max_file_name_width, \@indi_cm_name_A, \@indi_cm_file_name_A, \@indi_cm_clen_A, \%new_target_file_per_cm_name_H); 
+    align_subseqs($out_dir_root, $my_cmalign, $max_file_name_width, $my_esl_weight, $do_filteraln, $filter_id, \@indi_cm_name_A, \@indi_cm_file_name_A, \@indi_cm_clen_A, \%new_target_file_per_cm_name_H); 
 }
+
 # success, exit normally
 exit(0); 
 
@@ -190,9 +195,9 @@ exit(0);
 #
 ####################################################################
 sub validate_input_files { 
-    my $narg_expected = 3;
+    my $narg_expected = 5;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, validate_input_files() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($cmsearch_ref, $cmalign_ref, $sfetch_ref) = @_;
+    my($cmsearch_ref, $cmalign_ref, $esl_sfetch_ref, $esl_weight_ref, $do_filteraln) = @_;
 
     #make sure ARGV files exist
     if(!(-e $cm_file))       { printf STDERR ("ERROR, CM file $cm_file does not exist.\n"); exit(1); }
@@ -203,7 +208,8 @@ sub validate_input_files {
     #Read parameter file
     $cmsearch = "";
     $cmalign = "";
-    $sfetch = "";
+    $esl_sfetch = "";
+    $esl_weight = "";
     $cluster_prefix = "";
     $cluster_suffix = "";
     require $params_file;
@@ -212,27 +218,42 @@ sub validate_input_files {
     # check to make sure required variables were set and are valid
     if($cmsearch eq "")       { printf STDERR ("ERROR, \$cmsearch not defined in parameter file.\n"); exit(1); }
     if($cmalign  eq "")       { printf STDERR ("ERROR, \$cmalign not defined in parameter file.\n"); exit(1); }
-    if($sfetch   eq "")       { printf STDERR ("ERROR, \$sfetch not defined in parameter file.\n"); exit(1); }
+    if($esl_sfetch   eq "")       { printf STDERR ("ERROR, \$esl_sfetch not defined in parameter file.\n"); exit(1); }
+    if($do_filteraln) { 
+	if($esl_weight   eq "")       { printf STDERR ("ERROR, -r enabled, but \$esl_weight not defined in parameter file.\n"); exit(1); }
+    }
     # required variable paths can't have ~ prefix indicating home dir
     if($cmsearch =~ /^~/)     { printf STDERR ("ERROR, \$cmsearch definition must be absolute path, \~ cannot be used as shortcut for home directory.\n"); exit(1); }
     if($cmalign  =~ /^~/)     { printf STDERR ("ERROR, \$cmalign definition must be absolute path, \~ cannot be used as shortcut for home directory.\n"); exit(1); }
-    if($sfetch   =~ /^~/)     { printf STDERR ("ERROR, \$sfetch definition must be absolute path, \~ cannot be used as shortcut for home directory.\n"); exit(1); }
+    if($esl_sfetch   =~ /^~/)     { printf STDERR ("ERROR, \$esl_sfetch definition must be absolute path, \~ cannot be used as shortcut for home directory.\n"); exit(1); }
+    if($do_filteraln) { 
+	if($esl_weight   =~ /^~/)     { printf STDERR ("ERROR, \$esl_weight definition must be absolute path, \~ cannot be used as shortcut for home directory.\n"); exit(1); }
+    }
     # required variable paths can't have "../" prefix indicating up-one-dir
     if($cmsearch =~ /^\.\./)  { printf STDERR ("ERROR, \$cmsearch definition must be absolute path, \.\.\/ cannot be used as shortcut for up-one-directory.\n"); exit(1); }
     if($cmalign  =~ /^\.\./)  { printf STDERR ("ERROR, \$cmalign definition must be absolute path, \.\.\/ cannot be used as shortcut for up-one-directory.\n"); exit(1); }
-    if($sfetch   =~ /^\.\./)  { printf STDERR ("ERROR, \$sfetch definition must be absolute path, \.\.\/ cannot be used as shortcut for up-one-directory.\n"); exit(1); }
+    if($esl_sfetch   =~ /^\.\./)  { printf STDERR ("ERROR, \$esl_sfetch definition must be absolute path, \.\.\/ cannot be used as shortcut for up-one-directory.\n"); exit(1); }
+    if($do_filteraln) { 
+	if($esl_weight  =~ /^\.\./)  { printf STDERR ("ERROR, \$esl_weight definition must be absolute path, \.\.\/ cannot be used as shortcut for up-one-directory.\n"); exit(1); }
+    }
     # required variable paths can't have "./" prefix indicating current dir
     if($cmsearch =~ /^\./)    { printf STDERR ("ERROR, \$cmsearch definition must be absolute path, \.\/ cannot be used as shortcut for current directory.\n"); exit(1); }
     if($cmalign  =~ /^\./)    { printf STDERR ("ERROR, \$cmalign definition must be absolute path, \.\/ cannot be used as shortcut for current directory.\n"); exit(1); }
-    if($sfetch   =~ /^\./)    { printf STDERR ("ERROR, \$sfetch definition must be absolute path, \.\/ cannot be used as shortcut for current directory.\n"); exit(1); }
+    if($esl_sfetch   =~ /^\./)    { printf STDERR ("ERROR, \$esl_sfetch definition must be absolute path, \.\/ cannot be used as shortcut for current directory.\n"); exit(1); }
+    if($do_filteraln) { 
+	if($esl_sfetch   =~ /^\./)    { printf STDERR ("ERROR, \$esl_weight definition must be absolute path, \.\/ cannot be used as shortcut for current directory.\n"); exit(1); }
+    }    
     # required variable paths must exist
     if(!(-e $cmsearch))       { printf STDERR ("ERROR, cmsearch executable $cmsearch does not exist.\n"); exit(1); }
     if(!(-e $cmalign))        { printf STDERR ("ERROR, cmalign executable $cmsearch does not exist.\n"); exit(1); }
-    if(!(-e $sfetch))         { printf STDERR ("ERROR, esl-sfetch executable $sfetch does not exist.\n"); exit(1); }
-    
+    if(!(-e $esl_sfetch))         { printf STDERR ("ERROR, esl-sfetch executable $esl_sfetch does not exist.\n"); exit(1); }
+    if($do_filteraln) { 
+	if(!(-e $esl_weight))         { printf STDERR ("ERROR, esl-weight executable $esl_weight does not exist.\n"); exit(1); }
+    }    
     $$cmsearch_ref = $cmsearch;
     $$cmalign_ref  = $cmalign;
-    $$sfetch_ref   = $sfetch;
+    $$esl_sfetch_ref   = $esl_sfetch;
+    $$esl_weight_ref   = $esl_weight;
     return;
 }
 
@@ -309,8 +330,8 @@ sub create_output_dir {
 # 
 # purpose:    Carry out a special mode of ssu-align.pl for creating
 #             scripts to split up large alignment jobs into many
-#             smaller jobs. This subroutine is called only if -N or 
-#             -P is enabled on the command line. 
+#             smaller jobs. This subroutine is called only if -n or 
+#             -p is enabled on the command line. 
 # 
 #             The target sequence file <$target_file> is partitioned
 #             into > 1 new, smaller FASTA files. A shell script 
@@ -361,10 +382,10 @@ sub prepare_and_exit {
 	if($remainder > 0) { $prep_nproc++; }
     }
     if(($do_prep_nproc_set) && ($prep_nproc > $nseq_target_file)) { 
-	printf STDERR ("ERROR, -P %d enabled, but there's only %d sequences in the target file.\n", $prep_nproc, $nseq_target_file); exit(1); 
+	printf STDERR ("ERROR, -p %d enabled, but there's only %d sequences in the target file.\n", $prep_nproc, $nseq_target_file); exit(1); 
     }
     if(($do_prep_nseq_set) && ($prep_nproc == 1)) {
-	printf STDERR ("ERROR, -N %d enabled, but there's only %d sequences in the target file.\nNo need to use -N, you're requesting the target file be split into only 1 partition.\n", $prep_nseq, $nseq_target_file); exit(1); 
+	printf STDERR ("ERROR, -n %d enabled, but there's only %d sequences in the target file.\nNo need to use -n, you're requesting the target file be split into only 1 partition.\n", $prep_nseq, $nseq_target_file); exit(1); 
     }
 
     # 1. partition the target seq file AND
@@ -650,7 +671,7 @@ sub search_sequences_with_each_cm() {
 sub classify_and_extract_subseqs { 
     my $narg_expected = 10;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, classify_and_extract_subseqs() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($do_truncate, $min_bit, $min_len, $tab_file, $target_file, $out_dir_root, $sfetch, $max_file_name_width, $indi_cm_name_Aref, $new_target_file_per_cm_name_Href) = @_;
+    my ($do_truncate, $min_bit, $min_len, $tab_file, $target_file, $out_dir_root, $esl_sfetch, $max_file_name_width, $indi_cm_name_Aref, $new_target_file_per_cm_name_Href) = @_;
 
     my @seq_order_A = ();
     my %seq_exists_in_order_array_H = ();
@@ -724,26 +745,26 @@ sub classify_and_extract_subseqs {
 
     # For each CM c, list the target sequences that score highest to c in tabular format
     # and then fetch them with esl-sfetch
-    my ($index_file, $ncm_with_at_least_one_seq, $list_file, $sfetch_in_file, $nwinners, $max_seq_name_width, $sseq_file, $sfetch_options);
+    my ($index_file, $ncm_with_at_least_one_seq, $list_file, $esl_sfetch_in_file, $nwinners, $max_seq_name_width, $sseq_file, $esl_sfetch_options);
     $ncm_with_at_least_one_seq = 0;
     $index_file = $target_file . ".ssi";
     
     #if index file exists, remove it and remake it (this is the only way to know for sure that the index was created for this specific file)
     if(-e $index_file)    { system("rm $index_file"); } 
     if(($? >> 8) != 0)    { printf STDERR ("ERROR, system(\"rm $index_file\" unexpectedly returned non-zero exit status %d.\n", ($? >> 8)); exit($? >> 8); }
-    system("$sfetch \-\-index $target_file > /dev/null"); 
-    if(($? >> 8) != 0)    { printf STDERR ("ERROR, system(\"$sfetch \-\-index $target_file > /dev/null\" unexpectedly returned non-zero exit status %d.\n", ($? >> 8)); exit($? >> 8); }
+    system("$esl_sfetch \-\-index $target_file > /dev/null"); 
+    if(($? >> 8) != 0)    { printf STDERR ("ERROR, system(\"$esl_sfetch \-\-index $target_file > /dev/null\" unexpectedly returned non-zero exit status %d.\n", ($? >> 8)); exit($? >> 8); }
 
     for($m = 0; $m < scalar(@{$indi_cm_name_Aref}); $m++) { 
 	$cm_name = $indi_cm_name_Aref->[$m];
 	$list_file = $out_dir_root . "." . $cm_name . ".sseq.list"; 
-	$sfetch_in_file = $out_dir_root . "." . $cm_name . ".sseq.in";
+	$esl_sfetch_in_file = $out_dir_root . "." . $cm_name . ".sseq.in";
 	$nwinners = scalar(@{$by_cm_name_HA{$cm_name}});
 
 	if($nwinners > 0) { 
 	    $ncm_with_at_least_one_seq++;
 	    if(open(OUTLIST,  ">" . $list_file) == 0)      { printf STDERR ("ERROR, could not open $list_file for writing.\n"); exit(1); }
-	    if(open(SFETCHIN, ">" . $sfetch_in_file) == 0) { printf STDERR ("ERROR, could not open $sfetch_in_file for writing.\n"); exit(1); }
+	    if(open(SFETCHIN, ">" . $esl_sfetch_in_file) == 0) { printf STDERR ("ERROR, could not open $esl_sfetch_in_file for writing.\n"); exit(1); }
 
 	    # determine max seq name width 
 	    $max_seq_name_width = 0;
@@ -769,17 +790,17 @@ sub classify_and_extract_subseqs {
 
 	    $sseq_file = $out_dir_root . "." . $cm_name . ".sseq.fa";
 	    if(-e ($sseq_file)) { system("rm $sseq_file"); }
-	    if($do_truncate) { $sfetch_options = "-Cf"; }
-	    else             { $sfetch_options = "-f";  }
-	    if($do_truncate) { system("$sfetch -o $sseq_file $sfetch_options $target_file $sfetch_in_file > /dev/null"); }
-	    else             { system("$sfetch -o $sseq_file $sfetch_options $target_file $sfetch_in_file > /dev/null"); }
-	    if(($? >> 8) != 0) { printf STDERR ("ERROR, system(\"$sfetch $sfetch_options $target_file $sfetch_in_file\" unexpectedly returned non-zero exit status %d.\n", ($? >> 8)); exit($? >> 8); }
+	    if($do_truncate) { $esl_sfetch_options = "-Cf"; }
+	    else             { $esl_sfetch_options = "-f";  }
+	    if($do_truncate) { system("$esl_sfetch -o $sseq_file $esl_sfetch_options $target_file $esl_sfetch_in_file > /dev/null"); }
+	    else             { system("$esl_sfetch -o $sseq_file $esl_sfetch_options $target_file $esl_sfetch_in_file > /dev/null"); }
+	    if(($? >> 8) != 0) { printf STDERR ("ERROR, system(\"$esl_sfetch $esl_sfetch_options $target_file $esl_sfetch_in_file\" unexpectedly returned non-zero exit status %d.\n", ($? >> 8)); exit($? >> 8); }
 
 	    #printf("esl-sfetch -Cf $target_file $listfile > $sseq_file\n");
 	    $output = `head -1 $sseq_file`;
 	    if($output =~ m/\W/) { printf("  %-*s  FASTA file of high scoring subseqs to align with $cm_name CM (%d sequences).\n", $max_file_name_width, $sseq_file, scalar(@{$by_cm_name_HA{$cm_name}})); }
-	    else                 { printf("ERROR, esl-sfetch command $sfetch -o $sseq_file -Cf $target_file $sfetch_in_file didn't work.\n");  exit(1); }
-	    system("rm $sfetch_in_file");
+	    else                 { printf("ERROR, esl-sfetch command $esl_sfetch -o $sseq_file -Cf $target_file $esl_sfetch_in_file didn't work.\n");  exit(1); }
+	    system("rm $esl_sfetch_in_file");
 	    $new_target_file_per_cm_name_Href->{$cm_name} = $sseq_file;
 	}
     }
@@ -806,9 +827,9 @@ sub classify_and_extract_subseqs {
 #  
 ####################################################################
 sub align_subseqs { 
-    my $narg_expected = 7;
+    my $narg_expected = 10;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, align_subseqs() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($out_dir_root, $cmalign, $max_file_name_width, $indi_cm_name_Aref, $indi_cm_file_name_Aref, $indi_cm_clen_Aref, $new_target_file_per_cm_name_Href) = @_;
+    my ($out_dir_root, $cmalign, $max_file_name_width, $esl_weight, $do_filteraln, $filter_id, $indi_cm_name_Aref, $indi_cm_file_name_Aref, $indi_cm_clen_Aref, $new_target_file_per_cm_name_Href) = @_;
 
     my($max_cm_name_width, $cm_dashes, $seq_dashes, $ncm, $m, $cm_file_name, $cm_name, $cm_clen, $sseq_file, $nseq_this_file, $align_psecs, $cmalign_out, $cmalign_stk);
 
@@ -837,15 +858,25 @@ sub align_subseqs {
 	$align_psecs = ($cm_clen * $cm_clen) / (1500 * 1500); #$align_psecs is fraction of SSU alignment time this seq aln will take
 	$align_psecs *= $nseq_this_file;
 	$cmalign_out = $out_dir_root . ".m" . ($m+1) . ".cmalign";
-	$cmalign_stk = $out_dir_root . ".m" . ($m+1) . ".cmalign.stk"; 
+	if($do_filteraln) { 
+	    $cmalign_stk     = $out_dir_root . ".m" . ($m+1) . ".cmalign.nf.stk"; 
+	    $fil_cmalign_stk = $out_dir_root . ".m" . ($m+1) . ".cmalign.stk"; 
+	}
+	else { 
+	    $cmalign_stk     = $out_dir_root . ".m" . ($m+1) . ".cmalign.stk"; 
+	}
 	printf("  %2d/%2d  %-*s  %-*s  %7d  %7.2f\n", $m+1, $ncm, $max_cm_name_width, $cm_name, $max_file_name_width, $sseq_file, $nseq_this_file, $align_psecs / 60.);
 	#printf("$cmalign --sub -o $cmalign_stk $cm_for_cmalign[$c] $sseq_file > $cmalign_out\n");
 	if($nseq_this_file > 0) { system("$cmalign --sub -o $cmalign_stk $cm_file_name $sseq_file > $cmalign_out"); }
 	if(($? >> 8) != 0) { printf STDERR ("ERROR, system\(\"$cmalign --sub -o $cmalign_stk $cm_for_cmalign[$c] $sseq_file > $cmalign_out\"\) unexpectedly returned non-zero exit status %d\n", ($? >> 8)); exit(($? >> 8)); } 
+
+	if($do_filteraln) { 
+	    if($nseq_this_file > 0) { system("$esl_weight -f --idf $filter_id $cmalign_stk > $fil_cmalign_stk"); }
+	    if(($? >> 8) != 0) { printf STDERR ("ERROR, system\(\"$esl_weight -f --idf $filter_id $cmalign_stk > $fil_cmalign_stk\"\) unexpectedly returned non-zero exit status %d\n", ($? >> 8)); exit(($? >> 8)); } 
+	}
     }
     return;
 }
-
 
 #################################################################
 # subroutine : argmax_arr()
