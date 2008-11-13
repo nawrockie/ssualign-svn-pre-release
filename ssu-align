@@ -100,10 +100,10 @@ if (defined $opt_s) { $do_align = 0; $enabled_options .= " -s";}
 if (defined $opt_u) { $do_truncate = 0; $enabled_options .= " -u"; }
 if (defined $opt_a) { $do_search = 0; $enabled_options .= " -a";} 
 if (defined $opt_w) { $do_forward = 1; $do_viterbi = 0; $enabled_options .= " -w";}
-if (defined $opt_b) { $min_bit = $opt_B; $enabled_options .= " -b $opt_B"; } 
-if (defined $opt_l) { $min_len = $opt_L; $enabled_options .= " -l $opt_L"; if($min_len <= 0) { printf STDERR ("ERROR, with -l <n>, <n> must be >= 1."); exit(1); } }
-if (defined $opt_n) { $do_prep = 1; $do_prep_nseq_set = 1;  $prep_nseq  = $opt_N; }
-if (defined $opt_p) { $do_prep = 1; $do_prep_nproc_set = 1; $prep_nproc = $opt_P; }
+if (defined $opt_b) { $min_bit = $opt_b; $enabled_options .= " -b $opt_b"; } 
+if (defined $opt_l) { $min_len = $opt_l; $enabled_options .= " -l $opt_l"; if($min_len <= 0) { printf STDERR ("ERROR, with -l <n>, <n> must be >= 1."); exit(1); } }
+if (defined $opt_n) { $do_prep = 1; $do_prep_nseq_set = 1;  $prep_nseq  = $opt_n; }
+if (defined $opt_p) { $do_prep = 1; $do_prep_nproc_set = 1; $prep_nproc = $opt_p; }
 if (defined $opt_r) { $do_filteraln = 1; $filter_id = $opt_r; $enabled_options .= " -r $opt_r"; if (($r < 0.) || ($r > 1.)) { printf STDERR("ERROR, with -r <x>, valid range is 0. <= <x> <= 1.0.\n"); exit(1); } }
 
 # Check for incompatible option combinations and non-sensical option parameters
@@ -136,7 +136,7 @@ process_cm_file($do_prep, $my_cm_file_copy, $out_root, \@indi_cm_name_A, \@indi_
 my $ncm = scalar(@indi_cm_file_name_A); 
 if((!$do_search) && ($ncm > 1)) { printf("ERROR, the -a option only works if the CM file contains exactly 1 CM, $cm_file has $ncm CMs in it.\n"); exit(1); }
 
-if($do_prep) { prepare_and_exit($do_align, $cm_file, $params_file, $do_prep_nproc_set, $do_prep_nseq_set, $prep_nproc, $prep_nseq, $target_file, $out_dir, $out_root, $cluster_prefix, $cluster_suffix, $nseq_target_file, scalar(@indi_cm_file_name_A)); } 
+if($do_prep) { prepare_and_exit($do_align, $cm_file, $params_file, $do_prep_nproc_set, $do_prep_nseq_set, $prep_nproc, $prep_nseq, $target_file, $out_dir, $out_root, $cluster_prefix, $cluster_suffix, $nseq_target_file, scalar(@indi_cm_file_name_A), $esl_weight, $do_filteraln, $filter_id); } 
 
 # if we get here, $do_prep is FALSE
 
@@ -351,9 +351,9 @@ sub create_output_dir {
 # 
 ####################################################################
 sub prepare_and_exit { 
-    my $narg_expected = 14;
+    my $narg_expected = 17;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, prepare_and_exit() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($do_align, $cm_file, $params_file, $do_prep_nproc_set, $do_prep_nseq_set, $prep_nproc, $prep_nseq, $target_file, $out_dir, $out_root, $cluster_prefix, $cluster_suffix, $nseq_target_file, $ncm) = @_;
+    my($do_align, $cm_file, $params_file, $do_prep_nproc_set, $do_prep_nseq_set, $prep_nproc, $prep_nseq, $target_file, $out_dir, $out_root, $cluster_prefix, $cluster_suffix, $nseq_target_file, $ncm, $esl_weight, $do_filteraln, $filter_id ) = @_;
 
     # Steps
     # 1. partition the target seq file
@@ -419,7 +419,7 @@ sub prepare_and_exit {
 
     my @to_mergeA = ();
     my @new_to_mergeA = ();
-    my($merge_script, $i, $nmerge, $iter, $nstop, $lower, $upper, $merged_root, $merged_name, $merged_lower_name, $merged_upper_name, $namelen);
+    my($merge_script, $i, $nmerge, $iter, $nstop, $lower, $upper, $merged_root, $merged_name, $fil_merged_name, $merged_lower_name, $merged_upper_name, $namelen);
 
     # 3. print cmalign --merge calls to eventually merge resulting 
     #    alignments from ssu-align.pl calls in 2 together.
@@ -442,7 +442,13 @@ sub prepare_and_exit {
 		    $lower =~ s/\-.+//;
 		    $upper =~ s/.+\-//;
 		    $merged_root = $lower . "-" . $upper;
-		    $merged_name = $out_root . "." . $merged_root . ".m" . $m . ".merged.cmalign.stk";
+		    if($do_filteraln) { 
+			$merged_name     = $out_root . "." . $merged_root . ".m" . $m . ".merged.cmalign.nf.stk";
+			$fil_merged_name = $out_root . "." . $merged_root . ".m" . $m . ".merged.cmalign.stk";
+		    }
+		    else { 
+			$merged_name = $out_root . "." . $merged_root . ".m" . $m . ".merged.cmalign.stk";
+		    }
 		    if($iter > 1) { 
 			$merged_lower_name = $out_root . "." . $to_mergeA[$i]     . ".m" . $m . ".merged.cmalign.stk";
 			$merged_upper_name = $out_root . "." . $to_mergeA[($i+1)] . ".m" . $m . ".merged.cmalign.stk";
@@ -456,6 +462,10 @@ sub prepare_and_exit {
 		    printf MG ("\tif(-e \"$merged_upper_name\") { \n"); 
 		    printf MG ("\t\tsystem(\"$cmalign -o $merged_name --merge $cm_file $merged_lower_name $merged_upper_name\");\n");
 		    printf MG ("\t\tif((\$? \<\< 8) != 0) { printf STDERR (\"ERROR, system(\\\"$cmalign -o $merged_name --merge $cm_file $merged_lower_name $merged_upper_name\\\" returned a non-zero exit status \%d\\n\", (\$? >> 8)); exit((\$? >> 8)); }\n");
+		    if($do_filteraln) { 
+			printf MG ("\t\tsystem(\"$esl_weight -f --idf $filter_id $merged_name > $fil_merged_name\");\n");
+			printf MG ("\t\tif((\$? \<\< 8) != 0) { printf STDERR (\"ERROR, system(\\\"$esl_weight -f --idf $filter_id $merged_name > $fil_merged_name\\\" returned a non-zero exit status \%d\\n\", (\$? >> 8)); exit((\$? >> 8)); }\n");
+		    }
 		    printf MG ("\t\tsystem(\"rm $merged_lower_name\");\n");
 		    printf MG ("\t\tif((\$? \<\< 8) != 0) { printf STDERR (\"ERROR, system(\\\"rm $merged_lower_name\\\" returned a non-zero exit status \%d\\n\", (\$? >> 8)); exit((\$? >> 8)); }\n");
 		    printf MG ("\t\tsystem(\"rm $merged_upper_name\");\n");
