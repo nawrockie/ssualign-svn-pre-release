@@ -465,11 +465,12 @@ sub prepare_and_exit {
 		    if($do_filteraln) { 
 			printf MG ("\t\tsystem(\"$esl_weight -f --idf $filter_id $merged_name > $fil_merged_name\");\n");
 			printf MG ("\t\tif((\$? \<\< 8) != 0) { printf STDERR (\"ERROR, system(\\\"$esl_weight -f --idf $filter_id $merged_name > $fil_merged_name\\\" returned a non-zero exit status \%d\\n\", (\$? >> 8)); exit((\$? >> 8)); }\n");
+			#erase non-filtered alignment
+			printf MG ("if(-e \"$merged_name\") { \n"); 
+			printf MG ("\tsystem(\"rm $merged_name\");\n");
+			printf MG ("\tif((\$? \<\< 8) != 0) { printf STDERR (\"ERROR, system(\\\"rm $merged_name\\\" returned a non-zero exit status \%d\\n\", (\$? >> 8)); exit((\$? >> 8)); }\n");
+			printf MG ("} \n");
 		    }
-		    printf MG ("\t\tsystem(\"rm $merged_lower_name\");\n");
-		    printf MG ("\t\tif((\$? \<\< 8) != 0) { printf STDERR (\"ERROR, system(\\\"rm $merged_lower_name\\\" returned a non-zero exit status \%d\\n\", (\$? >> 8)); exit((\$? >> 8)); }\n");
-		    printf MG ("\t\tsystem(\"rm $merged_upper_name\");\n");
-		    printf MG ("\t\tif((\$? \<\< 8) != 0) { printf STDERR (\"ERROR, system(\\\"rm $merged_upper_name\\\" returned a non-zero exit status \%d\\n\", (\$? >> 8)); exit((\$? >> 8)); }\n");
 		    printf MG ("\t\t}\n");
 		    # else $merged_lower_name exists, but $merged_upper_name does not exist
 		    printf MG ("\telse { \n");
@@ -485,7 +486,7 @@ sub prepare_and_exit {
 		    printf MG ("\n");
 		    # else: neither $merged_upper_name exists, nor $merged_lower_name exists, do nothing next iteration will handle this
 		    
-		    # erase the intermediate alignment if it exists 
+		    # erase the intermediate alignments if they exists 
 		    if($iter > 1) { 
 			printf MG ("if(-e \"$merged_lower_name\") { \n"); 
 			printf MG ("\tsystem(\"rm $merged_lower_name\");\n");
@@ -514,6 +515,9 @@ sub prepare_and_exit {
     if($do_align) { 
 	printf("%-*s : perl script to run after %s that will merge the %d alignments together into 1.\n", $namelen, $merge_script, $shell_script, $prep_nproc);
     }
+    $shell_script =~ s/$out_dir\///;
+    $merge_script =~ s/$out_dir\///;
+    printf("To execute (doesn't work if you're going to use a cluster):\ncd $out_dir; sh $shell_script; perl $merge_script;\n");
     exit(0);
 }
 
