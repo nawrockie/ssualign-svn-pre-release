@@ -136,7 +136,7 @@ process_cm_file($do_prep, $my_cm_file_copy, $out_root, \@indi_cm_name_A, \@indi_
 my $ncm = scalar(@indi_cm_file_name_A); 
 if((!$do_search) && ($ncm > 1)) { printf("ERROR, the -a option only works if the CM file contains exactly 1 CM, $cm_file has $ncm CMs in it.\n"); exit(1); }
 
-if($do_prep) { prepare_and_exit($do_align, $cm_file, $params_file, $do_prep_nproc_set, $do_prep_nseq_set, $prep_nproc, $prep_nseq, $target_file, $out_dir, $out_root, $cluster_prefix, $cluster_suffix, $nseq_target_file, scalar(@indi_cm_file_name_A), $esl_weight, $do_filteraln, $filter_id); } 
+if($do_prep) { prepare_and_exit($do_align, $cm_file, $params_file, $do_prep_nproc_set, $do_prep_nseq_set, $prep_nproc, $prep_nseq, $target_file, $out_dir, $out_root, $cluster_prefix, $cluster_suffix, $nseq_target_file, $esl_weight, $do_filteraln, $filter_id, \@indi_cm_file_name_A); } 
 
 # if we get here, $do_prep is FALSE
 
@@ -353,7 +353,7 @@ sub create_output_dir {
 sub prepare_and_exit { 
     my $narg_expected = 17;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, prepare_and_exit() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($do_align, $cm_file, $params_file, $do_prep_nproc_set, $do_prep_nseq_set, $prep_nproc, $prep_nseq, $target_file, $out_dir, $out_root, $cluster_prefix, $cluster_suffix, $nseq_target_file, $ncm, $esl_weight, $do_filteraln, $filter_id ) = @_;
+    my($do_align, $orig_cm_file, $params_file, $do_prep_nproc_set, $do_prep_nseq_set, $prep_nproc, $prep_nseq, $target_file, $out_dir, $out_root, $cluster_prefix, $cluster_suffix, $nseq_target_file, $esl_weight, $do_filteraln, $filter_id, $indi_cm_file_name_Aref) = @_;
 
     # Steps
     # 1. partition the target seq file
@@ -362,7 +362,8 @@ sub prepare_and_exit {
     #    alignments from ssu-align.pl calls in 2 together.
     # 4. exit
 
-    my ($shell_script, $remainder, $n, $target_subfile_root, $target_subfile, $sub_output, $nseq_this_file, $line);
+    my ($shell_script, $remainder, $n, $target_subfile_root, $target_subfile, $sub_output, $nseq_this_file, $line, $ncm, $indi_cm_file_name, $indi_cm_file_name_root);
+    $ncm = scalar(@{$indi_cm_file_name_Aref});
 
     # cp the parameters file to the new dir
     system("cp $params_file $out_dir\/");
@@ -389,7 +390,7 @@ sub prepare_and_exit {
     }
 
     # 1. partition the target seq file AND
-    # 2. print ssu-align.pl calls for each target seq file to screen
+    # 2. print ssu-align.pl calls for each target seq file to stdout
     $n = 1;
     $target_subfile_root = $target_file . "." . $n;
     $target_subfile      = $out_dir . "/" . $target_subfile_root;
@@ -401,7 +402,7 @@ sub prepare_and_exit {
 	if($line =~ m/^>/) { 
 	    if(++$nseq_this_file == $prep_nseq) { 
 		close(SUB); 
-		printf SH ("%s%s%s\n", $cluster_prefix, "perl $ssualign $enabled_options $cm_file $target_subfile_root $out_root." . $n . " $params_file > $sub_output", $cluster_suffix);
+		printf SH ("%s%s%s\n", $cluster_prefix, "perl $ssualign $enabled_options $orig_cm_file $target_subfile_root $out_root." . $n . " $params_file > $sub_output", $cluster_suffix);
 		$target_subfile_root = $target_file . "." . (++$n);
 		$target_subfile      = $out_dir . "/" . $target_subfile_root;
 		$sub_output          = $out_root . "." . $n  . ".ssu-align";
@@ -413,8 +414,8 @@ sub prepare_and_exit {
     }
     close(FULL);
     close(SUB);
-    printf SH ("%s%s%s\n", $cluster_prefix, "perl $ssualign $enabled_options $cm_file $target_subfile_root $out_root." . $n . " $params_file > $sub_output", $cluster_suffix);
-    close(SH);
+    printf SH ("%s%s%s\n", $cluster_prefix, "perl $ssualign $enabled_options $orig_cm_file $target_subfile_root $out_root." . $n . " $params_file > $sub_output", $cluster_suffix);
+    close(SH); 
     if($n != $prep_nproc) { printf STDERR ("ERROR, problem partitioning target FASTA file $target_file into $prep_nproc files, only $n files were successfully created.\n"); exit(1); }
 
     my @to_mergeA = ();
@@ -428,6 +429,8 @@ sub prepare_and_exit {
 	if(open(MG, ">" . $merge_script) == 0) { printf STDERR ("ERROR, could not open $merge_script for writing.\n"); exit(1); }
 
 	for($m = 1; $m <= $ncm; $m++) { 
+	    $indi_cm_file_name_root = $indi_cm_file_name_Aref->[($m-1)];
+	    $indi_cm_file_name_root =~ s/^.+\///;
 	    printf MG ("\# Merging alignments to CM %d of %d\n", $m, $ncm);
 	    for($i = 1; $i <= $prep_nproc; $i++) { push(@to_mergeA, $i); }
 	    $nmerge = scalar(@to_mergeA);
@@ -442,6 +445,7 @@ sub prepare_and_exit {
 		    $lower =~ s/\-.+//;
 		    $upper =~ s/.+\-//;
 		    $merged_root = $lower . "-" . $upper;
+		    $indi_cm_file_name = $out_root . "." . $lower . "/" . $indi_cm_file_name_root;
 		    if($do_filteraln) { 
 			$merged_name     = $out_root . "." . $merged_root . ".m" . $m . ".merged.cmalign.nf.stk";
 			$fil_merged_name = $out_root . "." . $merged_root . ".m" . $m . ".merged.cmalign.stk";
@@ -460,8 +464,8 @@ sub prepare_and_exit {
 		    push(@new_to_mergeA, $merged_root);
 		    printf MG ("if(-e \"$merged_lower_name\") { \n"); 
 		    printf MG ("\tif(-e \"$merged_upper_name\") { \n"); 
-		    printf MG ("\t\tsystem(\"$cmalign -o $merged_name --merge $cm_file $merged_lower_name $merged_upper_name\");\n");
-		    printf MG ("\t\tif((\$? \<\< 8) != 0) { printf STDERR (\"ERROR, system(\\\"$cmalign -o $merged_name --merge $cm_file $merged_lower_name $merged_upper_name\\\" returned a non-zero exit status \%d\\n\", (\$? >> 8)); exit((\$? >> 8)); }\n");
+		    printf MG ("\t\tsystem(\"$cmalign -o $merged_name --merge $indi_cm_file_name $merged_lower_name $merged_upper_name\");\n");
+		    printf MG ("\t\tif((\$? \<\< 8) != 0) { printf STDERR (\"ERROR, system(\\\"$cmalign -o $merged_name --merge $indi_cm_file_name $merged_lower_name $merged_upper_name\\\" returned a non-zero exit status \%d\\n\", (\$? >> 8)); exit((\$? >> 8)); }\n");
 		    if($do_filteraln) { 
 			printf MG ("\t\tsystem(\"$esl_weight -f --idf $filter_id $merged_name > $fil_merged_name\");\n");
 			printf MG ("\t\tif((\$? \<\< 8) != 0) { printf STDERR (\"ERROR, system(\\\"$esl_weight -f --idf $filter_id $merged_name > $fil_merged_name\\\" returned a non-zero exit status \%d\\n\", (\$? >> 8)); exit((\$? >> 8)); }\n");
