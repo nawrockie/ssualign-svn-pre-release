@@ -418,8 +418,8 @@ sub prepare_and_exit {
     close(SH); 
     if($n != $prep_nproc) { printf STDERR ("ERROR, problem partitioning target FASTA file $target_file into $prep_nproc files, only $n files were successfully created.\n"); exit(1); }
 
-    my @to_mergeA = ();
-    my @new_to_mergeA = ();
+    my @to_mergeA;
+    my @new_to_mergeA;
     my($merge_script, $i, $nmerge, $iter, $nstop, $lower, $upper, $merged_root, $merged_name, $fil_merged_name, $merged_lower_name, $merged_upper_name, $namelen);
 
     # 3. print cmalign --merge calls to eventually merge resulting 
@@ -432,78 +432,110 @@ sub prepare_and_exit {
 	    $indi_cm_file_name_root = $indi_cm_file_name_Aref->[($m-1)];
 	    $indi_cm_file_name_root =~ s/^.+\///;
 	    printf MG ("\# Merging alignments to CM %d of %d\n", $m, $ncm);
+	    @to_mergeA = ();
 	    for($i = 1; $i <= $prep_nproc; $i++) { push(@to_mergeA, $i); }
 	    $nmerge = scalar(@to_mergeA);
 	    $iter = 0;
 	    while($nmerge > 1) { 
 		$iter++;
 		@new_to_mergeA = ();
-		if (($nmerge % 2) == 0) { $nstop = $nmerge; } else { $nstop = $nmerge-1; }
+		if (($nmerge % 2) == 0) { $nstop = $nmerge; } else { $nstop = $nmerge+1; }
+		printf STDERR ("\nnstop $nstop\nnmerge $nmerge\n");
 		for($i = 0; $i < $nstop; $i+=2) { 
 		    $lower = $to_mergeA[$i];
-		    $upper = $to_mergeA[($i+1)];
-		    $lower =~ s/\-.+//;
-		    $upper =~ s/.+\-//;
-		    $merged_root = $lower . "-" . $upper;
-		    $indi_cm_file_name = $out_root . "." . $lower . "/" . $indi_cm_file_name_root;
-		    if($do_filteraln) { 
-			$merged_name     = $out_root . "." . $merged_root . ".m" . $m . ".merged.cmalign.nf.stk";
-			$fil_merged_name = $out_root . "." . $merged_root . ".m" . $m . ".merged.cmalign.stk";
-		    }
-		    else { 
+		    if($i == (scalar(@to_mergeA)-1)) { 
+			# special case, we have a single alignment remaining, not a pair of alignments, 
+			# if nec, copy it to a new name if it exists (so the merging process can march along), else we do nothing
+			$upper = $lower;
+			$lower =~ s/\-.+//;
+			$upper =~ s/.+\-//;
+			$merged_root = $lower . "-" . $upper;
 			$merged_name = $out_root . "." . $merged_root . ".m" . $m . ".merged.cmalign.stk";
+			if($iter > 1) { $merged_lower_name = $out_root . "." . $to_mergeA[$i]     . ".m" . $m . ".merged.cmalign.stk"; }
+			else          {	$merged_lower_name = $out_root . "." . $to_mergeA[$i]     . "/" . $out_root . "." . $to_mergeA[$i]     . ".m" . $m . ".cmalign.stk"; }
+			if($merged_name ne $merged_lower_name) { 
+			    printf MG ("if(-e \"$merged_lower_name\") { \n"); 
+			    printf MG ("\tsystem(\"cp $merged_lower_name $merged_name\");\n");
+			    printf MG ("\tif((\$? \<\< 8) != 0) { printf STDERR (\"ERROR, system(\\\"cp $merged_lower_name $merge_name\\\" returned a non-zero exit status \%d\\n\", (\$? >> 8)); exit((\$? >> 8)); }\n");
+			    printf MG ("}\n");
+			    #erase intermediate alignment if it exists
+			    if($iter > 1) { 
+				printf MG ("if(-e \"$merged_lower_name\") { \n"); 
+				printf MG ("\tsystem(\"rm $merged_lower_name\");\n");
+				printf MG ("\tif((\$? \<\< 8) != 0) { printf STDERR (\"ERROR, system(\\\"rm $merged_lower_name\\\" returned a non-zero exit status \%d\\n\", (\$? >> 8)); exit((\$? >> 8)); }\n");
+				printf MG ("}\n");
+			    }
+			}
 		    }
-		    if($iter > 1) { 
-			$merged_lower_name = $out_root . "." . $to_mergeA[$i]     . ".m" . $m . ".merged.cmalign.stk";
-			$merged_upper_name = $out_root . "." . $to_mergeA[($i+1)] . ".m" . $m . ".merged.cmalign.stk";
-		    }
-		    else { #iter == 1
-			$merged_lower_name = $out_root . "." . $to_mergeA[$i]     . "/" . $out_root . "." . $to_mergeA[$i]     . ".m" . $m . ".cmalign.stk";
-			$merged_upper_name = $out_root . "." . $to_mergeA[($i+1)] . "/" . $out_root . "." . $to_mergeA[($i+1)] . ".m" . $m . ".cmalign.stk";
-		    }
-		    push(@new_to_mergeA, $merged_root);
-		    printf MG ("if(-e \"$merged_lower_name\") { \n"); 
-		    printf MG ("\tif(-e \"$merged_upper_name\") { \n"); 
-		    printf MG ("\t\tsystem(\"$cmalign -o $merged_name --merge $indi_cm_file_name $merged_lower_name $merged_upper_name\");\n");
-		    printf MG ("\t\tif((\$? \<\< 8) != 0) { printf STDERR (\"ERROR, system(\\\"$cmalign -o $merged_name --merge $indi_cm_file_name $merged_lower_name $merged_upper_name\\\" returned a non-zero exit status \%d\\n\", (\$? >> 8)); exit((\$? >> 8)); }\n");
-		    if($do_filteraln) { 
-			printf MG ("\t\tsystem(\"$esl_weight -f --idf $filter_id $merged_name > $fil_merged_name\");\n");
-			printf MG ("\t\tif((\$? \<\< 8) != 0) { printf STDERR (\"ERROR, system(\\\"$esl_weight -f --idf $filter_id $merged_name > $fil_merged_name\\\" returned a non-zero exit status \%d\\n\", (\$? >> 8)); exit((\$? >> 8)); }\n");
-			#erase non-filtered alignment
-			printf MG ("if(-e \"$merged_name\") { \n"); 
-			printf MG ("\tsystem(\"rm $merged_name\");\n");
-			printf MG ("\tif((\$? \<\< 8) != 0) { printf STDERR (\"ERROR, system(\\\"rm $merged_name\\\" returned a non-zero exit status \%d\\n\", (\$? >> 8)); exit((\$? >> 8)); }\n");
-			printf MG ("} \n");
-		    }
-		    printf MG ("\t\t}\n");
-		    # else $merged_lower_name exists, but $merged_upper_name does not exist
-		    printf MG ("\telse { \n");
-		    printf MG ("\t\tsystem(\"cp $merged_lower_name $merged_name\");\n");
-		    printf MG ("\t\tif((\$? \<\< 8) != 0) { printf STDERR (\"ERROR, system(\\\"cp $merged_lower_name $merge_name\\\" returned a non-zero exit status \%d\\n\", (\$? >> 8)); exit((\$? >> 8)); }\n");
-		    printf MG ("\t}\n");
-		    printf MG ("}\n");
-		    printf MG ("elsif((-e \"$merged_upper_name\")) { \n"); 
-		    # else $merged_upper_name exists, but $merged_lower_name does not exist
-		    printf MG ("\tsystem(\"cp $merged_upper_name $merged_name\");\n");
-		    printf MG ("\tif((\$? \<\< 8) != 0) { printf STDERR (\"ERROR, system(\\\"cp $merged_upper_name $merge_name\\\" returned a non-zero exit status \%d\\n\", (\$? >> 8)); exit((\$? >> 8)); }\n");
-		    printf MG ("}\n");
-		    printf MG ("\n");
-		    # else: neither $merged_upper_name exists, nor $merged_lower_name exists, do nothing next iteration will handle this
-		    
-		    # erase the intermediate alignments if they exists 
-		    if($iter > 1) { 
+		    else { #normal case, we have a pair of alignments to merge together
+			$upper = $to_mergeA[($i+1)]; 
+			$lower =~ s/\-.+//;
+			$upper =~ s/.+\-//;
+			$merged_root = $lower . "-" . $upper;
+			$indi_cm_file_name = $out_root . "." . $lower . "/" . $indi_cm_file_name_root;
+			if($do_filteraln) { 
+			    $merged_name     = $out_root . "." . $merged_root . ".m" . $m . ".merged.cmalign.nf.stk";
+			    $fil_merged_name = $out_root . "." . $merged_root . ".m" . $m . ".merged.cmalign.stk";
+			}
+			else { 
+			    $merged_name = $out_root . "." . $merged_root . ".m" . $m . ".merged.cmalign.stk";
+			}
+			if($iter > 1) { 
+			    $merged_lower_name = $out_root . "." . $to_mergeA[$i]     . ".m" . $m . ".merged.cmalign.stk";
+			    $merged_upper_name = $out_root . "." . $to_mergeA[($i+1)] . ".m" . $m . ".merged.cmalign.stk";
+			}
+			else { #iter == 1
+			    $merged_lower_name = $out_root . "." . $to_mergeA[$i]     . "/" . $out_root . "." . $to_mergeA[$i]     . ".m" . $m . ".cmalign.stk";
+			    $merged_upper_name = $out_root . "." . $to_mergeA[($i+1)] . "/" . $out_root . "." . $to_mergeA[($i+1)] . ".m" . $m . ".cmalign.stk";
+			}
+			push(@new_to_mergeA, $merged_root);
 			printf MG ("if(-e \"$merged_lower_name\") { \n"); 
-			printf MG ("\tsystem(\"rm $merged_lower_name\");\n");
-			printf MG ("\tif((\$? \<\< 8) != 0) { printf STDERR (\"ERROR, system(\\\"rm $merged_lower_name\\\" returned a non-zero exit status \%d\\n\", (\$? >> 8)); exit((\$? >> 8)); }\n");
-			printf MG ("} \n");
-			printf MG ("if(-e \"$merged_upper_name\") { \n"); 
-			printf MG ("\tsystem(\"rm $merged_upper_name\");\n");
-			printf MG ("\tif((\$? \<\< 8) != 0) { printf STDERR (\"ERROR, system(\\\"rm $merged_upper_name\\\" returned a non-zero exit status \%d\\n\", (\$? >> 8)); exit((\$? >> 8)); }\n");
-			printf MG ("} \n");
+			printf MG ("\tif(-e \"$merged_upper_name\") { \n"); 
+			#DEBUGGING printf STDERR ("cm: $m iter: $iter i: $i $merged_lower_name $merged_upper_name\n");
+			printf MG ("\t\tsystem(\"$cmalign -o $merged_name --merge $indi_cm_file_name $merged_lower_name $merged_upper_name\");\n");
+			printf MG ("\t\tif((\$? \<\< 8) != 0) { printf STDERR (\"ERROR, system(\\\"$cmalign -o $merged_name --merge $indi_cm_file_name $merged_lower_name $merged_upper_name\\\" returned a non-zero exit status \%d\\n\", (\$? >> 8)); exit((\$? >> 8)); }\n");
+			if($do_filteraln) { 
+			    printf MG ("\t\tsystem(\"$esl_weight -f --idf $filter_id $merged_name > $fil_merged_name\");\n");
+			    printf MG ("\t\tif((\$? \<\< 8) != 0) { printf STDERR (\"ERROR, system(\\\"$esl_weight -f --idf $filter_id $merged_name > $fil_merged_name\\\" returned a non-zero exit status \%d\\n\", (\$? >> 8)); exit((\$? >> 8)); }\n");
+			    #erase non-filtered alignment
+			    printf MG ("if(-e \"$merged_name\") { \n"); 
+			    printf MG ("\tsystem(\"rm $merged_name\");\n");
+			    printf MG ("\tif((\$? \<\< 8) != 0) { printf STDERR (\"ERROR, system(\\\"rm $merged_name\\\" returned a non-zero exit status \%d\\n\", (\$? >> 8)); exit((\$? >> 8)); }\n");
+			    printf MG ("} \n");
+			}
+			printf MG ("\t\t}\n");
+			# else $merged_lower_name exists, but $merged_upper_name does not exist
+			printf MG ("\telse { \n");
+			printf MG ("\t\tsystem(\"cp $merged_lower_name $merged_name\");\n");
+			printf MG ("\t\tif((\$? \<\< 8) != 0) { printf STDERR (\"ERROR, system(\\\"cp $merged_lower_name $merge_name\\\" returned a non-zero exit status \%d\\n\", (\$? >> 8)); exit((\$? >> 8)); }\n");
+			printf MG ("\t}\n");
+			printf MG ("}\n");
+			printf MG ("elsif((-e \"$merged_upper_name\")) { \n"); 
+			# else $merged_upper_name exists, but $merged_lower_name does not exist
+			printf MG ("\tsystem(\"cp $merged_upper_name $merged_name\");\n");
+			printf MG ("\tif((\$? \<\< 8) != 0) { printf STDERR (\"ERROR, system(\\\"cp $merged_upper_name $merge_name\\\" returned a non-zero exit status \%d\\n\", (\$? >> 8)); exit((\$? >> 8)); }\n");
+			printf MG ("}\n");
 			printf MG ("\n");
+			# else: neither $merged_upper_name exists, nor $merged_lower_name exists, do nothing next iteration will handle this
+			
+			# erase the intermediate alignments if they exist 
+			if($iter > 1) { 
+			    printf MG ("if(-e \"$merged_lower_name\") { \n"); 
+			    printf MG ("\tsystem(\"rm $merged_lower_name\");\n");
+			    printf MG ("\tif((\$? \<\< 8) != 0) { printf STDERR (\"ERROR, system(\\\"rm $merged_lower_name\\\" returned a non-zero exit status \%d\\n\", (\$? >> 8)); exit((\$? >> 8)); }\n");
+			    printf MG ("} \n");
+			    printf MG ("if(-e \"$merged_upper_name\") { \n"); 
+			    printf MG ("\tsystem(\"rm $merged_upper_name\");\n");
+			    printf MG ("\tif((\$? \<\< 8) != 0) { printf STDERR (\"ERROR, system(\\\"rm $merged_upper_name\\\" returned a non-zero exit status \%d\\n\", (\$? >> 8)); exit((\$? >> 8)); }\n");
+			    printf MG ("} \n");
+			    printf MG ("\n");
+			}
 		    }
 		}
-		if (($nmerge % 2) != 0) { push(@new_to_mergeA, $to_mergeA[($nmerge-1)]); }
+		if (($nmerge % 2) != 0) { 
+		    if($iter == 1) { push(@new_to_mergeA, $to_mergeA[($nmerge-1)] . "-" . $to_mergeA[($nmerge-1)]); } #special case, push 9-9 (for example), only nec if first iter, otherwise we're okay
+		    else           { push(@new_to_mergeA, $to_mergeA[($nmerge-1)]); }  #push 5-6 in iter 2 (for example)
+		}
 		@to_mergeA = @new_to_mergeA;
 		$nmerge = scalar(@to_mergeA);
 	    }
