@@ -12,7 +12,7 @@
 #                $cmsearch = path to 'cmsearch' infernal app
 #                $cmalign  = path to 'cmalign' infernal app
 #                $esl_sfetch   = path to 'esl-sfetch' easel miniapp
-#              and optionally defining (if -n or -p enabled): 
+#              and optionally defining (if -n or -c enabled): 
 #                $cluster_prefix = prefix for perl ssu-align.pl commands
 #                $cluster_suffix = suffix for perl ssu-align.pl commands
 #             
@@ -41,8 +41,10 @@
 #    -b <x> : minimum cmsearch hit bit score to allow for a surviving subsequence (default: 100)
 #    -l <n> : minimum cmsearch hit length    to allow for a surviving subsequence (default: 1)
 #    -n <n> : run in 'prep' mode, split target seq file into multiple files with <n> seqs each
-#    -p <n> : run in 'prep' mode, split target seq file into <n> files with equal number of seqs
-#    -r <x> : w/-n or -p, filter alns based on seq identity, allow no 2 seqs > <x> identical
+#    -c <n> : run in 'prep' mode, split target seq file into <n> files with equal number of seqs
+#    -r <x> : w/-n or -c, filter alns based on seq identity, allow no 2 seqs > <x> identical
+#    -x <x> : increase mx size for cmalign to <x> Mb (default: 4096)
+#    -p <x> : append posterior probabilities to alignments (use cmalign -p)
 #
 use Getopt::Std;
 use Cwd 'abs_path';
@@ -57,7 +59,7 @@ my $usage =
 #    " \$cmsearch = path to 'cmsearch' infernal app\n\t" . 
 #    " \$cmalign  = path to 'cmalign' infernal app\n\t" .
 #    " \$esl_sfetch   = path to 'esl-sfetch' easel miniapp\n\t" . 
-#    " and optionally defining (if -n or -p enabled):\n\t" . 
+#    " and optionally defining (if -n or -c enabled):\n\t" . 
 #    " \$cluster_prefix = prefix for ssu-align commands\n\t" .
 #    " \$cluster_suffix = suffix for ssu-align commands>\n\n";
 $options_usage  = "where general options are:\n";
@@ -70,13 +72,15 @@ $options_usage .= "  -w     : use the HMM forward algorithm for searching, not H
 $options_usage .= "  -b <x> : minimum cmsearch hit bit score to allow for a surviving subsequence (default: 100)\n";
 $options_usage .= "  -l <n> : minimum cmsearch hit length    to allow for a surviving subsequence (default: 1)\n";
 $options_usage .= "  -n <n> : run in 'prep' mode, split target seq file into multiple files with <n> seqs each\n";
-$options_usage .= "  -p <n> : run in 'prep' mode, split target seq file into <n> files with equal number of seqs\n";
-$options_usage .= "  -r <x> : filter aln based on seq identity, allow no 2 seqs > <x> identical\n\n";
+$options_usage .= "  -c <n> : run in 'prep' mode, split target seq file into <n> files with equal number of seqs\n";
+$options_usage .= "  -r <x> : filter aln based on seq identity, allow no 2 seqs > <x> identical\n\t";
+$options_usage .= "  -x <x> : increase mx size for cmalign to <x> Mb (default: 4096)\n";
+$options_usage .= "  -p <x> : append posterior probabilities to alignments (use cmalign -p)\n\n";
 
 ###################
 # Process options #
 ###################
-getopts('hFsauwb:l:n:p:r:');
+getopts('hFsauwb:l:n:c:r:x:p');
 my $do_clobber = 0;
 my $do_viterbi = 1;
 my $do_forward = 0;
@@ -92,6 +96,9 @@ my $do_align = 1;
 my $do_search = 1;
 my $do_filteraln = 0;
 my $filter_id = 0.;
+my $mxsize = 4096;
+my $do_post = 0;
+my $cmalign_post_option = "";
 
 my $enabled_options = "";
 if (defined $opt_h) { print $usage . "\n"; print $options_usage; exit(1); } 
@@ -103,13 +110,15 @@ if (defined $opt_w) { $do_forward = 1; $do_viterbi = 0; $enabled_options .= " -w
 if (defined $opt_b) { $min_bit = $opt_b; $enabled_options .= " -b $opt_b"; } 
 if (defined $opt_l) { $min_len = $opt_l; $enabled_options .= " -l $opt_l"; if($min_len <= 0) { printf STDERR ("ERROR, with -l <n>, <n> must be >= 1."); exit(1); } }
 if (defined $opt_n) { $do_prep = 1; $do_prep_nseq_set = 1;  $prep_nseq  = $opt_n; }
-if (defined $opt_p) { $do_prep = 1; $do_prep_nproc_set = 1; $prep_nproc = $opt_p; }
+if (defined $opt_c) { $do_prep = 1; $do_prep_nproc_set = 1; $prep_nproc = $opt_c; }
 if (defined $opt_r) { $do_filteraln = 1; $filter_id = $opt_r; $enabled_options .= " -r $opt_r"; if (($r < 0.) || ($r > 1.)) { printf STDERR("ERROR, with -r <x>, valid range is 0. <= <x> <= 1.0.\n"); exit(1); } }
+if (defined $opt_x) { $mxsize = $opt_x; $enabled_options .= " -x $opt_x"; if($opt_x <= 0.) { printf STDERR("ERROR, with -x <x>, valid range is 0. < <x>.\n"); exit(1); } }
+if (defined $opt_p) { $do_post = 1; $cmalign_post_option = "-p"; $enabled_options .= " -p "; }
 
 # Check for incompatible option combinations and non-sensical option parameters
-if($do_prep_nseq_set  && $do_prep_nproc_set) { printf STDERR ("ERROR, -n and -p are exclusive options, pick one or the other.\n"); exit(1); }
+if($do_prep_nseq_set  && $do_prep_nproc_set) { printf STDERR ("ERROR, -n and -c are exclusive options, pick one or the other.\n"); exit(1); }
 if($do_prep_nseq_set  && $prep_nseq < 1)     { printf STDERR ("ERROR, with -n <n>, <n> must be at least 1.\n"); exit(1); }
-if($do_prep_nproc_set && $prep_nproc <= 1)   { printf STDERR ("ERROR, with -p <n>, <n> must be at least 2.\n"); exit(1); }
+if($do_prep_nproc_set && $prep_nproc <= 1)   { printf STDERR ("ERROR, with -c <n>, <n> must be at least 2.\n"); exit(1); }
 if(scalar(@ARGV) != 4) {   
     print "Incorrect number of command line arguments.\n";
     print $usage;
@@ -166,7 +175,7 @@ else {
 # Step 3: Align sequences #
 ###########################
 if($do_align) {
-    align_subseqs($out_dir_root, $my_cmalign, $max_file_name_width, $my_esl_weight, $do_filteraln, $filter_id, \@indi_cm_name_A, \@indi_cm_file_name_A, \@indi_cm_clen_A, \%new_target_file_per_cm_name_H); 
+    align_subseqs($out_dir_root, $my_cmalign, $max_file_name_width, $my_esl_weight, $do_filteraln, $filter_id, $mxsize, $cmalign_post_option, \@indi_cm_name_A, \@indi_cm_file_name_A, \@indi_cm_clen_A, \%new_target_file_per_cm_name_H); 
 }
 
 # success, exit normally
@@ -202,7 +211,7 @@ sub validate_input_files {
     #make sure ARGV files exist
     if(!(-e $cm_file))       { printf STDERR ("ERROR, CM file $cm_file does not exist.\n"); exit(1); }
     if(!(-e $target_file))   { printf STDERR ("ERROR, target sequence file $target_file does not exist.\n"); exit(1); }
-    if(!(-e $params_file))   { printf STDERR ("ERROR, parmater file does not exist.\n"); exit(1); }
+    if(!(-e $params_file))   { printf STDERR ("ERROR, paramater file does not exist.\n"); exit(1); }
     if($cm_file !~ m/\.cm$/) { printf STDERR ("ERROR, CM file name must end with \".cm\", $cm_file does not.\n"); exit(1); }
 
     #Read parameter file
@@ -331,7 +340,7 @@ sub create_output_dir {
 # purpose:    Carry out a special mode of ssu-align.pl for creating
 #             scripts to split up large alignment jobs into many
 #             smaller jobs. This subroutine is called only if -n or 
-#             -p is enabled on the command line. 
+#             -c is enabled on the command line. 
 # 
 #             The target sequence file <$target_file> is partitioned
 #             into > 1 new, smaller FASTA files. A shell script 
@@ -383,7 +392,7 @@ sub prepare_and_exit {
 	if($remainder > 0) { $prep_nproc++; }
     }
     if(($do_prep_nproc_set) && ($prep_nproc > $nseq_target_file)) { 
-	printf STDERR ("ERROR, -p %d enabled, but there's only %d sequences in the target file.\n", $prep_nproc, $nseq_target_file); exit(1); 
+	printf STDERR ("ERROR, -c %d enabled, but there's only %d sequences in the target file.\n", $prep_nproc, $nseq_target_file); exit(1); 
     }
     if(($do_prep_nseq_set) && ($prep_nproc == 1)) {
 	printf STDERR ("ERROR, -n %d enabled, but there's only %d sequences in the target file.\nNo need to use -n, you're requesting the target file be split into only 1 partition.\n", $prep_nseq, $nseq_target_file); exit(1); 
@@ -440,7 +449,6 @@ sub prepare_and_exit {
 		$iter++;
 		@new_to_mergeA = ();
 		if (($nmerge % 2) == 0) { $nstop = $nmerge; } else { $nstop = $nmerge+1; }
-		printf STDERR ("\nnstop $nstop\nnmerge $nmerge\n");
 		for($i = 0; $i < $nstop; $i+=2) { 
 		    $lower = $to_mergeA[$i];
 		    if($i == (scalar(@to_mergeA)-1)) { 
@@ -657,7 +665,7 @@ sub search_sequences_with_each_cm() {
     $search_psecs = 0;
     for($i = 0; $i < scalar(@{$indi_cm_clen_Aref}); $i++) { $search_psecs += ($indi_cm_clen_Aref->[$i] * $indi_cm_clen_Aref->[$i]); }
     #$search_psecs is now predicted number of DP cells per sequence
-    $search_psecs *= ($target_nseq) / 1000000.; # $search_psecs is now predicted num of million cells for all seqs
+    $search_psecs *= ($nseq_target_file) / 1000000.; # $search_psecs is now predicted num of million cells for all seqs
     if($opt_F) { $search_psecs /= 100. } # cmsearch --forward does about 100 million dp cells per second;
     else       { $search_psecs /= 300. } # cmsearch --viterbi does about 100 million dp cells per second;
 
@@ -678,7 +686,7 @@ sub search_sequences_with_each_cm() {
     printf("#\n# Stage 1: Defining SSU start/ends with cmsearch (crude time estimate: %.1f minutes) ... ", ($search_psecs / 60.));
     #printf("$cmsearch -T -1 --no-null3 --toponly --noalign --tab $tab_file $alg_flag $my_cm_file_copy $target_file > /dev/null\n");
     system("$cmsearch --hmm-cW 1.5 -T -1 --no-null3 --toponly --noalign --tab $tab_file $alg_flag $my_cm_file_copy $target_file > /dev/null");
-    if(($? >> 8) != 0) { printf STDERR ("ERROR, system\(\"$cmsearch --hmm-cW -T -1 --no-null3 --toponly --noalign --tab $tab_file $alg_flag $my_cm_file_copy $target_file > /dev/null\" unexpectedly returned non-zero exit status %d\n", ($? >> 8)); exit(($? >> 8)); } 
+    if(($? >> 8) != 0) { printf STDERR ("ERROR, system\(\"$cmsearch --hmm-cW 1.5 -T -1 --no-null3 --toponly --noalign --tab $tab_file $alg_flag $my_cm_file_copy $target_file > /dev/null\" unexpectedly returned non-zero exit status %d\n", ($? >> 8)); exit(($? >> 8)); } 
     printf(" done.\n");
     printf("#\n");
 
@@ -828,7 +836,7 @@ sub classify_and_extract_subseqs {
 
 	    for($i = 0; $i < $nwinners; $i++) { 
 		#printf("%4d  $cm_name  %25s  %7.2f  %8d  %8d\n", ($i+1), $by_cm_name_HA{$cm_name}[$i], $by_cm_bitHA{$cm_name}[$i], $by_cm_startHA{$cm_name}[$i], $by_cm_endHA{$cm_name}[$i]);
-		printf OUTLIST ("  %*s  %6d  %6d  %8.2f\n", $max_seq_name_width, $by_cm_name_HA{$cm_name}[$i], $by_cm_start_HA{$cm_name}[$i], $by_cm_end_HA{$cm_name}[$i], $by_cm_bit_HA{$cm_name}[$i]);
+		printf OUTLIST ("  %-*s  %6d  %6d  %8.2f\n", $max_seq_name_width, $by_cm_name_HA{$cm_name}[$i], $by_cm_start_HA{$cm_name}[$i], $by_cm_end_HA{$cm_name}[$i], $by_cm_bit_HA{$cm_name}[$i]);
 		if($do_truncate) { printf SFETCHIN ("$by_cm_name_HA{$cm_name}[$i]\t$by_cm_start_HA{$cm_name}[$i]\t$by_cm_end_HA{$cm_name}[$i]\t$by_cm_name_HA{$cm_name}[$i]\n"); }
 		else             { printf SFETCHIN ("$by_cm_name_HA{$cm_name}[$i]\n"); }
 	    }
@@ -877,9 +885,9 @@ sub classify_and_extract_subseqs {
 #  
 ####################################################################
 sub align_subseqs { 
-    my $narg_expected = 10;
+    my $narg_expected = 12;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, align_subseqs() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($out_dir_root, $cmalign, $max_file_name_width, $esl_weight, $do_filteraln, $filter_id, $indi_cm_name_Aref, $indi_cm_file_name_Aref, $indi_cm_clen_Aref, $new_target_file_per_cm_name_Href) = @_;
+    my ($out_dir_root, $cmalign, $max_file_name_width, $esl_weight, $do_filteraln, $filter_id, $mxsize, $cmalign_post_option, $indi_cm_name_Aref, $indi_cm_file_name_Aref, $indi_cm_clen_Aref, $new_target_file_per_cm_name_Href) = @_;
 
     my($max_cm_name_width, $cm_dashes, $seq_dashes, $ncm, $m, $cm_file_name, $cm_name, $cm_clen, $sseq_file, $nseq_this_file, $align_psecs, $cmalign_out, $cmalign_stk);
 
@@ -916,9 +924,9 @@ sub align_subseqs {
 	    $cmalign_stk     = $out_dir_root . ".m" . ($m+1) . ".cmalign.stk"; 
 	}
 	printf("  %2d/%2d  %-*s  %-*s  %7d  %7.2f\n", $m+1, $ncm, $max_cm_name_width, $cm_name, $max_file_name_width, $sseq_file, $nseq_this_file, $align_psecs / 60.);
-	#printf("$cmalign --sub -o $cmalign_stk $cm_for_cmalign[$c] $sseq_file > $cmalign_out\n");
-	if($nseq_this_file > 0) { system("$cmalign --sub -o $cmalign_stk $cm_file_name $sseq_file > $cmalign_out"); }
-	if(($? >> 8) != 0) { printf STDERR ("ERROR, system\(\"$cmalign --sub -o $cmalign_stk $cm_for_cmalign[$c] $sseq_file > $cmalign_out\"\) unexpectedly returned non-zero exit status %d\n", ($? >> 8)); exit(($? >> 8)); } 
+	#printf("$cmalign --mxsize $mxsize --sub -o $cmalign_stk $cm_for_cmalign[$c] $sseq_file > $cmalign_out\n");
+	if($nseq_this_file > 0) { system("$cmalign $cmalign_post_option --mxsize $mxsize --sub -o $cmalign_stk $cm_file_name $sseq_file > $cmalign_out"); }
+	if(($? >> 8) != 0) { printf STDERR ("ERROR, system\(\"$cmalign $cmalign_post_option --mxsize $mxsize --sub -o $cmalign_stk $cm_for_cmalign[$c] $sseq_file > $cmalign_out\"\) unexpectedly returned non-zero exit status %d\n", ($? >> 8)); exit(($? >> 8)); } 
 
 	if($do_filteraln) { 
 	    if($nseq_this_file > 0) { system("$esl_weight -f --idf $filter_id $cmalign_stk > $fil_cmalign_stk"); }
