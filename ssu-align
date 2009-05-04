@@ -38,6 +38,7 @@
 #    -a     : only align  target sequence file, skip initial search step 
 #    -u     : do not truncate seqs to HMM predicted start/end, align full seqs\n\t";
 #    -w     : use the HMM forward algorithm for searching, not HMM viterbi
+#    -g     : search with globally configured HMM [default: local]
 #    -b <x> : minimum cmsearch hit bit score to allow for a surviving subsequence (default: 100)
 #    -l <n> : minimum cmsearch hit length    to allow for a surviving subsequence (default: 1)
 #    -n <n> : run in 'prep' mode, split target seq file into multiple files with <n> seqs each
@@ -69,6 +70,7 @@ $options_usage .= "  -s     : only search target sequence file for hits, skip al
 $options_usage .= "  -a     : only align  target sequence file, skip initial search step\n"; 
 $options_usage .= "  -u     : do not truncate seqs to HMM predicted start/end, align full seqs\n";
 $options_usage .= "  -w     : use the HMM forward algorithm for searching, not HMM viterbi\n";
+$options_usage .= "  -g     : search with globally configured HMM [default: local]\n";
 $options_usage .= "  -b <x> : minimum cmsearch hit bit score to allow for a surviving subsequence (default: 100)\n";
 $options_usage .= "  -l <n> : minimum cmsearch hit length    to allow for a surviving subsequence (default: 1)\n";
 $options_usage .= "  -n <n> : run in 'prep' mode, split target seq file into multiple files with <n> seqs each\n";
@@ -80,10 +82,12 @@ $options_usage .= "  -p <x> : append posterior probabilities to alignments (use 
 ###################
 # Process options #
 ###################
-getopts('hFsauwb:l:n:c:r:x:p');
+getopts('hFsauwgb:l:n:c:r:x:p');
 my $do_clobber = 0;
 my $do_viterbi = 1;
 my $do_forward = 0;
+my $do_local = 1;
+my $do_glocal = 0;
 my $min_bit = 100;
 my $min_len = 1;
 my $do_prep = 0;
@@ -99,6 +103,7 @@ my $filter_id = 0.;
 my $mxsize = 4096;
 my $do_post = 0;
 my $cmalign_post_option = "";
+my $cmsearch_T = -1;
 
 my $enabled_options = "";
 if (defined $opt_h) { print $usage . "\n"; print $options_usage; exit(1); } 
@@ -107,7 +112,8 @@ if (defined $opt_s) { $do_align = 0; $enabled_options .= " -s";}
 if (defined $opt_u) { $do_truncate = 0; $enabled_options .= " -u"; }
 if (defined $opt_a) { $do_search = 0; $enabled_options .= " -a";} 
 if (defined $opt_w) { $do_forward = 1; $do_viterbi = 0; $enabled_options .= " -w";}
-if (defined $opt_b) { $min_bit = $opt_b; $enabled_options .= " -b $opt_b"; } 
+if (defined $opt_g) { $do_glocal = 1; $do_local = 0; $enabled_options .= " -g";}
+if (defined $opt_b) { $min_bit = $opt_b; $enabled_options .= " -b $opt_b"; if($cmsearch_T > $min_bit) { $cmsearch_T = $min_bit;} } 
 if (defined $opt_l) { $min_len = $opt_l; $enabled_options .= " -l $opt_l"; if($min_len <= 0) { printf STDERR ("ERROR, with -l <n>, <n> must be >= 1."); exit(1); } }
 if (defined $opt_n) { $do_prep = 1; $do_prep_nseq_set = 1;  $prep_nseq  = $opt_n; }
 if (defined $opt_c) { $do_prep = 1; $do_prep_nproc_set = 1; $prep_nproc = $opt_c; }
@@ -139,7 +145,9 @@ $nseq_target_file = determine_num_seqs($target_file);
 my $out_dir      = $out_root;
 my $out_dir_root = $out_dir . "/" . $out_root;
 create_output_dir($do_clobber, $out_dir, $cm_file); 
-my $my_cm_file_copy = $out_dir . "/" . $cm_file;
+my $cm_file_without_dir = $cm_file;
+$cm_file_without_dir =~ s/^.+\///;
+my $my_cm_file_copy = $out_dir . "/" . $cm_file_without_dir;
 
 process_cm_file($do_prep, $my_cm_file_copy, $out_root, \@indi_cm_name_A, \@indi_cm_file_name_A, \@indi_cm_clen_A, \@indi_cm_nbif_A);
 my $ncm = scalar(@indi_cm_file_name_A); 
@@ -635,7 +643,6 @@ sub process_cm_file {
     close(CM);
     if(scalar(@{$indi_cm_name_Aref}) != scalar(@{$indi_cm_file_name_Aref})) { printf STDERR ("ERROR, CM file processed incorrectly, %d CM names read, but %d new CM files created.\n", scalar(@{$indi_cm_name_Aref}), scalar(@{$indi_cm_file_name_Aref})); }
     if(scalar(@{$indi_cm_name_Aref}) != scalar(@{$indi_cm_clen_Aref}))      { printf STDERR ("ERROR, CM file processed incorrectly, %d CM names read, but %d CLEN lines read.\n", scalar(@{$indi_cm_name_Aref}), scalar(@{$indi_cm_file_clen_Aref})); } 
-    if(scalar(@{$indi_cm_name_Aref}) != scalar(@{$indi_cm_nbif_Aref}))      { printf STDERR ("ERROR, CM file processed incorrectly, %d CM names read, but %d counts of bifurcs collected.\n", scalar(@{$indi_cm_name_Aref}), scalar(@{$indi_cm_file_nbif_Aref})); } 
     return;
 }									 
 
@@ -667,7 +674,7 @@ sub search_sequences_with_each_cm() {
     #$search_psecs is now predicted number of DP cells per sequence
     $search_psecs *= ($nseq_target_file) / 1000000.; # $search_psecs is now predicted num of million cells for all seqs
     if($opt_F) { $search_psecs /= 100. } # cmsearch --forward does about 100 million dp cells per second;
-    else       { $search_psecs /= 300. } # cmsearch --viterbi does about 100 million dp cells per second;
+    else       { $search_psecs /= 300. } # cmsearch --viterbi does about 300 million dp cells per second;
 
     $Wcalc_psecs = 0;
     # OLD CODE (EPN, Wed Nov 12 06:06:50 2008) for predicting W calc time, prior to --hmm-cW option */
@@ -682,11 +689,12 @@ sub search_sequences_with_each_cm() {
     $tab_file = $out_dir_root . ".tab";
     if   ($do_viterbi) { $alg_flag = "--viterbi"; } 
     else               { $alg_flag = "--forward"; } 
+    if   ($do_glocal)  { $alg_flag .= " -g"; }
 
     printf("#\n# Stage 1: Defining SSU start/ends with cmsearch (crude time estimate: %.1f minutes) ... ", ($search_psecs / 60.));
-    #printf("$cmsearch -T -1 --no-null3 --toponly --noalign --tab $tab_file $alg_flag $my_cm_file_copy $target_file > /dev/null\n");
-    system("$cmsearch --hmm-cW 1.5 -T -1 --no-null3 --toponly --noalign --tab $tab_file $alg_flag $my_cm_file_copy $target_file > /dev/null");
-    if(($? >> 8) != 0) { printf STDERR ("ERROR, system\(\"$cmsearch --hmm-cW 1.5 -T -1 --no-null3 --toponly --noalign --tab $tab_file $alg_flag $my_cm_file_copy $target_file > /dev/null\" unexpectedly returned non-zero exit status %d\n", ($? >> 8)); exit(($? >> 8)); } 
+    #printf("$cmsearch -T $cmsearch_T --no-null3 --toponly --noalign --tab $tab_file $alg_flag $my_cm_file_copy $target_file > /dev/null\n");
+    system("$cmsearch --hmm-cW 1.5 -T $cmsearch_T --no-null3 --toponly --noalign --tab $tab_file $alg_flag $my_cm_file_copy $target_file > /dev/null");
+    if(($? >> 8) != 0) { printf STDERR ("ERROR, system\(\"$cmsearch --hmm-cW 1.5 -T $cmsearch_T --no-null3 --toponly --noalign --tab $tab_file $alg_flag $my_cm_file_copy $target_file > /dev/null\" unexpectedly returned non-zero exit status %d\n", ($? >> 8)); exit(($? >> 8)); } 
     printf(" done.\n");
     printf("#\n");
 
