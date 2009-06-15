@@ -1,51 +1,97 @@
 \section{Introduction}
 
-\software{infernal} is a software package that allows you to make
-consensus RNA secondary structure profiles, and use them to search
-nucleic acid sequence databases for homologous RNAs, or to create new
-structure-based multiple sequence alignments.
+\software{SSU-align} identifies and aligns small subunit ribosomal RNA
+(SSU rRNA) genes in sequence datasets. It uses a model of the primary
+sequence and secondary structure conservation of SSU rRNA as inferred
+by comparative sequence analysis and confirmed by crystal structure
+determination from the Comparative RNA Website (CRW) \citep{Cannone02}.
 
-To make a profile, you need to have a multiple sequence alignment of
-an RNA sequence family, and the alignment must be annotated with a
-consensus RNA secondary structure. The program \prog{cmbuild} takes an
-annotated multiple alignment as input, and outputs a profile.
+\subsection{Overview}
+\software{SSU-align} uses profile probabilistic models for SSU rRNA
+detection and alignment. It includes five SSU rRNA models, an archaeal
+model, a bacterial model, a eukaryotic (nuclear) model, a
+chloroplast model and a animal mitochondrial model. These are the
+default models used by the program, but \textsc{SSU-align} can be used
+with other, user-generated models as well.
 
-You can then use that profile to search a sequence database for homologs,
-using the program \prog{cmsearch}.
+Given an input dataset of unaligned SSU sequences,
+\software{SSU-align} goes through two stages. In stage 1, each of the
+sequences is locally aligned to each of the five models based on
+primary sequence conservation to obtain a score for each sequence to
+each model.  The model that gives the highest scoring alignment to
+each sequence is the \emph{best-matching model} for that sequence.  In
+stage 2, each sequence is aligned to it's best-matching model using
+both primary sequence and secondary structure conservation. The end
+result is a separate multiple alignment for each model that was the
+best-matching model for at least one sequence in the input dataset.
 
-You can also use the profile to align a set of unaligned sequences to
-the profile, producing a structural alignment, using the program
-\prog{cmalign}. This allows you to build hand-curated representative
-alignments of RNA sequence families, then use a profile to
-automatically align any number of sequences to that profile.  This
-seed alignment/full alignment strategy combines the strength of
-stable, carefully human-curated alignments with the power of automated
-updating of complete alignments as sequence databases grow. This is
-the strategy used to maintain the \database{Rfam} database of RNA
-multiple alignments and profiles.
+The stage 1 primary sequence alignment is local with respect to both
+the model and the sequence. Locality with respect to the model allows
+the program to handle sequences that are subsequences of SSU
+rRNA that correspond to a specific region of the molecule. Locality
+with respect to the sequence allows the program to handle input
+sequences that contain extra residues that are nonhomologous to SSU at
+the beginning and/or end of the input sequence. In this case, the
+local alignment will only correspond to a subsequence of the input
+sequence, it is only this subsequence that is aligned to it's
+best-matching model in stage 2.
 
-\software{infernal} is comparable to \software{hmmer}
-(\htmladdnormallink{http://hmmer.janelia.org}{http://hmmer.janelia.org}).
-The \software{hmmer} software package builds profile hidden Markov
-models (profile HMMs) of multiple sequence alignments. Profile HMMs
-capture only primary sequence consensus features. \software{infernal}
-models are profile stochastic context-free grammars (profile SCFGs).
-Profile SCFGs include both sequence and RNA secondary structure
-consensus information.
+The stage 2 primary sequence and structural based alignment is local
+\emph{only} with respect to the model.  This means the subsequence
+that survives stage 1 is always included in it's entirety in the final
+alignment.
 
-\software{infernal} is slow and CPU-intensive. You will probably need
-a large number of CPUs in order to use it for serious work. 
+This package can also be used to remove, or prune, unreliable
+alignment columns from the final alignments.  This post-processing
+step can be useful for removing regions of the alignment that are
+are ambiguous and likely include a significant number of errors prior
+to using phylogenetic inference tools.
 
+Columns are selected for pruning based on ``confidence estimates'' 
+for the aligned residues, which are derived from the probability that
+each residue aligns to each column of the alignment. This is discussed
+in more detail in the basic tutorial in section 3.
 
+The basic tutorial in section 3 of this guide walks through an example
+of using \textsc{SSU-align} to build multiple alignments and prune
+those alignments using an input dataset. 
 
+This package can also be used to create new SSU models, either for
+different phylogenetic clades or for specific regions of the SSU rRNA
+molecule, as well as for drawing secondary structure diagrams that
+display several different statistics on the alignment (such as levels
+of sequence conservation, or frequency of gaps). The advanced
+tutorials in section X-X of this guide provide examples of these 
+applications. 
 
+\subsection{What is included in this package}
 
+This distribution includes the PERL script \software{SSU-align} and
+all the files necessary to compile and run the \software{Infernal}
+package (version 1.0) \cite{Nawrocki09}. \software{Infernal} must be
+installed in order to run \software{SSU-align}.  It also includes the
+five default (archaea, bacteria, chloroplast, eukarya, and
+animal-mitochondria) SSU models and the \emph{seed} alignments they
+were built from. The alignments were based on SSU structures and
+alignments from the Comparative RNA Website (CRW) \cite{Cannone02}. A
+broader discussion of these models and alignments and the specific
+procedure used to create the seed alignments from the CRW data is
+explained in section 2.
 
+Installation of the PERL (Practical Extraction and Report Language,
+Larry Wall) interpreter package version 5.0 or later is required to
+run the \software{SSU-align} PERL script.
 
+\subsection{What \emph{SSU-align} does not do}
 
+\textsc{SSU-align} only creates alignments; it does not infer trees
+from those alignments, nor does it classify sequences beyond reporting
+which model in the input CM file they score highest to.
 
+\subsection{Future development}
 
-
-
-
-
+This release (version 0.1) is a prototype of the \textsc{SSU-align}
+software package that only has basic functionality for aligning SSU
+sequences. I hope to continue to develop and improve it in the future
+by making it faster and generally more useful to the SSU rRNA sequence
+analysis community. I welcome bug reports as well as feature requests.

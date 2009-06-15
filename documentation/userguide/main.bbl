@@ -1,13 +1,14 @@
 \begin{thebibliography}{}
 
-\bibitem[Eddy and Durbin, 1994]{Eddy94}
-Eddy, S.~R. and Durbin, R. (1994).
-\newblock {RNA} sequence analysis using covariance models.
-\newblock {\em Nucl. Acids Res.}, 22:2079--2088.
+\bibitem[Nawrocki et~al., 2009]{Nawrocki09}
+Nawrocki, E.~P., Kolbe, D.~L., and Eddy, S.~R. (2009).
+\newblock Infernal 1.0: Inference of {RNA} alignments.
+\newblock in press.
 
-\bibitem[Klein and Eddy, 2003]{KleinEddy03}
-Klein, R.~J. and Eddy, S.~R. (2003).
-\newblock {RSEARCH:} finding homologs of single structured {RNA} sequences.
-\newblock {\em BMC Bioinformatics}, 4:44.
+\bibitem[Walker and Pace, 2007]{Walker07}
+Walker, J.~J. and Pace, N.~R. (2007).
+\newblock Phylogenetic composition of rocky mountain endolithic microbial
+  ecosystems.
+\newblock {\em Appl Environ Microbiol.}, 73:3497--3504.
 
 \end{thebibliography}

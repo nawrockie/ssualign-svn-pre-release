@@ -2,22 +2,34 @@
 
 \subsection{Quick installation instructions}
 
-Download the source tarball (\prog{infernal.tar.gz}) from 
-\htmladdnormallink{ftp://selab.janelia.org/pub/software/infernal/}
-                  {ftp://selab.janelia.org/pub/software/infernal/}
+Download the source tarball (\prog{ssualign.tar.gz}) from 
+\htmladdnormallink{ftp://selab.janelia.org/pub/software/ssualign/}
+                  {ftp://selab.janelia.org/pub/software/ssualign/}
 or \\
-\htmladdnormallink{http://infernal.janelia.org}
-                  {http://infernal.janelia.org}
+\htmladdnormallink{http://ssualign.janelia.org}
+                  {http://ssualign.janelia.org}
 
 Unpack the software:
 
-\user{tar xvf infernal.tar.gz}
+\user{tar xvf ssualign.tar.gz}
 
 Go into the newly created top-level directory (named either
-\prog{infernal}, or \prog{infernal-xx} where \prog{xx} is a release
+\prog{ssualign}, or \prog{ssualign-xx} where \prog{xx} is a release
 number:
 
-\user{cd infernal}
+\user{cd ssualign}
+
+\begin{enumerate}
+\item
+Edit the top of the Makefile. Set the paths and other make variables
+to suit your system.
+
+In partciular, you need to specify:
+
+\begin{itemize}
+\item BINDIR
+\end{itemize}
+\end{enumerate}
 
 Configure for your system, and build the programs:
 
@@ -165,17 +177,6 @@ in our LAM environment:
 
 Other environments besides LAM MPI should work also, but may
 require different command syntax.
-
-\subsubsection{No longer supported: rigorous filters}
-
-Previous versions of \software{infernal} included programs by Zasha
-Weinberg that implement rigorous filtering.  The 1.0 release does not
-include these programs. If you'd like to use them you can either
-download Zasha's own implementation in \textsc{RaveNnA} from
-\htmladdnormallink{http://bliss.biology.yale.edu/~zasha/ravenna/},
-download an older 0.x version of \software{infernal}, or try to modify
-this version to work with rigorous filters (the code is still included in
-\texttt{rigfilters/}).
 
 \subsection{Example configuration}
 

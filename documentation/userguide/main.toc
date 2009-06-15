@@ -1,37 +1,22 @@
 \contentsline {section}{\numberline {1}Introduction}{3}{section.1}
-\contentsline {section}{\numberline {2}Installation}{4}{section.2}
-\contentsline {subsection}{Quick installation instructions}{4}{section*.2}
-\contentsline {subsection}{More detailed installation notes}{4}{section*.3}
-\contentsline {subsubsection}{setting installation targets}{4}{section*.4}
-\contentsline {subsubsection}{setting compiler and compiler flags}{5}{section*.5}
-\contentsline {subsubsection}{turning on Message Passing Interface (MPI) support}{5}{section*.6}
-\contentsline {subsubsection}{No longer supported: rigorous filters}{6}{section*.7}
-\contentsline {subsection}{Example configuration}{6}{section*.8}
-\contentsline {section}{\numberline {3}Tutorial}{7}{section.3}
-\contentsline {subsection}{The programs in INFERNAL}{7}{section*.9}
-\contentsline {subsection}{Files used in the tutorial}{7}{section*.10}
-\contentsline {subsection}{Format of a simple input RNA alignment file}{8}{section*.11}
-\contentsline {subsection}{Building a model with {\relax \fontsize {10}{12}\selectfont \abovedisplayskip 10\p@ plus2\p@ minus5\p@ \abovedisplayshortskip \z@ plus3\p@ \belowdisplayshortskip 6\p@ plus3\p@ minus3\p@ \def \leftmargin \leftmargini \parsep 4.5\p@ plus2\p@ minus\p@ \topsep 9\p@ plus3\p@ minus5\p@ \itemsep 4.5\p@ plus2\p@ minus\p@ {\leftmargin \leftmargini \topsep 6\p@ plus2\p@ minus2\p@ \parsep 3\p@ plus2\p@ minus\p@ \itemsep \parsep }\belowdisplayskip \abovedisplayskip \bfseries \texttt {cmbuild}}}{8}{section*.12}
-\contentsline {subsection}{Calibrate the model with {\relax \fontsize {10}{12}\selectfont \abovedisplayskip 10\p@ plus2\p@ minus5\p@ \abovedisplayshortskip \z@ plus3\p@ \belowdisplayshortskip 6\p@ plus3\p@ minus3\p@ \def \leftmargin \leftmargini \parsep 4.5\p@ plus2\p@ minus\p@ \topsep 9\p@ plus3\p@ minus5\p@ \itemsep 4.5\p@ plus2\p@ minus\p@ {\leftmargin \leftmargini \topsep 6\p@ plus2\p@ minus2\p@ \parsep 3\p@ plus2\p@ minus\p@ \itemsep \parsep }\belowdisplayskip \abovedisplayskip \bfseries \texttt {cmcalibrate}}}{9}{section*.13}
-\contentsline {subsection}{Searching a sequence database with {\relax \fontsize {10}{12}\selectfont \abovedisplayskip 10\p@ plus2\p@ minus5\p@ \abovedisplayshortskip \z@ plus3\p@ \belowdisplayshortskip 6\p@ plus3\p@ minus3\p@ \def \leftmargin \leftmargini \parsep 4.5\p@ plus2\p@ minus\p@ \topsep 9\p@ plus3\p@ minus5\p@ \itemsep 4.5\p@ plus2\p@ minus\p@ {\leftmargin \leftmargini \topsep 6\p@ plus2\p@ minus2\p@ \parsep 3\p@ plus2\p@ minus\p@ \itemsep \parsep }\belowdisplayskip \abovedisplayskip \bfseries \texttt {cmsearch}}}{10}{section*.14}
-\contentsline {subsection}{Creating new multiple alignments with {\relax \fontsize {10}{12}\selectfont \abovedisplayskip 10\p@ plus2\p@ minus5\p@ \abovedisplayshortskip \z@ plus3\p@ \belowdisplayshortskip 6\p@ plus3\p@ minus3\p@ \def \leftmargin \leftmargini \parsep 4.5\p@ plus2\p@ minus\p@ \topsep 9\p@ plus3\p@ minus5\p@ \itemsep 4.5\p@ plus2\p@ minus\p@ {\leftmargin \leftmargini \topsep 6\p@ plus2\p@ minus2\p@ \parsep 3\p@ plus2\p@ minus\p@ \itemsep \parsep }\belowdisplayskip \abovedisplayskip \bfseries \texttt {cmalign}}}{11}{section*.15}
-\contentsline {subsection}{Local versus glocal alignment in {\relax \fontsize {10}{12}\selectfont \abovedisplayskip 10\p@ plus2\p@ minus5\p@ \abovedisplayshortskip \z@ plus3\p@ \belowdisplayshortskip 6\p@ plus3\p@ minus3\p@ \def \leftmargin \leftmargini \parsep 4.5\p@ plus2\p@ minus\p@ \topsep 9\p@ plus3\p@ minus5\p@ \itemsep 4.5\p@ plus2\p@ minus\p@ {\leftmargin \leftmargini \topsep 6\p@ plus2\p@ minus2\p@ \parsep 3\p@ plus2\p@ minus\p@ \itemsep \parsep }\belowdisplayskip \abovedisplayskip \bfseries \texttt {cmsearch}} and {\relax \fontsize {10}{12}\selectfont \abovedisplayskip 10\p@ plus2\p@ minus5\p@ \abovedisplayshortskip \z@ plus3\p@ \belowdisplayshortskip 6\p@ plus3\p@ minus3\p@ \def \leftmargin \leftmargini \parsep 4.5\p@ plus2\p@ minus\p@ \topsep 9\p@ plus3\p@ minus5\p@ \itemsep 4.5\p@ plus2\p@ minus\p@ {\leftmargin \leftmargini \topsep 6\p@ plus2\p@ minus2\p@ \parsep 3\p@ plus2\p@ minus\p@ \itemsep \parsep }\belowdisplayskip \abovedisplayskip \bfseries \texttt {cmalign}}}{12}{section*.16}
-\contentsline {subsection}{Important options to {\relax \fontsize {10}{12}\selectfont \abovedisplayskip 10\p@ plus2\p@ minus5\p@ \abovedisplayshortskip \z@ plus3\p@ \belowdisplayshortskip 6\p@ plus3\p@ minus3\p@ \def \leftmargin \leftmargini \parsep 4.5\p@ plus2\p@ minus\p@ \topsep 9\p@ plus3\p@ minus5\p@ \itemsep 4.5\p@ plus2\p@ minus\p@ {\leftmargin \leftmargini \topsep 6\p@ plus2\p@ minus2\p@ \parsep 3\p@ plus2\p@ minus\p@ \itemsep \parsep }\belowdisplayskip \abovedisplayskip \bfseries \texttt {cmbuild}}}{14}{section*.17}
-\contentsline {subsubsection}{using optional annotation to completely specify model architecture}{14}{section*.18}
-\contentsline {subsubsection}{creating multiple models from a single alignment}{14}{section*.19}
-\contentsline {subsubsection}{refining the training alignment prior to building a model}{15}{section*.20}
-\contentsline {subsubsection}{building RSEARCH models}{15}{section*.21}
-\contentsline {subsection}{Important options to {\relax \fontsize {10}{12}\selectfont \abovedisplayskip 10\p@ plus2\p@ minus5\p@ \abovedisplayshortskip \z@ plus3\p@ \belowdisplayshortskip 6\p@ plus3\p@ minus3\p@ \def \leftmargin \leftmargini \parsep 4.5\p@ plus2\p@ minus\p@ \topsep 9\p@ plus3\p@ minus5\p@ \itemsep 4.5\p@ plus2\p@ minus\p@ {\leftmargin \leftmargini \topsep 6\p@ plus2\p@ minus2\p@ \parsep 3\p@ plus2\p@ minus\p@ \itemsep \parsep }\belowdisplayskip \abovedisplayskip \bfseries \texttt {cmalign}}}{17}{section*.22}
-\contentsline {subsubsection}{including a fixed alignment within the output alignment}{17}{section*.23}
-\contentsline {subsubsection}{aligning truncated sequences}{18}{section*.24}
-\contentsline {subsubsection}{alignment confidence estimates}{19}{section*.25}
-\contentsline {subsection}{Putting it all together: an example of iterative search}{21}{section*.26}
-\contentsline {subsubsection}{files used in the iterative search example}{21}{section*.27}
-\contentsline {subsubsection}{iteration 1, step 1: build and calibrate a model}{21}{section*.28}
-\contentsline {subsubsection}{iteration 1, step 2: search a genome}{22}{section*.29}
-\contentsline {subsubsection}{iteration 1, step 3: add new homolog to training alignment}{24}{section*.30}
-\contentsline {subsubsection}{iteration 2, step 1: build and calibrate a new model}{24}{section*.31}
-\contentsline {subsubsection}{iteration 2, step 2: search a genome}{24}{section*.32}
-\contentsline {subsubsection}{iteration 2, step 3: add new homolog to training alignment}{25}{section*.33}
-\contentsline {subsection}{Parallelizing search, alignment and calibration with Message Passing Interface (MPI)}{25}{section*.34}
-\contentsline {subsection}{Getting more information}{26}{section*.35}
+\contentsline {subsection}{Overview}{3}{section*.2}
+\contentsline {subsection}{What is included in this package}{3}{section*.3}
+\contentsline {subsection}{What \emph {SSU-align} does not do}{4}{section*.4}
+\contentsline {subsection}{Future development}{4}{section*.5}
+\contentsline {section}{\numberline {2}The SSU ribosomal RNA secondary structure models used by \textsc {SSU-align}}{5}{section.2}
+\contentsline {subsection}{Procedure for going from CRW to consensus structure annotated Stockholm alignment files}{5}{section*.6}
+\contentsline {subsection}{Training alignment statistics mapped onto consensus secondary structures}{5}{section*.7}
+\contentsline {section}{\numberline {3}Basic tutorial: defining and aligning SSU sequences using \textsc {SSU-align}}{6}{section.3}
+\contentsline {subsection}{Files used in this tutorial}{6}{section*.8}
+\contentsline {subsection}{Pruning the alignment based on probabilistic confidence estimates}{8}{section*.9}
+\contentsline {section}{\numberline {4}Tutorial}{9}{section.4}
+\contentsline {subsection}{Files used in the tutorial}{9}{section*.10}
+\contentsline {subsection}{Defining and aligning SSU sequences using SSUalign}{9}{section*.11}
+\contentsline {subsection}{Pruning the alignment based on probabilistic confidence estimates}{11}{section*.12}
+\contentsline {subsection}{Creating a truncated model of a specific region of SSU rRNA}{11}{section*.13}
+\contentsline {section}{\numberline {5}Advanced tutorial: drawing SSU secondary structure diagrams}{14}{section.5}
+\contentsline {section}{\numberline {6}Advanced tutorial: creating new SSU models}{14}{section.6}
+\contentsline {section}{\numberline {7}Advanced tutorial: splitting up large alignment jobs}{14}{section.7}
+\contentsline {section}{\numberline {8}Advanced tutorial: merging your alignments with existing reference alignments}{14}{section.8}
+\contentsline {section}{\numberline {9}? Advanced tutorial: manipulating alignments with the {\relax \fontsize {10}{12}\selectfont \abovedisplayskip 10\p@ plus2\p@ minus5\p@ \abovedisplayshortskip \z@ plus3\p@ \belowdisplayshortskip 6\p@ plus3\p@ minus3\p@ \def \leftmargin \leftmargini \parsep 4.5\p@ plus2\p@ minus\p@ \topsep 9\p@ plus3\p@ minus5\p@ \itemsep 4.5\p@ plus2\p@ minus\p@ {\leftmargin \leftmargini \topsep 6\p@ plus2\p@ minus2\p@ \parsep 3\p@ plus2\p@ minus\p@ \itemsep \parsep }\belowdisplayskip \abovedisplayskip \bfseries \texttt {esl-alimanip}} program}{14}{section.9}
+\contentsline {section}{\numberline {10}Benchmarking \textsc {SSU-align} alignment accuracy}{14}{section.10}

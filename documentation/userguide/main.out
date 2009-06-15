@@ -1,37 +1,22 @@
 \BOOKMARK [1][-]{section.1}{Introduction}{}
-\BOOKMARK [1][-]{section.2}{Installation}{}
-\BOOKMARK [2][-]{section*.2}{Quick installation instructions}{section.2}
-\BOOKMARK [2][-]{section*.3}{More detailed installation notes}{section.2}
-\BOOKMARK [3][-]{section*.4}{setting installation targets}{section*.3}
-\BOOKMARK [3][-]{section*.5}{setting compiler and compiler flags}{section*.3}
-\BOOKMARK [3][-]{section*.6}{turning on Message Passing Interface \(MPI\) support}{section*.3}
-\BOOKMARK [3][-]{section*.7}{No longer supported: rigorous filters}{section*.3}
-\BOOKMARK [2][-]{section*.8}{Example configuration}{section.2}
-\BOOKMARK [1][-]{section.3}{Tutorial}{}
-\BOOKMARK [2][-]{section*.9}{The programs in INFERNAL}{section.3}
-\BOOKMARK [2][-]{section*.10}{Files used in the tutorial}{section.3}
-\BOOKMARK [2][-]{section*.11}{Format of a simple input RNA alignment file}{section.3}
-\BOOKMARK [2][-]{section*.12}{Building a model with cmbuild}{section.3}
-\BOOKMARK [2][-]{section*.13}{Calibrate the model with cmcalibrate}{section.3}
-\BOOKMARK [2][-]{section*.14}{Searching a sequence database with cmsearch}{section.3}
-\BOOKMARK [2][-]{section*.15}{Creating new multiple alignments with cmalign}{section.3}
-\BOOKMARK [2][-]{section*.16}{Local versus glocal alignment in cmsearch and cmalign}{section.3}
-\BOOKMARK [2][-]{section*.17}{Important options to cmbuild}{section.3}
-\BOOKMARK [3][-]{section*.18}{using optional annotation to completely specify model architecture}{section*.17}
-\BOOKMARK [3][-]{section*.19}{creating multiple models from a single alignment}{section*.17}
-\BOOKMARK [3][-]{section*.20}{refining the training alignment prior to building a model}{section*.17}
-\BOOKMARK [3][-]{section*.21}{building RSEARCH models}{section*.17}
-\BOOKMARK [2][-]{section*.22}{Important options to cmalign}{section.3}
-\BOOKMARK [3][-]{section*.23}{including a fixed alignment within the output alignment}{section*.22}
-\BOOKMARK [3][-]{section*.24}{aligning truncated sequences}{section*.22}
-\BOOKMARK [3][-]{section*.25}{alignment confidence estimates}{section*.22}
-\BOOKMARK [2][-]{section*.26}{Putting it all together: an example of iterative search}{section.3}
-\BOOKMARK [3][-]{section*.27}{files used in the iterative search example}{section*.26}
-\BOOKMARK [3][-]{section*.28}{iteration 1, step 1: build and calibrate a model}{section*.26}
-\BOOKMARK [3][-]{section*.29}{iteration 1, step 2: search a genome}{section*.26}
-\BOOKMARK [3][-]{section*.30}{iteration 1, step 3: add new homolog to training alignment}{section*.26}
-\BOOKMARK [3][-]{section*.31}{iteration 2, step 1: build and calibrate a new model}{section*.26}
-\BOOKMARK [3][-]{section*.32}{iteration 2, step 2: search a genome}{section*.26}
-\BOOKMARK [3][-]{section*.33}{iteration 2, step 3: add new homolog to training alignment}{section*.26}
-\BOOKMARK [2][-]{section*.34}{Parallelizing search, alignment and calibration with Message Passing Interface \(MPI\)}{section.3}
-\BOOKMARK [2][-]{section*.35}{Getting more information}{section.3}
+\BOOKMARK [2][-]{section*.2}{Overview}{section.1}
+\BOOKMARK [2][-]{section*.3}{What is included in this package}{section.1}
+\BOOKMARK [2][-]{section*.4}{What SSU-align does not do}{section.1}
+\BOOKMARK [2][-]{section*.5}{Future development}{section.1}
+\BOOKMARK [1][-]{section.2}{The SSU ribosomal RNA secondary structure models used by SSU-align}{}
+\BOOKMARK [2][-]{section*.6}{Procedure for going from CRW to consensus structure annotated Stockholm alignment files}{section.2}
+\BOOKMARK [2][-]{section*.7}{Training alignment statistics mapped onto consensus secondary structures}{section.2}
+\BOOKMARK [1][-]{section.3}{Basic tutorial: defining and aligning SSU sequences using SSU-align}{}
+\BOOKMARK [2][-]{section*.8}{Files used in this tutorial}{section.3}
+\BOOKMARK [2][-]{section*.9}{Pruning the alignment based on probabilistic confidence estimates}{section.3}
+\BOOKMARK [1][-]{section.4}{Tutorial}{}
+\BOOKMARK [2][-]{section*.10}{Files used in the tutorial}{section.4}
+\BOOKMARK [2][-]{section*.11}{Defining and aligning SSU sequences using SSUalign}{section.4}
+\BOOKMARK [2][-]{section*.12}{Pruning the alignment based on probabilistic confidence estimates}{section.4}
+\BOOKMARK [2][-]{section*.13}{Creating a truncated model of a specific region of SSU rRNA}{section.4}
+\BOOKMARK [1][-]{section.5}{Advanced tutorial: drawing SSU secondary structure diagrams}{}
+\BOOKMARK [1][-]{section.6}{Advanced tutorial: creating new SSU models}{}
+\BOOKMARK [1][-]{section.7}{Advanced tutorial: splitting up large alignment jobs}{}
+\BOOKMARK [1][-]{section.8}{Advanced tutorial: merging your alignments with existing reference alignments}{}
+\BOOKMARK [1][-]{section.9}{? Advanced tutorial: manipulating alignments with the esl-alimanip program}{}
+\BOOKMARK [1][-]{section.10}{Benchmarking SSU-align alignment accuracy}{}
