@@ -4,7 +4,7 @@
 # Eric Nawrocki
 # EPN, Wed Oct 29 10:12:05 2008
 #
-# Usage: perl ssu-align.pl
+# Usage: perl ssu-align
 #             <SSU rRNA CM file with >= 1 CMs>
 #             <target database sequence file name>
 #             <output root for output files>
@@ -51,6 +51,7 @@ use Getopt::Std;
 use Cwd 'abs_path';
 #use strict;
 
+my $total_time = -1 * time();
 my $usage = 
     "Usage: ssu-align [-options] <cmfile> <sequence file> <output root> <params file>\n";
 #    "<SSU rRNA CM file with >= 1 CM>\n\t" .
@@ -103,6 +104,7 @@ my $filter_id = 0.;
 my $mxsize = 4096;
 my $cmalign_extra_options = "";
 my $cmsearch_T = -1;
+my @log2printA = ();
 
 my $enabled_options = "";
 if (defined $opt_h) { print $usage . "\n"; print $options_usage; exit(1); } 
@@ -119,6 +121,11 @@ if (defined $opt_c) { $do_prep = 1; $do_prep_nproc_set = 1; $prep_nproc = $opt_c
 if (defined $opt_r) { $do_filteraln = 1; $filter_id = $opt_r; $enabled_options .= " -r $opt_r"; if (($r < 0.) || ($r > 1.)) { printf STDERR("ERROR, with -r <x>, valid range is 0. <= <x> <= 1.0.\n"); exit(1); } }
 if (defined $opt_x) { $mxsize = $opt_x; $enabled_options .= " -x $opt_x"; if($opt_x <= 0.) { printf STDERR("ERROR, with -x <x>, valid range is 0. < <x>.\n"); exit(1); } }
 if (defined $opt_p) { $cmalign_extra_options .= " -p"; $enabled_options .= " -p "; }
+
+##############
+# Print banner
+##############
+print_banner($0, \@ARGV, \@log2printA);
 
 # Check for incompatible option combinations and non-sensical option parameters
 if($do_prep_nseq_set  && $do_prep_nproc_set) { printf STDERR ("ERROR, -n and -c are exclusive options, pick one or the other.\n"); exit(1); }
@@ -152,17 +159,19 @@ process_cm_file($do_prep, $my_cm_file_copy, $out_root, \@indi_cm_name_A, \@indi_
 my $ncm = scalar(@indi_cm_file_name_A); 
 if((!$do_search) && ($ncm > 1)) { printf("ERROR, the -a option only works if the CM file contains exactly 1 CM, $cm_file has $ncm CMs in it.\n"); exit(1); }
 
-if($do_prep) { prepare_and_exit($do_align, $cm_file, $params_file, $do_prep_nproc_set, $do_prep_nseq_set, $prep_nproc, $prep_nseq, $target_file, $out_dir, $out_root, $cluster_prefix, $cluster_suffix, $nseq_target_file, $esl_weight, $do_filteraln, $filter_id, \@indi_cm_file_name_A); } 
+if($do_prep) { prepare_and_exit($do_align, $cm_file, $params_file, $do_prep_nproc_set, $do_prep_nseq_set, $prep_nproc, $prep_nseq, $target_file, $out_dir, $out_root, $cluster_prefix, $cluster_suffix, $nseq_target_file, $esl_weight, $do_filteraln, $filter_id, \@indi_cm_file_name_A, \@log2printA); } 
 
 # if we get here, $do_prep is FALSE
 
 ############################################################################
 # Step 1: Define sequence ends (and classify seqs if > 1 CM) with cmsearch #
 ############################################################################
-my $tab_file;
-my $max_file_name_width; 
+my $tab_file, $max_file_name_width, $description_width, $search_time;
 if($do_search) { 
-    search_sequences_with_each_cm($my_cmsearch, $my_cm_file_copy, $target_file, $out_dir_root, $nseq_target_file, $do_viterbi, \@indi_cm_file_name_A, \@indi_cm_clen_A, \@indi_cm_nbif_A, \$tab_file, \$max_file_name_width);
+    $search_time = -1 * time();
+    search_sequences_with_each_model($my_cmsearch, $my_cm_file_copy, $target_file, $out_dir_root, $nseq_target_file, $do_viterbi, 
+				     \@indi_cm_name_A, \@indi_cm_clen_A, \@indi_cm_nbif_A, \@log2printA, \$tab_file, \$max_file_name_width, \$description_width);
+    $search_time += time();
 }
 else { 
     $max_file_name_width = 30;
@@ -172,18 +181,40 @@ else {
 ##############################
 my %new_target_file_per_cm_name_H = ();
 if($do_search) { 
-    classify_and_extract_subseqs($do_truncate, $min_bit, $min_len, $tab_file, $target_file, $out_dir_root, $my_esl_sfetch, $max_file_name_width, \@indi_cm_name_A, \%new_target_file_per_cm_name_H); 
+    classify_and_extract_subseqs($do_truncate, $min_bit, $min_len, $tab_file, $target_file, $out_dir_root, $my_esl_sfetch, $max_file_name_width, \@indi_cm_name_A, \@log2printA, \%new_target_file_per_cm_name_H); 
 }
 else { 
     $new_target_file_per_cm_name_H{$indi_cm_name_A[0]} = $target_file;
-    #system("cp %s %s\n", $target_file ($out_dir_root . "." . $indi_cm_name_A[0] . ".sseq.fa")
+    #system("cp %s %s\n", $target_file ($out_dir_root . "." . $indi_cm_name_A[0] . ".hits.fa")
 }
 ###########################
 # Step 3: Align sequences #
 ###########################
 if($do_align) {
-    align_subseqs($out_dir_root, $my_cmalign, $max_file_name_width, $my_esl_weight, $do_filteraln, $filter_id, $mxsize, $cmalign_extra_options, \@indi_cm_name_A, \@indi_cm_file_name_A, \@indi_cm_clen_A, \%new_target_file_per_cm_name_H); 
+    $align_time = -1 * time();
+    align_subseqs($out_dir_root, $my_cmalign, $max_file_name_width, $description_width, $my_esl_weight, $do_filteraln, $filter_id, $mxsize, $cmalign_extra_options, \@indi_cm_name_A, \@indi_cm_file_name_A, \@indi_cm_clen_A, \@log2printA, \%new_target_file_per_cm_name_H); 
+    $align_time += time();
 }
+$total_time += time();
+
+#################
+# Print timings #
+#################
+my $log_file = $out_dir_root . ".log";
+my $log_file2print = $out_root . ".log";
+push(@log2printA, sprintf("  %-*s  log file (*this* text printed to stdout)\n", $max_file_name_width, $log_file2print));
+printf($log2printA[(scalar(@log2printA)-1)]);
+
+push(@log2printA, sprintf("#\n# All output files created in directory \.\/%s\/\n", $out_dir));
+printf($log2printA[(scalar(@log2printA)-1)]);
+push(@log2printA, sprintf("#\n"));
+printf($log2printA[(scalar(@log2printA)-1)]);
+
+if($do_search) { print_timing("# CPU time (search):    ", $search_time, \@log2printA); }
+if($do_align)  { print_timing("# CPU time (alignment): ", $align_time, \@log2printA); }
+print_timing("# CPU time (total):     ", $total_time, \@log2printA); 
+
+print_log($log_file, \@log2printA);
 
 # success, exit normally
 exit(0); 
@@ -367,9 +398,9 @@ sub create_output_dir {
 # 
 ####################################################################
 sub prepare_and_exit { 
-    my $narg_expected = 17;
+    my $narg_expected = 18;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, prepare_and_exit() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($do_align, $orig_cm_file, $params_file, $do_prep_nproc_set, $do_prep_nseq_set, $prep_nproc, $prep_nseq, $target_file, $out_dir, $out_root, $cluster_prefix, $cluster_suffix, $nseq_target_file, $esl_weight, $do_filteraln, $filter_id, $indi_cm_file_name_Aref) = @_;
+    my($do_align, $orig_cm_file, $params_file, $do_prep_nproc_set, $do_prep_nseq_set, $prep_nproc, $prep_nseq, $target_file, $out_dir, $out_root, $cluster_prefix, $cluster_suffix, $nseq_target_file, $esl_weight, $do_filteraln, $filter_id, $indi_cm_file_name_AR, $log2printAR) = @_;
 
     # Steps
     # 1. partition the target seq file
@@ -379,7 +410,7 @@ sub prepare_and_exit {
     # 4. exit
 
     my ($shell_script, $remainder, $n, $target_subfile_root, $target_subfile, $sub_output, $nseq_this_file, $line, $ncm, $indi_cm_file_name, $indi_cm_file_name_root);
-    $ncm = scalar(@{$indi_cm_file_name_Aref});
+    $ncm = scalar(@{$indi_cm_file_name_AR});
 
     # cp the parameters file to the new dir
     system("cp $params_file $out_dir\/");
@@ -445,7 +476,7 @@ sub prepare_and_exit {
 	if(open(MG, ">" . $merge_script) == 0) { printf STDERR ("ERROR, could not open $merge_script for writing.\n"); exit(1); }
 
 	for($m = 1; $m <= $ncm; $m++) { 
-	    $indi_cm_file_name_root = $indi_cm_file_name_Aref->[($m-1)];
+	    $indi_cm_file_name_root = $indi_cm_file_name_AR->[($m-1)];
 	    $indi_cm_file_name_root =~ s/^.+\///;
 	    printf MG ("\# Merging alignments to CM %d of %d\n", $m, $ncm);
 	    @to_mergeA = ();
@@ -557,18 +588,23 @@ sub prepare_and_exit {
 	}
 	close(MG);
     }
-
-    printf("Success!\n");
+    
+    push(@{$log2printAR}, sprintf("Success!\n"));
     $namelen = length($shell_script);
     if(length($merge_script) > $namelen) { $namelen = length($merge_script); }
-    printf("%-*s : directory with %d new FASTA files.\n", $namelen, $out_dir . "\/", $prep_nproc);
-    printf("%-*s : shell script that will run ssu-align.pl %d times, once for each new FASTA file.\n", $namelen, $shell_script, $prep_nproc);
+    push(@{$log2printAR}, sprintf("%-*s : directory with %d new FASTA files.\n", $namelen, $out_dir . "\/", $prep_nproc));
+    push(@{$log2printAR}, sprintf("%-*s : shell script that will run ssu-align.pl %d times, once for each new FASTA file.\n", $namelen, $shell_script, $prep_nproc));
     if($do_align) { 
-	printf("%-*s : perl script to run after %s that will merge the %d alignments together into 1.\n", $namelen, $merge_script, $shell_script, $prep_nproc);
+	push(@{$log2printAR}, sprintf("%-*s : perl script to run after %s that will merge the %d alignments together into 1.\n", $namelen, $merge_script, $shell_script, $prep_nproc));
     }
     $shell_script =~ s/$out_dir\///;
     $merge_script =~ s/$out_dir\///;
-    printf("To execute (doesn't work if you're going to use a cluster):\ncd $out_dir; sh $shell_script; perl $merge_script;\n");
+    push(@{$log2printAR}, sprintf("To execute (doesn't work if you're going to use a cluster):\ncd $out_dir; sh $shell_script; perl $merge_script;\n"));
+
+    for($i = $start_log_line; $i < scalar(@{$log2printAR}); $i++) { 
+	printf($log2printAR->[$i]);
+    }
+
     exit(0);
 }
 
@@ -581,11 +617,11 @@ sub prepare_and_exit {
 #             within it is has a unique name. Process the CM file 
 #             by splitting it into <x> new files. 
 #
-# returns:    <@{$indi_cm_name_Aref}> filled with names of CMs
-#             <@{$indi_cm_file_name_Aref}> filled with names of 
+# returns:    <@{$indi_cm_name_AR}> filled with names of CMs
+#             <@{$indi_cm_file_name_AR}> filled with names of 
 #                         newly created individual CM file names.
-#             <@{$indi_cm_clen_Aref}> filled with clens of CMs
-#             <@{$indi_cm_nbif_Aref}> filled with # bifs of CMs
+#             <@{$indi_cm_clen_AR}> filled with clens of CMs
+#             <@{$indi_cm_nbif_AR}> filled with # bifs of CMs
 #
 # exits:      If two CMs in <$cm_file> have the same name we exit,
 #             or we can't open <$my_cm_file_copy>.
@@ -594,7 +630,7 @@ sub prepare_and_exit {
 sub process_cm_file { 
     my $narg_expected = 7;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, process_cm_file() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($do_prep, $my_cm_file_copy, $out_root, $indi_cm_name_Aref, $indi_cm_file_name_Aref, $indi_cm_clen_Aref, $indi_cm_nbif_Aref) = @_;
+    my($do_prep, $my_cm_file_copy, $out_root, $indi_cm_name_AR, $indi_cm_file_name_AR, $indi_cm_clen_AR, $indi_cm_nbif_AR) = @_;
     
     my($cmi, $line, $inf_line, $cm_name, $indi_file_name, $my_cm_file_root);
     my %cm_name_exists_H = ();
@@ -618,17 +654,17 @@ sub process_cm_file {
 		print OUT $inf_line;
 		print OUT $line;
 	    }
-	    push(@{$indi_cm_name_Aref},      $cm_name);
-	    push(@{$indi_cm_file_name_Aref}, $indi_file);
+	    push(@{$indi_cm_name_AR},      $cm_name);
+	    push(@{$indi_cm_file_name_AR}, $indi_file);
 	    if(exists($cm_name_exists_H{$cm_name})) { printf STDERR ("ERROR, two CMs in CM file $my_cm_file_copy have the name $cm_name. Each CM must have a unique name.\n"); exit(1); }
 	    $cm_name_exists_H{$cm_name} = 1;
 	}
 	elsif($line =~ /^CLEN\s+(\S+)/) { 
-	    push(@{$indi_cm_clen_Aref}, $1);
+	    push(@{$indi_cm_clen_AR}, $1);
 	    if(!$do_prep) { print OUT $line; }
 	}
 	elsif($line =~ /\[\s+BIF\s+\d+\s+\]/) { 
-	    $indi_cm_nbif_Aref->[($cmi-1)]++;
+	    $indi_cm_nbif_AR->[($cmi-1)]++;
 	    if(!$do_prep) { print OUT $line; }
 	}
 	elsif($line =~ m/^\/\//) { 
@@ -640,13 +676,13 @@ sub process_cm_file {
 	else { if(!$do_prep) { print OUT $line; } }
     }
     close(CM);
-    if(scalar(@{$indi_cm_name_Aref}) != scalar(@{$indi_cm_file_name_Aref})) { printf STDERR ("ERROR, CM file processed incorrectly, %d CM names read, but %d new CM files created.\n", scalar(@{$indi_cm_name_Aref}), scalar(@{$indi_cm_file_name_Aref})); }
-    if(scalar(@{$indi_cm_name_Aref}) != scalar(@{$indi_cm_clen_Aref}))      { printf STDERR ("ERROR, CM file processed incorrectly, %d CM names read, but %d CLEN lines read.\n", scalar(@{$indi_cm_name_Aref}), scalar(@{$indi_cm_file_clen_Aref})); } 
+    if(scalar(@{$indi_cm_name_AR}) != scalar(@{$indi_cm_file_name_AR})) { printf STDERR ("ERROR, CM file processed incorrectly, %d CM names read, but %d new CM files created.\n", scalar(@{$indi_cm_name_AR}), scalar(@{$indi_cm_file_name_AR})); }
+    if(scalar(@{$indi_cm_name_AR}) != scalar(@{$indi_cm_clen_AR}))      { printf STDERR ("ERROR, CM file processed incorrectly, %d CM names read, but %d CLEN lines read.\n", scalar(@{$indi_cm_name_AR}), scalar(@{$indi_cm_file_clen_AR})); } 
     return;
 }									 
 
 #####################################################################
-# subroutine: search_sequences_with_each_cm()
+# subroutine: search_sequences_with_each_model()
 # incept:     EPN, Mon Nov  3 15:42:17 2008
 # 
 # purpose:    Run cmsearch on the target sequence file <$target_file>
@@ -660,52 +696,63 @@ sub process_cm_file {
 #             to standard error if this occurs.
 # 
 ####################################################################
-sub search_sequences_with_each_cm() { 
-    my $narg_expected = 11;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, search_sequences_with_each_cm() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($cmsearch, $my_cm_file_copy, $target_file, $out_dir_root, $nseq_target_file, $do_viterbi, $indi_cm_file_name_Aref, $indi_cm_clen_Aref, $indi_cm_nbif_Aref, $ret_tab_file, $ret_max_file_name_width) = @_;
+sub search_sequences_with_each_model() { 
+    my $narg_expected = 13;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, search_sequences_with_each_model() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my($cmsearch, $my_cm_file_copy, $target_file, $out_dir_root, $nseq_target_file, $do_viterbi, 
+       $indi_cm_name_AR, $indi_cm_clen_AR, $indi_cm_nbif_AR, $log2printAR, $ret_tab_file, $ret_max_file_name_width, $ret_description_width) = @_;
 
-    my ($tab_file, $file_name_width, $file_name_dashes, $search_psecs, $alg_flag, $max_file_name_width, $dashes);
+    my ($tab_file, $tab_file2print, $file_name_width, $file_name_dashes, $search_psecs, $alg_flag, $max_file_name_width, $dashes1, $dashes2, $start_log_line);
+
+    $start_log_line = scalar(@{$log2printAR});
 
     #crudely predict the number of seconds the cmsearch will take
     $search_psecs = 0;
-    for($i = 0; $i < scalar(@{$indi_cm_clen_Aref}); $i++) { $search_psecs += ($indi_cm_clen_Aref->[$i] * $indi_cm_clen_Aref->[$i]); }
+    for($i = 0; $i < scalar(@{$indi_cm_clen_AR}); $i++) { $search_psecs += ($indi_cm_clen_AR->[$i] * $indi_cm_clen_AR->[$i]); }
     #$search_psecs is now predicted number of DP cells per sequence
     $search_psecs *= ($nseq_target_file) / 1000000.; # $search_psecs is now predicted num of million cells for all seqs
     if($opt_F) { $search_psecs /= 100. } # cmsearch --forward does about 100 million dp cells per second;
     else       { $search_psecs /= 300. } # cmsearch --viterbi does about 300 million dp cells per second;
 
     $Wcalc_psecs = 0;
-    # OLD CODE (EPN, Wed Nov 12 06:06:50 2008) for predicting W calc time, prior to --hmm-cW option */
-    #for($i = 0; $i < scalar(@{$indi_cm_clen_Aref}); $i++) { 
-    #$Wcalc_psecs += ($indi_cm_clen_Aref->[$i] * $indi_cm_clen_Aref->[$i] * $indi_cm_clen_Aref->[$i] * $indi_cm_nbif_Aref->[$i]);
-    #} #$Wcalc_psecs is now roughly the number of DP cells required to fill to calculate W ($clen^3 * $nbif)
-    #$Wcalc_psecs /= (1500 * 1500 * 1500 * 30); #$Wcalc_psecs is now fraction of DP cells to calc W for all CMs relative to an avg size SSU CM
-    ## we know SSU models in cmsearch take about 60 seconds to calculate W
-    #$Wcalc_psecs *= 60.;
-    #$search_psecs += $Wcalc_psecs;
 
     $tab_file = $out_dir_root . ".tab";
+    $tab_file2print = $out_root . ".tab";
     if   ($do_viterbi) { $alg_flag = "--viterbi"; } 
     else               { $alg_flag = "--forward"; } 
     if   ($do_glocal)  { $alg_flag .= " -g"; }
 
-    printf("#\n# Stage 1: Defining SSU start/ends with cmsearch (crude time estimate: %.1f minutes) ... ", ($search_psecs / 60.));
-    #printf("$cmsearch -T $cmsearch_T --no-null3 --toponly --noalign --tab $tab_file $alg_flag $my_cm_file_copy $target_file > /dev/null\n");
+    # print info on what we just created
+    $max_file_name_width = max_length_scalar_in_array($indi_cm_name_AR); 
+    $description_width   = $max_file_name_width;
+    $description_width   += length("list of sequences to align with  CM");
+    if($description_width < length("locations/scores of hits defined by HMM(s)")) { $description_width = length("locations/scores of hits defined by HMM(s)"); }
+
+    #$max_file_name_width += length($out_root . "." . ".hits.list");
+    $max_file_name_width += length($out_root . "." . ".cmalign.stk");
+    if($max_file_name_width < length("output file name")) { $max_file_name_width = length("output file name"); }
+    $dashes1 = ""; for($i = 0; $i < $max_file_name_width; $i++) { $dashes1 .= "-"; } 
+    $dashes2 = ""; for($i = 0; $i < $description_width; $i++)   { $dashes2 .= "-"; } 
+
+    push(@{$log2printAR}, sprintf("#\n# Stage 1: Determining SSU start/end positions and best matching models.\n"));
+    push(@{$log2printAR}, sprintf("#\n"));
+    push(@{$log2printAR}, sprintf("# %-*s  %-*s\n", $max_file_name_width, "output file name", $description_width, "description"));
+    push(@{$log2printAR}, sprintf("# %-*s  %-*s\n", $max_file_name_width, $dashes1, $description_width, $dashes2));
+
+    for($i = $start_log_line; $i < scalar(@{$log2printAR}); $i++) { 
+	printf($log2printAR->[$i]);
+    }
+
+    $start_log_line = scalar(@{$log2printAR});
     system("$cmsearch --hmm-cW 1.5 -T $cmsearch_T --no-null3 --toponly --noalign --tab $tab_file $alg_flag $my_cm_file_copy $target_file > /dev/null");
     if(($? >> 8) != 0) { printf STDERR ("ERROR, system\(\"$cmsearch --hmm-cW 1.5 -T $cmsearch_T --no-null3 --toponly --noalign --tab $tab_file $alg_flag $my_cm_file_copy $target_file > /dev/null\" unexpectedly returned non-zero exit status %d\n", ($? >> 8)); exit(($? >> 8)); } 
-    printf(" done.\n");
-    printf("#\n");
 
-    # print info on what we just created
-    $max_file_name_width = max_length_scalar_in_array($indi_cm_file_name_Aref); 
-    $max_file_name_width += length($out_dir_root . "/.sseq.fa");
+           #push(@{$log2printAR}, sprintf("\t%-*s cmsearch output file with locations/scores of hits using HMM.\n", $max_file_name_width, $out_dir_root . ".cmsearch :"));
+    push(@{$log2printAR}, sprintf("  %-*s  locations/scores of hits defined by HMM(s).\n", $max_file_name_width, $tab_file2print));
 
-    $dashes = ""; for($i = 0; $i < $max_file_name_width; $i++) { $dashes .= "-"; } 
-    printf("# %-*s  %11s\n", $max_file_name_width, "output file name", "description");
-    printf("# %-*s  %11s\n", $max_file_name_width, $dashes, "-----------");
-    #printf("\t%-*s cmsearch output file with locations/scores of hits using HMM.\n", $max_file_name_width, $out_dir_root . ".cmsearch :");
-    printf("  %-*s  cmsearch tabular output file with locations/scores of hits using HMM.\n", $max_file_name_width, $tab_file);
+    for($i = $start_log_line; $i < scalar(@{$log2printAR}); $i++) { 
+	printf($log2printAR->[$i]);
+    }
 
     $$ret_tab_file = $tab_file;
     $$ret_max_file_name_width = $max_file_name_width;
@@ -724,30 +771,30 @@ sub search_sequences_with_each_cm() {
 #             is classified as belonging to only 1 CM. If only
 #             1 CM exists in the CM file, then all sequences
 #             will automatically be classified to it.
-#             All the work in this function is done by the 
-#             ssu-tab2sseq.pl script.
 #             
 # returns:    Nothing.
 #
-# exits:      If the ssu-tab2sseq.pl call doesn't finish with a 
+# exits:      If a system("") call doesn't finish with a 
 #             zero status code we exit. 
 # 
 ####################################################################
 sub classify_and_extract_subseqs { 
-    my $narg_expected = 10;
+    my $narg_expected = 11;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, classify_and_extract_subseqs() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($do_truncate, $min_bit, $min_len, $tab_file, $target_file, $out_dir_root, $esl_sfetch, $max_file_name_width, $indi_cm_name_Aref, $new_target_file_per_cm_name_Href) = @_;
+    my ($do_truncate, $min_bit, $min_len, $tab_file, $target_file, $out_dir_root, $esl_sfetch, $max_file_name_width, $indi_cm_name_AR, $log2printAR, $new_target_file_per_cm_name_HR) = @_;
 
     my @seq_order_A = ();
     my %seq_exists_in_order_array_H = ();
     my @cm_name_from_tab_file_A = ();
     my($cm_name, $line);
-    my($seq_name, $tstart, $tend, $qstart, $qend, $bit, $E, $gc, $tlen, $m, $i);
+    my($seq_name, $tstart, $tend, $qstart, $qend, $bit, $E, $gc, $tlen, $m, $i, $start_log_line);
     my %bit_cm_seq_HH = ();
     my %bit_seq_cm_HH = ();
     my %start_cm_seq_HH = ();
     my %end_cm_seq_HH = ();
     
+    $start_log_line = scalar(@{$log2printAR});
+
     # Parse tab file, keep track of best scoring hit above our min length and min bit score for each CM for each seq
     if(open(TAB, $tab_file) == 0) { printf STDERR ("ERROR, could not open $tab_file for reading.\n"); exit(1); }
     $cm_name = "";
@@ -774,13 +821,13 @@ sub classify_and_extract_subseqs {
     }
     # Make sure our tab file contains the same CMs in the same order as our CM file did.
     $ncm_in_tab_file = scalar(@cm_name_from_tab_file_A);
-    if(scalar(@cm_name_from_tab_file_A) != scalar(@{$indi_cm_name_Aref})) { 
-	printf STDERR ("ERROR, %d CMs read in tab file != %d CMs read from CM file.\n", scalar(@cm_name_from_tab_file_A), scalar(@{$indi_cm_name_Aref}));
+    if(scalar(@cm_name_from_tab_file_A) != scalar(@{$indi_cm_name_AR})) { 
+	printf STDERR ("ERROR, %d CMs read in tab file != %d CMs read from CM file.\n", scalar(@cm_name_from_tab_file_A), scalar(@{$indi_cm_name_AR}));
 	exit(1);
     }
     for($m = 0; $m < scalar(@cm_name_from_tab_file_A); $m++) { 
-	if($cm_name_from_tab_file_A[$m] ne $indi_cm_name_Aref->[$m]) { 
-	    printf STDERR ("ERROR, CM number %d (%s) from the tab file output is not the same as CM %d from the CM file (%s).\n", $cm_name_from_tab_file_A[$m], $indi_cm_name_Aref->[$m]);
+	if($cm_name_from_tab_file_A[$m] ne $indi_cm_name_AR->[$m]) { 
+	    printf STDERR ("ERROR, CM number %d (%s) from the tab file output is not the same as CM %d from the CM file (%s).\n", $cm_name_from_tab_file_A[$m], $indi_cm_name_AR->[$m]);
 	    exit(1);
 	}
     }
@@ -810,7 +857,7 @@ sub classify_and_extract_subseqs {
 
     # For each CM c, list the target sequences that score highest to c in tabular format
     # and then fetch them with esl-sfetch
-    my ($index_file, $ncm_with_at_least_one_seq, $list_file, $esl_sfetch_in_file, $nwinners, $max_seq_name_width, $sseq_file, $esl_sfetch_options);
+    my ($index_file, $ncm_with_at_least_one_seq, $list_file, $list_file2print, $esl_sfetch_in_file, $nwinners, $max_seq_name_width, $hits_file, $hits_file2print, $esl_sfetch_options, $line);
     $ncm_with_at_least_one_seq = 0;
     $index_file = $target_file . ".ssi";
     
@@ -820,10 +867,11 @@ sub classify_and_extract_subseqs {
     system("$esl_sfetch \-\-index $target_file > /dev/null"); 
     if(($? >> 8) != 0)    { printf STDERR ("ERROR, system(\"$esl_sfetch \-\-index $target_file > /dev/null\" unexpectedly returned non-zero exit status %d.\n", ($? >> 8)); exit($? >> 8); }
 
-    for($m = 0; $m < scalar(@{$indi_cm_name_Aref}); $m++) { 
-	$cm_name = $indi_cm_name_Aref->[$m];
-	$list_file = $out_dir_root . "." . $cm_name . ".sseq.list"; 
-	$esl_sfetch_in_file = $out_dir_root . "." . $cm_name . ".sseq.in";
+    for($m = 0; $m < scalar(@{$indi_cm_name_AR}); $m++) { 
+	$cm_name = $indi_cm_name_AR->[$m];
+	$list_file = $out_dir_root . "." . $cm_name . ".hits.list"; 
+	$list_file2print = $out_root . "." . $cm_name . ".hits.list"; 
+	$esl_sfetch_in_file = $out_dir_root . "." . $cm_name . ".hits.in";
 	$nwinners = scalar(@{$by_cm_name_HA{$cm_name}});
 
 	if($nwinners > 0) { 
@@ -842,37 +890,51 @@ sub classify_and_extract_subseqs {
 	    printf OUTLIST  ("# %*s  %6s  %6s  %8s\n", $max_seq_name_width, $dashes, "------", "------", "--------");
 
 	    for($i = 0; $i < $nwinners; $i++) { 
-		#printf("%4d  $cm_name  %25s  %7.2f  %8d  %8d\n", ($i+1), $by_cm_name_HA{$cm_name}[$i], $by_cm_bitHA{$cm_name}[$i], $by_cm_startHA{$cm_name}[$i], $by_cm_endHA{$cm_name}[$i]);
+		#push(@{$log2printAR}, sprintf("%4d  $cm_name  %25s  %7.2f  %8d  %8d\n", ($i+1), $by_cm_name_HA{$cm_name}[$i], $by_cm_bitHA{$cm_name}[$i], $by_cm_startHA{$cm_name}[$i], $by_cm_endHA{$cm_name}[$i]));
 		printf OUTLIST ("  %-*s  %6d  %6d  %8.2f\n", $max_seq_name_width, $by_cm_name_HA{$cm_name}[$i], $by_cm_start_HA{$cm_name}[$i], $by_cm_end_HA{$cm_name}[$i], $by_cm_bit_HA{$cm_name}[$i]);
 		if($do_truncate) { printf SFETCHIN ("$by_cm_name_HA{$cm_name}[$i]\t$by_cm_start_HA{$cm_name}[$i]\t$by_cm_end_HA{$cm_name}[$i]\t$by_cm_name_HA{$cm_name}[$i]\n"); }
 		else             { printf SFETCHIN ("$by_cm_name_HA{$cm_name}[$i]\n"); }
 	    }
-	    #printf("\n");
+	    #push(@{$log2printAR}, sprintf("\n"));
 	    close(OUTLIST);
 	    close(SFETCHIN);
-	    #printf("Subsequences of %d seqs (<name> <start> <end> <bit score>) for CM $cm_name printed to file $listfile.\n", scalar(@{$by_cm_name_HA{$cm_name}}));
-	    printf("  %-*s  list of high scoring subseqs to align with $cm_name CM.\n", $max_file_name_width, $list_file);
+	    #push(@{$log2printAR}, sprintf("Subsequences of %d seqs (<name> <start> <end> <bit score>) for CM $cm_name printed to file $listfile.\n", scalar(@{$by_cm_name_HA{$cm_name}})));
+	    push(@{$log2printAR}, sprintf("  %-*s  list of sequences to align with $cm_name CM\n", $max_file_name_width, $list_file2print));
 
-	    $sseq_file = $out_dir_root . "." . $cm_name . ".sseq.fa";
-	    if(-e ($sseq_file)) { system("rm $sseq_file"); }
+	    $hits_file = $out_dir_root . "." . $cm_name . ".hits.fa";
+	    $hits_file2print = $out_root . "." . $cm_name . ".hits.fa";
+	    if(-e ($hits_file)) { system("rm $hits_file"); }
 	    if($do_truncate) { $esl_sfetch_options = "-Cf"; }
 	    else             { $esl_sfetch_options = "-f";  }
-	    if($do_truncate) { system("$esl_sfetch -o $sseq_file $esl_sfetch_options $target_file $esl_sfetch_in_file > /dev/null"); }
-	    else             { system("$esl_sfetch -o $sseq_file $esl_sfetch_options $target_file $esl_sfetch_in_file > /dev/null"); }
+	    if($do_truncate) { system("$esl_sfetch -o $hits_file $esl_sfetch_options $target_file $esl_sfetch_in_file > /dev/null"); }
+	    else             { system("$esl_sfetch -o $hits_file $esl_sfetch_options $target_file $esl_sfetch_in_file > /dev/null"); }
 	    if(($? >> 8) != 0) { printf STDERR ("ERROR, system(\"$esl_sfetch $esl_sfetch_options $target_file $esl_sfetch_in_file\" unexpectedly returned non-zero exit status %d.\n", ($? >> 8)); exit($? >> 8); }
 
-	    #printf("esl-sfetch -Cf $target_file $listfile > $sseq_file\n");
-	    $output = `head -1 $sseq_file`;
-	    if($output =~ m/\W/) { printf("  %-*s  FASTA file of high scoring subseqs to align with $cm_name CM (%d sequences).\n", $max_file_name_width, $sseq_file, scalar(@{$by_cm_name_HA{$cm_name}})); }
-	    else                 { printf("ERROR, esl-sfetch command $esl_sfetch -o $sseq_file -Cf $target_file $esl_sfetch_in_file didn't work.\n");  exit(1); }
+	    #push(@{$log2printAR}, sprintf("esl-sfetch -Cf $target_file $listfile > $hits_file\n"));
+	    $output = `head -1 $hits_file`;
+	    if($output =~ m/\W/) 
+	    { 
+		if($nwinners > 1) { push(@{$log2printAR}, sprintf("  %-*s  %7d sequences to align with $cm_name CM\n", $max_file_name_width, $hits_file2print, scalar(@{$by_cm_name_HA{$cm_name}}))); }
+		else              { push(@{$log2printAR}, sprintf("  %-*s  %7d sequence  to align with $cm_name CM\n", $max_file_name_width, $hits_file2print, scalar(@{$by_cm_name_HA{$cm_name}}))); }
+	    }
+	    else 
+	    { 
+		push(@{$log2printAR}, sprintf("ERROR, esl-sfetch command $esl_sfetch -o $hits_file -Cf $target_file $esl_sfetch_in_file didn't work.\n"));  
+		exit(1); 
+	    }
 	    system("rm $esl_sfetch_in_file");
-	    $new_target_file_per_cm_name_Href->{$cm_name} = $sseq_file;
+	    $new_target_file_per_cm_name_HR->{$cm_name} = $hits_file;
 	}
     }
     if($ncm_with_at_least_one_seq == 0) { 
-	printf("ERROR, 0 seqs had cmsearch hits with bit score > $min_bit and length > $min_len to any of the %d CMs in the tab file $tab_file.\nYou can change the minimum bit score to <x> with -B <x>, and minimum length to <n> with -L <n>.\n", scalar(@{$indi_cm_name_Aref}));
+	push(@{$log2printAR}, sprintf("ERROR, 0 seqs had cmsearch hits with bit score > $min_bit and length > $min_len to any of the %d CMs in the tab file $tab_file.\nYou can change the minimum bit score to <x> with -B <x>, and minimum length to <n> with -L <n>.\n", scalar(@{$indi_cm_name_AR})));
 	exit(1);
     }
+
+    for($i = $start_log_line; $i < scalar(@{$log2printAR}); $i++) { 
+	printf($log2printAR->[$i]);
+    }
+
     return;
 }
 
@@ -892,56 +954,70 @@ sub classify_and_extract_subseqs {
 #  
 ####################################################################
 sub align_subseqs { 
-    my $narg_expected = 12;
+    my $narg_expected = 14;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, align_subseqs() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($out_dir_root, $cmalign, $max_file_name_width, $esl_weight, $do_filteraln, $filter_id, $mxsize, $cmalign_extra_options, $indi_cm_name_Aref, $indi_cm_file_name_Aref, $indi_cm_clen_Aref, $new_target_file_per_cm_name_Href) = @_;
+    my ($out_dir_root, $cmalign, $max_file_name_width, $description_width, $esl_weight, $do_filteraln, $filter_id, $mxsize, $cmalign_extra_options, $indi_cm_name_AR, $indi_cm_file_name_AR, $indi_cm_clen_AR, $log2printAR, $new_target_file_per_cm_name_HR) = @_;
 
-    my($max_cm_name_width, $cm_dashes, $seq_dashes, $ncm, $m, $cm_file_name, $cm_name, $cm_clen, $sseq_file, $nseq_this_file, $align_psecs, $cmalign_out, $cmalign_stk);
+    my($max_cm_name_width, $ncm, $m, $cm_file_name, $cm_name, $cm_clen, $hits_file, $nseq_this_file, $align_psecs, $cmalign_out, $cmalign_stk);
+    my($cmalign_out2print, $cmalign_stk2print, $fil_cmalign_stk, $fil_cmalign_stk2print, $dashes1, $dashes2, $start_log_line);
 
-    $max_cm_name_width = max_length_scalar_in_array($indi_cm_name_Aref); 
-    $cm_dashes = "";  for($i = 0; $i < $max_cm_name_width; $i++)     { $cm_dashes .= "-"; } 
-    $seq_dashes = ""; for($i = 0; $i < $max_file_name_width-2; $i++) { $seq_dashes .= "-"; } 
-    printf("#\n");
-    printf("# Stage 2. Aligning sequences.\n");
-    printf("#\n");
-    printf("# %5s  %-*s  %-*s  %7s  %7s\n", "stage", $max_cm_name_width, "cm",       $max_file_name_width, "seq file", "nseq", "est min");
-    printf("# %5s  %-*s  %-*s  %7s  %7s\n", "-----", $max_cm_name_width, $cm_dashes, $max_file_name_width, $seq_dashes, "-------", "-------");
+    $start_log_line = scalar(@{$log2printAR});
 
-    $ncm = scalar(@{$indi_cm_file_name_Aref});
-    for($m = 0; $m < $ncm; $m++) { 
-	$cm_file_name = $indi_cm_file_name_Aref->[$m];
-	$cm_name = $indi_cm_name_Aref->[$m];
-	$cm_clen = $indi_cm_clen_Aref->[$m];
-	if(!(exists($new_target_file_per_cm_name_Href->{$cm_name}))) { # no sequences in this set were classified as the current CM
-	    $nseq_this_file = 0;
-	    $sseq_file = "NONE (no matching seqs)";
-	}
-	else { 
-	    $sseq_file      = $new_target_file_per_cm_name_Href->{$cm_name};
-	    $nseq_this_file = determine_num_seqs($sseq_file);
-	}
-	$align_psecs = ($cm_clen * $cm_clen) / (1500 * 1500); #$align_psecs is fraction of SSU alignment time this seq aln will take
-	$align_psecs *= $nseq_this_file;
-	$cmalign_out = $out_dir_root . ".m" . ($m+1) . ".cmalign";
-	if($do_filteraln) { 
-	    $cmalign_stk     = $out_dir_root . ".m" . ($m+1) . ".cmalign.nf.stk"; 
-	    $fil_cmalign_stk = $out_dir_root . ".m" . ($m+1) . ".cmalign.stk"; 
-	}
-	else { 
-	    $cmalign_stk     = $out_dir_root . ".m" . ($m+1) . ".cmalign.stk"; 
-	}
-	printf("  %2d/%2d  %-*s  %-*s  %7d  %7.2f\n", $m+1, $ncm, $max_cm_name_width, $cm_name, $max_file_name_width, $sseq_file, $nseq_this_file, $align_psecs / 60.);
-	#printf("$cmalign --mxsize $mxsize --sub -o $cmalign_stk $cm_for_cmalign[$c] $sseq_file > $cmalign_out\n");
-	if($nseq_this_file > 0) { system("$cmalign $cmalign_extra_options --mxsize $mxsize --sub -o $cmalign_stk $cm_file_name $sseq_file > $cmalign_out"); }
-	if(($? >> 8) != 0) { printf STDERR ("ERROR, system\(\"$cmalign $cmalign_extra_options --mxsize $mxsize --sub -o $cmalign_stk $cm_for_cmalign[$c] $sseq_file > $cmalign_out\"\) unexpectedly returned non-zero exit status %d\n", ($? >> 8)); exit(($? >> 8)); } 
+    $max_cm_name_width = max_length_scalar_in_array($indi_cm_name_AR); 
+    $dashes1 = ""; for($i = 0; $i < $max_file_name_width; $i++) { $dashes1 .= "-"; } 
+    $dashes2 = ""; for($i = 0; $i < $description_width;   $i++) { $dashes2 .= "-"; } 
+    push(@{$log2printAR}, sprintf("#\n"));
+    push(@{$log2printAR}, sprintf("# Stage 2: Aligning each sequence to it's best matching model.\n"));
+    push(@{$log2printAR}, sprintf("#\n"));
+    push(@{$log2printAR}, sprintf("# %-*s  %s\n", $max_file_name_width, "output file name", "description"));
+    push(@{$log2printAR}, sprintf("# %-*s  %-*s\n", $max_file_name_width, $dashes1, $description_width, $dashes2));
 
-	if($do_filteraln) { 
-	    if($nseq_this_file > 0) { system("$esl_weight -f --idf $filter_id $cmalign_stk > $fil_cmalign_stk"); }
-	    if(($? >> 8) != 0) { printf STDERR ("ERROR, system\(\"$esl_weight -f --idf $filter_id $cmalign_stk > $fil_cmalign_stk\"\) unexpectedly returned non-zero exit status %d\n", ($? >> 8)); exit(($? >> 8)); } 
-	}
+    for($i = $start_log_line; $i < scalar(@{$log2printAR}); $i++) { 
+	printf($log2printAR->[$i]);
     }
 
-    printf("NEED TO PUT SUMMARY OUTPUT, WITH FILE NAMES CREATED.\n");
+    $ncm = scalar(@{$indi_cm_file_name_AR});
+    for($m = 0; $m < $ncm; $m++) { 
+	$cm_file_name = $indi_cm_file_name_AR->[$m];
+	$cm_name = $indi_cm_name_AR->[$m];
+	$cm_clen = $indi_cm_clen_AR->[$m];
+	if(exists($new_target_file_per_cm_name_HR->{$cm_name})) { # >= 1 sequences in this set were classified as the current CM
+	    $hits_file      = $new_target_file_per_cm_name_HR->{$cm_name};
+	    $nseq_this_file = determine_num_seqs($hits_file);
+	    
+	    $align_psecs = ($cm_clen * $cm_clen) / (1500 * 1500); #$align_psecs is fraction of SSU alignment time this seq aln will take
+	    $align_psecs *= $nseq_this_file;
+	    $cmalign_out       = $out_dir_root . "." . $cm_name . ".cmalign";
+	    $cmalign_out2print = $out_root     . "." . $cm_name . ".cmalign";
+	    if($do_filteraln) { 
+		$cmalign_stk           = $out_dir_root . "." . $cm_name . ".cmalign.nf.stk";
+		$cmalign_stk2print     = $out_root     . "." . $cm_name . ".cmalign.nf.stk";
+		$fil_cmalign_stk       = $out_dir_root . "." . $cm_name . ".cmalign.stk";
+		$fil_cmalign_stk2print = $out_root     . "." . $cm_name . ".cmalign.stk";
+		push(@{$log2printAR}, sprintf("  %-*s  complete %s alignment\n", $max_file_name_width, $cmalign_stk2print, $cm_name));
+		printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+		push(@{$log2printAR}, sprintf("  %-*s  filtered %s alignment\n", $max_file_name_width, $fil_cmalign_stk2print, $cm_name));
+		printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+	    }
+	    else { 
+		$cmalign_stk           = $out_dir_root . "." . $cm_name . ".cmalign.stk";
+		$cmalign_stk2print     = $out_root     . "." . $cm_name . ".cmalign.stk";
+		push(@{$log2printAR}, sprintf("  %-*s  %s alignment\n", $max_file_name_width, $cmalign_stk2print, $cm_name));
+		printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+	    }
+	    push(@{$log2printAR}, sprintf("  %-*s  %s cmalign output\n", $max_file_name_width, $cmalign_out2print, $cm_name));
+	    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+	    
+	    system("$cmalign $cmalign_extra_options --mxsize $mxsize --sub -o $cmalign_stk $cm_file_name $hits_file > $cmalign_out"); 
+	    if(($? >> 8) != 0) { printf STDERR ("ERROR, system\(\"$cmalign $cmalign_extra_options --mxsize $mxsize --sub -o $cmalign_stk $cm_for_cmalign[$c] $hits_file > $cmalign_out\"\) unexpectedly returned non-zero exit status %d\n", ($? >> 8)); exit(($? >> 8)); } 
+	    
+	    if($do_filteraln) { 
+		system("$esl_weight -f --idf $filter_id $cmalign_stk > $fil_cmalign_stk"); 
+	    }
+	    if(($? >> 8) != 0) { printf STDERR ("ERROR, system\(\"$esl_weight -f --idf $filter_id $cmalign_stk > $fil_cmalign_stk\"\) unexpectedly returned non-zero exit status %d\n", ($? >> 8)); exit(($? >> 8)); } 
+	} 
+    }
+
     return;
 }
 
@@ -986,3 +1062,100 @@ sub max_length_scalar_in_array {
     return $max;
 }
 
+#####################################################################
+# subroutine: print_banner()
+# incept:     EPN, Tue Jun 16 07:26:13 2009
+# 
+# purpose:    Print the ssu-align banner.
+#
+# returns:    Nothing, if it returns, everything is valid.
+# 
+####################################################################
+sub print_banner { 
+    my $narg_expected = 3;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_banner() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($script_call, $argv_ref, $log2printAR) = @_;
+    my $i, $script_name, $start_log_line;
+    $script_call =~ s/^\.+\///;
+    $script_name = $script_call;
+    $script_name =~ s/.+\///;
+
+    $start_log_line = scalar(@{$log2printAR});
+
+    push(@{$log2printAR}, sprintf("\# $script_name :: define and align SSU rRNA sequences\n"));
+    push(@{$log2printAR}, sprintf("\# SSU-ALIGN 0.1 (June 2009)\n"));
+    push(@{$log2printAR}, sprintf("\# Copyright (C) 2009 HHMI Janelia Farm Research Campus\n"));
+    push(@{$log2printAR}, sprintf("\# Freely distributed under the GNU General Public License (GPLv3)\n"));
+    push(@{$log2printAR}, sprintf("\# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n"));
+    push(@{$log2printAR}, sprintf("%-10s %s ", "# command:", $script_call));
+    for($i = 0; $i < scalar(@{$argv_ref}) - 1; $i++) { 
+	push(@{$log2printAR}, sprintf("$argv_ref->[$i] "));
+    }
+    push(@{$log2printAR}, sprintf("$argv_ref->[$i]\n"));
+    push(@{$log2printAR}, sprintf("%-10s ", "# date:"));
+    push(@{$log2printAR}, sprintf(scalar localtime()));
+    push(@{$log2printAR}, sprintf("\n"));
+
+    for($i = $start_log_line; $i < scalar(@{$log2printAR}); $i++) { 
+	printf($log2printAR->[$i]);
+    }
+}
+
+#####################################################################
+# subroutine: print_timing()
+# incept:     EPN, Tue Jun 16 08:52:08 2009
+# 
+# purpose:    Print a timing in hhhh:mm:ss format to 1 second precision.
+#
+# returns:    Nothing, if it returns, everything is valid.
+# 
+####################################################################
+sub print_timing { 
+    my $narg_expected = 3;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_timing() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($prefix, $inseconds, $log2printAR) = @_;
+    my $hours, $minutes, $seconds, $thours, $tminutes, $tseconds, $start_log_line;
+
+    $start_log_line = scalar(@{$log2printAR});
+
+    $hours = int($inseconds / 3600);
+    $inseconds -= ($hours * 3600);
+    $minutes = int($inseconds / 60);
+    $inseconds -= ($minutes * 60);
+    $seconds = $inseconds;
+    $thours   = $hours;
+    $tminutes = $minutes;
+    $tseconds = $seconds;
+
+    if($hours < 10)   { $thours   = "0" . $thours; }
+    if($minutes< 10)  { $tminutes = "0" . $tminutes; }
+    if($seconds< 10)  { $tseconds = "0" . $tseconds; }
+
+    push(@{$log2printAR}, sprintf("%s %2s:%2s:%2s\n", $prefix, $thours, $tminutes, $tseconds));
+
+    for($i = $start_log_line; $i < scalar(@{$log2printAR}); $i++) { 
+	printf($log2printAR->[$i]);
+    }
+}
+
+#####################################################################
+# subroutine: print_log()
+# incept:     EPN, Tue Jun 16 09:23:55 2009
+# 
+# purpose:    Print the log.
+#
+# returns:    Nothing, if it returns, everything is valid.
+# 
+####################################################################
+sub print_log { 
+    my $narg_expected = 2;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_log() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($log_file, $log2printAR) = @_;
+    my $start_log_line;
+
+    if(open(LOG,  ">" . $log_file) == 0) { printf STDERR ("ERROR, could not open $log_file for writing.\n"); exit(1); }
+    foreach $line (@{$log2printAR}) { print LOG $line; }
+    close(LOG);
+
+    return;
+}
