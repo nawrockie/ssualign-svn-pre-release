@@ -520,9 +520,9 @@ sub prepare_and_exit {
 			$lower =~ s/\-.+//;
 			$upper =~ s/.+\-//;
 			$merged_root = $lower . "-" . $upper;
-			$merged_name = $out_root . "." . $merged_root . ".m" . $m . ".merged.cmalign.stk";
-			if($iter > 1) { $merged_lower_name = $out_root . "." . $to_mergeA[$i]     . ".m" . $m . ".merged.cmalign.stk"; }
-			else          {	$merged_lower_name = $out_root . "." . $to_mergeA[$i]     . "/" . $out_root . "." . $to_mergeA[$i]     . ".m" . $m . ".cmalign.stk"; }
+			$merged_name = $out_root . "." . $merged_root . ".m" . $m . ".merged.stk";
+			if($iter > 1) { $merged_lower_name = $out_root . "." . $to_mergeA[$i]     . ".m" . $m . ".merged.stk"; }
+			else          {	$merged_lower_name = $out_root . "." . $to_mergeA[$i]     . "/" . $out_root . "." . $to_mergeA[$i]     . ".m" . $m . ".stk"; }
 			if($merged_name ne $merged_lower_name) { 
 			    printf MG ("if(-e \"$merged_lower_name\") { \n"); 
 			    printf MG ("\tsystem(\"cp $merged_lower_name $merged_name\");\n");
@@ -544,19 +544,19 @@ sub prepare_and_exit {
 			$merged_root = $lower . "-" . $upper;
 			$indi_cm_file_name = $out_root . "." . $lower . "/" . $indi_cm_file_name_root;
 			if($do_filteraln) { 
-			    $merged_name     = $out_root . "." . $merged_root . ".m" . $m . ".merged.cmalign.nf.stk";
-			    $fil_merged_name = $out_root . "." . $merged_root . ".m" . $m . ".merged.cmalign.stk";
+			    $merged_name     = $out_root . "." . $merged_root . ".m" . $m . ".merged.nf.stk";
+			    $fil_merged_name = $out_root . "." . $merged_root . ".m" . $m . ".merged.stk";
 			}
 			else { 
-			    $merged_name = $out_root . "." . $merged_root . ".m" . $m . ".merged.cmalign.stk";
+			    $merged_name = $out_root . "." . $merged_root . ".m" . $m . ".merged.stk";
 			}
 			if($iter > 1) { 
-			    $merged_lower_name = $out_root . "." . $to_mergeA[$i]     . ".m" . $m . ".merged.cmalign.stk";
-			    $merged_upper_name = $out_root . "." . $to_mergeA[($i+1)] . ".m" . $m . ".merged.cmalign.stk";
+			    $merged_lower_name = $out_root . "." . $to_mergeA[$i]     . ".m" . $m . ".merged.stk";
+			    $merged_upper_name = $out_root . "." . $to_mergeA[($i+1)] . ".m" . $m . ".merged.stk";
 			}
 			else { #iter == 1
-			    $merged_lower_name = $out_root . "." . $to_mergeA[$i]     . "/" . $out_root . "." . $to_mergeA[$i]     . ".m" . $m . ".cmalign.stk";
-			    $merged_upper_name = $out_root . "." . $to_mergeA[($i+1)] . "/" . $out_root . "." . $to_mergeA[($i+1)] . ".m" . $m . ".cmalign.stk";
+			    $merged_lower_name = $out_root . "." . $to_mergeA[$i]     . "/" . $out_root . "." . $to_mergeA[$i]     . ".m" . $m . ".stk";
+			    $merged_upper_name = $out_root . "." . $to_mergeA[($i+1)] . "/" . $out_root . "." . $to_mergeA[($i+1)] . ".m" . $m . ".stk";
 			}
 			push(@new_to_mergeA, $merged_root);
 			printf MG ("if(-e \"$merged_lower_name\") { \n"); 
@@ -753,7 +753,7 @@ sub search_sequences_with_each_model() {
     if($description_width < length("boundaries/scores of hits defined by HMM(s)")) { $description_width = length("boundaries/scores of hits defined by HMM(s)"); }
 
     #$max_file_name_width += length($out_root . "." . ".hits.list");
-    $max_file_name_width += length($out_root . "." . ".cmalign.stk");
+    $max_file_name_width += length($out_root . "." . ".stk");
     if($max_file_name_width < length("output file name")) { $max_file_name_width = length("output file name"); }
     $dashes1 = ""; for($i = 0; $i < $max_file_name_width; $i++) { $dashes1 .= "-"; } 
     $dashes2 = ""; for($i = 0; $i < $description_width; $i++)   { $dashes2 .= "-"; } 
@@ -1036,18 +1036,18 @@ sub align_subseqs {
 	    $cmalign_out       = $out_dir_root . "." . $cm_name . ".cmalign";
 	    $cmalign_out2print = $out_root     . "." . $cm_name . ".cmalign";
 	    if($do_filteraln) { 
-		$cmalign_stk           = $out_dir_root . "." . $cm_name . ".cmalign.nf.stk";
-		$cmalign_stk2print     = $out_root     . "." . $cm_name . ".cmalign.nf.stk";
-		$fil_cmalign_stk       = $out_dir_root . "." . $cm_name . ".cmalign.stk";
-		$fil_cmalign_stk2print = $out_root     . "." . $cm_name . ".cmalign.stk";
+		$cmalign_stk           = $out_dir_root . "." . $cm_name . ".nf.stk";
+		$cmalign_stk2print     = $out_root     . "." . $cm_name . ".nf.stk";
+		$fil_cmalign_stk       = $out_dir_root . "." . $cm_name . ".stk";
+		$fil_cmalign_stk2print = $out_root     . "." . $cm_name . ".stk";
 		push(@{$log2printAR}, sprintf("  %-*s  complete %s alignment\n", $max_file_name_width, $cmalign_stk2print, $cm_name));
 		printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
 		push(@{$log2printAR}, sprintf("  %-*s  filtered %s alignment\n", $max_file_name_width, $fil_cmalign_stk2print, $cm_name));
 		printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
 	    }
 	    else { 
-		$cmalign_stk           = $out_dir_root . "." . $cm_name . ".cmalign.stk";
-		$cmalign_stk2print     = $out_root     . "." . $cm_name . ".cmalign.stk";
+		$cmalign_stk           = $out_dir_root . "." . $cm_name . ".stk";
+		$cmalign_stk2print     = $out_root     . "." . $cm_name . ".stk";
 		push(@{$log2printAR}, sprintf("  %-*s  %s alignment\n", $max_file_name_width, $cmalign_stk2print, $cm_name));
 		printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
 	    }

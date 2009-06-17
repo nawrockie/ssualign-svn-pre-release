@@ -200,7 +200,7 @@ For now, what you need to know about the key features of the alignment file is:
   of the following pairs: \verb+<>+, \verb+()+, \verb+[]+, or
   \verb+[]+.
 
-\item A special \"RF\" line starting with {\small\verb+#=GC RF+}
+\item A special ``RF'' line starting with {\small\verb+#=GC RF+}
   indicates the consensus, or ReFerence, model. Gaps in the RF line
   are \emph{insert} columns, where at least 1 sequence has at least 1
   inserted residue between two consensus positions. Uppercase residues
@@ -224,10 +224,7 @@ difficult.
 Let's create a diagram that shows the information content of each
 position of our newly created archaeal alignment:
 
-\prog{esl-ssudraw 
-
-
-
+\prog{esl-ssudraw myrun/myrun.archaea.cmalign.stk ../../seeds/ss-diagrams/archaea-0p1.ps my.ps}
 
 To convert the alignment to fasta format that includes gaps, you can use the
 \prog{scripts/stk2aln\_fa.pl} script. 

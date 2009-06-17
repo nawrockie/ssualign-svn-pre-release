@@ -1,0 +1,169 @@
+\section{Extended Tutorial}
+
+This tutorial walks through some other important aspects of \textsc{ssu-align}.
+
+\subsection{Files used in this tutorial}
+
+The subdirectory \prog{/tutorial-extended} in the \software{ssu-align}
+distribution contains the files used in the tutorial:
+
+  \begin{sreitems}{}
+  \item[\prog{ssu.default.1p0.cm}] A covariance model (CM) file that
+    defines five SSU rRNA CMs: an archael model, a bacterial model, a
+    choloroplast wmodel, a eukaryotic model and a metazoan
+    mitrochondria model. These are the five default models used by
+    textsc{SSUalign}.
+  \item[\prog{rocks.fa}] SSU rRNA sequences from the an environmental
+    survey sequencing project of microbes living in the pore space of
+    rocks in the Rocky Mountains by J.J. Walker and Norm Pace
+    \cite{Walker07}. 
+  \end{sreitems}
+
+Create a new directory that you can work in, and copy all the files in
+\prog{tutorial-extended} there. I'll assume for the following examples
+that you've installed the \software{ssu-align} programs in your path;
+if not, you'll need to give a complete path name to the programs
+(e.g. something like
+\newline
+\prog{/usr/people/nawrocki/ssualign/src/ssu-align} 
+instead of just \prog{ssu-align}).
+
+\subsection{Creating a truncated model of a specific region of SSU rRNA}
+
+Some SSU rRNA sequencing studies target a specific region of the SSU
+rRNA molecule using PCR primers at the boundaries of that region. For
+such studies it is recommended to build a new CM that only models the
+region of the molecule targetted by the study. In this section I'll
+demonstrate how to create such a CM.
+
+For this example imagine our study is only targetting bacterial SSU
+rRNA. We will use the bacterial SSU seed alignment that is included
+with \textsc{SSUalign} as a starting point for creating our new,
+truncated CM. The first step is to determine what consensus positions
+in the bacterial seed alignment's consensus structure the targetted
+oregion corresponds to. The consensus structure of the bacterial seed
+alignment is shown in the basic tutorial section on page X.
+
+In practice, you'll have to manually find your primer site and
+determine their positions on this consensus structure. Every hundredth
+residue is numbered, and every tenth residue is marked with a tick
+mark, which should help. 
+
+Imagine for this example our 5' primer begins at consensus position
+35 and ends at position 397. The next step is to create a truncated
+bacterial seed alignment that only models between consensus positions
+35 and 397. We can do this with the \prog{esl-alimanip} program using
+the full bacterial seed alignment as input:
+
+\user{esl-alimanip --start-rf 35 --end-rf 397 -o mybac.stk bacteria.0p1.stk}
+
+This command creates a new alignment called \prog{mybac.stk} which
+includes the subset of the columns from \prog{bacteria.0p1.stk} that lie
+between consensus positions 35 and 397 inclusively.
+
+The next step is to build a new model from this new alignment with
+\textsc{infernal's} \prog{cmbuild} program: 
+
+\user{cmbuild --enone --gapthresh 0.8 mybac.cm mybac.stk}
+
+Note: the \prog{--enone} and \prog{--gapthresh 0.8} flags are
+recommended best practice for \textsc{SSUalign}. The \prog{--enone}
+flag tells the program to turn off entropy-weighting, a
+parameterization technique used to make CM homology search more
+sensitive \cite{Nawrocki07} but that seems slightly detrimental to CM
+alignment accuracy with SSU rRNA models. The \prog{--gapthresh 0.8}
+flag tells the program to define any column that has less than 80\%
+gaps in the seed as a consensus column. Different values than 0.8
+could be used here, but 0.8 seems to yield good performance for SSU
+alignment, and it was also used to build the five default
+\textsc{SSUalign} models.
+
+Now you can begin using your new model \prog{mybac.cm} to align
+SSU sequences with \textsc{SSUalign}. You have two options. 
+You can either use your new model by itself as the only model in an
+\prog{ssu-align} run, or you can combine it with other models prior to
+running \prog{ssu-align}. We'll walk through an example of each, and
+discuss appropriate uses for each case.
+
+Using a single model is only recommended if you believe all the input
+sequences will match well to that model. In this case, if we use
+\prog{mybac.cm} as the only model we are assuming all of the input
+sequences are bacterial SSU subsequences that map to the 35-397 region
+of the consensus bacterial model. The file \prog{partial.fa} has 10
+sequences, 8 of which are bacterial SSU sequences that map to this region
+and 2 are archaeal SSU sequences that map to the homologous region in
+the archaeal consensus model (roughly positions 25 to 380). Let's try
+using \prog{mybac.cm} to align these 10 seqs:
+
+\user{ssu-align -F mybac.cm partial.fa single 1p0.params}
+
+Now let's examine the \prog{single.scores} file in the \prog{single/}
+subdir:
+
+\begin{sreoutput}
+#                                                     best-matching model                second-best model  
+#                                       -----------------------------------------------  -----------------  
+#     idx  sequence name                model name   beg   end    CM sc   struct   HMM sc  model name   HMM sc  HMMdiff
+# -------  ---------------------------  --------  ----  ----  -------  -------  -------  --------  -------  -------
+        1  gi|146141790|gb|EF522294.1|  Bacteria     1   344   403.20   100.11   312.76  Bacteria     0.00   312.76
+        2  gi|146141797|gb|EF522301.1|  Bacteria     1   348   463.37    69.69   402.70  Bacteria     0.00   402.70
+        3  gi|146141805|gb|EF522309.1|  Bacteria     1   315   475.02    63.31   416.05  Bacteria     0.00   416.05
+        4  gi|146141812|gb|EF522316.1|  Bacteria     1   339   480.57    68.35   423.81  Bacteria     0.00   423.81
+        5  gi|146141828|gb|EF522332.1|  Bacteria     1   336   450.46    70.82   392.66  Bacteria     0.00   392.66
+        6  gi|146141831|gb|EF522335.1|  Bacteria     1   332   380.82    94.56   297.11  Bacteria     0.00   297.11
+        7  gi|146141832|gb|EF522336.1|  Bacteria     1   334   476.07    69.57   415.65  Bacteria     0.00   415.65
+        8  gi|146141837|gb|EF522341.1|  Bacteria    11   363   338.11    83.56   285.87  Bacteria     0.00   285.87
+        9  gi|146141762|gb|EF522266.1|  Bacteria     6   329   414.44    57.76   363.13  Bacteria     0.00   363.13
+       10  gi|146141767|gb|EF522271.1|  Bacteria     6   301   424.54    49.14   361.39  Bacteria     0.00   361.39
+\end{sreoutput}
+
+\begin{comment}
+\item Use \prog{mybac.cm} as the CM file when running
+  \textsc{SSUalign}. This is recommended if you believe all of your
+  SSU sequences are bacterial SSU sequences within the specified
+  region (consensus positions 35 to 397). 
+
+\item Use \prog{mybac.cm} as one of several models in a multi-model CM
+  file when running \textsc{SSUalign}. You can create multi-model CM
+  files by simply concatenating them together. For example you can add
+  it as a sixth model to the default \textsc{SSUalign} 0.1 five model
+  CM file \prog{sa.01.abcem.cm} with: \user{cat sa.01.abcem.cm
+    mybac.cm > six.cm}. This is recommended if you think only some of
+  your sequences will be within the specified region (consensus
+  positions 35 to 397), while others might be full length bacterial
+  sequences, or even archaeal or eukaryotic sequences.
+
+\end{enumerate}
+
+Now let's try aligning some sequences with the new model. The file
+\prog{partial.fa} is a contrived set of sequences, most of which match
+to the 35-397 region of bacterial SSU, but some which match to the
+analogous region in archaeal SSU. Running \textsc{ssu-align} on this
+dataset will help demonstrate some important points. First let's build
+a new CM file with 2 CMs, our new \prog{mybac.cm} model and the default
+Archaeal model. This is as simple as concatenating the two
+single model CM files:
+
+\prog{cat mybac.cm Archaeal.cm >> my2.cm}
+
+Now use it align the sequences in \prog{partial.fa}:
+
+\prog{cat mybac.cm Archaeal.cm >> my2.cm}
+\end{comment}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Advanced tutorial: drawing SSU secondary structure diagrams}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Advanced tutorial: creating new SSU models}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Advanced tutorial: splitting up large alignment jobs}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Advanced tutorial: merging your alignments with existing
+  reference alignments}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{? Advanced tutorial: manipulating alignments with the
+  \prog{esl-alimanip} program}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Benchmarking \textsc{SSU-align} alignment accuracy}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
