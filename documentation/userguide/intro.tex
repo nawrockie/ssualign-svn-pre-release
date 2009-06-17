@@ -1,21 +1,21 @@
 \section{Introduction}
 
-\software{SSU-align} identifies and aligns small subunit ribosomal RNA
+\software{ssu-align} identifies and aligns small subunit ribosomal RNA
 (SSU rRNA) genes in sequence datasets. It uses a model of the primary
 sequence and secondary structure conservation of SSU rRNA as inferred
 by comparative sequence analysis and confirmed by crystal structure
 determination from the Comparative RNA Website (CRW) \cite{Cannone02}.
 
 \subsection{Overview}
-\software{SSU-align} uses profile probabilistic models for SSU rRNA
+\software{ssu-align} uses profile probabilistic models for SSU rRNA
 detection and alignment. It includes five SSU rRNA models, an archaeal
 model, a bacterial model, a eukaryotic (nuclear) model, a
 chloroplast model and a animal mitochondrial model. These are the
-default models used by the program, but \textsc{SSU-align} can be used
+default models used by the program, but \textsc{ssu-align} can be used
 with other, user-generated models as well.
 
 Given an input dataset of unaligned SSU sequences,
-\software{SSU-align} goes through two stages. In stage 1, each of the
+\software{ssu-align} goes through two stages. In stage 1, each of the
 sequences is locally aligned to each of the five models based on
 primary sequence conservation to obtain a score for each sequence to
 each model.  The model that gives the highest scoring alignment to
@@ -53,7 +53,7 @@ each residue aligns to each column of the alignment. This is discussed
 in more detail in the basic tutorial in section 3.
 
 The basic tutorial in section 3 of this guide walks through an example
-of using \textsc{SSU-align} to build multiple alignments and prune
+of using \textsc{ssu-align} to build multiple alignments and prune
 those alignments using an input dataset. 
 
 This package can also be used to create new SSU models, either for
@@ -66,10 +66,10 @@ applications.
 
 \subsection{What is included in this package}
 
-This distribution includes the PERL script \software{SSU-align} and
+This distribution includes the PERL script \software{ssu-align} and
 all the files necessary to compile and run the \software{Infernal}
 package (version 1.0) \cite{Nawrocki09}. \software{Infernal} must be
-installed in order to run \software{SSU-align}.  It also includes the
+installed in order to run \software{ssu-align}.  It also includes the
 five default (archaea, bacteria, chloroplast, eukarya, and
 animal-mitochondria) SSU models and the \emph{seed} alignments they
 were built from. The alignments were based on SSU structures and
@@ -80,18 +80,18 @@ explained in section 2.
 
 Installation of the PERL (Practical Extraction and Report Language,
 Larry Wall) interpreter package version 5.0 or later is required to
-run the \software{SSU-align} PERL script.
+run the \software{ssu-align} PERL script.
 
-\subsection{What \emph{SSU-align} does not do}
+\subsection{What \emph{ssu-align} does not do}
 
-\textsc{SSU-align} only creates alignments; it does not infer trees
+\textsc{ssu-align} only creates alignments; it does not infer trees
 from those alignments, nor does it classify sequences beyond reporting
 which model in the input CM file they score highest to.
 
 \subsection{Future development}
 
-This release (version 0.1) is a prototype of the \textsc{SSU-align}
+This release (version 0.1) is a prototype of the \textsc{ssu-align}
 software package that only has basic functionality for aligning SSU
 sequences. I hope to continue to develop and improve it in the future
 by making it faster and generally more useful to the SSU rRNA sequence
-analysis community. I welcome bug reports as well as feature requests.
+analysis community. I appreciate bug reports and feature requests.

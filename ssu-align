@@ -208,7 +208,7 @@ $total_time += time();
 #############################
 my $scores_file = $out_dir_root . ".scores";
 my $scores_file2print = $out_root . ".scores";
-print_scores_file($target_file, $scores_file, $scores_file2print, $max_seq_name_width, $max_cm_name_width, \%winning_cmH, \%cmscores2printH, \%hmmscores2printH, \@log2printA);
+print_scores_file($target_file, $ncm, $scores_file, $scores_file2print, $max_seq_name_width, $max_cm_name_width, \%winning_cmH, \%cmscores2printH, \%hmmscores2printH, \@log2printA);
 push(@log2printA, sprintf("  %-*s  list of CM/HMM scores for each sequence\n", $max_file_name_width, $scores_file2print));
 printf($log2printA[(scalar(@log2printA)-1)]);
 
@@ -382,6 +382,8 @@ sub create_output_dir {
 	    if($out_dir eq "") { printf STDERR ("ERROR, trying to create directory named \"\"\n"); exit(1); }
 	    system("rm -rf $out_dir/*");
 	    if(($? >> 8) != 0) { printf STDERR ("ERROR, system\(\"rm -rf $out_dir/*\"\) unexpectedly returned non-zero exit status %d\n", ($? >> 8)); exit($? >> 8); } 
+	    system("rm -f $out_dir/\.\#*");
+	    if(($? >> 8) != 0) { printf STDERR ("ERROR, system\(\"rm -f $out_dir/\.\#*\) unexpectedly returned non-zero exit status %d\n", ($? >> 8)); exit($? >> 8); } 
 	    system("rmdir $out_dir");
 	    if(($? >> 8) != 0) { printf STDERR ("ERROR, system\(\"rmdir $out_dir\"\) unexpectedly returned non-zero exit status %d\n", ($? >> 8)); exit($? >> 8); } 
 	    if(-d $out_dir) { printf STDERR ("ERROR, output directory $out_dir still exists after a system\(\"rmdir $out_dir\"\) call.\n"); exit(1); }
@@ -752,8 +754,7 @@ sub search_sequences_with_each_model() {
     $description_width   += length("list of sequences to align with  CM");
     if($description_width < length("boundaries/scores of hits defined by HMM(s)")) { $description_width = length("boundaries/scores of hits defined by HMM(s)"); }
 
-    #$max_file_name_width += length($out_root . "." . ".hits.list");
-    $max_file_name_width += length($out_root . "." . ".stk");
+    $max_file_name_width += length($out_root . "." . ".hits.list");
     if($max_file_name_width < length("output file name")) { $max_file_name_width = length("output file name"); }
     $dashes1 = ""; for($i = 0; $i < $max_file_name_width; $i++) { $dashes1 .= "-"; } 
     $dashes2 = ""; for($i = 0; $i < $description_width; $i++)   { $dashes2 .= "-"; } 
@@ -821,6 +822,7 @@ sub classify_and_extract_subseqs {
     
     $start_log_line    = scalar(@{$log2printAR});
     $max_cm_name_width = max_length_scalar_in_array($indi_cm_name_AR); 
+    if($max_cm_name_width < length("model name")) { $max_cm_name_width = length("model name"); } 
 
     # Parse tab file, keep track of best scoring hit above our min length and min bit score for each CM for each seq
     if(open(TAB, $tab_file) == 0) { printf STDERR ("ERROR, could not open $tab_file for reading.\n"); exit(1); }
@@ -1040,16 +1042,10 @@ sub align_subseqs {
 		$cmalign_stk2print     = $out_root     . "." . $cm_name . ".nf.stk";
 		$fil_cmalign_stk       = $out_dir_root . "." . $cm_name . ".stk";
 		$fil_cmalign_stk2print = $out_root     . "." . $cm_name . ".stk";
-		push(@{$log2printAR}, sprintf("  %-*s  complete %s alignment\n", $max_file_name_width, $cmalign_stk2print, $cm_name));
-		printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
-		push(@{$log2printAR}, sprintf("  %-*s  filtered %s alignment\n", $max_file_name_width, $fil_cmalign_stk2print, $cm_name));
-		printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
 	    }
 	    else { 
 		$cmalign_stk           = $out_dir_root . "." . $cm_name . ".stk";
 		$cmalign_stk2print     = $out_root     . "." . $cm_name . ".stk";
-		push(@{$log2printAR}, sprintf("  %-*s  %s alignment\n", $max_file_name_width, $cmalign_stk2print, $cm_name));
-		printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
 	    }
 	    push(@{$log2printAR}, sprintf("  %-*s  %s cmalign output\n", $max_file_name_width, $cmalign_out2print, $cm_name));
 	    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
@@ -1074,7 +1070,20 @@ sub align_subseqs {
 		system("$esl_weight -f --idf $filter_id $cmalign_stk > $fil_cmalign_stk"); 
 	    }
 	    if(($? >> 8) != 0) { printf STDERR ("ERROR, system\(\"$esl_weight -f --idf $filter_id $cmalign_stk > $fil_cmalign_stk\"\) unexpectedly returned non-zero exit status %d\n", ($? >> 8)); exit(($? >> 8)); } 
-	} 
+
+	    if($do_filteraln) { 
+		push(@{$log2printAR}, sprintf("  %-*s  complete %s alignment\n", $max_file_name_width, $cmalign_stk2print, $cm_name));
+		printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+		push(@{$log2printAR}, sprintf("  %-*s  filtered %s alignment\n", $max_file_name_width, $fil_cmalign_stk2print, $cm_name));
+		printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+	    }
+	    else { 
+		push(@{$log2printAR}, sprintf("  %-*s  %s alignment\n", $max_file_name_width, $cmalign_stk2print, $cm_name));
+		printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+	    }
+	    push(@{$log2printAR}, sprintf("  %-*s  %s cmalign output\n", $max_file_name_width, $cmalign_out2print, $cm_name));
+	    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+	}
     }
 
     return;
@@ -1225,7 +1234,7 @@ sub print_log {
 # subroutine: print_scores_file
 # incept:     EPN, Tue Jun 16 14:39:38 2009
 # 
-# purpose:    Print the scores file with CM and HMM scores. 
+# purpose:    Print the scores file with CM and HMM scores.
 #             We want to print a line for each target sequence, since
 #             we only aligned those that scored above a threshold,
 #             this means we have to revisit the target database and
@@ -1235,9 +1244,9 @@ sub print_log {
 # 
 ####################################################################
 sub print_scores_file { 
-    my $narg_expected = 9;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_scores_file() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($target_file, $scores_file, $scores_file2print, $max_seq_name_width, $max_cm_name_width, $winning_cmHR, $cmscores2printHR, $hmmscores2printHR, $log2printAR) = @_;
+    my $narg_expected = 10;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_scores_file_multi_model() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($target_file, $ncm, $scores_file, $scores_file2print, $max_seq_name_width, $max_cm_name_width, $winning_cmHR, $cmscores2printHR, $hmmscores2printHR, $log2printAR) = @_;
 
     my $seq_name, $cmscore2print;
     my $start_log_line, $i, $winning_cm;
@@ -1273,10 +1282,21 @@ sub print_scores_file {
     $second_string .= "second-best model";
     for($i = 0; $i < $ntrailing_spaces;  $i++)  { $second_string .= " "; }
 
-    printf SCORES ("# %7s  %-*s  %-*s  %-*s  %-*s\n", "", $max_seq_name_width, "", $max_cm_name_width + 39, $best_string,  $max_cm_name_width + 9, $second_string);
-    printf SCORES ("# %7s  %-*s  %-*s  %-*s  %-*s\n", "", $max_seq_name_width, "", $max_cm_name_width + 39, $dashes1, $max_cm_name_width + 9, $dashes2);
-    printf SCORES ("# %7s  %-*s  %-*s  %4s  %4s  %7s  %7s  %7s  %-*s  %7s  %7s\n", "idx", $max_seq_name_width, "sequence name", $max_cm_name_width, "model name",   "beg",  "end",  "CM sc",  "struct",  "HMM sc", $max_cm_name_width, "model name",   "HMM sc",  "HMMdiff");
-    printf SCORES ("# %7s  %-*s  %-*s  %4s  %4s  %7s  %7s  %7s  %-*s  %7s  %7s\n", "-------", $max_seq_name_width, $dashes_seqname, $max_cm_name_width, $dashes_cmname, "----", "----", "-------", "-------", "-------", $max_cm_name_width, $dashes_cmname, "-------", "-------");
+    printf SCORES ("# %7s  %-*s  %-*s  %-*s", "", $max_seq_name_width, "", $max_cm_name_width + 39, $best_string);
+    if($ncm > 1) { printf SCORES ("  %-*s", $max_cm_name_width + 9, $second_string); }
+    printf SCORES ("\n");
+
+    printf SCORES ("# %7s  %-*s  %-*s  %-*s", "", $max_seq_name_width, "", $max_cm_name_width + 39, $dashes1);
+    if($ncm > 1) { printf SCORES ("  %-*s", $max_cm_name_width + 9, $dashes2); }
+    printf SCORES ("\n");
+
+    printf SCORES ("# %7s  %-*s  %-*s  %4s  %4s  %7s  %7s  %7s", "idx", $max_seq_name_width, "sequence name", $max_cm_name_width, "model name",   "beg",  "end",  "CM sc",  "struct",  "HMM sc");
+    if($ncm > 1) { printf SCORES ("  %-*s  %7s  %7s\n", $max_cm_name_width, "model name",   "HMM sc",  "HMMdiff"); }
+    printf SCORES ("\n");
+
+    printf SCORES ("# %7s  %-*s  %-*s  %4s  %4s  %7s  %7s  %7s", "-------", $max_seq_name_width, $dashes_seqname, $max_cm_name_width, $dashes_cmname, "----", "----", "-------", "-------", "-------");
+    if($ncm > 1) { printf SCORES ("  %-*s  %7s  %7s\n", $max_cm_name_width, $dashes_cmname, "-------", "-------"); }
+    printf SCORES ("\n");
 
     $idx = 1;
     while($line = <TARGET>) { 
@@ -1289,14 +1309,18 @@ sub print_scores_file {
 		($cmsc, $cmstructsc)                         = split(/\s+/, $cmscores2printHR->{$seq_name});
 		($start, $end, $whmmsc, $secondhmm, $shmmsc) = split(/\s+/, $hmmscores2printHR->{$seq_name});
 
-		printf SCORES ("  %7d  %-*s  %-*s  %4d  %4d  %7.2f  %7.2f  %7.2f  %-*s  %7.2f  %7.2f\n", $idx, $max_seq_name_width, $seq_name, $max_cm_name_width, $winning_cm, $start, $end, $cmsc, $cmstructsc, $whmmsc, $max_cm_name_width, $secondhmm, $shmmsc, ($whmmsc - $shmmsc));
+		printf SCORES ("  %7d  %-*s  %-*s  %4d  %4d  %7.2f  %7.2f  %7.2f", $idx, $max_seq_name_width, $seq_name, $max_cm_name_width, $winning_cm, $start, $end, $cmsc, $cmstructsc, $whmmsc);
+		if($ncm > 1) { printf SCORES ("  %-*s  %7.2f  %7.2f", $max_cm_name_width, $secondhmm, $shmmsc, ($whmmsc - $shmmsc)); }
 	    }
 	    else {
-		printf SCORES ("  %7d  %-*s  %-*s  %4s  %4s  %7s  %7s  %7s  %-*s  %7s  %7s\n", $idx, $max_seq_name_width, $seq_name, $max_cm_name_width, "-", "-", "-", "-", "-", "-", $max_cm_name_width, "-", "-", "-");
+		printf SCORES ("  %7d  %-*s  %-*s  %4s  %4s  %7s  %7s  %7s", $idx, $max_seq_name_width, $seq_name, $max_cm_name_width, "-", "-", "-", "-", "-", "-");
+		if($ncm > 1) { printf SCORES ("  %-*s  %7s  %7s", $max_cm_name_width, "-", "-", "-"); }
 	    }
+	    printf SCORES ("\n");
 	    $idx++;
 	}
     }
     close(TARGET);
     close(SCORES);
 }
+

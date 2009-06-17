@@ -1,4 +1,4 @@
-\section{Basic tutorial: defining and aligning SSU sequences using \textsc{SSU-align}}
+\section{Basic tutorial: defining and aligning SSU sequences using \textsc{ssu-align}}
 
 Here is a tutorial walk-through of a small project with
 \software{SSUalign}. This tutorial shows how to use the program for
@@ -7,35 +7,35 @@ alignments of SSU rRNA sequences.
 
 \subsection{Files used in this tutorial}
 
-The subdirectory \prog{/tutorial-basic} in the \software{SSU-align}
-contains the files used in this tutorial, they are:
+In this tutorial we'll use the following files. The file names below
+include the path from the top-level \prog{ssu-align-0.1} directory
+created when \textsc{ssu-align} was untarred:
 
   \begin{sreitems}{}
-  \item[\prog{ssu.default.0p1.cm}] A covariance model (CM) file that
+  \item[\prog{./seeds/ssu5-0p1.cm}] A covariance model (CM) file that
     defines five SSU rRNA CMs: an archael model, a bacterial model, a
     choloroplast model, a eukaryotic model and a metazoan
     mitrochondria model. These are the five default models used by
-    \textsc{SSU-align}. These models are explained in section 4.
-  \item[\prog{rocks.fa}] SSU rRNA sequences from an environmental
+    \textsc{ssu-align}. These models are explained in section 4.
+  \item[\prog{tutorial/rocks.fa}] SSU rRNA sequences from an environmental
     survey sequencing project of microbes living in the pore space of
     rocks in the Rocky Mountains by J.J. Walker and Norm Pace
     \cite{Walker07}. 
-  \item[\prog{1p0.params}] A file containing paths to
-    \textsc{infernal} executable files that \textsc{SSU-align} needs
+  \item[\prog{./sa-0p1.params}] A file containing paths to
+    \textsc{infernal} executable files that \textsc{ssu-align} needs
     to run. You will likely need to change these paths to point to
     where you've installed the \prog{cmsearch} and \prog{cmalign}
-    programs (these are created in 'infernal-1.0/src/' after building
-    \textsc{infernal} version 1.0 with 'sh ./configure; make;') and
+    programs (these are created in \prog{infernal-1.0/src/} after building
+    \textsc{infernal} version 1.0 with \user{sh ./configure; make;}) and
     the \prog{esl-sfetch} program (which is created in
-    'infernal-1.0/easel/miniapps/' after building \textsc{infernal}
+    \prog{infernal-1.0/easel/miniapps/} after building \textsc{infernal}
     version 1.0).
   \end{sreitems}
 
-Create a new directory that you can work in, and copy all the files in
-\prog{tutorial-basic} there. I'll assume for the following examples that
-you've installed the \software{SSU-align} script in your path; if not,
-you'll need to give a complete path name to the script
-(e.g. something like
+Create a new directory that you can work in, and copy the above three
+files in there. I'll assume for the following examples that you've
+installed the \software{ssu-align} script in your path; if not, you'll
+need to give a complete path name to the script (e.g. something like
 \newline
 \prog{/usr/people/nawrocki/ssualign/src/ssu-align} 
 instead of just \prog{ssu-align}).
@@ -43,15 +43,16 @@ instead of just \prog{ssu-align}).
 \subsection{An example run of \textsc{ssu-align}}
 
 The file \prog{rocks.fa} contains 588 SSU sequences
-\cite{Walker07}. \textsc{SSU-align} is designed to create structural
+\cite{Walker07}. \textsc{ssu-align} is designed to create structural
 alignments of SSU sequences from studies like this one. To run it,
-execute the following command:
+execute the following command
 
-\user{ssu-align ssu.default.0p1.cm rocks.fa myrun 1p0.params}\\
+\user{ssu-align ssu5-0p1.cm rocks.fa rocks sa-0p1.params}\\
 
 The program will print a header describing the program version used,
 command used, current date, and some other information. Then it will
-begin stage 1:
+begin stage 1. You'll see the following information printed to the
+screen:
 
 \begin{sreoutput}
 # ssu-align :: define and align SSU rRNA sequences
@@ -59,14 +60,14 @@ begin stage 1:
 # Copyright (C) 2009 HHMI Janelia Farm Research Campus
 # Freely distributed under the GNU General Public License (GPLv3)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# command: /groups/eddy/home/nawrockie/ssualign/ssu-align ssu.default.1p0.cm rocks.fa myrun 1p0.params
-# date:    Wed Jun 17 05:37:27 2009
+# command: /groups/eddy/home/nawrockie/ssualign/ssu-align ssu5-0p1.cm rocks.fa rocks sa-0p1.params
+# date:    Wed Jun 17 16:51:25 2009
 #
 # Stage 1: Determining SSU start/end positions and best matching models.
 \end{sreoutput}
 
 In stage 1, the program scans the input sequences with each of the
-five models in the CM file \prog{ssu.default.0p1.cm}. This has two
+five models in the CM file \prog{ssu5-0p1.cm}. This has two
 purposes.  First, it classifies each sequence by determining which
 model gives each sequence the highest primary sequence-based alignment
 score using a profile HMM. Secondly, it defines the start and end
@@ -78,22 +79,22 @@ see:
 \begin{sreoutput}
 # Stage 1: Determining SSU start/end positions and best matching models.
 #
-# output file name               description                                   
-# -----------------------------  ----------------------------------------------
-  myrun.tab                      locations/scores of hits defined by HMM(s)
-  myrun.Archaea.hits.list        list of sequences to align with Archaea CM
-  myrun.Archaea.hits.fa               48 sequences to align with Archaea CM
-  myrun.Bacteria.hits.list       list of sequences to align with Bacteria CM
-  myrun.Bacteria.hits.fa             341 sequences to align with Bacteria CM
-  myrun.Chloroplast.hits.list    list of sequences to align with Chloroplast CM
-  myrun.Chloroplast.hits.fa          199 sequences to align with Chloroplast CM
+# output file name             description                                   
+# ---------------------------  ----------------------------------------------
+  rocks.tab                    locations/scores of hits defined by HMM(s)
+  rocks.archaea.hits.list      list of sequences to align with archaea CM
+  rocks.archaea.hits.fa             48 sequences to align with archaea CM
+  rocks.bacteria.hits.list     list of sequences to align with bacteria CM
+  rocks.bacteria.hits.fa           341 sequences to align with bacteria CM
+  rocks.chloroplast.hits.list  list of sequences to align with chloroplast CM
+  rocks.chloroplast.hits.fa        199 sequences to align with chloroplast CM
 \end{sreoutput}
 
 This lists and briefly describes the 7 new files the script created in
 a newly created subdirectory of the current working dir called
-\prog{myrun/}. The first file \prog{myrun.tab} is output from
+\prog{rocks/}. The first file \prog{rocks.tab} is output from
 \textsc{infernal}'s \prog{cmsearch} program. The other 6 files are
-model-specific, two for each model that was the best-matching model to
+model-specific, two for each model that was the best-matching model for
 at least 1 sequence in the input target sequence file
 \prog{rocks.fa}. The \prog{.hits.list} suffixed files contain a list
 of the sequences that match best to the model, and the \prog{.hits.fa}
@@ -119,42 +120,40 @@ you'll see:
 #
 # Stage 2: Aligning each sequence to it's best matching model.
 #
-# output file name               description
-# -----------------------------  ----------------------------------------------
-  myrun.Archaea.cmalign.stk      Archaea alignment
-  myrun.Archaea.cmalign          Archaea cmalign output
-  myrun.Bacteria.cmalign.stk     Bacteria alignment
-  myrun.Bacteria.cmalign         Bacteria cmalign output
-  myrun.Chloroplast.cmalign.stk  Chloroplast alignment
-  myrun.Chloroplast.cmalign      Chloroplast cmalign output
-  myrun.scores                   list of CM/HMM scores for each sequence
-  myrun.log                      log file (*this* text printed to stdout)
+# output file name             description
+# ---------------------------  ----------------------------------------------
+  rocks.archaea.stk            archaea alignment
+  rocks.archaea.cmalign        archaea cmalign output
+  rocks.bacteria.stk           bacteria alignment
+  rocks.bacteria.cmalign       bacteria cmalign output
+  rocks.chloroplast.stk        chloroplast alignment
+  rocks.chloroplast.cmalign    chloroplast cmalign output
+  rocks.scores                 list of CM/HMM scores for each sequence
+  rocks.log                    log file (*this* text printed to stdout)
 #
-# All output files created in directory ./myrun/
+# All output files created in directory ./rocks/
 #
-# CPU time (search):     00:04:35
+# CPU time (search):     00:04:36
 # CPU time (alignment):  00:06:19
-# CPU time (total):      00:10:55
+# CPU time (total):      00:10:56
 \end{sreoutput}
 
-The actual alignments are the \prog{.cmalign.stk} suffixed
-files. These were created by the \textsc{infernal} program
-\prog{cmalign}. The \prog{cmalign} output is in the \prog{.cmalign}
-suffixed files.  As in stage 1, these files were created in
-the \prog{./myrun/} subdirectory. 
+The newly created alignments are the \prog{.stk} suffixed files. These
+were created by \textsc{infernal}'s \prog{cmalign} program. The
+\prog{cmalign} output is in the \prog{.cmalign} suffixed files.  As in
+stage 1, these files were created in the \prog{./rocks/} subdirectory.
 
-\subsection{Description of output files}
+\subsection{Description of alignments}
 
-Now we'll go through each of the output file types
-created by\prog{ssu-align}, starting with the alignments.
-
-Take a look at the archaeal alignment we just created in
-\prog{myrun/myrun.Archaea.cmalign.stk}. 
+The section ``Description of output files'' contains more information
+on the output files, but for now we'll focus only on the new
+alignments.  Take a look at the archaeal alignment we just created in
+\prog{rocks/rocks.archaea.stk}.
 
 This alignment includes consensus secondary structure annotation and
 is in \emph{Stockholm format}. 
 Stockholm format, the native alignment format used by \software{hmmer} and
-\software{Infernal} and the \database{Pfam} and \database{Rfam}
+\software{infernal} and the \database{Pfam} and \database{Rfam}
 databases, is documented in detail in the \software{Infernal} User's
 Guide which is included in this distribution in
 \prog{infernal/documentation/userguide.pdf}.
@@ -208,27 +207,133 @@ For now, what you need to know about the key features of the alignment file is:
   residues are less well conserved.
 \end{itemize}
 
-\subsection{Creating secondary structure diagrams that display alignment statistics}
-
-SSU rRNA alignments are large and difficult to view in a meaningful
-way. \textsc{ssu-align} includes a program \prog{esl-ssudraw} for
-creating secondary structure diagrams that display statistics of a
-particular alignment on the consensus secondary structure used to
-align the model. To use \prog{esl-ssudraw} requires a template
-postscript file of the consensus secondary structure. The template
-files for the 5 default \textsc{ssu-align} version 0.1 seed models are
-included, but constructing these required a significant amount of
-work, and creating your own templates for different models would be
-difficult. 
-
-Let's create a diagram that shows the information content of each
-position of our newly created archaeal alignment:
-
-\prog{esl-ssudraw myrun/myrun.archaea.cmalign.stk ../../seeds/ss-diagrams/archaea-0p1.ps my.ps}
-
+\begin{comment}
 To convert the alignment to fasta format that includes gaps, you can use the
 \prog{scripts/stk2aln\_fa.pl} script. 
+\end{comment}
 
-\subsection{Pruning the alignment based on probabilistic confidence
+\subsection{Pruning alignments based on probabilistic confidence
   estimates}
+
+If your goal is to use a phylogenetic inference program to build trees
+from alignments created by \textsc{ssu-align}, you may want to mask
+out columns of the alignment that may include misaligned residues
+first, and then only run the inference on the remaining columns where
+you're confident the alignment is correct. 
+
+As mentioned above, \textsc{infernal}'s \prog{cmalign} program
+can automatically calculate posterior probabilities that estimate the
+level of ambiguity in the alignment of each residue. These can be
+interpreted as how confident the model is in each aligned residue in
+each sequence.  MORE HERE.
+
+The \prog{esl-alimanip} program can be used to mask
+\textsc{ssu-align} generated alignments based on these confidence estimates.
+
+I recommend a three step masking process. First, remove all insert
+columns from the alignment. Insert columns include residues that are
+literally \emph{not aligned}, but rather just inserted in between the
+appropriate two consensus positions. (There's more explanation of this
+in the ``Background'' section).  Since inserts are not aligned they
+should not be included in a phylogenetic inference.  
+The second step is to create a mask of the consensus model based on
+the confidence estimates in the alignment. The final step is to prune
+the alignment based on that mask. 
+
+Here's an example of using \prog{esl-alimanip} for the three steps. 
+First, remove all insert columns and save the new alignment to 
+\prog{rocks.archaea.noins.stk}:
+
+\prog{esl-alimanip -k -o rocks.arhcaea.noins.stk rocks.archaea.stk}
+
+The \prog{-k} option to esl-alimanip tells it to remove all columns of 
+the alignment that are gaps in the \prog{\#\=GC RF} annotation. In
+\textsc{ssu-align} generated alignments gaps in the \prog{\#\=GC RF}
+annotation indicate a column is an insert column that does not
+correspond to a consensus model position. 
+
+Second, generate a mask based on the alignment confidence estimates
+in the insert-removed alignment :
+
+\prog{esl-alimanip --omask my.mask --p-rf --pfract 0.95 --pthresh 0.95 -o trash.stk rocks.archaea.noins.stk}
+
+The following will print to the screen:
+
+\begin{sreoutput}
+Average posterior value:                            0.96881 (35909 non-gap residues)
+Average posterior value in non-gap #=GC RF columns: 0.97108 (35818 non-gap RF residues)
+
+
+883 of 1508 RF columns (0.586) pass threshold
+\end{sreoutput}
+
+And the mask file \prog{my.mask} is created. Take a look at this
+file. It is a single line of text of \prog{0}s and \prog{1}s of length
+1508. The length is 1508 because the consensus archaeal model (see
+``Models'' section) is 1508 residues long. A \prog{0} at position x
+indicates that consensus position x will excluded (pruned away) when the mask
+is applied. A \prog{1} at position x indicates that consensus position
+x will be included (not pruned away) when the mask is applied. 
+
+In general the columns where the alignment confidence is high will be
+included, and where it is low will be excluded. More specifically, a
+column x is excluded if less than 0.95 fraction (95\%) of the sequences that
+have a residue (non-gap) in column x have a confidence estimate of
+0.95 or better for that residue. All other columns are included.
+
+These thresholds can be changed using command-line options to 
+\prog{esl-alimanip}. The fraction threshold can be changed to
+\prog{<x>} with the \prog{--pfract <x>} and the confidence estimate
+threshold can be changed to {<y>} with the \prog{--pthresh <y>}
+option.
+
+Note that only non-gap residues are considered when the mask is
+generated. This means if a consensus column only has a single residue
+in it, and it has high confidence (say 0.98), that column will be
+be included in the mask (not be pruned away). This may be be
+undesirable, depending on what type of downstream phylogenetic inference
+you are going to do. Some phylogenetic inference programs treat gaps
+as missing data, and for these you may want to not exclude very gappy
+columns when masking. 
+
+The \prog{esl-alimanip} program can also take the gappiness of a
+column into account when masking. To use the same confidence estimate
+thresholds as the previous \prog{esl-alimanip} mask generation
+(\prog{--pfract 0.95 --pthresh 0.95}) but also exclude any column 
+with more than 25\% gaps, execute the command:
+
+\prog{esl-alimanip --omask my2.mask -g --gapthresh 0.25 --p-rf --pfract 0.95 --pthresh 0.95 -o trash.stk rocks.archaea.noins.stk}
+
+\begin{sreoutput}
+Average posterior value:                            0.97108 (35818 non-gap residues)
+Average posterior value in non-gap #=GC RF columns: 0.97369 (33556 non-gap RF residues)
+
+
+756 of 769 RF columns (0.983) pass threshold
+\end{sreoutput}
+
+The final line indicates that only 769 consensus positions had less
+than 25\% gaps, of these 756 passed the confidence estimate
+thresholds. The new mask \prog{my2.mask} is still 1508 characters
+long, but now contains only 756 \prog{1}s.
+
+The final step is applying the mask. This is also done with
+\prog{esl-alimanip}:
+
+\prog{esl-alimanip -k --mask-rf my2.mask -o my2.masked.archaea.stk
+  rocks.archaea.noins.stk}
+
+The new alignment is saved in \prog{my2.masked.archaea.stk}.
+
+TO DO: show how to put mask onto a SS diagram. But not sure which
+section it goes in, the extended tutorial on drawing SS diagrams, or
+here? 
+
+
+
+
+
+
+
+
 
