@@ -45,7 +45,7 @@
 #    -c <n> : run in 'prep' mode, split target seq file into <n> files with equal number of seqs
 #    -r <x> : w/-n or -c, filter alns based on seq identity, allow no 2 seqs > <x> identical
 #    -x <x> : increase mx size for cmalign to <x> Mb (default: 4096)
-#    -p     : append posterior probabilities to alignments (use cmalign -p)
+#    -q     : DO NOT append posterior probabilities to alignments
 #
 use Getopt::Std;
 use Cwd 'abs_path';
@@ -78,12 +78,12 @@ $options_usage .= "  -n <n> : run in 'prep' mode, split target seq file into mul
 $options_usage .= "  -c <n> : run in 'prep' mode, split target seq file into <n> files with equal number of seqs\n";
 $options_usage .= "  -r <x> : filter aln based on seq identity, allow no 2 seqs > <x> identical\n";
 $options_usage .= "  -x <x> : increase mx size for cmalign to <x> Mb (default: 4096)\n";
-$options_usage .= "  -p     : append posterior probabilities to alignments (use cmalign -p)\n\n";
+$options_usage .= "  -q     : DO NOT append posterior probabilities to alignments\n\n";
 
 ###################
 # Process options #
 ###################
-getopts('hFsauwgb:l:n:c:r:x:p');
+getopts('hFsauwgb:l:n:c:r:x:q');
 my $do_clobber = 0;
 my $do_viterbi = 1;
 my $do_forward = 0;
@@ -102,9 +102,8 @@ my $do_search = 1;
 my $do_filteraln = 0;
 my $filter_id = 0.;
 my $mxsize = 4096;
-my $cmalign_extra_options = "";
+my $cmalign_extra_options = " -p";
 my $cmsearch_T = -1;
-my @log2printA = ();
 
 my $enabled_options = "";
 if (defined $opt_h) { print $usage . "\n"; print $options_usage; exit(1); } 
@@ -120,11 +119,12 @@ if (defined $opt_n) { $do_prep = 1; $do_prep_nseq_set = 1;  $prep_nseq  = $opt_n
 if (defined $opt_c) { $do_prep = 1; $do_prep_nproc_set = 1; $prep_nproc = $opt_c; }
 if (defined $opt_r) { $do_filteraln = 1; $filter_id = $opt_r; $enabled_options .= " -r $opt_r"; if (($r < 0.) || ($r > 1.)) { printf STDERR("ERROR, with -r <x>, valid range is 0. <= <x> <= 1.0.\n"); exit(1); } }
 if (defined $opt_x) { $mxsize = $opt_x; $enabled_options .= " -x $opt_x"; if($opt_x <= 0.) { printf STDERR("ERROR, with -x <x>, valid range is 0. < <x>.\n"); exit(1); } }
-if (defined $opt_p) { $cmalign_extra_options .= " -p"; $enabled_options .= " -p "; }
+if (defined $opt_q) { $cmalign_extra_options = ""; $enabled_options .= " -q "; }
 
 ##############
 # Print banner
 ##############
+my @log2printA = ();
 print_banner($0, \@ARGV, \@log2printA);
 
 # Check for incompatible option combinations and non-sensical option parameters

@@ -40,6 +40,8 @@ you'll need to give a complete path name to the script
 \prog{/usr/people/nawrocki/ssualign/src/ssu-align} 
 instead of just \prog{ssu-align}).
 
+\subsection{An example run of \textsc{ssu-align}}
+
 The file \prog{rocks.fa} contains 588 SSU sequences
 \cite{Walker07}. \textsc{SSU-align} is designed to create structural
 alignments of SSU sequences from studies like this one. To run it,
@@ -47,80 +49,107 @@ execute the following command:
 
 \user{ssu-align ssu.default.0p1.cm rocks.fa myrun 1p0.params}\\
 
-The program will report on what its doing:
+The program will print a header describing the program version used,
+command used, current date, and some other information. Then it will
+begin stage 1:
 
 \begin{sreoutput}
+# ssu-align :: define and align SSU rRNA sequences
+# SSU-ALIGN 0.1 (June 2009)
+# Copyright (C) 2009 HHMI Janelia Farm Research Campus
+# Freely distributed under the GNU General Public License (GPLv3)
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# command: /groups/eddy/home/nawrockie/ssualign/ssu-align ssu.default.1p0.cm rocks.fa myrun 1p0.params
+# date:    Wed Jun 17 05:37:27 2009
 #
-# Stage 1: Defining SSU start/ends with cmsearch (crude time estimate: 0.3 minutes) ... 
+# Stage 1: Determining SSU start/end positions and best matching models.
 \end{sreoutput}
 
 In stage 1, the program scans the input sequences with each of the
-three models in the CM file \prog{abcem.cm}. This has two purposes.
-First, it classifies each sequence by determining which model gives
-each sequence the highest HMM alignment score. Secondly, it defines
-the start and end points of the SSU sequences. 
+five models in the CM file \prog{ssu.default.0p1.cm}. This has two
+purposes.  First, it classifies each sequence by determining which
+model gives each sequence the highest primary sequence-based alignment
+score using a profile HMM. Secondly, it defines the start and end
+points of the SSU sequences.
 
-When this step finishes, you'll see:
+Stage 1 takes about 5 minutes on this dataset. When it finishes you'll
+see: 
 
 \begin{sreoutput}
+# Stage 1: Determining SSU start/end positions and best matching models.
 #
-# Stage 1: Defining SSU start/ends with cmsearch (crude time estimate: 1.1 minutes) ...  done.
-#
-# output file name                                            description
-# ----------------------------------------------------------  -----------
-  myrun/myrun.tab                                             cmsearch tabular output file with locations/scores of hits using HMM.
-  myrun/myrun.archaea.sseq.list                               list of high scoring subseqs to align with archaea CM.
-  myrun/myrun.archaea.sseq.fa                                 FASTA file of high scoring subseqs to align with archaea CM (48 sequences).
-  myrun/myrun.bacteria.sseq.list                              list of high scoring subseqs to align with bacteria CM.
-  myrun/myrun.bacteria.sseq.fa                                FASTA file of high scoring subseqs to align with bacteria CM (341 sequences).
-  myrun/myrun.cholorplast.sseq.list                           list of high scoring subseqs to align with cholorplast CM.
-  myrun/myrun.cholorplast.sseq.fa                             FASTA file of high scoring subseqs to align with cholorplast CM (199 sequences).
+# output file name               description                                   
+# -----------------------------  ----------------------------------------------
+  myrun.tab                      locations/scores of hits defined by HMM(s)
+  myrun.Archaea.hits.list        list of sequences to align with Archaea CM
+  myrun.Archaea.hits.fa               48 sequences to align with Archaea CM
+  myrun.Bacteria.hits.list       list of sequences to align with Bacteria CM
+  myrun.Bacteria.hits.fa             341 sequences to align with Bacteria CM
+  myrun.Chloroplast.hits.list    list of sequences to align with Chloroplast CM
+  myrun.Chloroplast.hits.fa          199 sequences to align with Chloroplast CM
 \end{sreoutput}
 
 This lists and briefly describes the 7 new files the script created in
-a subdirectory called \prog{myrun/}. The archaeal model
-was the best match to $48$ of the $588$
-sequences. The \prog{myrun/myrun.archaea.sseq.list} file lists
-these sequences. The \prog{myrun/myrun.archaea.sseq.fa}
-contains the $48$ subsequences.  $341$ sequences were
-scored highest by the bacterial model.  The list
-and sequences are in \prog{myrun/myrun.bacteria.sseq.list} and
-\prog{myrun/myrun.bacteria.sseq.fa}. The remaining 199 sequences 
-were scored highest by the chloroplast model, these are listed in
-\prog{myrun/myrun.chloroplast.sseq.list}; the actual sequences are in
-\prog{myrun/myrun.chloroplast.sseq.fa}.
-
-There were no sequences that
-best-matched the eukaryotic model or the metazoan mitochondria model.
-
-The output of
-\textsc{Infernal's} \prog{cmsearch} program is in the file
-\prog{myrun/myrun.tab}.
+a newly created subdirectory of the current working dir called
+\prog{myrun/}. The first file \prog{myrun.tab} is output from
+\textsc{infernal}'s \prog{cmsearch} program. The other 6 files are
+model-specific, two for each model that was the best-matching model to
+at least 1 sequence in the input target sequence file
+\prog{rocks.fa}. The \prog{.hits.list} suffixed files contain a list
+of the sequences that match best to the model, and the \prog{.hits.fa}
+suffixed files are those actual sequences. There were no sequences
+that best-matched the eukaryotic model or the metazoan mitochondria
+model, so no model-specific files were created for those two models.
+Each of these file types is explained in more detail below in the
+``Description of output files'' section, but for now we'll continue
+following the output of our example \prog{ssu-align} run.
 
 The program will now proceed to stage 2, the alignment stage. This
-stage serial progresses through each model that had at least 1
-matching sequence and aligns the sequences to the model using both
-structure and sequence conservation. A time estimate is provided for
-each stage.
+stage serially progresses through each model that was the
+best-matching model for at least 1 sequence and uses the model to
+align best-matching sequences. The alignments are computed by scoring
+a combination of both sequence and secondary structure conservation,
+as opposed to the scoring in stage 1 which only used sequence
+conservation. When the alignment to each model finishes, a list of two
+newly created files will appear on the screen. For this example,
+alignment to all three models takes about 6 minutes. When it finishes
+you'll see:
 
 \begin{sreoutput}
 #
-# Stage 2. Aligning sequences.
+# Stage 2: Aligning each sequence to it's best matching model.
 #
-# stage  cm                   seq file                                                         nseq  est min
-# -----  -------------------  ----------------------------------------------------------    -------  -------
-   1/ 5  archaea              0615-1/0615-1.archaea.sseq.fa                                      48     0.81
-   2/ 5  bacteria             0615-1/0615-1.bacteria.sseq.fa                                    341     6.32
-   3/ 5  cholorplast          0615-1/0615-1.cholorplast.sseq.fa                                 199     3.38
-   4/ 5  eukarya              NONE (no matching seqs)                                             0     0.00
-   5/ 5  mitochondria-animal  NONE (no matching seqs)                                             0     0.00
+# output file name               description
+# -----------------------------  ----------------------------------------------
+  myrun.Archaea.cmalign.stk      Archaea alignment
+  myrun.Archaea.cmalign          Archaea cmalign output
+  myrun.Bacteria.cmalign.stk     Bacteria alignment
+  myrun.Bacteria.cmalign         Bacteria cmalign output
+  myrun.Chloroplast.cmalign.stk  Chloroplast alignment
+  myrun.Chloroplast.cmalign      Chloroplast cmalign output
+  myrun.scores                   list of CM/HMM scores for each sequence
+  myrun.log                      log file (*this* text printed to stdout)
+#
+# All output files created in directory ./myrun/
+#
+# CPU time (search):     00:04:35
+# CPU time (alignment):  00:06:19
+# CPU time (total):      00:10:55
 \end{sreoutput}
 
-After the alignment stage ends there will be three new alignment files:
-\prog{myrun/myrun.m1.cmalign.stk} and \prog{myrun/myrun.m2.cmalign.stk}. 
+The actual alignments are the \prog{.cmalign.stk} suffixed
+files. These were created by the \textsc{infernal} program
+\prog{cmalign}. The \prog{cmalign} output is in the \prog{.cmalign}
+suffixed files.  As in stage 1, these files were created in
+the \prog{./myrun/} subdirectory. 
 
-Take a look at the archaeal alignment in
-\prog{myrun/myrun.m1.cmalign.stk}. 
+\subsection{Description of output files}
+
+Now we'll go through each of the output file types
+created by\prog{ssu-align}, starting with the alignments.
+
+Take a look at the archaeal alignment we just created in
+\prog{myrun/myrun.Archaea.cmalign.stk}. 
 
 This alignment includes consensus secondary structure annotation and
 is in \emph{Stockholm format}. 
@@ -130,33 +159,79 @@ databases, is documented in detail in the \software{Infernal} User's
 Guide which is included in this distribution in
 \prog{infernal/documentation/userguide.pdf}.
 
-For now, what you need to know about the key features of the input file is:
+For now, what you need to know about the key features of the alignment file is:
 \begin{itemize}
+
 \item The alignment is in an interleaved format, like other
-common alignment file formats such as \software{clustalw}.
-Lines consist of a name, followed by an aligned sequence;
-long alignments are split into blocks separated by blank lines.
-\item Each sequence must have a unique name that has zero spaces in it. (This is important!)
-\item For residues, any one-letter IUPAC nucleotide code is accepted,
-      including ambiguous nucleotides. Case is ignored; residues
-      may be either upper or lower case.
+  common alignment file formats such as \software{clustalw}.
+  Lines consist of a name, followed by an aligned sequence;
+  the alignment is split into blocks separated by blank lines.
+
 \item Gaps are indicated by the characters ., \_, -, or \verb+~+.
-      (Blank space is not allowed.)
-\item A special line starting with {\small\verb+#=GC SS_cons+} indicates
-      the secondary structure consensus. Gap characters annotate
-      unpaired (single-stranded) columns. Base pairs are indicated
-      by any of the following pairs: \verb+<>+, \verb+()+, \verb+[]+,
-      or \verb+[]+. No pseudoknots are allowed; the
-      open/close-brackets notation is only unambiguous for strictly
-      nested base-pairing interactions.
-\item The file begins with the special tag line
-      {\small\verb+# STOCKHOLM 1.0+}, and ends with {\small\verb+//+}.
+  qNotice that the first few blocks of the alignment are 100% gaps.
+  This is because the sequences in \prog{rocks.fa} are not full length
+  SSU sequences, but rather partial sequences obtained using PCR
+  primers that target well conserved regions within the SSU
+  molecule. In this alignment you'll have to scroll down to about line
+  1300 before you see an aligned residue.
+
+\item Special lines starting with {\small\verb+#=GR+} followed by a
+  sequence name and then {\small\verb+POST+} contain posterior
+  probabilities for each aligned residue for the sequence they
+  correspond to. These are confidence estimates in the correctness of
+  the alignment.  The POSTX. row indicates the ’tens’ place of the
+  confidence estimate while POST.X row indicates the ’ones’ place. So
+  the confidence estimate for a residue with 9 in the POSTX. row, and
+  7 in the POST.X row to two significant digits 97%. This means that
+  if you sampled alignments from the posterior distribution of all
+  possible alignments of this sequence to the model, about 97% of the
+  time that residue would appear in that of the alignment. One special
+  case: if the posterior probability is very nearly 100% (it’s
+  difficult to be more precise on the exact percentage due to
+  numerical precision issues) the annotated posterior values will be
+  ``*'' characters in both the tens and one places. These confidence
+  estimates can be used to mask the alignment to remove columns with
+  significant fractions of ambiguously aligned residues as demonstrated
+  in the next section.
+
+\item A special line starting with {\small\verb+#=GC SS_cons+}
+  indicates the secondary structure consensus. Gap characters annotate
+  unpaired (single-stranded) columns. Base pairs are indicated by any
+  of the following pairs: \verb+<>+, \verb+()+, \verb+[]+, or
+  \verb+[]+.
+
+\item A special \"RF\" line starting with {\small\verb+#=GC RF+}
+  indicates the consensus, or ReFerence, model. Gaps in the RF line
+  are \emph{insert} columns, where at least 1 sequence has at least 1
+  inserted residue between two consensus positions. Uppercase residues
+  in the RF line are well conserved positions in the model; lowercase
+  residues are less well conserved.
 \end{itemize}
+
+\subsection{Creating secondary structure diagrams that display alignment statistics}
+
+SSU rRNA alignments are large and difficult to view in a meaningful
+way. \textsc{ssu-align} includes a program \prog{esl-ssudraw} for
+creating secondary structure diagrams that display statistics of a
+particular alignment on the consensus secondary structure used to
+align the model. To use \prog{esl-ssudraw} requires a template
+postscript file of the consensus secondary structure. The template
+files for the 5 default \textsc{ssu-align} version 0.1 seed models are
+included, but constructing these required a significant amount of
+work, and creating your own templates for different models would be
+difficult. 
+
+Let's create a diagram that shows the information content of each
+position of our newly created archaeal alignment:
+
+\prog{esl-ssudraw 
+
+
+
 
 To convert the alignment to fasta format that includes gaps, you can use the
 \prog{scripts/stk2aln\_fa.pl} script. 
 
-NOT SURE WHAT TO WRITE ABOUT THE ALIGNMENT!
-
 \subsection{Pruning the alignment based on probabilistic confidence
   estimates}
+
