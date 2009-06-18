@@ -164,14 +164,29 @@ process_cm_file($do_prep, $my_cm_file_copy, $out_root, \@indi_cm_name_A, \@indi_
 my $ncm = scalar(@indi_cm_file_name_A); 
 if((!$do_search) && ($ncm > 1)) { printf("ERROR, the -a option only works if the CM file contains exactly 1 CM, $cm_file has $ncm CMs in it.\n"); exit(1); }
 
-if($do_prep) { prepare_and_exit($do_align, $cm_file, $params_file, $do_prep_nproc_set, $do_prep_nseq_set, $prep_nproc, $prep_nseq, $prep_enabled_options, $target_file, $out_dir, $out_root, $cluster_prefix, $cluster_suffix, $nseq_target_file, $esl_weight, $do_filteraln, $filter_id, \@indi_cm_name_A, \@indi_cm_file_name_A, \@log2printA); } 
+my $log_file       = $out_dir_root . ".log";
+my $log_file2print = $out_root . ".log";
+my $tab_file, $max_file_name_width, $description_width, $search_time;
+
+if($do_prep) { 
+    prepare_only($do_align, $cm_file, $params_file, $do_prep_nproc_set, $do_prep_nseq_set, $prep_nproc, $prep_nseq, $prep_enabled_options, $target_file, $out_dir, $out_root, $cluster_prefix, $cluster_suffix, $nseq_target_file, $esl_weight, $do_filteraln, $filter_id, \$max_file_name_width, \@indi_cm_name_A, \@indi_cm_file_name_A, \@log2printA); 
+
+    push(@log2printA, sprintf("  %-*s  log file (*this* text printed to stdout)\n", $max_file_name_width, $log_file2print));
+    printf($log2printA[(scalar(@log2printA)-1)]);
+    push(@log2printA, sprintf("#\n# All output files created in directory \.\/%s\/\n", $out_dir));
+    printf($log2printA[(scalar(@log2printA)-1)]);
+    push(@log2printA, sprintf("#\n"));
+    printf($log2printA[(scalar(@log2printA)-1)]);
+    print_log($log_file, \@log2printA);
+    exit(0);
+}
+ 
 
 # if we get here, $do_prep is FALSE
 
 ############################################################################
 # Step 1: Define sequence ends (and classify seqs if > 1 CM) with cmsearch #
 ############################################################################
-my $tab_file, $max_file_name_width, $description_width, $search_time;
 if($do_search) { 
     $search_time = -1 * time();
     search_sequences_with_each_model($my_cmsearch, $my_cm_file_copy, $target_file, $out_dir_root, $nseq_target_file, $do_viterbi, 
@@ -220,8 +235,6 @@ printf($log2printA[(scalar(@log2printA)-1)]);
 #################
 # Print timings #
 #################
-my $log_file = $out_dir_root . ".log";
-my $log_file2print = $out_root . ".log";
 push(@log2printA, sprintf("  %-*s  log file (*this* text printed to stdout)\n", $max_file_name_width, $log_file2print));
 printf($log2printA[(scalar(@log2printA)-1)]);
 
@@ -337,7 +350,7 @@ sub validate_input_files {
 # subroutine: determine_num_seqs()
 # incept:     EPN, Mon Nov  3 15:18:52 2008
 # 
-# purpose:    Count the number of sequences in the FASTA file 
+# purpose:    Count the number of sequences in the fasta file 
 #             <$target_file>.
 # 
 # returns:    <$nseq_target_file> number of sequences in 
@@ -403,7 +416,7 @@ sub create_output_dir {
 }
 
 #####################################################################
-# subroutine: prepare_and_exit()
+# subroutine: prepare_only()
 # incept:     EPN, Mon Nov  3 15:25:23 2008
 # 
 # purpose:    Carry out a special mode of ssu-align.pl for creating
@@ -412,9 +425,9 @@ sub create_output_dir {
 #             -c is enabled on the command line. 
 # 
 #             The target sequence file <$target_file> is partitioned
-#             into > 1 new, smaller FASTA files. A shell script 
+#             into > 1 new, smaller fasta files. A shell script 
 #             named <$out_dir_root.sh> is created that calls 'perl 
-#             ssu-align.pl' once each for each of the new FASTA 
+#             ssu-align.pl' once each for each of the new fasta 
 #             files. A separate perl script named 
 #             <$out_dir_root.merge.pl> is created that is to be run
 #             after the alignments in <$out_dir_root.sh> are complete.
@@ -428,10 +441,10 @@ sub create_output_dir {
 #             message and non-zero status code. 
 # 
 ####################################################################
-sub prepare_and_exit { 
-    my $narg_expected = 20;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, prepare_and_exit() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($do_align, $orig_cm_file, $params_file, $do_prep_nproc_set, $do_prep_nseq_set, $prep_nproc, $prep_nseq, $prep_enabled_options, $target_file, $out_dir, $out_root, $cluster_prefix, $cluster_suffix, $nseq_target_file, $esl_weight, $do_filteraln, $filter_id, $indi_cm_name_AR, $indi_cm_file_name_AR, $log2printAR) = @_;
+sub prepare_only { 
+    my $narg_expected = 21;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, prepare_only() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my($do_align, $orig_cm_file, $params_file, $do_prep_nproc_set, $do_prep_nseq_set, $prep_nproc, $prep_nseq, $prep_enabled_options, $target_file, $out_dir, $out_root, $cluster_prefix, $cluster_suffix, $nseq_target_file, $esl_weight, $do_filteraln, $filter_id, $max_file_name_widthR, $indi_cm_name_AR, $indi_cm_file_name_AR, $log2printAR) = @_;
 
     # Steps
     # 1. partition the target seq file
@@ -440,7 +453,9 @@ sub prepare_and_exit {
     #    alignments from ssu-align.pl calls in 2 together.
     # 4. exit
 
-    my ($shell_script, $remainder, $n, $target_subfile_root, $target_subfile, $sub_output, $nseq_this_file, $line, $ncm, $indi_cm_file_name, $indi_cm_file_name_root);
+    my ($shell_script, $shell_script2print, $merge_script, $merge_script2print, $remainder, $n, $target_subfile_root, $target_subfile, $sub_output);
+    my ($nseq_this_file, $line, $ncm, $indi_cm_file_name, $indi_cm_file_name_root, $ndig, $tmp, $start_log_line, $description_width, $dashes1, $dashes2);
+    my ($i, $nmerge, $iter, $nstop, $lower, $upper, $merged_root, $merged_name, $fil_merged_name, $merged_lower_name, $merged_upper_name, $cm_name);
     my $abs_orig_cm_file = abs_path($orig_cm_file);
     my $abs_params_file = abs_path($params_file);
 
@@ -449,8 +464,11 @@ sub prepare_and_exit {
     # cp the parameters file to the new dir
     system("cp $params_file $out_dir\/");
     if(($? >> 8) != 0) { printf STDERR ("ERROR, system\(\"cp \$params_file \$out_dir\/\"\) unexpectedly returned non-zero exit status %d\n", ($? >> 8)); exit(($? >> 8)); } 
-    
+
     $shell_script = $out_dir_root . ".sh";
+    $shell_script2print = $out_root . ".sh";
+    $merge_script = $out_dir_root . ".merge.pl";
+    $merge_script2print = $out_root . ".merge.pl";
     if(open(SH, ">" . $shell_script) == 0) { printf STDERR ("ERROR, could not open $shell_script for writing.\n"); exit(1); }
     #determine number of seqs per file (if $do_prep_nseq_set, we already know) 
     if($do_prep_nproc_set) { 
@@ -470,6 +488,26 @@ sub prepare_and_exit {
 	printf STDERR ("ERROR, -n %d enabled, but there's only %d sequences in the target file.\nNo need to use -n, you're requesting the target file be split into only 1 partition.\n", $prep_nseq, $nseq_target_file); exit(1); 
     }
 
+    $ndig = 1; $tmp = $prep_nproc; while($tmp > 10) { $ndig++; $tmp /= 10.; }
+    my $max_file_name_width = length($merge_script2print);
+    if($max_file_name_width < (length($target_file) + 1 + $ndig)) { 
+	$max_file_name_width = length($target_file) + 1 + $ndig;
+    }
+    $description_width = length("perl script to merge alignments when  completes");
+    $description_width += length($shell_script2print);
+    $dashes1 = ""; for($i = 0; $i < $max_file_name_width; $i++) { $dashes1 .= "-"; } 
+    $dashes2 = ""; for($i = 0; $i < $description_width; $i++)   { $dashes2 .= "-"; } 
+    
+    push(@{$log2printAR}, sprintf("#\n# Prep mode: Splitting up ssu-align job into %d smaller jobs.\n", $prep_nproc));
+    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+    push(@{$log2printAR}, sprintf("#\n"));
+    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+    push(@{$log2printAR}, sprintf("# %-*s  %-*s\n", $max_file_name_width, "output file name", $description_width, "description"));
+    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+    push(@{$log2printAR}, sprintf("# %-*s  %-*s\n", $max_file_name_width, $dashes1, $description_width, $dashes2));
+    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+    $start_log_line = scalar(@{$log2printAR});
+
     # 1. partition the target seq file AND
     # 2. print ssu-align.pl calls for each target seq file to stdout
     $n = 1;
@@ -483,6 +521,7 @@ sub prepare_and_exit {
 	if($line =~ m/^>/) { 
 	    if(++$nseq_this_file == $prep_nseq) { 
 		close(SUB); 
+		push(@{$log2printAR}, sprintf("  %-*s  partition %*d fasta sequence file\n", $max_file_name_width, $target_subfile_root, $ndig, $n));
 		printf SH ("%s%s%s\n", $cluster_prefix, "perl $ssualign $prep_enabled_options $abs_orig_cm_file $target_subfile_root $out_root." . $n . " $abs_params_file > $sub_output", $cluster_suffix);
 		$target_subfile_root = $target_file . "." . (++$n);
 		$target_subfile      = $out_dir . "/" . $target_subfile_root;
@@ -495,18 +534,17 @@ sub prepare_and_exit {
     }
     close(FULL);
     close(SUB);
+    push(@{$log2printAR}, sprintf("  %-*s  partition %*d fasta sequence file\n", $max_file_name_width, $target_subfile_root, $ndig, $n));
     printf SH ("%s%s%s\n", $cluster_prefix, "perl $ssualign $prep_enabled_options $abs_orig_cm_file $target_subfile_root $out_root." . $n . " $abs_params_file > $sub_output", $cluster_suffix);
     close(SH); 
-    if($n != $prep_nproc) { printf STDERR ("ERROR, problem partitioning target FASTA file $target_file into $prep_nproc files, only $n files were successfully created.\n"); exit(1); }
+    if($n != $prep_nproc) { printf STDERR ("ERROR, problem partitioning target fasta file $target_file into $prep_nproc files, only $n files were successfully created.\n"); exit(1); }
 
     my @to_mergeA;
     my @new_to_mergeA;
-    my($merge_script, $i, $nmerge, $iter, $nstop, $lower, $upper, $merged_root, $merged_name, $fil_merged_name, $merged_lower_name, $merged_upper_name, $namelen, $cm_name);
 
     # 3. print cmalign --merge calls to eventually merge resulting 
     #    alignments from ssu-align.pl calls in 2 together.
     if($do_align) { 
-	$merge_script = $out_dir_root . ".merge.pl";
 	if(open(MG, ">" . $merge_script) == 0) { printf STDERR ("ERROR, could not open $merge_script for writing.\n"); exit(1); }
 
 	for($m = 1; $m <= $ncm; $m++) { 
@@ -624,23 +662,20 @@ sub prepare_and_exit {
 	close(MG);
     }
     
-    push(@{$log2printAR}, sprintf("Success!\n"));
-    $namelen = length($shell_script);
-    if(length($merge_script) > $namelen) { $namelen = length($merge_script); }
-    push(@{$log2printAR}, sprintf("%-*s : directory with %d new FASTA files.\n", $namelen, $out_dir . "\/", $prep_nproc));
-    push(@{$log2printAR}, sprintf("%-*s : shell script that will run ssu-align.pl %d times, once for each new FASTA file.\n", $namelen, $shell_script, $prep_nproc));
+    push(@{$log2printAR}, sprintf("  %-*s  shell script that will run ssu-align %d times\n", $max_file_name_width, $shell_script2print, $prep_nproc));
     if($do_align) { 
-	push(@{$log2printAR}, sprintf("%-*s : perl script to run after %s that will merge the %d alignments together into 1.\n", $namelen, $merge_script, $shell_script, $prep_nproc));
+	push(@{$log2printAR}, sprintf("  %-*s  perl script to merge alignments when %s completes\n", $max_file_name_width, $merge_script2print, $shell_script2print));
     }
     $shell_script =~ s/$out_dir\///;
     $merge_script =~ s/$out_dir\///;
-    push(@{$log2printAR}, sprintf("To execute (doesn't work if you're going to use a cluster):\ncd $out_dir; sh $shell_script; perl $merge_script;\n"));
+    #push(@{$log2printAR}, sprintf("To execute (doesn't work if you're going to use a cluster):\ncd $out_dir; sh $shell_script; perl $merge_script;\n"));
 
     for($i = $start_log_line; $i < scalar(@{$log2printAR}); $i++) { 
 	printf($log2printAR->[$i]);
     }
 
-    exit(0);
+    $$max_file_name_widthR = $max_file_name_width;
+    return;
 }
 
 #####################################################################
