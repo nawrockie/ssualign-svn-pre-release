@@ -45,7 +45,8 @@
 #    -c <n> : run in 'prep' mode, split target seq file into <n> files with equal number of seqs
 #    -r <x> : w/-n or -c, filter alns based on seq identity, allow no 2 seqs > <x> identical
 #    -x <x> : increase mx size for cmalign to <x> Mb (default: 4096)
-#    -q     : DO NOT append posterior probabilities to alignments
+#    -d     : DO NOT append posterior probabilities to alignments
+#    -k     : DO NOT erase local copies of individual CM files after running
 #
 use Getopt::Std;
 use Cwd 'abs_path';
@@ -78,12 +79,13 @@ $options_usage .= "  -n <n> : run in 'prep' mode, split target seq file into mul
 $options_usage .= "  -c <n> : run in 'prep' mode, split target seq file into <n> files with equal number of seqs\n";
 $options_usage .= "  -r <x> : filter aln based on seq identity, allow no 2 seqs > <x> identical\n";
 $options_usage .= "  -x <x> : increase mx size for cmalign to <x> Mb (default: 4096)\n";
-$options_usage .= "  -q     : DO NOT append posterior probabilities to alignments\n\n";
+$options_usage .= "  -d     : DO NOT append posterior probabilities to alignments\n";
+$options_usage .= "  -k     : DO NOT erase local copies of individual CM files after running\n\n";
 
 ###################
 # Process options #
 ###################
-getopts('hFsauwgb:l:n:c:r:x:q');
+getopts('hFsauwgb:l:n:c:r:x:dk');
 my $do_clobber = 0;
 my $do_viterbi = 1;
 my $do_forward = 0;
@@ -104,8 +106,9 @@ my $filter_id = 0.;
 my $mxsize = 4096;
 my $cmalign_extra_options = " -p";
 my $cmsearch_T = -1;
+my $do_remove_local_cms = 1;
 
-my $prep_enabled_options = "";
+my $prep_enabled_options = " -k";
 my $enabled_options = "";
 if (defined $opt_h) { print $usage . "\n"; print $options_usage; exit(1); } 
 if (defined $opt_F) { $do_clobber = 1;                        $enabled_options .= " -F"; } 
@@ -124,7 +127,8 @@ if (defined $opt_r) { $do_filteraln = 1; $filter_id = $opt_r; $enabled_options .
 		      if (($r < 0.) || ($r > 1.)) { printf STDERR("ERROR, with -r <x>, valid range is 0. <= <x> <= 1.0.\n"); exit(1); } }
 if (defined $opt_x) { $mxsize = $opt_x;                       $enabled_options .= " -x $opt_x"; $prep_enabled_options .= " -x $opt_x"; 
 		      if($opt_x <= 0.) { printf STDERR("ERROR, with -x <x>, valid range is 0. < <x>.\n"); exit(1); } }
-if (defined $opt_q) { $cmalign_extra_options = "";            $enabled_options .= " -q";        $prep_enabled_options .= " -q "; }
+if (defined $opt_d) { $cmalign_extra_options = "";            $enabled_options .= " -d";        $prep_enabled_options .= " -d "; }
+if (defined $opt_k) { $do_remove_local_cms = 0;               $enabled_options .= " -k"; }
 
 ##############
 # Print banner
@@ -167,9 +171,11 @@ if((!$do_search) && ($ncm > 1)) { printf("ERROR, the -a option only works if the
 my $log_file       = $out_dir_root . ".log";
 my $log_file2print = $out_root . ".log";
 my $tab_file, $max_file_name_width, $description_width, $search_time;
+my $abs_orig_cm_file = abs_path($cm_file);
+my $abs_params_file = abs_path($params_file);
 
 if($do_prep) { 
-    prepare_only($do_align, $cm_file, $params_file, $do_prep_nproc_set, $do_prep_nseq_set, $prep_nproc, $prep_nseq, $prep_enabled_options, $target_file, $out_dir, $out_root, $cluster_prefix, $cluster_suffix, $nseq_target_file, $esl_weight, $do_filteraln, $filter_id, \$max_file_name_width, \@indi_cm_name_A, \@indi_cm_file_name_A, \@log2printA); 
+    prepare_only($do_align, $abs_orig_cm_file, $abs_params_file, $do_prep_nproc_set, $do_prep_nseq_set, $prep_nproc, $prep_nseq, $prep_enabled_options, $target_file, $out_dir, $out_root, $cluster_prefix, $cluster_suffix, $nseq_target_file, $esl_weight, $do_filteraln, $filter_id, $do_remove_local_cms, \$max_file_name_width, \@indi_cm_name_A, \@indi_cm_file_name_A, \@log2printA); 
 
     push(@log2printA, sprintf("  %-*s  log file (*this* text printed to stdout)\n", $max_file_name_width, $log_file2print));
     printf($log2printA[(scalar(@log2printA)-1)]);
@@ -178,6 +184,11 @@ if($do_prep) {
     push(@log2printA, sprintf("#\n"));
     printf($log2printA[(scalar(@log2printA)-1)]);
     print_log($log_file, \@log2printA);
+
+    # remove local copy of the CM file that was copied to $out_dir
+    system("rm -f $my_cm_file_copy");
+    if(($? >> 8) != 0) { printf STDERR ("ERROR, system\(\"rm -f $my_cm_file_copy\"\) unexpectedly returned non-zero exit status %d\n", ($? >> 8)); exit($? >> 8); } 
+
     exit(0);
 }
  
@@ -246,17 +257,26 @@ printf($log2printA[(scalar(@log2printA)-1)]);
 if($do_search) { print_timing("# CPU time (search):    ", $search_time, \@log2printA); }
 if($do_align)  { print_timing("# CPU time (alignment): ", $align_time, \@log2printA); }
 print_timing("# CPU time (total):     ", $total_time, \@log2printA); 
+push(@log2printA, sprintf("#\n"));
+printf($log2printA[(scalar(@log2printA)-1)]);
 
 print_log($log_file, \@log2printA);
 
+if($do_remove_local_cms) { 
 # remove individual CM files
-for($i = 0; $i < scalar(@indi_cm_file_name_A); $i++) { 
-    #system("rm -f $indi_cm_file_name_A[$i]");
-    #if(($? >> 8) != 0) { printf STDERR ("ERROR, system\(\"rm -f $indi_cm_file_name_A[$i]\"\) unexpectedly returned non-zero exit status %d\n", ($? >> 8)); exit($? >> 8); } 
-}
+    for($i = 0; $i < scalar(@indi_cm_file_name_A); $i++) { 
+	system("rm -f $indi_cm_file_name_A[$i]");
+	if(($? >> 8) != 0) { printf STDERR ("ERROR, system\(\"rm -f $indi_cm_file_name_A[$i]\"\) unexpectedly returned non-zero exit status %d\n", ($? >> 8)); exit($? >> 8); } 
+    }
 # remove local copy of the CM file that was copied to $out_dir
-#system("rm -f $my_cm_file_copy");
-#if(($? >> 8) != 0) { printf STDERR ("ERROR, system\(\"rm -f $my_cm_file_copy\"\) unexpectedly returned non-zero exit status %d\n", ($? >> 8)); exit($? >> 8); } 
+    system("rm -f $my_cm_file_copy");
+    if(($? >> 8) != 0) { printf STDERR ("ERROR, system\(\"rm -f $my_cm_file_copy\"\) unexpectedly returned non-zero exit status %d\n", ($? >> 8)); exit($? >> 8); } 
+}
+
+#remove esl-sfetch index file we created for the target file
+my $ssi_file = $target_file . ".ssi";
+system("rm -f $ssi_file");
+if(($? >> 8) != 0) { printf STDERR ("ERROR, system\(\"rm -f $ssi_file\"\) unexpectedly returned non-zero exit status %d\n", ($? >> 8)); exit($? >> 8); } 
 
 # success, exit normally
 exit(0); 
@@ -442,9 +462,9 @@ sub create_output_dir {
 # 
 ####################################################################
 sub prepare_only { 
-    my $narg_expected = 21;
+    my $narg_expected = 22;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, prepare_only() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($do_align, $orig_cm_file, $params_file, $do_prep_nproc_set, $do_prep_nseq_set, $prep_nproc, $prep_nseq, $prep_enabled_options, $target_file, $out_dir, $out_root, $cluster_prefix, $cluster_suffix, $nseq_target_file, $esl_weight, $do_filteraln, $filter_id, $max_file_name_widthR, $indi_cm_name_AR, $indi_cm_file_name_AR, $log2printAR) = @_;
+    my($do_align, $abs_orig_cm_file, $abs_params_file, $do_prep_nproc_set, $do_prep_nseq_set, $prep_nproc, $prep_nseq, $prep_enabled_options, $target_file, $out_dir, $out_root, $cluster_prefix, $cluster_suffix, $nseq_target_file, $esl_weight, $do_filteraln, $filter_id, $do_remove_local_cms, $max_file_name_widthR, $indi_cm_name_AR, $indi_cm_file_name_AR, $log2printAR) = @_;
 
     # Steps
     # 1. partition the target seq file
@@ -456,14 +476,8 @@ sub prepare_only {
     my ($shell_script, $shell_script2print, $merge_script, $merge_script2print, $remainder, $n, $target_subfile_root, $target_subfile, $sub_output);
     my ($nseq_this_file, $line, $ncm, $indi_cm_file_name, $indi_cm_file_name_root, $ndig, $tmp, $start_log_line, $description_width, $dashes1, $dashes2);
     my ($i, $nmerge, $iter, $nstop, $lower, $upper, $merged_root, $merged_name, $fil_merged_name, $merged_lower_name, $merged_upper_name, $cm_name);
-    my $abs_orig_cm_file = abs_path($orig_cm_file);
-    my $abs_params_file = abs_path($params_file);
 
     $ncm = scalar(@{$indi_cm_file_name_AR});
-
-    # cp the parameters file to the new dir
-    system("cp $params_file $out_dir\/");
-    if(($? >> 8) != 0) { printf STDERR ("ERROR, system\(\"cp \$params_file \$out_dir\/\"\) unexpectedly returned non-zero exit status %d\n", ($? >> 8)); exit(($? >> 8)); } 
 
     $shell_script = $out_dir_root . ".sh";
     $shell_script2print = $out_root . ".sh";
@@ -493,6 +507,8 @@ sub prepare_only {
     if($max_file_name_width < (length($target_file) + 1 + $ndig)) { 
 	$max_file_name_width = length($target_file) + 1 + $ndig;
     }
+    my $max_cm_name_width = max_length_scalar_in_array($indi_cm_name_AR);
+    
     $description_width = length("perl script to merge alignments when  completes");
     $description_width += length($shell_script2print);
     $dashes1 = ""; for($i = 0; $i < $max_file_name_width; $i++) { $dashes1 .= "-"; } 
@@ -509,11 +525,10 @@ sub prepare_only {
     $start_log_line = scalar(@{$log2printAR});
 
     # 1. partition the target seq file AND
-    # 2. print ssu-align.pl calls for each target seq file to stdout
+    # 2. print ssu-align calls for each target seq file to stdout
     $n = 1;
     $target_subfile_root = $target_file . "." . $n;
     $target_subfile      = $out_dir . "/" . $target_subfile_root;
-    $sub_output          = $out_root . "." . $n  . ".ssu-align";
     if(open(SUB, ">" . $target_subfile) == 0) { printf STDERR ("ERROR, could not open $target_subfile for writing.\n"); exit(1); }
     $nseq_this_file = -1;
     if(open(FULL, $target_file) == 0) { printf STDERR ("ERROR, could not open $target_file for reading.\n"); exit(1); }
@@ -522,10 +537,9 @@ sub prepare_only {
 	    if(++$nseq_this_file == $prep_nseq) { 
 		close(SUB); 
 		push(@{$log2printAR}, sprintf("  %-*s  partition %*d fasta sequence file\n", $max_file_name_width, $target_subfile_root, $ndig, $n));
-		printf SH ("%s%s%s\n", $cluster_prefix, "perl $ssualign $prep_enabled_options $abs_orig_cm_file $target_subfile_root $out_root." . $n . " $abs_params_file > $sub_output", $cluster_suffix);
+		printf SH ("%s%s%s\n", $cluster_prefix, "perl $ssualign $prep_enabled_options $abs_orig_cm_file $target_subfile_root $out_root." . $n . " $abs_params_file", $cluster_suffix);
 		$target_subfile_root = $target_file . "." . (++$n);
 		$target_subfile      = $out_dir . "/" . $target_subfile_root;
-		$sub_output          = $out_root . "." . $n  . ".ssu-align";
 		if(open(SUB, ">" . $target_subfile) == 0) { printf STDERR ("ERROR, could not open $target_subfile for writing.\n"); exit(1); }
 		$nseq_this_file = 0;
 	    }
@@ -535,7 +549,7 @@ sub prepare_only {
     close(FULL);
     close(SUB);
     push(@{$log2printAR}, sprintf("  %-*s  partition %*d fasta sequence file\n", $max_file_name_width, $target_subfile_root, $ndig, $n));
-    printf SH ("%s%s%s\n", $cluster_prefix, "perl $ssualign $prep_enabled_options $abs_orig_cm_file $target_subfile_root $out_root." . $n . " $abs_params_file > $sub_output", $cluster_suffix);
+    printf SH ("%s%s%s\n", $cluster_prefix, "perl $ssualign $prep_enabled_options $abs_orig_cm_file $target_subfile_root $out_root." . $n . " $abs_params_file", $cluster_suffix);
     close(SH); 
     if($n != $prep_nproc) { printf STDERR ("ERROR, problem partitioning target fasta file $target_file into $prep_nproc files, only $n files were successfully created.\n"); exit(1); }
 
@@ -657,6 +671,22 @@ sub prepare_only {
 		}
 		@to_mergeA = @new_to_mergeA;
 		$nmerge = scalar(@to_mergeA);
+	    }
+	}
+	# remove all the local CMs we just used to merge alignments
+	if($do_remove_local_cms) { 
+	    for($m = 0; $m < $ncm; $m++) { 
+		$indi_cm_file_name_root = $indi_cm_file_name_AR->[$m];
+		$indi_cm_file_name_root =~ s/^.+\///;
+		for($i = 1; $i <= $prep_nproc; $i++) { 
+		    $indi_cm_file_name = $out_root . "." . $i . "/" . $indi_cm_file_name_root;
+		    printf MG ("system(\"rm -f $indi_cm_file_name\");\n");
+		    printf MG ("if((\$? \<\< 8) != 0) { printf STDERR (\"ERROR, system(\\\"rm -f $indi_cm_file_name\\\" returned a non-zero exit status \%d\\n\", (\$? >> 8)); exit((\$? >> 8)); }\n");
+		}
+		# IF we wanted to rename the merged alignment, this is where that would go
+		$merged_name = $out_root . ".1-" . $prep_nproc . "." . $indi_cm_name_AR->[$m] . ".merged.stk";
+		#printf ("system(\"mv $indi_cm_file_name_root\");\n");
+		printf MG ("printf(\"Merged alignment for %-*s CM saved to %s\\n\"\);\n", $max_cm_name_width, $indi_cm_name_AR->[$m], $merged_name);
 	    }
 	}
 	close(MG);
@@ -949,7 +979,7 @@ sub classify_and_extract_subseqs {
     $ncm_with_at_least_one_seq = 0;
     $index_file = $target_file . ".ssi";
     
-    #if index file exists, remove it and remake it (this is the only way to know for sure that the index was created for this specific file)
+    #if index file exists, remove it and remake it (wasteful, but this is the only way to know for sure that the index was created for this specific file)
     if(-e $index_file)    { system("rm -f $index_file"); } 
     if(($? >> 8) != 0)    { printf STDERR ("ERROR, system(\"rm -f $index_file\" unexpectedly returned non-zero exit status %d.\n", ($? >> 8)); exit($? >> 8); }
     system("$esl_sfetch \-\-index $target_file > /dev/null"); 
