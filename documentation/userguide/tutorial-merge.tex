@@ -1,0 +1,45 @@
+\subsection{Merging multiple alignments together}
+
+The \prog{cmalign} program of \textsc{infernal} is capable of merging
+two alignments into one. The two alignments must have both been created by
+\prog{cmalign} (and the same version of \prog{cmalign}, 1.0 or later),
+and must have been created using the same exact CM. This ability is
+potentially useful for saving time when aligning a large number of
+sequences if you have access to a compute cluster, as described in the
+previous section (``Splitting up large alignment jobs''), or if you
+want to merge an existing reference alignment with a newly created
+one. Combining a new alignment with a reference may be useful in
+downstream phylogenetic analysis if you know the classification of the
+sequences in the reference alignment.
+
+Imagine we wanted to merge the archaeal sequences from the
+\prog{rocks.fa} sequence dataset from the basic tutorial with 
+an alignment of the archaeal seed sequences. 
+
+Merging alignments only makes sense and saves time if you've already
+computed the two alignments you want to merge. For this example I've
+provided the two alignments in the \prog{/tutorial} subdirectory:
+
+\begin{description}
+\item[\emprog{rocks.archaea.stk}]
+  An alignment of the archaeal sequences from the \prog{rocks.fa}
+  dataset. The basic tutorial steps through how to create this file.
+
+\item[\emprog{seed.archaea.stk}]
+  An alignment of the archaeal seed sequences, created with the
+  command \prog{ssu-align ../seeds/archaea-0p1.cm ../seeds/archaea-0p1.fa seed ../ssualign.0p1.params}
+  (Note: this file is NOT identical to the seed alignment
+  \prog{archaea-0p1.stk}. I've realigned those sequences to the
+  archaeal model to obtain posterior probability confidence estimates
+  in the alignment. 
+\end{description}
+
+If \prog{cmalign} version 1.0 is in your path, you 
+can merge these two alignments into a single alignment called
+\prog{seed-rocks.archaea.stk} with
+
+\user{cmalign --merge -o seed-rocks.archaea.stk ../seeds/archaea-0p1.cm seed.archaea.stk rocks.archaea.stk}
+
+The resulting alignment will be 100\% identical to the alignment
+\prog{cmalign} would have created if it were used to align a single
+sequence file with the seed sequences and rocks sequences together.
