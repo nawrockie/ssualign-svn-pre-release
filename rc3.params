@@ -1,4 +1,0 @@
-$cmsearch = "/groups/eddy/home/nawrockie/notebook/8_0822_inf_svn_1p0rc2_bug_fixes/infernal-1.0/src/cmsearch";
-$cmalign  = "/groups/eddy/home/nawrockie/infernal-1.0rc3/src/cmalign";
-$sfetch   = "/groups/eddy/home/nawrockie/infernal-1.0rc3/easel/miniapps/esl-sfetch";
-1;

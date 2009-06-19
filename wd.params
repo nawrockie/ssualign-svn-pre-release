@@ -1,5 +1,0 @@
-$cmsearch    = "/groups/eddy/home/nawrockie/notebook/8_1111_ssu-align/ssualign/infernal-1.0/src/cmsearch";
-$cmalign     = "/groups/eddy/home/nawrockie/notebook/8_1111_ssu-align/ssualign/infernal-1.0/src/cmalign";
-$esl_sfetch  = "/groups/eddy/home/nawrockie/notebook/8_1111_ssu-align/ssualign/infernal-1.0/easel/miniapps/esl-sfetch";
-$esl_weight  = "/groups/eddy/home/nawrockie/infernal/easel/miniapps/esl-weight";
-1;

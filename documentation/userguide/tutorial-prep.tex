@@ -1,4 +1,4 @@
-\subsection{Splitting up large alignment jobs}
+\subsection{Splitting up large datasets to run in parallel on a cluster}
 
 If you have access to a compute cluster you can partition your input
 dataset and run \textsc{ssu-align} in parallel on multiple machines. A
@@ -36,8 +36,8 @@ scheduler. For example, look at the final 3 lines of the file
 \prog{tutorial/janelia-sa-0p1.params}:
 
 \begin{sreoutput}
-\$cluster\_prefix = "qsub -N ssualign -o ssualign.out -b y -cwd -V -j y '";
-\$cluster\_suffix = "'";
+$cluster_prefix = "qsub -N ssualign -o ssualign.out -b y -cwd -V -j y '";
+$cluster_suffix = "'";
 1;
 \end{sreoutput}
 
@@ -63,6 +63,8 @@ To execute the script:
 
 The program finishes in about 1 second. It will print information on
 the files it has created:
+
+\newpage
 
 \begin{comment}
 # ssu-align :: define and align SSU rRNA sequences
@@ -114,38 +116,37 @@ execute \prog{ssu-align} five times. First, enter the
 
 The output of the five \prog{ssu-align} runs will begin to print to
 the screen. When one run finishes, the next will immediately
-start. Each run should take about 30 seconds, so all five take a few
-minutes. Once they're done we can move to the next step: merging the
-alignments. If we had defined \prog{\$cluster\_prefix} and
+start. Each run should take about 30 seconds, so all five will take a
+few minutes. Once they're done we can move to the next step: merging
+the alignments. If we had defined \prog{\$cluster\_prefix} and
 \prog{\$cluster\_suffix}, each line of our script would have submitted
 a separate job to our cluster. The script would finish quickly, but
 the jobs would still be running. \textbf{\emph{Important: }} you'll
-need to wait until \emph{all} the jobs are finished running on the
-cluster before attempting to merge the alignments. 
+need to wait until all the jobs are finished running on the
+cluster before attempting to merge the alignments.
 
 Continuing with our example, to merge the alignments:
-\prog{perl seed-50-c5.merge.pl}
+\user{perl seed-50-c5.merge.pl}
 
 This script will create a merged alignment for each model in the
 original cm file (\prog{ssu5-0p1.cm} in this case) that was the
 best-matching model for at least 1 sequence in any of the five runs.
 For each such model, the script will merge two alignments at a time
 using \textsc{infernal}'s \prog{cmalign} program (see the next section
-on ``Merging multiple alignments together'' for more information).
-done) until all a single alignment with all the sequences is
-created. 
+on ``Merging multiple alignments together'' for an example)
+until a single alignment with all the sequences is created. 
 
 For example, in this case the alignment from jobs 1 and 2 would be
-merged first, then from jobs 3 and 4. Now three alignments exist, one
-from jobs 1+2, one from 3+4 and one from 5. Next 1+2 are merged with
-3+4, and finally the resulting alignment of 1+2+3+4 is merged with the
-alignment from job 5. If you look at the code in
-\prog{seed-50-c5.merge.pl} it may look complex, but this simple binary
-merging is all that it is doing. The intermediate alignments are
-deleted once they are no longer needed as the script proceeds. If you
-have a large number of alignments to merge and/or a large number of total
-sequences this script may take a long time. For more information on
-running times see the ``Performance'' section.
+merged first, then the alignments from jobs 3 and 4 are merged. Now
+three alignments exist, one from jobs 1+2, one from 3+4 and one from
+5. Next 1+2 are merged with 3+4, and finally the resulting alignment
+of 1+2+3+4 is merged with the alignment from job 5. If you look at the
+code in \prog{seed-50-c5.merge.pl} it may look messy, but this
+simple binary merging is all that it is doing. The intermediate
+alignments are deleted once they are no longer needed as the script
+proceeds. If you have a large number of alignments to merge and/or a
+large number of total sequences this script may take a long time. For
+more information on running times see the ``Performance'' section.
 
 In this case, 5 merged alignments are created, as reported by the
 script:
@@ -158,7 +159,7 @@ Merged alignment for eukarya     CM saved to seed-50-c5.1-5.eukarya.merged.stk
 Merged alignment for metamito    CM saved to seed-50-c5.1-5.metamito.merged.stk
 \end{sreoutput}
 
-These alignments will be \%100 identical to the alignments that would
+These alignments will be 100\% identical to the alignments that would
 have been created if we had not split up this job, but rather aligned
 all 50 sequences with a single run of \prog{ssu-align}.
 
