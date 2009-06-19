@@ -1,0 +1,22 @@
+\subsection{Creating secondary structure diagrams that
+  display alignment statistics}
+
+SSU rRNA alignments are large and difficult to view in a meaningful
+way. \textsc{ssu-align} includes a program \prog{esl-ssudraw} for
+creating secondary structure diagrams that display statistics of a
+particular alignment on the consensus secondary structure used to
+align the model. To use \prog{esl-ssudraw} requires a template
+postscript file of the consensus secondary structure. The template
+files for the 5 default \textsc{ssu-align} version 0.1 seed models are
+included, but constructing these required a significant amount of
+work, and creating your own templates for different models would be
+difficult. 
+
+Let's create a diagram that shows the information content of each
+position of the archaeal alignment created in the basic tutorial of
+sequences from from the Walker and Pace
+rocks study:
+
+TO DO!
+
+\prog{esl-ssudraw rocks/rocks.archaea.cmalign.stk ../../seeds/ss-diagrams/archaea-0p1.ps my.ps}
