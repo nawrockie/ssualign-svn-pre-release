@@ -3,10 +3,9 @@
 This section describes the content of the different output file
 formats created by \prog{ssu-align}. Many of the descriptions below
 refer to files in the \prog{tutorial/output/} directory. These files
-were created in the \prog{tutorial/} directory by running
-\prog{ssu-align} with the command: 
-
-\user{ssu-align ../seeds/ssu5-0p1.cm seed-10.fa output ../sa-0p1.params}
+were created by an \prog{ssu-align} run with the command:
+\user{ssu-align ../seeds/ssu5-0p1.cm seed-10.fa seed-10
+  ../sa-0p1.params}
 
 \subsection{.tab suffixed files}
 
@@ -53,8 +52,9 @@ column shows the minimum score threshold, alignments scoring above
 
 After the pre-search information comes four lines of column headings
 followed by data lines reporting high scoring local alignments. One
-line is printed per alignment (it is possible to see more than one per
-sequence).
+line is printed per alignment, or \emph{hit} (it is possible to see
+more than one hit per sequence). Remember these are scores against the
+archaea model.
 
 \begin{sreoutputtiny}
 #                                                       target coord   query coord                         
@@ -74,11 +74,48 @@ sequence).
   00127::Nostoc_muscorum::X59559                      10        1487      1   1508    697.37         -   54
 \end{sreoutputtiny}
 
+Here's a brief description of each column:
+
+\begin{wideitem}
+\item[\emprog{target name}] the name of the target sequence.
+
+\item[\emprog{start (target coord)}] first sequence residue in the alignment
+
+\item[\emprog{end (target coord)}] final sequence residue in the alignment
+\end{wideitem}
+
+The \prog{begin} and \prog{end} columns under \prog{query coord} are
+uninformative for HMM searches like those performed by
+\prog{ssu-align}. (\prog{cmsearch} will print informative numbers in
+these columns when the CM is used for a search.) With HMM searches the
+\prog{begin} column will always be \prog{1} and the \prog{end} column
+will always be the final position of the model.
+
+\begin{wideitem}
+
+\item[\emprog{bit sc}] the bit score of the HMM alignment of
+  target sequence residues \prog{begin} to \prog{end}.
+
+\item[\emprog{E-value}] this will always read \prog{-}. It would
+  include an E-value of the bit score if the model had been calibrated
+  with \prog{cmcalibrate}. Currently, \prog{ssu-align} does not use
+  calibrated models, mainly because they are most useful for
+  identifying remotely homologous structural RNAs using much models of
+  much smaller RNAs, such as transfer RNA. See the \textsc{infernal}
+  user's guide for more information.
+
+\item[\emprog{GC\%}] the percent of the residues in the aligned
+  sequence that are either \prog{G} or \prog{C}. This is largely
+  irrelevant for SSU rRNA, but is sometimes useful when using
+  \prog{cmsearch} with smaller models.
+\end{wideitem}
+
 \subsection{.hits.list suffixed files}
 \subsection{.hits.fa suffixed files}
 \subsection{.cmalign suffixed files}
 \subsection{.stk suffixed files}
 \subsection{.scores suffixed files}
+
 
 Take a look at the file \prog{tutorial/output/output.scores}
 
