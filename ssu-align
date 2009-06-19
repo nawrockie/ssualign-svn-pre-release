@@ -1354,21 +1354,19 @@ sub print_scores_file {
     $second_string .= "second-best model";
     for($i = 0; $i < $ntrailing_spaces;  $i++)  { $second_string .= " "; }
 
-    printf SCORES ("# %7s  %-*s  %-*s  %-*s", "", $max_seq_name_width, "", $max_cm_name_width + 39, $best_string);
+    printf SCORES ("# %7s  %-*s  %-*s", "", $max_seq_name_width, "", $max_cm_name_width + 39, $best_string);
     if($ncm > 1) { printf SCORES ("  %-*s", $max_cm_name_width + 9, $second_string); }
     printf SCORES ("\n");
 
-    printf SCORES ("# %7s  %-*s  %-*s  %-*s", "", $max_seq_name_width, "", $max_cm_name_width + 39, $dashes1);
+    printf SCORES ("# %7s  %-*s  %-*s", "", $max_seq_name_width, "", $max_cm_name_width + 39, $dashes1);
     if($ncm > 1) { printf SCORES ("  %-*s", $max_cm_name_width + 9, $dashes2); }
     printf SCORES ("\n");
 
     printf SCORES ("# %7s  %-*s  %-*s  %4s  %4s  %7s  %7s  %7s", "idx", $max_seq_name_width, "sequence name", $max_cm_name_width, "model name",   "beg",  "end",  "CM sc",  "struct",  "HMM sc");
     if($ncm > 1) { printf SCORES ("  %-*s  %7s  %7s\n", $max_cm_name_width, "model name",   "HMM sc",  "HMMdiff"); }
-    printf SCORES ("\n");
 
     printf SCORES ("# %7s  %-*s  %-*s  %4s  %4s  %7s  %7s  %7s", "-------", $max_seq_name_width, $dashes_seqname, $max_cm_name_width, $dashes_cmname, "----", "----", "-------", "-------", "-------");
     if($ncm > 1) { printf SCORES ("  %-*s  %7s  %7s\n", $max_cm_name_width, $dashes_cmname, "-------", "-------"); }
-    printf SCORES ("\n");
 
     $idx = 1;
     while($line = <TARGET>) { 
