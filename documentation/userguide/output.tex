@@ -3,20 +3,172 @@
 This section describes the content of the different output file
 formats created by \prog{ssu-align}. Many of the descriptions below
 refer to files in the \prog{tutorial/output/} directory. These files
-were created by an \prog{ssu-align} run with the command:
-\user{ 
+were created in the \prog{tutorial/} directory by running
+\prog{ssu-align} with the command: 
 
+\user{ssu-align ../seeds/ssu5-0p1.cm seed-10.fa output ../sa-0p1.params}
 
 \subsection{.tab suffixed files}
+
+The \prog{.tab} files are created by the \textsc{infernal} program
+\prog{cmsearch} which is called internally by
+\prog{ssu-align}. \prog{cmsearch} builds profile HMMs for each model
+in the input CM file and scans each input sequence for high scoring
+alignments to the HMM. The \prog{.tab} file lists the locations and
+scores of each of these alignments. An example \prog{.tab} file is in 
+\prog{tutorial/output/output.tab}. The first part of the file is the
+header section:
+
+\begin{sreoutput}
+# command:    /Users/eric/infernal-1.0/src/cmsearch --hmm-cW 1.5 -T -1 --no-null3 \\
+--toponly --noalign --tab output/output.tab --viterbi output/ssu5-0p1.cm seed-10.fa
+# date:       Fri Jun 19 08:23:32 2009
+# num seqs:   10
+# dbsize(Mb): 0.014568
+#
+# Pre-search info for CM 1: archaea
+#
+# rnd  mod  alg  cfg   beta  bit sc cut
+# ---  ---  ---  ---  -----  ----------
+#   1  hmm  vit  loc      -       -1.00
+#
+\end{sreoutput}
+
+The first four lines list the \prog{cmsearch} command executed from
+within \prog{ssu-align}, the date it was executed, the number of
+sequences in the sequence file being searched, and the number of
+millions of residues (Mb) in that sequence file. (I manually
+wrapped line 1 to make it readable). NOTE ON REVERSE COMPLEMENT!
+
+Next, the pre-search information describing how the search will be
+conducted is printed for the first model in the CM file: archaea. 
+The \prog{rnd}, \prog{mod}, \prog{alg} and \prog{cfg} columns report
+that the first and only round of searching will be conducted with a
+profile \emph{HMM} using the \emph{vit}erbi algorithm for scoring
+\emph{local} alignments to the model. (The viterbi algorithm is
+briefly explained in the ``Background'' section). The \prog{beta}
+column is irrelevant when searching with an HMM. The \prog{bit sc cut}
+column shows the minimum score threshold, alignments scoring above
+\prog{-1.00} bits will be reported. MORE HERE EXPLAINING WHY -1?
+
+After the pre-search information comes four lines of column headings
+followed by data lines reporting high scoring local alignments. One
+line is printed per alignment (it is possible to see more than one per
+sequence).
+
+\begin{sreoutputtiny}
+#                                                       target coord   query coord                         
+#                                             ----------------------  ------------                         
+# target name                                      start        stop  start   stop    bit sc   E-value  GC%
+# ------------------------------------------  ----------  ----------  -----  -----  --------  --------  ---
+
+  00841::Escherichia_coli::J01695                     54        1540      1   1508    622.99         -   55
+  00116::Pyrococcus_horikoshii::AP000001               1        1497      1   1508   2215.49         -   66
+  00628::Saccharomyces_cerevisiae.::U53879          1109        1797      1   1508    196.51         -   49
+  00230::Oxytricha_granulifera::X53486              1096        1775      1   1508    191.89         -   50
+  00366::Mitochondrion_Mus_musculus::J01420          831         927      1   1508     15.94         -   38
+  00173::chloroplast_Zea_mays_maize_::Z00028          54        1488      1   1508    703.54         -   56
+  00004::Nanoarchaeum_equitans::AJ318041               1        1500      1   1508   1916.64         -   68
+  01058::Mycobacterium_tuberculosis.::Z83862          57        1533      1   1508    702.11         -   58
+  00569::Mitochondrion_Gallus_gallus::X52392         856         948      1   1508      3.96         -   47
+  00127::Nostoc_muscorum::X59559                      10        1487      1   1508    697.37         -   54
+\end{sreoutputtiny}
+
 \subsection{.hits.list suffixed files}
 \subsection{.hits.fa suffixed files}
 \subsection{.cmalign suffixed files}
 \subsection{.stk suffixed files}
 \subsection{.scores suffixed files}
 
-The \prog{.scores} file lists information for every sequence in the
-input target sequence file. Below are the first 15 lines from the file
-\prog{rocks.}
+Take a look at the file \prog{tutorial/output/output.scores}
 
+\begin{sreoutputtinywide}
+#                                                                     best-matching model                   second-best model  
+#                                                      --------------------------------------------------  --------------------
+#     idx  sequence name                               model name    beg   end    CM sc   struct   HMM sc  model name    HMM sc  HMMdiff
+# -------  ------------------------------------------  -----------  ----  ----  -------  -------  -------  -----------  -------  -------
+        1  00841::Escherichia_coli::J01695             bacteria        1  1542  2398.43   303.43  2125.65  chloroplast  1427.15   698.50
+        2  00116::Pyrococcus_horikoshii::AP000001      archaea         1  1497  2316.02   176.14  2215.49  bacteria      601.72  1613.77
+        3  00628::Saccharomyces_cerevisiae.::U53879    eukarya         1  1800  2753.53   162.93  2627.74  archaea       196.51  2431.23
+        4  00230::Oxytricha_granulifera::X53486        eukarya         1  1778  2636.03   143.04  2515.92  archaea       191.89  2324.03
+        5  00366::Mitochondrion_Mus_musculus::J01420   metamito        1   956  1259.62    87.37  1219.28  -                  -        -
+        6  00173::chloroplast_Zea_mays_maize_::Z00028  chloroplast     2  1490  2381.70   118.29  2305.29  bacteria     1781.63   523.66
+        7  00004::Nanoarchaeum_equitans::AJ318041      archaea         1  1500  2094.59   265.20  1916.64  bacteria      480.94  1435.70
+        8  01058::Mycobacterium_tuberculosis.::Z83862  bacteria        2  1537  2324.10   238.30  2140.25  chloroplast  1410.10   730.15
+        9  00569::Mitochondrion_Gallus_gallus::X52392  metamito        1   976  1129.62   123.26  1061.76  -                  -        -
+       10  00127::Nostoc_muscorum::X59559              chloroplast     2  1489  2263.17   211.15  2101.91  bacteria     2017.96    83.95
+\end{sreoutputtinywide}
+
+There are four rows containing column headings prefixed with
+\prog{\#}. There are then 10 data rows, one for each sequence in the
+input sequence file \prog{tutorial/seed-10.fa}. Data rows are
+separated into 12 columns:
+
+\begin{wideitem}
+\item[\emprog{idx}] the index of the sequence in the file.
+
+\item[\emprog{sequence name}] the name of the sequence.
+\end{wideitem}
+
+The next 6 columns all describe the \emph{best-matching} model for the
+sequence. This is the model that assigned the highest primary
+sequence-based local profile HMM alignment score to the sequence. 
+If no model aligned the sequence with a score higher than the minimum
+threshold of $100$ bits then the sequence was skipped and not
+aligned, and all these columns will read \prog{-}. (Note: the minimum
+bit score threshold value can be changed to \prog{<x>} using the
+\prog{ssu-align} command-line option \prog{-b <x>}). 
+
+\begin{wideitem}
+\item[\emprog{model name}] name of best-matching model.
+
+\item[\emprog{beg}] first sequence residue index in the maximal
+  scoring local HMM alignment to the best-matching model.
+
+\item[\emprog{end}] final sequence residue index in the maximal
+  scoring local HMM alignment to the best-matching model.
+
+\item[\emprog{CM sc}] the CM bit score for the best-matching model
+  assigned to the sequence from positions \prog{beg} to \prog{end}.
+
+\item[\emprog{struct}] the number of extra bits included in the
+  CM bit score that are dervied from the secondary structure component
+  of the model.
+
+\item[\emprog{HMM sc}] the HMM bit score for the local alignment of
+  the best-matching model to the sequence from positions \prog{beg} to
+  \prog{end}.
+\end{wideitem}
+
+The ``Background'' section contains a more detailed discussion of bit
+scores.
+
+The next 2 columns describe the \prog{second-best model}. This is the
+model that assigned the second-highest primary sequence-based local 
+profile HMM alignment score to the sequence. If only one models score
+exceeded the minimum of $100$ bits then these columns will each read
+``\prog{-}''.
+
+\begin{wideitem}
+\item[\emprog{model name}] name of second-best-matching model.
+
+\item[\emprog{HMM sc}] the HMM bit score for the local alignment of
+  the second-best-matching model to the sequence. This alignment was
+  not necessarily from \prog{beg} to \prog{end} (those were the
+  coordinates of the alignment to the best-matching model). The
+  sequence coordinates of the second-best model's alignment can be
+  found in the file \prog{output.tab}.
+\end{wideitem}
+
+The final column, \prog{HMMdiff}, reports the score difference between
+the best-matching model HMM alignment and the second-best matching
+model HMM alignment. This is included because it is an indication of
+how clearly homologous the sequence is to the best-matching model
+instead of the second-best-matching model. The higher this score
+difference is the more obvious it is that the sequence falls within
+the sequence diversity represented by the best-matching model.
+Sequences that are phylogenetically novel and do not obviously match
+any single model much better than any other one will have score
+differences in this column.
 
 \subsection{.log suffixed files}

@@ -1380,7 +1380,8 @@ sub print_scores_file {
 		($start, $end, $whmmsc, $secondhmm, $shmmsc) = split(/\s+/, $hmmscores2printHR->{$seq_name});
 
 		printf SCORES ("  %7d  %-*s  %-*s  %4d  %4d  %7.2f  %7.2f  %7.2f", $idx, $max_seq_name_width, $seq_name, $max_cm_name_width, $winning_cm, $start, $end, $cmsc, $cmstructsc, $whmmsc);
-		if($ncm > 1) { printf SCORES ("  %-*s  %7.2f  %7.2f", $max_cm_name_width, $secondhmm, $shmmsc, ($whmmsc - $shmmsc)); }
+		if($ncm > 1 && ($secondhmm ne $winning_cm)) { printf SCORES ("  %-*s  %7.2f  %7.2f", $max_cm_name_width, $secondhmm, $shmmsc, ($whmmsc - $shmmsc)); }
+		elsif($ncm > 1)                             { printf SCORES ("  %-*s  %7s  %7s",    $max_cm_name_width, "-", "-", "-"); }
 	    }
 	    else {
 		printf SCORES ("  %7d  %-*s  %-*s  %4s  %4s  %7s  %7s  %7s", $idx, $max_seq_name_width, $seq_name, $max_cm_name_width, "-", "-", "-", "-", "-", "-");
