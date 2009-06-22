@@ -998,13 +998,13 @@ sub classify_and_extract_subseqs {
 	    if(open(SFETCHIN, ">" . $esl_sfetch_in_file) == 0) { printf STDERR ("ERROR, could not open $esl_sfetch_in_file for writing.\n"); exit(1); }
 
 	    # determine max seq name width 
-	    $cur_max_seq_name_width = 0;
+	    $cur_max_seq_name_width = length("target name");
 	    for($i = 0; $i < $nwinners; $i++) { if(length($by_cm_name_HA{$cm_name}[$i]) > $cur_max_seq_name_width) { $cur_max_seq_name_width = length($by_cm_name_HA{$cm_name}[$i]); } }
 	    $dashes = "";
-	    for($i = 0; $i < $cur_max_seq_name_width; $i++) { $seq_name_dashes .= "-"; }
+	    for($i = 0; $i < $cur_max_seq_name_width; $i++) { $dashes .= "-"; }
 	    printf OUTLIST  ("# List of %d subsequences to align to CM: $cm_name\n", $nwinners);
 	    printf OUTLIST  ("# Created by ssu-align.pl.\n#\n");
-	    printf OUTLIST  ("# %-*s  %6s  %6s  %8s\n", $cur_max_seq_name_width, "seqname", "start", "stop", "score");
+	    printf OUTLIST  ("# %-*s  %6s  %6s  %8s\n", $cur_max_seq_name_width, "target name", "start", "stop", "score");
 	    printf OUTLIST  ("# %*s  %6s  %6s  %8s\n", $cur_max_seq_name_width, $dashes, "------", "------", "--------");
 
 	    for($i = 0; $i < $nwinners; $i++) { 

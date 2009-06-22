@@ -111,8 +111,54 @@ will always be the final position of the model.
 \end{wideitem}
 
 \subsection{.hits.list suffixed files}
+
+The \prog{.hits.list} files are simple files created for each model
+that simply list the sequences that were best-matches to that model,
+and as a result were aligned to that model in stage 2. If a model has
+zero sequences for which it is the best-matching model, this file will
+not be created. The file contains no new information absent from 
+the \prog{.tab} file and is only created as a convenience, because it
+is cumbersome to determine which model gave the highest score to a
+particular sequence in the \prog{tab} file.  
+For model \emph{x}, the
+\prog{hits.list} file contains four columns providing four pieces of
+data for each sequence whose best-matching model was {x}. For example,
+take a look at the \prog{output/output.archaea.hits.list} file:
+
+\begin{sreoutput}
+# List of 2 subsequences to align to CM: archaea
+# Created by ssu-align.pl.
+#
+# target name                              start    stop     score
+# --------------------------------------  ------  ------  --------
+  00116::Pyrococcus_horikoshii::AP000001       1    1497   2215.49
+  00004::Nanoarchaeum_equitans::AJ318041       1    1500   1916.64
+\end{sreoutput}
+
+The four columns were explained in the ``.tab suffixed files''
+explanation above: the \prog{target name}, \prog{start} and
+\prog{stop} (which correspond to the target sequence coordinates), and
+\prog{score}, which is the primary sequence HMM score assigned to the
+sequence by model \emph{x}; the HMM score of all other models to this
+sequence is less than this score.
+
 \subsection{.hits.fa suffixed files}
+This is a fasta formatted sequence file containing the sequences
+listed in the corresponding \prog{hits.list} file. For example, the
+file \prog{output/output.archaea.hits.fa} contains the two sequences
+listed in \prog{output/output.archaea.hits.list}. These sequences were
+copied from the original fasta sequence file \prog{seed-10.fa} that
+was used as input to \prog{ssu-align}. Only the residues from
+positions \prog{start} to \prog{stop} (as listed in the
+\prog{hits.list} file) were copied, so sometimes the sequences in the
+\prog{hits.fa} file will be subsequences of those from the original
+file.  The \prog{ssu-align} script uses the \prog{hits.fa} files it
+creates as input to the \prog{cmalign} program, which it calls
+internally to generate the alignments.
+
 \subsection{.cmalign suffixed files}
+
+
 \subsection{.stk suffixed files}
 \subsection{.scores suffixed files}
 
