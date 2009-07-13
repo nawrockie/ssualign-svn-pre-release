@@ -37,13 +37,14 @@
 #    -s     : only search target sequence file for hits, skip alignment step
 #    -a     : only align  target sequence file, skip initial search step 
 #    -u     : do not truncate seqs to HMM predicted start/end, align full seqs\n\t";
+#    -r     : search both strands of targets, rev comp if nec (irrelevant if -a)
 #    -w     : use the HMM forward algorithm for searching, not HMM viterbi
 #    -g     : search with globally configured HMM [default: local]
 #    -b <x> : minimum cmsearch hit bit score to allow for a surviving subsequence (default: 100)
 #    -l <n> : minimum cmsearch hit length    to allow for a surviving subsequence (default: 1)
 #    -n <n> : run in 'prep' mode, split target seq file into multiple files with <n> seqs each
 #    -c <n> : run in 'prep' mode, split target seq file into <n> files with equal number of seqs
-#    -r <x> : w/-n or -c, filter alns based on seq identity, allow no 2 seqs > <x> identical
+#    -i <x> : w/-n or -c, filter alns based on seq identity, allow no 2 seqs > <x> identical
 #    -x <x> : increase mx size for cmalign to <x> Mb (default: 4096)
 #    -d     : DO NOT append posterior probabilities to alignments
 #    -k     : DO NOT erase local copies of individual CM files after running
@@ -71,13 +72,14 @@ $options_usage .= "  -F     : allow file clobbering\n";
 $options_usage .= "  -s     : only search target sequence file for hits, skip alignment step\n";
 $options_usage .= "  -a     : only align  target sequence file, skip initial search step\n"; 
 $options_usage .= "  -u     : do not truncate seqs to HMM predicted start/end, align full seqs\n";
+$options_usage .= "  -r     : search both strands of targets, rev comp if nec, (irrelevant if -a)\n";
 $options_usage .= "  -w     : use the HMM forward algorithm for searching, not HMM viterbi\n";
 $options_usage .= "  -g     : search with globally configured HMM [default: local]\n";
 $options_usage .= "  -b <x> : minimum cmsearch hit bit score to allow for a surviving subsequence (default: 100)\n";
 $options_usage .= "  -l <n> : minimum cmsearch hit length    to allow for a surviving subsequence (default: 1)\n";
 $options_usage .= "  -n <n> : run in 'prep' mode, split target seq file into multiple files with <n> seqs each\n";
 $options_usage .= "  -c <n> : run in 'prep' mode, split target seq file into <n> files with equal number of seqs\n";
-$options_usage .= "  -r <x> : filter aln based on seq identity, allow no 2 seqs > <x> identical\n";
+$options_usage .= "  -i <x> : filter aln based on seq identity, allow no 2 seqs > <x> identical\n";
 $options_usage .= "  -x <x> : increase mx size for cmalign to <x> Mb (default: 4096)\n";
 $options_usage .= "  -d     : DO NOT append posterior probabilities to alignments\n";
 $options_usage .= "  -k     : DO NOT erase local copies of individual CM files after running\n\n";
@@ -85,8 +87,9 @@ $options_usage .= "  -k     : DO NOT erase local copies of individual CM files a
 ###################
 # Process options #
 ###################
-getopts('hFsauwgb:l:n:c:r:x:dk');
+getopts('hFsaurwgb:l:n:c:i:x:dk');
 my $do_clobber = 0;
+my $do_toponly = 1;
 my $do_viterbi = 1;
 my $do_forward = 0;
 my $do_local = 1;
@@ -115,6 +118,7 @@ if (defined $opt_F) { $do_clobber = 1;                        $enabled_options .
 if (defined $opt_s) { $do_align = 0;                          $enabled_options .= " -s";        $prep_enabled_options .= " -s"; } 
 if (defined $opt_a) { $do_search = 0;                         $enabled_options .= " -a";        $prep_enabled_options .= " -a"; } 
 if (defined $opt_u) { $do_truncate = 0;                       $enabled_options .= " -u";        $prep_enabled_options .= " -u"; }
+if (defined $opt_r) { $do_toponly = 0;                        $enabled_options .= " -r";        $prep_enabled_options .= " -r"; }
 if (defined $opt_w) { $do_forward = 1; $do_viterbi = 0;       $enabled_options .= " -w";        $prep_enabled_options .= " -w"; }
 if (defined $opt_g) { $do_glocal = 1; $do_local = 0;          $enabled_options .= " -g";        $prep_enabled_options .= " -g"; }
 if (defined $opt_b) { $min_bit =  $opt_b;                     $enabled_options .= " -b $opt_b"; $prep_enabled_options .= " -b $opt_b"; 
@@ -123,8 +127,8 @@ if (defined $opt_l) { $min_len = $opt_l;                      $enabled_options .
 		      if($min_len <= 0) { printf STDERR ("ERROR, with -l <n>, <n> must be >= 1."); exit(1); } }
 if (defined $opt_n) { $do_prep = 1; $do_prep_nseq_set = 1;    $enabled_options .= " -n $opt_n"; $prep_nseq  = $opt_n; }
 if (defined $opt_c) { $do_prep = 1; $do_prep_nproc_set = 1;   $enabled_options .= " -c $opt_c"; $prep_nproc = $opt_c; }
-if (defined $opt_r) { $do_filteraln = 1; $filter_id = $opt_r; $enabled_options .= " -r $opt_r"; $prep_enabled_options .= " -r $opt_r"; 
-		      if (($r < 0.) || ($r > 1.)) { printf STDERR("ERROR, with -r <x>, valid range is 0. <= <x> <= 1.0.\n"); exit(1); } }
+if (defined $opt_i) { $do_filteraln = 1; $filter_id = $opt_i; $enabled_options .= " -i $opt_i"; $prep_enabled_options .= " -i $opt_i"; 
+		      if (($opt_i < 0.) || ($opt_i > 1.)) { printf STDERR("ERROR, with -i <x>, valid range is 0. <= <x> <= 1.0.\n"); exit(1); } }
 if (defined $opt_x) { $mxsize = $opt_x;                       $enabled_options .= " -x $opt_x"; $prep_enabled_options .= " -x $opt_x"; 
 		      if($opt_x <= 0.) { printf STDERR("ERROR, with -x <x>, valid range is 0. < <x>.\n"); exit(1); } }
 if (defined $opt_d) { $cmalign_extra_options = "";            $enabled_options .= " -d";        $prep_enabled_options .= " -d "; }
@@ -200,7 +204,7 @@ if($do_prep) {
 ############################################################################
 if($do_search) { 
     $search_time = -1 * time();
-    search_sequences_with_each_model($my_cmsearch, $my_cm_file_copy, $target_file, $out_dir_root, $nseq_target_file, $do_viterbi, 
+    search_sequences_with_each_model($my_cmsearch, $my_cm_file_copy, $target_file, $out_dir_root, $nseq_target_file, $do_viterbi, $do_toponly,
 				     \@indi_cm_name_A, \@indi_cm_clen_A, \@indi_cm_nbif_A, \@log2printA, \$tab_file, \$max_file_name_width, \$description_width);
     $search_time += time();
 }
@@ -329,7 +333,7 @@ sub validate_input_files {
     if($cmalign  eq "")       { printf STDERR ("ERROR, \$cmalign not defined in parameter file.\n"); exit(1); }
     if($esl_sfetch   eq "")       { printf STDERR ("ERROR, \$esl_sfetch not defined in parameter file.\n"); exit(1); }
     if($do_filteraln) { 
-	if($esl_weight   eq "")       { printf STDERR ("ERROR, -r enabled, but \$esl_weight not defined in parameter file.\n"); exit(1); }
+	if($esl_weight   eq "")       { printf STDERR ("ERROR, -i enabled, but \$esl_weight not defined in parameter file.\n"); exit(1); }
     }
     # required variable paths can't have ~ prefix indicating home dir
     if($cmsearch =~ /^~/)     { printf STDERR ("ERROR, \$cmsearch definition must be absolute path, \~ cannot be used as shortcut for home directory.\n"); exit(1); }
@@ -797,12 +801,12 @@ sub process_cm_file {
 # 
 ####################################################################
 sub search_sequences_with_each_model() { 
-    my $narg_expected = 13;
+    my $narg_expected = 14;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, search_sequences_with_each_model() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($cmsearch, $my_cm_file_copy, $target_file, $out_dir_root, $nseq_target_file, $do_viterbi, 
+    my($cmsearch, $my_cm_file_copy, $target_file, $out_dir_root, $nseq_target_file, $do_viterbi, $do_toponly,
        $indi_cm_name_AR, $indi_cm_clen_AR, $indi_cm_nbif_AR, $log2printAR, $ret_tab_file, $ret_max_file_name_width, $ret_description_width) = @_;
 
-    my ($tab_file, $tab_file2print, $file_name_width, $file_name_dashes, $search_psecs, $alg_flag, $max_file_name_width, $dashes1, $dashes2, $start_log_line);
+    my ($cmsearch_opts, $tab_file, $tab_file2print, $file_name_width, $file_name_dashes, $search_psecs, $alg_flag, $max_file_name_width, $dashes1, $dashes2, $start_log_line);
 
     $start_log_line = scalar(@{$log2printAR});
 
@@ -843,7 +847,9 @@ sub search_sequences_with_each_model() {
     }
 
     $start_log_line = scalar(@{$log2printAR});
-    system("$cmsearch --hmm-cW 1.5 -T $cmsearch_T --no-null3 --toponly --noalign --tab $tab_file $alg_flag $my_cm_file_copy $target_file > /dev/null");
+    $cmsearch_opts = " --hmm-cW 1.5 --no-null3 --noalign ";
+    if($do_toponly) { $cmsearch_opts .= " --toponly"; }
+    system("$cmsearch $cmsearch_opts -T $cmsearch_T --tab $tab_file $alg_flag $my_cm_file_copy $target_file > /dev/null");
     if(($? >> 8) != 0) { printf STDERR ("ERROR, system\(\"$cmsearch --hmm-cW 1.5 -T $cmsearch_T --no-null3 --toponly --noalign --tab $tab_file $alg_flag $my_cm_file_copy $target_file > /dev/null\" unexpectedly returned non-zero exit status %d\n", ($? >> 8)); exit(($? >> 8)); } 
 
     #push(@{$log2printAR}, sprintf("\t%-*s cmsearch output file with locations/scores of hits using HMM.\n", $max_file_name_width, $out_dir_root . ".cmsearch :"));
@@ -910,7 +916,8 @@ sub classify_and_extract_subseqs {
 	elsif($line !~ m/^\#/) { 
 	    $line =~ s/^\s+//;
 	    ($seq_name, $tstart, $tend, $qstart, $qend, $bit, $E, $gc) = split(/\s+/, $line);
-	    $tlen = $tend - $tstart + 1;
+	    if($tend > $tstart) { $tlen = $tend - $tstart + 1; }
+	    else                { $tlen = $tstart - $tend + 1; }
 	    if((!(exists($bit_cm_seq_HH{$cm_name}{$seq_name}))) || ($bit > $bit_cm_seq_HH{$cm_name}{$seq_name})) { 
 		if(($tlen >= $min_len) && ($bit >= $min_bit)) { 
 		    $bit_cm_seq_HH{$cm_name}{$seq_name}   = $bit;
@@ -1363,10 +1370,12 @@ sub print_scores_file {
     printf SCORES ("\n");
 
     printf SCORES ("# %7s  %-*s  %-*s  %4s  %4s  %7s  %7s  %7s", "idx", $max_seq_name_width, "sequence name", $max_cm_name_width, "model name",   "beg",  "end",  "CM sc",  "struct",  "HMM sc");
-    if($ncm > 1) { printf SCORES ("  %-*s  %7s  %7s\n", $max_cm_name_width, "model name",   "HMM sc",  "HMMdiff"); }
+    if($ncm > 1) { printf SCORES ("  %-*s  %7s  %7s", $max_cm_name_width, "model name",   "HMM sc",  "HMMdiff"); }
+    printf SCORES ("\n");
 
     printf SCORES ("# %7s  %-*s  %-*s  %4s  %4s  %7s  %7s  %7s", "-------", $max_seq_name_width, $dashes_seqname, $max_cm_name_width, $dashes_cmname, "----", "----", "-------", "-------", "-------");
-    if($ncm > 1) { printf SCORES ("  %-*s  %7s  %7s\n", $max_cm_name_width, $dashes_cmname, "-------", "-------"); }
+    if($ncm > 1) { printf SCORES ("  %-*s  %7s  %7s", $max_cm_name_width, $dashes_cmname, "-------", "-------"); }
+    printf SCORES ("\n");
 
     $idx = 1;
     while($line = <TARGET>) { 
