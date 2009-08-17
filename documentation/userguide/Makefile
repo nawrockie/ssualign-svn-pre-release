@@ -8,6 +8,7 @@
 ###########
 
 #MANPAGES   = cmalign cmbuild cmcalibrate cmemit cmscore cmsearch cmstat
+MANPAGES   = ssu-align
 #AIFIGURES  = stl9-63
 
 # pdf:
@@ -16,7 +17,7 @@
 #
 pdf:
 #	make ai2pdf
-#	make manpages
+	make manpages
 	pdflatex main
 	bibtex main
 	pdflatex main
@@ -30,7 +31,7 @@ manpages:
 	@echo "%% This chapter automatically generated. Do not edit." > manpages.tex
 	@echo "\section{Manual pages}" >> manpages.tex
 	for file in $(MANPAGES); do\
-	   rman -f LaTeX2e ../manpages/$$file.man | ../../easel/devkit/rmanprocess.pl >> manpages.tex;\
+	   rman -f LaTeX2e ../manpages/$$file.man | ../../../easel/devkit/rmanprocess.pl >> manpages.tex;\
 	done
 
 # ai2pdf: 
