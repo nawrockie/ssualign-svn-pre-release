@@ -2,500 +2,326 @@
 
 .SH NAME
 .TP 
-ssu-align - structural align SSU sequences to a covariance model
+ssu-align - align small subunit ribosomal RNA (SSU rRNA) sequences
 
 .SH SYNOPSIS
 .B ssu-align
 .I [options]
-.I cmfile
-.I seqfile
-.I output root
+.I cm-file
+.I sequence-file
+.I output-root
+.I params-file
 
 .SH DESCRIPTION
 
 .B ssu-align
 searches for and aligns SSU rRNA sequences in 
-.I seqfile
+.I sequence-file
 to the covariance model(s) (CM) in
-.I cmfile,
+.I cm-file,
 and outputs multiple sequence alignment(s).
 
 .PP
-The sequence file must be in FASTA format.
+The
+.I sequence-file 
+must be in FASTA format.
 
 .PP
-CM files are profiles of RNA consensus secondary structure. A
-CM file is produced by the 
+CMs are probabilistic profile models of RNA consensus sequence and
+secondary structure.  CM files can include one or more models.  The
+default CM file for
+.B ssu-align
+(ssu3-0p1.cm) contains three CMs: an archaeal SSU model, a bacterial
+SSU model and a eukaryotic SSU model. These models were built from
+structural alignments from Robin Gutell's Comparative RNA Website
+database (CRW) (Cannone et al., BMC Bionformatics. 2002; 3:2.).
+Other SSU CM files can be produced using 
+.B infernal's
 .B cmbuild 
-program, from given RNA sequence alignment(s) of known 
-consensus structure.
+program from a structurally annotated SSU RNA sequence alignment, and
+used in place of, or appended to the default ssu3-0p1.cm file by
+simple file concatenation.
 
 .PP
-CM files can define the parameters for one or more models.
-The default CM file for 
-.B ssu-align
-contains three CMs. One for archaeal SSU sequences, one for bacterial
-SSU sequences, and one for eukaryotic SSU sequences. These models were
-built from structural alignments from Robin Gutell's Comparative RNA
-Website database (CRW)
-.B CITEME.
-
-The first step of 
-.B ssu-align
-is to use the primary sequence information to search 
-.I seqfile
-for high scoring matches (hits) to each model in 
-.B cmfile.
-Each hit that scores above a minimum bit score threshold is then
-extracted and aligned to the model 
-
+Each target sequence in 
+.I sequence-file 
+is assumed to contain 0 or 1 SSU sequences or subsequences on either
+strand (either the actual sequence in the file, or its reverse
+complement) that will match best (score highest) to one of the models
+in 
+.I cm-file.
+Given an input sequence file, 
+.B ssu-align 
+proceeds through two stages to create alignments.  
 
 .PP
+In the first stage,
+the best-matching model and the begin and end positions of the SSU
+(sub)sequence are defined for each target sequence. This is achieved by
+searching each target with
+.B N
+HMMs, one for each of the 
+.B N
+models in 
+.I cm-file,
+to find the highest scoring SSU hit,
+the subsequence defined by a begin and end position that has the
+highest bit score to each HMM.  In this stage, only primary sequence
+conservation contributes to the score. The model that finds the
+highest scoring hit for each target sequence is that sequence's
+.I "best-matching" 
+model.  If the best-matching model's hit has a score
+greater than a minimum bit score (by default 100 bits, but changeable to
+.I <x> 
+with 
+.BI -b " <x>"
+) and a length greater than a minimum length (by default 1 residue, but changeable to 
+.I <n>
+with 
+.BI -l " <n>"
+), 
+the target subsequence survives to stage 2. 
+
+.PP
+In stage 2, each surviving target subsequence defined by the begin and
+end positions of the highest scoring hit is extracted (that is, some
+suspected nonhomologous sequence at the begin and ends may be trimmed
+off) and aligned to its best-matching model. At this stage, both
+primary sequence and well-nested secondary structure conservation of
+the SSU model are taken into account during alignment. The final
+output of an
+.B ssu-align 
+run is 
+.I N 
+multiple sequence alignments, one for each
+of the 
+.I N
+models that was the best match for at least 1 target sequence. 
+
+.PP 
+As
+.B ssu-align
+proceeds through its two stages, it prints information about what it
+is doing and about the output files it is creating to the screen. The
+format of these output files is described in the User's Guide.
 Each time 
 .B ssu-align 
 is executed, it creates a new directory called
-.I output root
-in the current working directory and places it's output files there. 
-If that directory already exists, 
-.B ssu-align
-will print and error message and exit immediately, unless the
-.B -F 
-option is used. With
-.B -F
-enabled, 
+.I output-root
+in the current working directory where it places its output files.
+
+The 
+.B -n 
+and
+.B -c
+options modify the behavior of
 .B ssu-align 
-will first delete the contents of the directory
-.I output root
-and then begin to execute.
-
-.PP
-The behavior of 
+so that it runs in a special
+.I "prep"
+mode, which can be useful if the
+.I sequence-file
+is especially large.
+In prep mode, 
+.B ssu-align 
+splits up 
+.I sequence-file
+into many smaller files and creates
+scripts to run 
 .B ssu-align
-is dependent on the number of CMs in 
-.B cmfile. 
-If there is only one CM, 
-the primary sequence information from the CM is used to scan 
-the sequences in 
-.I seqfile 
-and define boundaries of likely SSU sequences.
-These subsequences are extracted from 
-.I seqfile
-and written to a new FASTA file called
-.B FIXME. 
-Finally, these sequences are aligned to the CM using primary sequence
-and secondary structure information. The alignment is saved in
-Stockholm format to 
-.B FIXME.
-
-If there are more than one CMs in 
-.B cmfile,
-the sequences in 
-.I seqfile 
-are scanned by an HMM created from each model 
-
+on each of them in parallel (possibly on a compute cluster) and merge all of
+the resulting alignments back into master alignments. These master
+alignments will be identical to the alignments that would have been
+created if a single, large
+.B ssu-align
+run was performed for the complete sequence file.
 
 .SH OPTIONS
 
 .TP
 .B -h
 Print brief help; includes version number and summary of
-all options, including expert options.
+all options.
 
 .TP
-.BI -o " <f>"
-Save the alignment in Stockholm format to a file
-.I <f>.
-The default is to write it to standard output.
+.BI -F
+Allow output directory 
+.I output-root
+to be deleted and
+overwritten. Normally, if the
+.I output-root 
+directory already exists, 
+.B ssu-align 
+exits with an error unless the
+.I -F
+option is set.
 
 .TP
-.B -l
-Turn on the local alignment algorithm, which allows the alignment
-to span two or more subsequences if necessary (e.g. if the structures
-of the query model and target sequence are only partially shared),
-allowing certain large insertions and deletions in the structure
-to be penalized differently than normal indels.
-The default is to globally align the query model to the target
-sequences.
-
-.TP
-.BI -p
-Annotate the alignment with posterior probabilities calculated using
-the Inside and Outside algorithms. 
-The
-.B -p 
-option causes additional annotation to appear in the output alignment,
-but does not modify the alignment itself (that is, the relative positions of
-the residues are unchanged).
-Two characters for each residue are used to annotate the posterior 
-probability that the corresponding residue aligns at the corresponding
-position in the Stockholm alignment. These characters have the Stockholm
-markup tags "#=GR <seq name> POSTX." and "#=GR <seq name> POST.X", and can only have the
-values: "0-9", "*" or ".". They indicate the tens and ones
-place for the posterior probability: an "8" for "POSTX." and a "3" for "POST.X"
-indicates that the posterior probability is between 0.83 and 0.84. A
-"*" for both "POSTX." and "POST.X" indicates that the confidence
-estimate is "very nearly" 1.0 (it's hard to be exact here due to
-numerical precision issues) A "." 
-in both "POSTX." and "POST.X" indicates that that column aligns to
-a gap. When used in combination with 
-.B --nonbanded,
-the calculation of the posterior probabilities considers all possible
-alignments of the target sequence to the CM. Without
-.B --nonbanded
-(in HMM banded mode), the calculation considers only possible
-alignments within the HMM bands. 
-
-.TP
-.B -q
-Quiet; suppress the verbose banner, and only print the resulting
-alignment to stdout. This allows piping the alignment to the input 
-of other programs, for example.
-
-.TP
-.BI --informat " <s>"
-Assert that the input 
-.I seqfile
-is in format
-.I <s>.
-Do not run Babelfish format autodection. This increases
-the reliability of the program somewhat, because 
-the Babelfish can make mistakes; particularly
-recommended for unattended, high-throughput runs
-of @PACKAGE@. 
-Acceptable formats are: FASTA, EMBL, UNIPROT, GENBANK, and DDBJ.
-.I <s>
-is case-insensitive.
-
-.TP
-.B --devhelp
-Print help, as with  
-.B "-h",
-but also include undocumented developer options. These options are not
-listed below, are under development or experimental, and are not
-guaranteed to even work correctly. Use developer options at your own
-risk. The only resources for understanding what they actually do are
-the brief one-line description printed when
-.B "--devhelp"
-is enabled, and the source code.
-
-.TP
-.BI --mpi
-Run as an MPI parallel program. This option will only be available if
-@PACKAGE@ 
-has been configured and built with the "--enable-mpi" flag (see User's
-Guide for details).
-
-.SH EXPERT OPTIONS
-
-.TP
-.B --optacc
-Align sequences using the Durbin/Holmes optimal accuracy
-algorithm. This is default behavior, so this option is probably useless. 
-The optimal accuracy alignment will be constrained by HMM bands for acceleration
-unless the
-.B --nonbanded 
-option is enabled. 
-The optimal accuracy algorithm determines the alignment that
-maximizes the posterior probabilities of the aligned residues within it.
-The posterior probabilites are determined using (possibly HMM banded)  
-variants of the Inside and Outside algorithms. 
-
-.TP
-.B --cyk
-Do not use the Durbin/Holmes optimal accuracy alignment to align the
-sequences, instead use the CYK algorithm which determines the
-optimally scoring alignment of the sequence to the model. 
-
-.TP
-.B --sample
-Sample an alignment from the posterior distribution of alignments.
-The posterior distribution is determined using an HMM banded (unless 
-.B --nonbanded)  
-variant of the Inside algorithm. 
-
-.TP
-.BI -s " <n>"
-Set the random number generator seed to 
-.I <n>, 
-where 
-.I <n> 
-is a positive integer. This option can only be used in
-combination with 
-.B --sample. 
-The default is to use time() to
-generate a different seed for each run, which means that two different
-runs of 
-.B cmalign --sample
-on the same alignment will give slightly different
-results. You can use this option to generate reproducible results.
-
-.TP
-.B --viterbi
-Do not use the CM to align the sequences, instead use
-the HMM Viterbi algorithm to align with a CM Plan 9 HMM. The HMM is
-automatically constructed to be maximally similar to the CM. 
-This HMM alignment is faster than CM alignment, but can be less accurate because the
-structure of the RNA family is ignored. 
-
-.TP
-.BI --sub
-Turn on the sub model construction and alignment procedure. For each
-sequence, an HMM is first used to predict the model start and end
-consensus columns, and a new sub CM is constructed that only models
-consensus columns from start to end. The sequence is then aligned to this sub CM.
-This option is useful for aligning sequences that are known to
-truncated, non-full length sequences.
-This "sub CM" procedure is not the same as the "sub CMs" described by
-Weinberg and Ruzzo.
-
-.TP
-.B --small
-Use the divide and conquer CYK alignment algorithm described in SR
-Eddy, BMC Bioinformatics 3:18, 2002. The 
-.B --nonbanded
-option must be used in combination with this options.
-Also, it is recommended whenever
-.B --nonbanded
-is used that 
-.B --small 
-is also used  because standard CM alignment without HMM banding requires a lot of
-memory, especially for large RNAs.
-.B --small
-allows CM alignment within practical memory limits,
-reducing the memory required for alignment LSU rRNA, the largest known
-RNAs, from 150 Gb to less than 300 Mb.
-This option can only be used in combination with
-.B --nonbanded 
-and
-.B --cyk.
-
-.TP
-.B --hbanded
-This option is turned on by default.
-Accelerate alignment by pruning away regions of the CM DP matrix that
-are deemed negligible by an HMM. 
-First, each sequence is scored with a CM plan 9 HMM derived from the CM 
-using the Forward and Backward HMM algorithms and calculate posterior
-probabilities that each residue aligns to each state of the HMM. These 
-posterior probabilities are used to derive constraints (bands) on the CM DP
-matrix. Finally, the target sequence is aligned to the CM using the
-banded DP matrix, during which cells outside the bands are ignored. Usually most
-of the full DP matrix lies outside the bands 
-(often more than 95%), making this technique faster because
-fewer DP calculations are required, and more memory efficient because
-only cells within the bands need be allocated. 
-
-Importantly, HMM banding sacrifices the guarantee of determining the
-optimally accurarte or optimal alignment, which will be missed if it lies outside the
-bands. The tau paramater (analagous to the beta parameter for QDB
-calculation in 
-.B cmsearch
-) is the amount of probability mass
-considered negligible during HMM band calculation; lower
-values of tau yield greater speedups but also a greater chance of missing
-the optimal alignment. The default tau is 1E-7, determined
-empirically as a good tradeoff between sensitivity and speed, though
-this value can be changed with the
-.B --tau " <x>" 
-option. The level of acceleration increases with both the
-length and primary sequence conservation level of the family. For
-example, with 
-the default tau of 1E-7, tRNA models (low primary sequence
-conservation with length of about 75 residues) show about 10X acceleration,
-and SSU bacterial rRNA models (high primary sequence conservation with
-length of about 1500 residues) show about 700X. 
-HMM banding can be turned off with the 
-.B --nonbanded 
-option.
-
-.TP
-.B --nonbanded
-Turns off HMM banding. The returned alignment is guaranteed to be the
-globally optimally accurate one (by default) or the globally optimally
-scoring one (if 
-.B --cyk
-is enabled).
-The 
-.B --small
-option is recommended in combination with this option, because
-standard alignment without HMM banding requires a lot of memory (see
-.B --small
-).
-
-.TP
-.BI --tau " <x>"
-Set the tail loss probability used during HMM band calculation to
-.I <x>. 
-This is the amount of probability mass within the HMM posterior
-probabilities that is considered negligible. The default value is 1E-7.
-In general, higher values will result in greater acceleration, but
-increase the chance of missing the optimal alignment due to the HMM
-bands.
-
-.TP
-.BI --mxsize " <x>"
-Set the maximum allowable DP matrix size to 
+.BI -b " <x>"
+Set the minimum bit score threshold for stage 1 survival of an HMM hit as
+.I <x>.
+Only hits that meet or exceed this threshold will be aligned in stage 2.
+By default, 
 .I <x>
-megabytes. By default this size is 2,048 Mb. 
-This should be large enough for the vast majority of alignments, 
-however if it is not 
-.B cmalign 
-will exit prematurely and report an error message that 
-the matrix exceeded it's maximum allowable size. In this case, the
-.B --mxsize 
-can be used to raise the limit.
-This is most likely to occur when the
-.B --nonbanded
-option is used without the
-.B --small 
-option, but can still occur when
-.B --nonbanded 
-is not used.
+is 100 bits. 
 
 .TP
-.BI --rna
-Output the alignments as RNA sequence alignments. This is true by default.
+.BI -l " <n>"
+Set the minimum length threshold for stage 1 survival of
+an HMM hit as
+.I <x>.
+Only hits that meet or exceed this threshold will be aligned in stage 2.
+By default, 
+.I <n>
+is 1.
 
 .TP
-.BI --dna
-Output the alignments as DNA sequence alignments. 
+.BI -n " <n>"
+Run in special 
+.I "prep"
+mode. Split 
+.I sequence-file
+into multiple files with
+.I <n>
+sequences each, and create scripts to run 
+.B ssu-align 
+on each of the smaller sequence files and merge the resulting
+alignments into master alignments when they are all finished running. 
+These master alignments will be identical to the alignments that would
+have been created if a single
+.B ssu-align
+run was performed for the complete sequence file.
 
 .TP
-.B --matchonly
-Only include match columns in the output alignment, do not include
-any insertions relative to the consensus model. 
+.BI -c " <n>"
+Run in special 
+.I "prep"
+mode. Split 
+.I sequence-file
+into 
+.I <n> 
+files, each with the same number of sequences.
+Also, create scripts to run 
+.B ssu-align 
+on each of the smaller sequence files and merge the resulting
+alignments into master alignments when they are all finished running. 
+These master alignments will be identical to the alignments that would
+have been created if a single
+.B ssu-align
+run was performed for the complete sequence file.
 
 .TP
-.B --resonly
-Only include match columns in the output alignment that 
-have at least 1 residue (non-gap character) in them. By default all match columns are
-printed to the alignment, even those that are 100% gaps. 
-.B --resonly
-replicates the default behavior of previous versions of
-.B cmalign.
+.B -s 
+Only perform the search stage (stage 1). Determine
+the best-matching model, define the likely begin
+and end positions for each SSU (sub)sequence, and extract those
+subsequence from 
+.I sequence-file. 
+Do not align each extracted sequence to its best matching model.
 
 .TP
-.B --fins
-Change the 
-behavior of how insert emissions are placed in the alignment. 
-By default, all contiguous blocks of inserts are split in half, and
-half the residues are flushed left against the nearest consensus
-column to the left, and half are flushed right against the nearest
-consensus column on the right. With
-.B --fins
-inserts are not split in half, instead all inserted residues from IL
-states are flushed left, and all inserted residues from IR states are
-flushed right. 
-.B --fins 
-replicates the default behavior of previous versions of
-.B cmalign.
+.B -a 
+Skip the stage 1 search and only perform the alignment stage (stage 2).
+Presume that each full length target sequence in
+.I sequence-file
+is a SSU sequence or subsequence that matches
+to the CM in 
+.I cm-file.
+This is only allowed if
+.I cm-file
+contains exactly 1 CM.
 
 .TP
-.B --onepost
-Modifies behavior of the 
-.B -p
-option. Use only one character instead of two to annotate the
-posterior probability of each aligned residue. Specifically, only the "#=GR
-<seq name> POSTX." tag is printed to the alignment. An "8" for
-"POSTX." indicates a posterior probability between 0.8 and 0.9 for the
-corresponding residue. 
-
-.TP 
-.BI --withali " <f>"
-Reads an alignment from file 
-.I <f>
-and aligns it as a single object to the CM; e.g. the alignment in 
-.I <f> 
-is held fixed.
-This allows you to align sequences to a model with 
-.B cmalign
-and view them in the context of an existing trusted multiple alignment.
-The alignment in the file
-.I <f> 
-must be exactly the alignment that the CM was built from, or a subset
-of it with the following special property: the definition of consensus
-columns and consensus secondary structure must be identical between 
-.I <f>
-and the alignment the CM was built from. One easy way to achieve this
-is to use the 
-.B --rf
-option to 
-.B cmbuild
-(see man page for 
-.B cmbuild
-) and to maintain the "#=GC RF" annotation in the alignment when
-removing sequences to create the subset alignment 
-.I <f>. 
-To specify that the
-.B --rf
-option to 
-.B cmbuild
-was used, enable the
-.B --rf
-option to 
-.B cmalign
-(see 
-.B --rf 
-below).
-
-.TP 
-.B --withpknots
-Must be used in combination with 
-.BI --withali " <f>".
-Propogate structural information for any pseudoknots that exist in
-.I <f> 
-to the output alignment. 
-
-.TP 
-.B --rf
-Must be used in combination with 
-.BI --withali " <f>".
-Specify that the alignment in 
-.I <f> 
-has the same "#=GC RF" annotation as the alignment file the CM was
-built from using
-.B cmbuild
-and further that the 
-.B --rf 
-option was supplied to 
-.B cmbuild
-when the CM was constructed.
-
-.TP 
-.BI --gapthresh " <x>"
-Must be used in combination with 
-.BI --withali " <f>".
-Specify that the 
-.BI --gapthresh " <x>"
-option was supplied to 
-.B cmbuild
-when the CM was constructed from the alignment file
-.I <f>.
+.B -u 
+Do not truncate each target sequence to its predicted begin and end
+SSU positions from stage 1. Instead, in stage 2, align each 
+full length sequence from
+.I sequence-file
+to its best matching model from stage 1.
 
 .TP
-.BI --tfile " <f>"
-Dump tabular sequence tracebacks for each individual
-sequence to a file 
-.I <f>.
-Primarily useful for debugging.
+.BI -i " <x>"
+After creating alignments in stage 2, filter the alignment based on
+sequence identity so that no two sequences in the filtered alignment
+will share more than
+.I <x>
+fractional identity. If this option is used in prep mode
+(when 
+.B -n
+or 
+.B -c 
+is also used), then each small alignment (those created for the
+split-up sequence file) 
+will be filtered prior to merging to create a master
+alignment. The master alignment will also be filtered.
+However, in this case the master alignments will not necessarily be identical to the
+alignments created with a single run of
+.B ssu-align.
+This is because the sequences that are removed by filtering is order
+dependent, so many filterings of the smaller intermediate alignments
+may remove different sequences than a single filtering of the large master
+alignment.
 
+.TP
+.B -t
+In stage 1, do not search the reverse complement of each sequence,
+only search the top strand (the actual sequence as it appears in
+.I sequence-file).
+Use this option if it is known that none of the input
+sequences are reverse complements of SSU sequences. 
 
+.TP
+.B -w
+In stage 1, use the HMM Forward algorithm instead of the HMM Viterbi
+algorithm for searching for hits. Forward is about two-fold slower,
+but may be more sensitive (i.e. result in more accurate definitions of
+start and end positions) in rare cases.
 
+.TP
+.B -g
+In stage 1, use a globally configured HMM for searching that will only
+find hits to full length SSU sequences.  By default, the
+HMM is configured in local mode which will find matches to SSU
+subsequences and full SSU sequences.
 
+.TP
+.B -d
+Do not append posterior probabilities (alignment confidence estimates)
+to the resulting alignments. By default, these probabilities are
+appended to the output alignments. These probabilities are useful for
+automatically masking out ambiguously aligned regions of the output
+alignments prior to phylogenetic inference as described in the User's
+Guide. This option will accelerate the alignment step by about 50\%,
+and result in alignment files that take up about 67\% less
+space. However, it should only be used if you know you do not want to
+mask or prune the alignments at a later stage.
 
+.TP
+.B -k
+Do not erase the 
+.B N
+(one for each of the 
+.B N
+CMs in 
+.I cm-file
+) local CM file copies from the
+.I output-root
+directory after running
+.B ssu-align.
+By default, these CM files, which are temporarily copied to 
+.I output-root
+for convenience during execution of the program are erased
+after the program finishes running.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+.TP
+.BI -x " <x>"
+Change the maximum matrix size for the alignment stage to 
+.I <x> 
+Mb. By default 
+.I <x> 
+is 4096 Mb (4 Gb). This option should only used if
+.B ssu-align
+is crashing due to insufficient RAM. The program should tell you if
+this is the case with an informative error message, but may not in all
+cases. It is not necessary to decrease 
+.I <x>
+if your computer has less than 4 Gb of RAM. 

@@ -7,12 +7,12 @@ by comparative sequence analysis and confirmed by crystal structure
 determination from the Comparative RNA Website (CRW) \cite{Cannone02}.
 
 \subsection{Overview}
-\software{ssu-align} uses profile probabilistic models for SSU rRNA
-detection and alignment. It includes five SSU rRNA models, an archaeal
-model, a bacterial model, a eukaryotic (nuclear) model, a
-chloroplast model and a animal mitochondrial model. These are the
-default models used by the program, but \textsc{ssu-align} can be used
-with other, user-generated models as well.
+\software{ssu-align} uses profile probabilistic models called
+covariance models (CMs) for SSU rRNA detection and alignment. It
+includes three SSU rRNA models, an archaeal model, a bacterial model,
+and a eukaryotic (nuclear) model.  These are the default models used
+by the program, but \textsc{ssu-align} can be used with other,
+user-generated models as well.
 
 Given an input dataset of unaligned SSU sequences,
 \software{ssu-align} goes through two stages. In stage 1, each of the
@@ -50,33 +50,32 @@ to using phylogenetic inference tools.
 Columns are selected for pruning based on ``confidence estimates'' 
 for the aligned residues, which are derived from the probability that
 each residue aligns to each column of the alignment. This is discussed
-in more detail in the basic tutorial in section 3.
+in more detail in the basic tutorial in section~\ref{section:basic}.
 
-The basic tutorial in section 3 of this guide walks through an example
-of using \textsc{ssu-align} to build multiple alignments and prune
-those alignments using an input dataset. 
+The basic tutorial in section~\ref{section:basic} of this guide walks
+through an example of using \textsc{ssu-align} to build multiple
+alignments and prune those alignments using an input dataset.
 
 This package can also be used to create new SSU models, either for
 different phylogenetic clades or for specific regions of the SSU rRNA
 molecule, as well as for drawing secondary structure diagrams that
 display several different statistics on the alignment (such as levels
 of sequence conservation, or frequency of gaps). The advanced
-tutorials in section X-X of this guide provide examples of these 
-applications. 
+tutorials in section~\ref{section:advanced} of this guide provide
+examples of these applications.
 
 \subsection{What is included in this package}
 
 This distribution includes the PERL script \software{ssu-align} and
 all the files necessary to compile and run the \software{Infernal}
-package (version 1.0) \cite{Nawrocki09}. \software{Infernal} must be
+package (version 1.01) \cite{Nawrocki09}. \software{Infernal} must be
 installed in order to run \software{ssu-align}.  It also includes the
-five default (archaea, bacteria, chloroplast, eukarya, and
-animal-mitochondria) SSU models and the \emph{seed} alignments they
-were built from. The alignments were based on SSU structures and
-alignments from the Comparative RNA Website (CRW) \cite{Cannone02}. A
-broader discussion of these models and alignments and the specific
-procedure used to create the seed alignments from the CRW data is
-explained in section 2.
+three default (archaea, bacteria, and eukarya) SSU models and the
+\emph{seed} alignments they were built from. The alignments were based
+on SSU structures and alignments from the Comparative RNA Website
+(CRW) \cite{Cannone02}. A broader discussion of these models and
+alignments and the specific procedure used to create the seed
+alignments from the CRW data is explained in \cite{Nawrocki09b}.
 
 Installation of the PERL (Practical Extraction and Report Language,
 Larry Wall) interpreter package version 5.0 or later is required to
@@ -88,10 +87,21 @@ run the \software{ssu-align} PERL script.
 from those alignments, nor does it classify sequences beyond reporting
 which model in the input CM file they score highest to.
 
+\subsection{Other useful references}
+
+The \software{infernal} user's guide \cite{infernalguide} included in
+this package supplements this user's guide. My Ph.D. thesis introduces
+and describes CM methods and includes three chapter (7-9) dedicated to
+SSU rRNA alignment. Other useful references on CMs include
+\cite{Eddy94,Eddy02b,NawrockiEddy07,Nawrocki09,KolbeEddy09}.  The
+\database{rfam} database (http://rfam.sanger.ac.uk/) \cite{Gardner09}
+uses \software{infernal} to search for and align structural RNAs using
+more than 1000 different CMs.
+
 \subsection{Future development}
 
 This release (version 0.1) is a prototype of the \textsc{ssu-align}
 software package that only has basic functionality for aligning SSU
 sequences. I hope to continue to develop and improve it in the future
 by making it faster and generally more useful to the SSU rRNA sequence
-analysis community. I appreciate bug reports and feature requests.
+analysis community. Bug reports and feature requests are appreciated.
