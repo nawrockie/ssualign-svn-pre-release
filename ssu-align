@@ -837,7 +837,7 @@ sub search_sequences_with_each_model() {
     $dashes1 = ""; for($i = 0; $i < $max_file_name_width; $i++) { $dashes1 .= "-"; } 
     $dashes2 = ""; for($i = 0; $i < $description_width; $i++)   { $dashes2 .= "-"; } 
 
-    push(@{$log2printAR}, sprintf("#\n# Stage 1: Determining SSU start/end positions and best matching models.\n"));
+    push(@{$log2printAR}, sprintf("#\n# Stage 1: Determining SSU start/end positions and best-matching models.\n"));
     push(@{$log2printAR}, sprintf("#\n"));
     push(@{$log2printAR}, sprintf("# %-*s  %-*s\n", $max_file_name_width, "output file name", $description_width, "description"));
     push(@{$log2printAR}, sprintf("# %-*s  %-*s\n", $max_file_name_width, $dashes1, $description_width, $dashes2));
@@ -1096,7 +1096,7 @@ sub align_subseqs {
     $dashes1 = ""; for($i = 0; $i < $max_file_name_width; $i++) { $dashes1 .= "-"; } 
     $dashes2 = ""; for($i = 0; $i < $description_width;   $i++) { $dashes2 .= "-"; } 
     push(@{$log2printAR}, sprintf("#\n"));
-    push(@{$log2printAR}, sprintf("# Stage 2: Aligning each sequence to it's best matching model.\n"));
+    push(@{$log2printAR}, sprintf("# Stage 2: Aligning each sequence to it's best-matching model.\n"));
     push(@{$log2printAR}, sprintf("#\n"));
     push(@{$log2printAR}, sprintf("# %-*s  %s\n", $max_file_name_width, "output file name", "description"));
     push(@{$log2printAR}, sprintf("# %-*s  %-*s\n", $max_file_name_width, $dashes1, $description_width, $dashes2));
