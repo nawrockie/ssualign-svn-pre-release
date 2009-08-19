@@ -37,29 +37,31 @@ in the ``file'' column of the table.
 \prog{esl-ssudraw} option(s) & statistic                     &  figure & file \\ \hline
 \prog{<none>}                & information content           & \ref{fig:eukinfo} & \prog{eukarya-0p1-info} \\
 & & & \\
-\prog{--prog}                & average posterior probability & \ref{fig:eukprob} & \prog{eukarya-0p1-prob} \\
+\prog{-q --prob}                & average posterior probability & \ref{fig:eukprob} & \prog{eukarya-0p1-prob} \\
 & & & \\
-\prog{--ins}                 & frequency of insertions       & \ref{fig:eukins}   & \prog{eukarya-0p1-ins} \\
+\prog{-q --ins}                 & frequency of insertions       & \ref{fig:eukins}   & \prog{eukarya-0p1-ins} \\
                              & after each position           & & \\
 & & & \\
-\prog{--dall}                & frequency of deletions        & \ref{fig:eukdall}  & \prog{eukarya-0p1-dall} \\
+\prog{-q --dall}                & frequency of deletions        & \ref{fig:eukdall}  & \prog{eukarya-0p1-dall} \\
 & & & \\
-\prog{--dint}                & frequency of internal deletions & \ref{fig:eukdint}  & \prog{eukarya-0p1-dint} \\
+\prog{-q --dint}                & frequency of internal deletions & \ref{fig:eukdint}  & \prog{eukarya-0p1-dint} \\
                              & (excluding terminal deletions)  & & \\
 & & & \\
-\prog{--struct}              & additional information from     & \ref{fig:eukstruct} & \prog{eukarya-0p1-struct} \\
+\prog{-q --struct}              & additional information from     & \ref{fig:eukstruct} & \prog{eukarya-0p1-struct} \\
                              & conserved structure \\
 \end{tabular}
 \end{center}
 
+If more than one of these options are used, the program will create a
+multi-page postscript document with each diagram on a separate page.
+If the \prog{-q} option is omitted, the program will create the
+information content diagram as the first page by default.
 As an example of how these files were created, the command
 
-\user{esl-ssudraw --dall eukarya-0p1.stk eukarya-0p1.ps eukarya-0p1-dall.ps}
+\user{esl-ssudraw -q --dall ../eukarya-0p1.stk eukarya-0p1.ps eukarya-0p1-dall.ps}
 
-was used to create Figure~\ref{fig:eukdall} (after copying the seed alignment
-in \prog{\$INFDIR/ssu-align-0.1/seeds/eukarya-0p1.stk} and the template file 
-\prog{\$INFDIR/ssu-align-0.1/seeds/ss-diagrams/eukarya-0p1.ps} to the current 
-working directory.)
+was used to create Figure~\ref{fig:eukdall} while in the 
+\prog{\$INFDIR/ssu-align-0.1/seeds/ss-diagrams/} directory.
 
 \newpage
 
