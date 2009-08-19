@@ -1,4 +1,4 @@
-$cmsearch = "/groups/eddy/home/nawrockie/src/infernal-1.0/src/cmsearch";
-$cmalign  = "/groups/eddy/home/nawrockie/src/infernal-1.0/src/cmalign";
-$esl_sfetch   = "/groups/eddy/home/nawrockie/src/infernal-1.0/easel/miniapps/esl-sfetch";
+$cmsearch = "/groups/eddy/home/nawrockie/notebook/9_0817_ths_inf_ssualign_releases/wd-1p0-branch/src/cmsearch";
+$cmalign = "/groups/eddy/home/nawrockie/notebook/9_0817_ths_inf_ssualign_releases/wd-1p0-branch/src/cmalign";
+$esl_sfetch = "/groups/eddy/home/nawrockie/notebook/9_0817_ths_inf_ssualign_releases/wd-1p0-branch/easel/miniapps/esl-sfetch";
 1;

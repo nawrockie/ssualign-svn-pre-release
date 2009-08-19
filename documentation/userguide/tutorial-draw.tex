@@ -22,6 +22,8 @@ template file. In alignment mode, only statistics of consensus
 positions are displayed. In individual mode, only residues that align to
 consensus positions are displayed.
 
+\subsubsection{Relevant options for alignment mode}
+
 The following table summarizes the different statistics that can be
 created in alignment mode.
 An example of each of these types of
@@ -62,50 +64,70 @@ As an example of how these files were created, the command
 
 was used to create Figure~\ref{fig:eukdall} while in the 
 \prog{\$INFDIR/ssu-align-0.1/seeds/ss-diagrams/} directory.
+The shell script
+\prog{\$INFDIR/ssu-align-0.1/seeds/ss-diagrams/draw-ss-diagrams.sh}
+was used to create all of these diagrams.
+
+\subsubsection{Displaying masks and alignment statistics simultaneously}
+
+The \prog{--mask} option can be used in combination with any of the
+options listed in the above table to create a diagram as above but
+with columns that are excluded from the mask appearing as open
+circles. Section~\ref{section:seeds} includes some examples of this.
+%for masks created using the default masking strategy of
+%\prog{esl-alimanip --pfract 0.95 --pthresh 0.95} (explained earlier
+%in this tutorial) on alignments created by realigning the seed
+%sequences to their respective  models 
+
+\subsubsection{Displaying individual aligned sequences}
+
+The \prog{--indi} option makes \prog{esl-ssudraw} run in individual
+mode. When used by itself, the program will create a single page
+postscript of the consensus sequence of the model. This is the
+single sequence that the model most closely represents, and is the
+highest scoring possible sequence to the model. In the diagram of the
+consensus sequence, uppercase residues indicate highly conserved positions,
+and lowercase residues indicate less well-conserved positions.
+
+When the \prog{--indi} option is used together with \prog{--all}, the
+resulting postscript file will have $N+1$ pages, one for each of the
+$N$ sequences in the alignment, displaying the residue that sequence
+contains at each consensus position of the alignment (gaps are
+indicated by \prog{-} characters). The $+1$ page is the first page
+which again displays the consensus sequence. This page is omitted if
+the \prog{-q} option is also used.
+
+When the \prog{--prob} option is used with \prog{--indi} and
+\prog{--all}, there will be $2N+1$ (or $2N$ if {\prog -q} is used)
+pages created. The $N$ additional pages will display the posterior
+probability (alignment confidence estimate) of each aligned residue
+for each of the $N$ sequences.
+
+The next two pages include two diagrams from the postscript file 
+\prog{bacteria-0p1-indi-all.ps} created with:
+
+\user{../../../easel/miniapps/esl-ssudraw -q --all --indi --prob
+  ../bacteria-0p1.p.stk bacteria-0p1.ps bacteria-0p1-indi-all.ps}
+
+The two diagrams included here correspond to the
+\emph{Escherichia coli} sequence (\db{genbank} accession J01695) that
+is commonly used as a reference SSU sequence. The first diagram shows
+the sequence as it aligns to the default bacterial model and the
+second diagram shows the posterior probabilities of that alignment.
 
 \newpage
 
-\begin{figure}
-\includegraphics[height=8.5in]{Figures/eukarya-0p1-info}
-\label{fig:eukinfo}
+\begin{figure}[h]
+\includegraphics[height=8.5in]{Figures/ecoli-seq}
+\label{fig:ecoli-seq}
 \end{figure}
 
 \newpage
 
-\begin{figure}
-\includegraphics[height=8.5in]{Figures/eukarya-0p1-prob}
-\label{fig:eukinfo}
+\begin{figure}[h]
+\includegraphics[height=8.5in]{Figures/ecoli-prob}
+\label{fig:ecoli-prob}
 \end{figure}
-
-\newpage
-
-\begin{figure}
-\includegraphics[height=8.5in]{Figures/eukarya-0p1-ins}
-\label{fig:eukinfo}
-\end{figure}
-
-\newpage
-
-\begin{figure}
-\includegraphics[height=8.5in]{Figures/eukarya-0p1-dall}
-\label{fig:eukinfo}
-\end{figure}
-
-\newpage
-
-\begin{figure}
-\includegraphics[height=8.5in]{Figures/eukarya-0p1-dint}
-\label{fig:eukinfo}
-\end{figure}
-
-\newpage
-
-\begin{figure}
-\includegraphics[height=8.5in]{Figures/eukarya-0p1-struct}
-\label{fig:eukinfo}
-\end{figure}
-
-
 
 
 

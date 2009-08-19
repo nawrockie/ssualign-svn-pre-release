@@ -9,14 +9,14 @@ that will merge the separate alignments created for each partition
 into a single master alignment.
 
 In this section we'll walk through an example of how to do this for a
-small dataset.  The sequence file \prog{tutorial/seed-50.fa} includes
-50 randomly chosen sequences from the complete set of seed sequences
-from the 5 default models of \textsc{ssu-align} (there are 282 total
+small dataset.  The sequence file \prog{tutorial/seed-30.fa} includes
+30 randomly chosen sequences from the complete set of seed sequences
+from the 5 default models of \textsc{ssu-align} (there are 205 total
 seed sequences, as shown in the table of seed alignment statistics in
-section 3). Create a new directory within \prog{tutorial/} and copy
-\prog{tutorial/seed-50.fa}, the file
-\prog{tutorial/janelia-sa-0p1.params} and the default parameters file
-\prog{sa-0p1.params} there.
+section~\ref{section:seeds}). To follow this example, create a new
+directory and copy \prog{\$SADIR/tutorial/seed-50.fa}, the file
+\prog{\$SADIR/tutorial/janelia-sa-0p1.params} and the default parameters file
+\prog{\$SADIR/sa-0p1.params} there.
 
 There are two ways \textsc{ssu-align} can split up a job into multiple
 jobs to run in parallel. You can either specify the number of jobs
@@ -50,16 +50,24 @@ for scheduling jobs on our cluster here at Janelia Farm in Virginia.
 Importantly, you'll need to change these to the format required by
 your own compute resources.
 
-Because our example dataset here is only 50 sequences we really don't
+If you want the jobs to run in parallel on your local machine, you
+would replace these three lines with:
+\begin{sreoutput}
+$cluster_prefix = "";
+$cluster_suffix = " &";
+1;
+\end{sreoutput}
+
+Because our example dataset here is only 30 sequences we really don't
 need a cluster to run it, so we don't need to define the
 \prog{\$cluster\_prefix} and \prog{\$cluster\_suffix} variables in our
 parameters file. We'll use the default \prog{sa-0p1.params}.
 
-Let's say we want to split up our 50 sequences into 5 separate files
-of 10 sequences each and run each set of 10 independently. 
+Let's say we want to split up our 30 sequences into 5 separate files
+of 6 sequences each and run each set of 6 independently. 
 To execute the script:
 
-\user{ssu-align -c 5 ../../seeds/ssu5-0p1.cm seed-50.fa seed-50-c5 ../../sa-0p1.params}
+\user{ssu-align -c 5 ssu3-0p1.cm seed-30.fa seed-30-c5 sa-0p1.params}
 
 The program finishes in about 1 second. It will print information on
 the files it has created:
@@ -72,8 +80,8 @@ the files it has created:
 # Copyright (C) 2009 HHMI Janelia Farm Research Campus
 # Freely distributed under the GNU General Public License (GPLv3)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# command: /groups/eddy/home/nawrockie/ssualign/ssu-align -F -c 5 ../../seeds/ssu5-0p1.cm seed-50.fa seed-50-c5 ../../sa-0p1.params
-# date:    Thu Jun 18 16:27:21 2009
+# command: ssu-align -c 5 ssu3-0p1.cm seed-30.fa seed-30-c5 sa-0p1.params
+# date:    Wed Aug 19 18:57:15 2009
 #
 \end{comment}
 \begin{sreoutput}
@@ -81,43 +89,44 @@ the files it has created:
 #
 # output file name     description                                                 
 # -------------------  ------------------------------------------------------------
-  seed-50.fa.1         partition 1 fasta sequence file
-  seed-50.fa.2         partition 2 fasta sequence file
-  seed-50.fa.3         partition 3 fasta sequence file
-  seed-50.fa.4         partition 4 fasta sequence file
-  seed-50.fa.5         partition 5 fasta sequence file
-  seed-50-c5.sh        shell script that will run ssu-align 5 times
-  seed-50-c5.merge.pl  perl script to merge alignments when seed-50-c5.sh completes
-  seed-50-c5.log       log file (*this* text printed to stdout)
+  seed-30.fa.1         partition 1 fasta sequence file
+  seed-30.fa.2         partition 2 fasta sequence file
+  seed-30.fa.3         partition 3 fasta sequence file
+  seed-30.fa.4         partition 4 fasta sequence file
+  seed-30.fa.5         partition 5 fasta sequence file
+  seed-30-c5.sh        shell script that will run ssu-align 5 times
+  seed-30-c5.merge.pl  perl script to merge alignments when seed-30-c5.sh completes
+  seed-30-c5.log       log file (*this* text printed to stdout)
 #
-# All output files created in directory ./seed-50-c5/
-#
+# All output files created in directory ./seed-30-c5/
 \end{sreoutput}
 
 The first five fasta files are partitions of the original sequence
-file \prog{seed-50.fa}. Each has 10 sequences in it. The file
-\prog{seed-50-c5.sh} is a shell script that will execute
+file \prog{seed-30.fa}. Each has 6 sequences in it. The file
+\prog{seed-30-c5.sh} is a shell script that will execute
 \prog{ssu-align} five times, once for each of the partitions. 
 If we had defined \prog{\$cluster\_prefix} and
 \prog{\$cluster\_suffix} this script would include those strings to
 allow submission to a cluster. Since we did not our script will simply
-execute \prog{ssu-align} five times in succession. The file
-\prog{seed-50-c5.merge.pl} is a perl script we can use to merge the
+execute \prog{ssu-align} three times in succession. The file
+\prog{seed-30-c5.merge.pl} is a perl script we can use to merge the
 individual alignments created by each of the five jobs together.
-The \prog{seed-50-c5.log} file contains the exact text that was just
+The \prog{seed-30-c5.log} file contains the exact text that was just
 printed to the screen. All of these files were created in a new
-directory called \prog{seed-50-c5}.
+directory called \prog{seed-30-c5}.
 
-The next step is to run the \prog{seed-50-c5.sh} script, which will
-execute \prog{ssu-align} five times. First, enter the
-\prog{seed-50-c5/} directory, then type:
+The next step is to run the \prog{seed-30-c5.sh} script, which will
+execute \prog{ssu-align} three times. First, enter the
+\prog{seed-30-c5/} directory, then type:
 
-\prog{sh seed-50-c5.sh}
+\prog{sh seed-30-c5.sh}
 
 The output of the five \prog{ssu-align} runs will begin to print to
 the screen. When one run finishes, the next will immediately
-start. Each run should take about 30 seconds, so all five will take a
-few minutes. Once they're done we can move to the next step: merging
+start. Each run should take about 20 seconds, so all five will take a
+couple of minutes. 
+
+Once they're done we can move to the next step: merging
 the alignments. If we had defined \prog{\$cluster\_prefix} and
 \prog{\$cluster\_suffix}, each line of our script would have submitted
 a separate job to our cluster. The script would finish quickly, but
@@ -126,11 +135,11 @@ need to wait until all the jobs are finished running on the
 cluster before attempting to merge the alignments.
 
 Continuing with our example, to merge the alignments:
-\user{perl seed-50-c5.merge.pl}
+\user{perl seed-30-c5.merge.pl}
 
 This script will create a merged alignment for each model in the
-original cm file (\prog{ssu5-0p1.cm} in this case) that was the
-best-matching model for at least 1 sequence in any of the five runs.
+original cm file (\prog{ssu3-0p1.cm} in this case) that was the
+best-matching model for at least 1 sequence in any of the three runs.
 For each such model, the script will merge two alignments at a time
 using \textsc{infernal}'s \prog{cmalign} program (see the next section
 on ``Merging multiple alignments together'' for an example)
@@ -141,25 +150,22 @@ merged first, then the alignments from jobs 3 and 4 are merged. Now
 three alignments exist, one from jobs 1+2, one from 3+4 and one from
 5. Next 1+2 are merged with 3+4, and finally the resulting alignment
 of 1+2+3+4 is merged with the alignment from job 5. If you look at the
-code in \prog{seed-50-c5.merge.pl} it may look messy, but this
+code in \prog{seed-30-c5.merge.pl} it may look messy, but this
 simple binary merging is all that it is doing. The intermediate
 alignments are deleted once they are no longer needed as the script
 proceeds. If you have a large number of alignments to merge and/or a
-large number of total sequences this script may take a long time. For
-more information on running times see the ``Performance'' section.
+large number of total sequences this script may take a long time. 
 
-In this case, 5 merged alignments are created, as reported by the
+In this case, 3 merged alignments are created, as reported by the
 script:
 
 \begin{sreoutput}
-Merged alignment for archaea     CM saved to seed-50-c5.1-5.archaea.merged.stk
-Merged alignment for bacteria    CM saved to seed-50-c5.1-5.bacteria.merged.stk
-Merged alignment for chloroplast CM saved to seed-50-c5.1-5.chloroplast.merged.stk
-Merged alignment for eukarya     CM saved to seed-50-c5.1-5.eukarya.merged.stk
-Merged alignment for metamito    CM saved to seed-50-c5.1-5.metamito.merged.stk
+Merged alignment for archaea  CM saved to seed-30-c5.1-5.archaea.merged.stk
+Merged alignment for bacteria CM saved to seed-30-c5.1-5.bacteria.merged.stk
+Merged alignment for eukarya  CM saved to seed-30-c5.1-5.eukarya.merged.stk
 \end{sreoutput}
 
 These alignments will be 100\% identical to the alignments that would
 have been created if we had not split up this job, but rather aligned
-all 50 sequences with a single run of \prog{ssu-align}.
+all 30 sequences with a single run of \prog{ssu-align}.
 
