@@ -8,8 +8,8 @@ WBETA    1e-07
 NSEQ     23
 EFFNSEQ  23.000
 CLEN     1508
-BCOM     cmbuild-1.0 --enone --gapthresh 0.8 archaea-0p1.cm archaea-0p1.stk
-BDATE    Wed Jun 17 11:19:36 2009
+BCOM     ../../src/cmbuild -F --enone --gapthresh 0.8 archaea-0p1.cm archaea-0p1.stk
+BDATE    Wed Aug 19 16:33:00 2009
 NULL     0.000  0.000  0.000  0.000 
 MODEL:
 				[ ROOT    0 ]
