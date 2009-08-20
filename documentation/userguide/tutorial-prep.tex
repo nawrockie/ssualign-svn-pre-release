@@ -14,9 +14,9 @@ small dataset.  The sequence file \prog{tutorial/seed-30.fa} includes
 from the 5 default models of \textsc{ssu-align} (there are 205 total
 seed sequences, as shown in the table of seed alignment statistics in
 section~\ref{section:seeds}). To follow this example, create a new
-directory and copy \prog{\$SADIR/tutorial/seed-50.fa}, the file
-\prog{\$SADIR/tutorial/janelia-sa-0p1.params} and the default parameters file
-\prog{\$SADIR/sa-0p1.params} there.
+directory and copy \prog{ssu-align-0.1/tutorial/seed-50.fa}, the file
+\prog{ssu-align-0.1/tutorial/janelia-sa-0p1.params} and the default parameters file
+\prog{ssu-align-0.1/sa-0p1.params} there.
 
 There are two ways \textsc{ssu-align} can split up a job into multiple
 jobs to run in parallel. You can either specify the number of jobs
@@ -36,8 +36,8 @@ scheduler. For example, look at the final 3 lines of the file
 \prog{tutorial/janelia-sa-0p1.params}:
 
 \begin{sreoutput}
-$cluster_prefix = "qsub -N ssualign -o ssualign.out -b y -cwd -V -j y '";
-$cluster_suffix = "'";
+\$cluster_prefix = "qsub -N ssualign -o ssualign.out -b y -cwd -V -j y '";
+\$cluster_suffix = "'";
 1;
 \end{sreoutput}
 
@@ -53,8 +53,8 @@ your own compute resources.
 If you want the jobs to run in parallel on your local machine, you
 would replace these three lines with:
 \begin{sreoutput}
-$cluster_prefix = "";
-$cluster_suffix = " &";
+\$cluster_prefix = "";
+\$cluster_suffix = " &";
 1;
 \end{sreoutput}
 

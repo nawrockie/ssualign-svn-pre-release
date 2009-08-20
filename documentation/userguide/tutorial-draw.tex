@@ -24,17 +24,38 @@ consensus positions are displayed.
 
 \subsubsection{Relevant options for alignment mode}
 
-HERE HERE 
-
 The following table summarizes the different statistics that can be
-created by \prog{esl-ssudraw} alignment mode.
-An example of each of these types of
-diagrams is included as the indicated figure for the default
-eukaryotic seed alignment. The postscript and pdf files for each of
-these included figures, as well as analogous diagrams for the
-archaeal and bacterial seeds are included in 
-\prog{\$INFDIR/ssu-align-0.1/seeds/ss-diagrams/}, named as indicated 
-in the ``file'' column of the table. 
+created by \prog{esl-ssudraw} in alignment mode.
+The postscript and pdf files for each of
+these diagrams for the archaea, bacteria and eukarya seeds
+are included in  \prog{ssu-align-0.1/seeds/ss-diagrams/}, named as
+indicated  in the ``file'' column of the table (with \prog{<fam>}
+standing for \prog{archaea}, \prog{bacteria}, or \prog{eukarya}). 
+Section~\ref{section:chap9} includes examples of some of these
+figures for each seed, as indicated by the figure numbers in 
+the ``figure'' column. 
+
+\begin{comment}
+\begin{center}
+\begin{tabular}{llll} \hline
+\prog{esl-ssudraw} option(s) & statistic                     &  figure & file \\ \hline
+\prog{<none>}                & information content           & \ref{fig:eukinfo} & \prog{eukarya-0p1-info} \\
+& & & \\
+\prog{-q --prob}                & average posterior probability & \ref{fig:eukprob} & \prog{eukarya-0p1-prob} \\
+& & & \\
+\prog{-q --ins}                 & frequency of insertions       & \ref{fig:eukins}   & \prog{eukarya-0p1-ins} \\
+                             & after each position           & & \\
+& & & \\
+\prog{-q --dall}                & frequency of deletions        & \ref{fig:eukdall}  & \prog{eukarya-0p1-dall} \\
+& & & \\
+\prog{-q --dint}                & frequency of internal deletions & \ref{fig:eukdint}  & \prog{eukarya-0p1-dint} \\
+                             & (excluding terminal deletions)  & & \\
+& & & \\
+\prog{-q --struct}              & additional information from     & \ref{fig:eukstruct} & \prog{eukarya-0p1-struct} \\
+                             & conserved structure \\
+\end{tabular}
+\end{center}
+\end{comment}
 
 \begin{center}
 \begin{tabular}{llll} \hline
@@ -65,9 +86,9 @@ As an example of how these files were created, the command
 \user{esl-ssudraw -q --dall ../eukarya-0p1.stk eukarya-0p1.ps eukarya-0p1-dall.ps}
 
 was used to create Figure~\ref{fig:eukdall} while in the 
-\prog{\$INFDIR/ssu-align-0.1/seeds/ss-diagrams/} directory.
+\prog{ssu-align-0.1/seeds/ss-diagrams/} directory.
 The shell script
-\prog{\$INFDIR/ssu-align-0.1/seeds/ss-diagrams/draw-ss-diagrams.sh}
+\prog{ssu-align-0.1/seeds/ss-diagrams/draw-ss-diagrams.sh}
 was used to create all of these diagrams.
 
 \subsubsection{Displaying masks and alignment statistics simultaneously}
@@ -75,11 +96,25 @@ was used to create all of these diagrams.
 The \prog{--mask} option can be used in combination with any of the
 options listed in the above table to create a diagram as above but
 with columns that are excluded from the mask appearing as open
-circles. Section~\ref{section:seeds} includes some examples of this.
-%for masks created using the default masking strategy of
-%\prog{esl-alimanip --pfract 0.95 --pthresh 0.95} (explained earlier
-%in this tutorial) on alignments created by realigning the seed
-%sequences to their respective  models 
+circles. Figure~\ref{fig:bacdelmask} in section~\ref{section:chap9}
+shows an example. That figure was created from the
+\prog{ssu-align-0.1/seeds/ss-diagrams/} directory using the command:
+
+\prog{esl-ssudraw --mask ../bacteria-0p1-seed-realn.mask -q --dall
+  ../bacteria-0p1.stk bacteria-0p1.ps bacteria-0p1-dall-wmask.ps}
+
+The \prog{bacteria-0p1-seed-realn.mask} was created by realigning all
+of the bacterial seed sequences in
+\prog{ssu-align-0.1/seeds/bacteria-0p1.fa} to the default bacterial
+CM, and using the default masking strategy outlined above 
+(\prog{esl-alimanip --pfract 0.95 --pthresh 0.95})
+on the resulting alignment. Analogous masks for archaea and eukarya
+are included in the \prog{ssu-align-0.1/seeds/} directory, and PDF and
+postscript files showing each of the masks on each of the diagrams
+from the above table are included in 
+\prog{ssu-align-0.1/seeds/ss-diagrams/}. The naming convention for
+these diagrams is the same as indicated in the ``file'' column of the
+above table, but with the suffix ``-wmask'' appended.
 
 \subsubsection{Displaying individual aligned sequences}
 
@@ -108,9 +143,9 @@ for each of the $N$ sequences.
 The next two pages include two diagrams from the postscript file 
 \prog{bacteria-0p1-indi-all.ps} created with:
 
-\user{../../../easel/miniapps/esl-ssudraw -q --all --indi --prob
-  ../bacteria-0p1.p.stk bacteria-0p1.ps bacteria-0p1-indi-all.ps}
+\user{esl-ssudraw -q --all --indi --prob ../bacteria-0p1.p.stk bacteria-0p1.ps bacteria-0p1-indi-all.ps}
 
+Again from the \prog{ssu-align-0.1/seeds/ss-diagrams/} directory.
 The two diagrams included here correspond to the
 \emph{Escherichia coli} sequence (\db{genbank} accession J01695) that
 is commonly used as a reference SSU sequence. The first diagram shows

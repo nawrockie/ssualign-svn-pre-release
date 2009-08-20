@@ -18,21 +18,22 @@ For this example imagine our study is only targeting bacterial SSU
 rRNA. We will use the bacterial SSU seed alignment that is included
 with \textsc{ssu-align} as a starting point for creating our new,
 truncated CM. The first step is to determine what consensus positions
-in the bacterial seed alignment's consensus structure the targetted
+in the bacterial seed alignment's consensus structure the targeted
 region corresponds to. The consensus sequence and structure of the
-bacterial seed alignment is shown in Figure~\ref{fig:bacseedrf}.
+bacterial seed alignment is shown in Figure~\ref{fig:bacrf} in
+section~\ref{section:chap9}.
 
-\begin{figure}
-\includegraphics[height=8.5in]{Figures/bacteria-0p1-rf}
-\caption{Consensus sequence and structure of the default bacterial
-  model of \sft{SSU-align} 0.1}.
-\label{fig:bacseedrf}
-\end{figure}
+%\begin{figure}
+%\includegraphics[height=8.5in]{Figures/bacteria-0p1-rf}
+%\caption{Consensus sequence and structure of the default bacterial
+%  model of \sft{SSU-align} 0.1}.
+%\label{fig:bacseedrf}
+%\end{figure}
 
 Create a new directory and copy the bacterial seed alignment in
-\prog{\$SADIR/seeds/bacteria-0p1.stk}, the default parameters
-file \prog{\$SADIR/sa-0p1.params}, and the file
-\prog{\$SADIR/tutorial/partial.fa} there.
+\prog{ssu-align-0.1/seeds/bacteria-0p1.stk}, the default parameters
+file \prog{ssu-align-0.1/sa-0p1.params}, and the file
+\prog{ssu-align-0.1/tutorial/partial.fa} there.
 
 Let's say our 5' primer begins at consensus position 35 and our 3'
 primer ends at position 397.  In practice, you'll have to manually
