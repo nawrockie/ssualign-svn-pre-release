@@ -1,5 +1,9 @@
 \section{SSU-align: a tool for structural alignment of SSU
-  rRNA sequences}
+  rRNA sequences\protect\footnote{This is a slightly modified version
+  (some largely irrelevant sections have been removed) 
+  of chapter 9 from my Ph.D. thesis \cite{Nawrocki09b}, and it commonly refers to other
+  chapters of my thesis. If you want you can download the full thesis from 
+  (\htmladdnormallink{http://selab.janelia.org/publications.html}{http://selab.janelia.org/publications.html})}}
 \label{section:chap9}
 
 \sft{ssu-align} is a freely available, open source software program
@@ -125,13 +129,15 @@ The goal of masking is to identify and remove columns containing
 residues that are ambiguously aligned and therefore likely to contain
 errors prior to using the alignment for phylogenetic inference.  Two
 commonly used SSU masks were determined manually by David Lane and
-Phil Hugenholtz (Figures 7.5 and 7.6) based on expert knowledge and extensive
-experience with SSU alignments (Chapter 7 of \cite{Nawrocki09b}). Alignment posterior
-probabilities from probabilistic models offer an alternative,
-objective way of evaluating alignment ambiguity (high posterior
-probability means low ambiguity and vice versa) and creating masks for
-any alignment.
+Phil Hugenholtz (Figures 7.5 and 7.6 of \cite{Nawrocki09b}) based on
+expert knowledge and extensive experience with SSU alignments.
+Alignment posterior probabilities from
+probabilistic models offer an alternative, objective way of evaluating
+alignment ambiguity (high posterior probability means low ambiguity
+and vice versa) and creating masks for any alignment.
 
+%This is in the thesis, but it is irrelevant here.
+\begin{comment}
 The HMM banded alignment technique described in Chapter 8 of
 \cite{Nawrocki09b} exploits
 posterior probabilities calculated from the Forward and Backward
@@ -146,6 +152,7 @@ had only been applied to CYK \cite{Eddy02b}. HMM banding drastically
 reduces the memory requirement for CM alignment, because only DP cells
 within the bands need be allocated, making it possible to run Inside
 and Outside on SSU.
+\end{comment}
 
 \subsubsection{Alignment ambiguity and length heterogeneity}
 
@@ -283,10 +290,12 @@ coverage on the benchmark.
 %y: 975    0.8626/0.9972    0.8404/0.9977    0.8354/0.9979    0.8234/0.9981    0.7954/0.9982    0.7740/0.9985  
 %y: 990    0.7720/0.9981    0.7424/0.9985    0.7209/0.9986    0.6904/0.9988    0.6420/0.9990    0.5969/0.9990  
 
-\begin{sidewaystable}
+%\begin{sidewaystable}
+\begin{table}
+\scriptsize
 \begin{center}
 \begin{tabular}{|c||cc|cc|cc|cc|cc|cc|}
-\multicolumn{1}{c}{} & \multicolumn{12}{c}{$x$ (fraction of sequences with pp above y)} \\ \hline
+\multicolumn{1}{c}{} & \multicolumn{12}{c}{$x$ (fraction of sequences with posterior probability above y)} \\ \hline
       & \multicolumn{2}{c|}{0.800} & \multicolumn{2}{c|}{0.900} & \multicolumn{2}{c|}{0.925} & \multicolumn{2}{c|}{0.950} & \multicolumn{2}{c|}{0.975} & \multicolumn{2}{c|}{0.990} \\ \cline{2-13}
  $y$  &     cov  & acc    &  cov    & acc     &  cov    & acc    &  cov    & acc    &     cov & acc    &      cov & acc    \\ \hline
 & & & & & & & & & & & & \\
@@ -323,7 +332,8 @@ coverage on the benchmark.
   \cite{KolbeEddy09}. Masks were computed with the {\tt esl-alimanip}
   program with flags {\tt --p-rf --p-fract <x> --p-thresh <y>}.}
 \label{tbl:kolbe09-pp}
-\end{sidewaystable}
+\end{table}
+%\end{sidewaystable}
 
 A separate validation of the automated masking strategy, apart from
 benchmarking is via comparison to the manually created masks of David
@@ -658,7 +668,7 @@ models are summarized in Table~\ref{tbl:finalseeds}.
 % original data is from 9_0507_ssu_crw2sscons_stk/00LOG on 06.29.09
 \begin{table}
 \begin{center}
-  \scriptsize
+  \small
   \begin{tabular}{llrrrrr|cccc}
 % following table includes bp per seq and conflict bp per seq created with (local to MacBook):
 % <[ssu]> perl crw2seed_tbl.pl crw2seed.tbl 
@@ -736,10 +746,9 @@ alignments, with figure numbers as indicated below:
 
 \vspace{0.2in}
 
-HERE HERE ADD RF SEQS!
-
 \begin{tabular}{r|l|l|l} \hline
 statistic                        & archaea & bacteria & eukarya \\ \hline
+consensus sequence               & Figure~\ref{fig:arcrf}  & Figure~\ref{fig:bacrf} & Figure~\ref{fig:eukrf} \\ 
 information content              & Figure~\ref{fig:arcinfo} & Figure~\ref{fig:bacinfo} & Figure~\ref{fig:eukinfo} \\ 
 extra information from structure & Figure~\ref{fig:arcsinfo} & Figure~\ref{fig:bacsinfo} & Figure~\ref{fig:euksinfo} \\ 
 frequency of deletions           & Figure~\ref{fig:arcdel} & Figure~\ref{fig:bacdel} & Figure~\ref{fig:eukdel} \\ 
@@ -754,8 +763,23 @@ frequency of insertions          & Figure~\ref{fig:arcins} & Figure~\ref{fig:bac
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{figure}
 \begin{center}
-%\includegraphics[width=5.5in]{Figures/ss-diagrams/archaea-0p1-info}
-\includegraphics[height=9in]{../../seeds/ss-diagrams/archaea-0p1-info}
+\includegraphics[width=5.5in]{../../seeds/ss-diagrams/archaea-0p1-rf}
+\end{center}
+\caption[Secondary structure diagram displaying the consensus sequence
+  of the archaeal SSU model]{\textbf{Secondary structure diagram displaying the
+  consensus sequence of the archaeal SSU model.} 
+  This is the single sequence that the model 
+  most closely represents, and is the highest scoring possible
+  sequence to the model. Uppercase residues indicate highly conserved positions,
+  and lowercase residues indicate less well-conserved positions.
+  This diagram was generated by the {\tt
+  esl-ssudraw} program included in \sft{ssu-align}.}
+\label{fig:arcrf}
+\end{figure}
+
+\begin{figure}
+\begin{center}
+\includegraphics[width=5.5in]{../../seeds/ss-diagrams/archaea-0p1-info}
 \end{center}
 \caption[Secondary structure diagram displaying primary sequence
   information content per consensus position of the archaeal SSU seed
@@ -819,6 +843,22 @@ frequency of insertions          & Figure~\ref{fig:arcins} & Figure~\ref{fig:bac
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %bacteria
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{figure}
+\begin{center}
+\includegraphics[width=5.5in]{../../seeds/ss-diagrams/bacteria-0p1-rf}
+\end{center}
+\caption[Secondary structure diagram displaying the consensus sequence
+  of the bacterial SSU model]{\textbf{Secondary structure diagram displaying the
+  consensus sequence of the bacterial SSU model.} 
+  This is the single sequence that the model 
+  most closely represents, and is the highest scoring possible
+  sequence to the model. Uppercase residues indicate highly conserved positions,
+  and lowercase residues indicate less well-conserved positions.
+  This diagram was generated by the {\tt
+  esl-ssudraw} program included in \sft{ssu-align}.}
+\label{fig:bacrf}
+\end{figure}
+
 \begin{figure}
 \begin{center}
 \includegraphics[width=5.5in]{../../seeds/ss-diagrams/bacteria-0p1-info}
@@ -888,6 +928,22 @@ frequency of insertions          & Figure~\ref{fig:arcins} & Figure~\ref{fig:bac
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %eukarya
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{figure}
+\begin{center}
+\includegraphics[width=5.5in]{../../seeds/ss-diagrams/eukarya-0p1-rf}
+\end{center}
+\caption[Secondary structure diagram displaying the consensus sequence
+  of the eukaryotic SSU model]{\textbf{Secondary structure diagram displaying the
+  consensus sequence of the eukaryotic SSU model.} 
+  This is the single sequence that the model 
+  most closely represents, and is the highest scoring possible
+  sequence to the model. Uppercase residues indicate highly conserved positions,
+  and lowercase residues indicate less well-conserved positions.
+  This diagram was generated by the {\tt
+  esl-ssudraw} program included in \sft{ssu-align}.}
+\label{fig:eukrf}
+\end{figure}
+
 \begin{figure}
 \begin{center}
 \includegraphics[width=5.5in]{../../seeds/ss-diagrams/eukarya-0p1-info}

@@ -1,4 +1,5 @@
 \section{Installation}
+\label{section:install}
 
 \sft{ssu-align} is part of the larger \sft{infernal} software
 package. The first step in installing \sft{ssu-align} is to install
@@ -7,11 +8,10 @@ copied from the \sft{infernal} user's guide, where you will also find
 more detailed instructions on how to customize the installation. 
 After \sft{infernal} is installed, an additional crucial step is
 required before you can use \sft{ssu-align}. This step is explained
-in the section below entitled ``An additional crucial step before you
-can ssu-align''.
+in the section below entitled ``An additional crucial step that is
+required before you can use SSU-align''.
 
 \subsection{Quick installation instructions}
-
 
 Download the source tarball (\prog{infernal.tar.gz}) from 
 \htmladdnormallink{ftp://selab.janelia.org/pub/software/infernal/}
@@ -40,18 +40,19 @@ pass:
 
 \user{make check}
 
-The programs are now in the \prog{src/} subdirectory. The
-\sft{infernal} user's guide in the \\ 
+The \sft{infernal} programs are now in the \prog{src/}
+subdirectory. The \prog{ssu-align-0.1} subdirectory includes the
+\prog{ssu-align} PERL script and other important files as described in
+``SSU-align files'' below. The \sft{infernal} user's guide is in the 
 top-level \prog{infernal} directory. The man pages are in the
-\prog{documentation/manpages}
-subdirectory. You can manually move or copy all of these to
-appropriate locations if you want. 
+\prog{documentation/manpages} subdirectory. You can manually move or
+copy all of these to appropriate locations if you want. 
 
 \emph{IMPORTANT:}
 Make sure the \sft{infernal} programs (\prog{cmalign}, 
 \prog{cmbuild}, \prog{cmcalibrate}, \prog{cmemit}, \prog{cmscore},
 \prog{cmsearch}, and \prog{cmstat}) in the \prog{src/} subdirectory
-as well as the \sft{easel} programs in the \prog{easel/miniapps/}
+as well as the \sft{easel} programs in the \\ \prog{easel/miniapps/}
 subdirectory are in your \$PATH.
 
 Optionally, you can install the man pages and programs in system-wide
@@ -67,11 +68,11 @@ can be found in the \sft{infernal} user's guide which is in
 PDF format in the top-level \prog{infernal/} directory. 
 
 \subsection{SSU-align files}
-The \prog{ssu-align-0.1} subdirectory of \prog{infernal/} will include
+The \prog{ssu-align-0.1/} subdirectory of \prog{infernal/} will include
 the \prog{ssu-align} PERL script, the user's guide (this file) in
 \prog{sa-userguide.pdf}, and the \emph{parameters} file 
 \prog{sa-0p1.params}. You will need to manually edit this file as
-explained above. Additionally you will find three subdirectories
+explained below. Additionally you will find three subdirectories
 within \prog{ssu-align-0.1/}:
 
 \begin{wideitem}
@@ -93,7 +94,7 @@ within \prog{ssu-align-0.1/}:
 
 \end{wideitem}
 
-\subsection{An additional crucial step before you
+\subsection{An additional crucial step that is required before you
 can run SSU-align}
 
 The \prog{ssu-align} PERL script needs to know where the
@@ -103,7 +104,6 @@ system. This is achieved by explicitly placing the paths in the text
 file \prog{sa-0p1.params}. Take a look at this file:
 
 \begin{sreoutput}
-<[ssu-align-0.1]> cat sa-0p1.params 
 # Replace these paths with the corresponding paths to the infernal
 # 1.01 executables on your file system.
 $cmsearch = "/groups/eddy/home/nawrockie/infernal-1.01/src/cmsearch";
@@ -112,12 +112,12 @@ $esl_sfetch = "/groups/eddy/home/nawrockie/infernal-1.01/easel/miniapps/esl-sfet
 1;
 \end{sreoutput}
 
-It is vital that you replace these paths with absolute paths (that is,
-no use of '~' or ``..'') to these executable files on your own
+It is vital that you replace these paths with absolute paths (do not 
+use of '\~' or ``..'' in the paths) to these executable files on your own
 filesystem. For example, if you unpacked \prog{infernal.tar.gz} in the 
 directory \prog{Users/Lucy/} to create
 \prog{Users/Lucy/infernal-1.01/}, then your \prog{sa-0p1.params} file
-should include the line: 
+should define \$cmsearch as: 
 
 \prog{\$cmsearch = "/Users/Lucy/infernal-1.01/src/cmsearch";}
 

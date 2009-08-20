@@ -4,8 +4,8 @@
 (SSU rRNA) genes in sequence datasets. It uses models of the primary
 sequence and secondary structure conservation of SSU rRNA as inferred
 by comparative sequence analysis and confirmed by crystal structure
-determination from the Comparative RNA Website (CRW) 
-\htmladdnormallink{http://www.rna.ccbb.utexas.edu/}{http://www.rna.ccbb.utexas.edu/}\\
+determination from the \db{comparative rna website} (\db{crw}) 
+(\htmladdnormallink{http://www.rna.ccbb.utexas.edu/}{http://www.rna.ccbb.utexas.edu/})
 \cite{CannoneGutell02}.
 
 \subsection{Overview}
@@ -17,15 +17,16 @@ by the program, but \textsc{ssu-align} can be used with other,
 user-generated models as well.
 
 Given an input dataset of unaligned SSU sequences,
-\software{ssu-align} goes through two stages. In stage 1, each of the
-sequences is locally aligned to each of the five models based on
-primary sequence conservation to obtain a score for each sequence to
-each model.  The model that gives the highest scoring alignment to
-each sequence is the \emph{best-matching model} for that sequence.  In
-stage 2, each sequence is aligned to it's best-matching model using
-both primary sequence and secondary structure conservation. The end
-result is a separate multiple alignment for each model that was the
-best-matching model for at least one sequence in the input dataset.
+\software{ssu-align} proceeds through two stages to generate
+alignments. In stage 1, each of the sequences is aligned to
+each of the five models based on primary sequence conservation to
+obtain a score for each sequence to each model.  The model that gives
+the highest scoring alignment to each sequence is the
+\emph{best-matching model} for that sequence.  In stage 2, each
+sequence is aligned to its best-matching model using both primary
+sequence and secondary structure conservation. The end result is a
+separate multiple alignment for each model that was the best-matching
+model for at least one sequence in the input dataset.
 
 The stage 1 primary sequence alignment is local with respect to both
 the model and the sequence. Locality with respect to the model allows
@@ -35,47 +36,44 @@ with respect to the sequence allows the program to handle input
 sequences that contain extra residues that are nonhomologous to SSU at
 the beginning and/or end of the input sequence. In this case, the
 local alignment will only correspond to a subsequence of the input
-sequence, it is only this subsequence that is aligned to it's
+sequence, it is only this subsequence that is aligned to its
 best-matching model in stage 2.
-
 The stage 2 primary sequence and structural based alignment is local
-\emph{only} with respect to the model.  This means the subsequence
-that survives stage 1 is always included in it's entirety in the final
+\emph{only} with respect to the model.  This means that any subsequence
+that survives stage 1 is always included in its entirety in the final
 alignment.
 
 This package can also be used to \emph{mask} alignments by removing
-unreliable alignment columns.  This post-processing step can be useful
-for removing regions of the alignment that are are ambiguous and
-probably include a significant number of errors prior to using
-phylogenetic inference tools.
-
-Columns are selected for removal based on ``confidence estimates'' 
-for the aligned residues, which are derived from the probability that
-each residue aligns to each column of the alignment. This is discussed
-in more detail in the section 3 of this guide.
+unreliable alignment columns. This post-processing step can be useful
+for removing ambiguously aligned regions that probably include a
+significant number of errors, prior to using phylogenetic inference
+tools.  Alignment columns are selected for removal based on
+automatically calculated ``confidence estimates'' for the aligned
+residues, which are literally the probabilities that each residue aligns
+to each column of the alignment given the CM. This is discussed in
+more detail in the section 3 of this guide.
 
 This package can also be used to create new SSU models, either for
 different phylogenetic clades or for specific regions of the SSU rRNA
 molecule, as well as for drawing secondary structure diagrams that
 display several different statistics on the alignment (such as levels
-of sequence conservation, or frequency of gaps). 
+of sequence conservation or frequency of gaps). 
 
 \subsection{What is included in this guide}
 
 Section~\ref{section:install} describes how to install the
-package. The crucial part of installation is actually described in the 
-Section~\ref{section:chap9} is a chapter from my (submitted)
-Ph.D. thesis which describes how the program works, and how the seed
-alignments were derived from \db{crw} \cite{CannoneGutell02}.
-The Tutorial in section~\ref{section:tutorial} of this guide walks
-through examples of using \textsc{ssu-align} to build multiple
-alignments, mask alignments, create models of a specific region of
-SSU, draw structure diagrams for alignments, and split up large
-alignment jobs into smaller jobs to run in parallel on a cluster.
-Section ~\ref{section:output} describes the format of all the output
-files \sft{ssu-align} creates. Finally, the \sft{ssu-align} Manual
-page which explains the command-line options of the program is
-included at the end of this guide.
+package. Section~\ref{section:chap9} is a chapter from my (submitted)
+Ph.D. thesis \cite{Nawrocki09b} which describes how the program works,
+and how the seed alignments were derived from \db{crw}
+\cite{CannoneGutell02}.  The tutorial in
+section~\ref{section:tutorial} walks through examples of using
+\textsc{ssu-align} to build multiple alignments, mask alignments,
+create models of a specific region of SSU, draw structure diagrams for
+alignments, and split up large alignment jobs into smaller jobs to run
+in parallel on a cluster.  Section~\ref{section:output} describes the
+format of all the output files \sft{ssu-align} creates. Finally, the
+\sft{ssu-align} Manual page which explains the command-line options of
+the program is included at the end of this guide.
 
 \subsection{What is included in this package}
 
@@ -89,7 +87,7 @@ run \software{ssu-align}.  (See the Installation section of the
 (archaea, bacteria, and eukarya) SSU models and the \emph{seed}
 alignments they were built from. The alignments were based on SSU
 structures and alignments from the Comparative RNA Website (CRW)
-\cite{Cannone02}. A broader discussion of these models and alignments
+\cite{CannoneGutell02}. A broader discussion of these models and alignments
 and the specific procedure used to create the seed alignments from the
 CRW data is explained in section~\ref{section:chap9}.
 
@@ -97,7 +95,7 @@ Installation of the PERL (Practical Extraction and Report Language,
 Larry Wall) interpreter package version 5.0 or later is required to
 run the \software{ssu-align} PERL script.
 
-\subsection{What \emph{ssu-align} does not do}
+\subsection{What SSU-align does not do}
 
 \textsc{ssu-align} only creates alignments; it does not infer trees
 from those alignments, nor does it classify sequences beyond reporting
@@ -107,7 +105,7 @@ which model in the input CM file they score highest to.
 
 The \software{infernal} user's guide \cite{infernalguide} included in
 this package supplements this user's guide. My Ph.D. thesis 
-\htmladdnormallink{http://selab.janelia.org/publications.html}{http://selab.janelia.org/publications.html} \\
+(\htmladdnormallink{http://selab.janelia.org/publications.html}{http://selab.janelia.org/publications.html})
 introduces and describes my work on CM methods. It includes three chapter (7-9) dedicated to
 SSU rRNA alignment; chapter 9 is included in this guide as
 section~\ref{section:chap9}, but the other chapters may include some
@@ -115,11 +113,22 @@ relevant background information.
 Other useful references on CMs include
 \cite{Eddy94,Eddy02b,NawrockiEddy07,Nawrocki09,KolbeEddy09}. In
 addition, the \database{rfam} database 
-\htmladdnormallink{http://rfam.sanger.ac.uk/}{http://rfam.sanger.ac.uk/}\\
+(\htmladdnormallink{http://rfam.sanger.ac.uk/}{http://rfam.sanger.ac.uk/})
 uses \software{infernal} to search for and align
 structural RNAs using more than 1000 different CMs, so its
 publications may be of interest as well
 \cite{Griffiths-Jones03,Griffiths-Jones05,Gardner09}.
+
+\subsection{How to cite INFERNAL and SSU-align}
+
+Please cite the \sft{infernal} software publication:
+\cite{Nawrocki09}, if you find \sft{ssu-align} useful for work that
+you publish. Additionally, because \sft{ssu-align}'s seed alignments were
+derived from the \db{comparative rna website} we ask you to also cite
+that database \cite{CannoneGutell02}.  Finally, if you'd like to, you
+can also cite my Ph.D. thesis \cite{Nawrocki09b} because it is
+currently the most relevant and comprehensive reference for the
+program.
 
 \subsection{Future development}
 
