@@ -4,11 +4,11 @@ SSU rRNA alignments are large and difficult to view in a meaningful
 way. The \prog{esl-ssudraw} program introduced for visualizing masks
 earlier in this tutorial can be also used to display statistics of
 a particular alignment on the consensus SSU secondary structure of the
-model used to create the alignment. As before,
+model used to create the alignment. As just shown in the previous example,
 using \prog{esl-ssudraw} requires a template postscript file of the
 consensus secondary structure. The template files for the 3 default
 \textsc{ssu-align} version 0.1 seed models are included as
-\prog{\$INFDIR/ssu-align-0.1/seeds/ss-diagrams/{archaea,bacteria,eukarya}-0p1.ps}. 
+\prog{ssu-align-0.1/seeds/ss-diagrams/{archaea,bacteria,eukarya}-0p1.ps}. 
 (Unfortunately, it is difficult to create new template files for
 additional models you might build for your own analyses.) 
 
@@ -17,15 +17,17 @@ mode, \emph{alignment} mode, the structure diagrams will display
 statistics on the alignment. In \emph{individual} mode, the structure
 diagrams will show individual sequences in the alignment by displaying
 the actual residues at each consensus position of the alignment. Note
-that the diagrams are always of the consensus model defined in the
+that the diagrams always depict the consensus model defined in the
 template file. In alignment mode, only statistics of consensus
 positions are displayed. In individual mode, only residues that align to
 consensus positions are displayed.
 
 \subsubsection{Relevant options for alignment mode}
 
+HERE HERE 
+
 The following table summarizes the different statistics that can be
-created in alignment mode.
+created by \prog{esl-ssudraw} alignment mode.
 An example of each of these types of
 diagrams is included as the indicated figure for the default
 eukaryotic seed alignment. The postscript and pdf files for each of
