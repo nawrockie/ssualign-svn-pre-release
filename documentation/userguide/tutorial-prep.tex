@@ -13,10 +13,10 @@ small dataset.  The sequence file \prog{tutorial/seed-30.fa} includes
 30 randomly chosen sequences from the complete set of seed sequences
 from the 5 default models of \textsc{ssu-align} (there are 205 total
 seed sequences, as shown in the table of seed alignment statistics in
-section~\ref{section:seeds}). To follow this example, create a new
+section~\ref{section:chap9}). To follow this example, create a new
 directory and copy \prog{ssu-align-0.1/tutorial/seed-50.fa}, the file
-\prog{ssu-align-0.1/tutorial/janelia-sa-0p1.params} and the default parameters file
-\prog{ssu-align-0.1/sa-0p1.params} there.
+\\ \prog{ssu-align-0.1/tutorial/janelia-sa-0p1.params} and the default parameters file
+\\ \prog{ssu-align-0.1/sa-0p1.params} there.
 
 There are two ways \textsc{ssu-align} can split up a job into multiple
 jobs to run in parallel. You can either specify the number of jobs
@@ -36,8 +36,8 @@ scheduler. For example, look at the final 3 lines of the file
 \prog{tutorial/janelia-sa-0p1.params}:
 
 \begin{sreoutput}
-\$cluster_prefix = "qsub -N ssualign -o ssualign.out -b y -cwd -V -j y '";
-\$cluster_suffix = "'";
+$cluster_prefix = "qsub -N ssualign -o ssualign.out -b y -cwd -V -j y '";
+$cluster_suffix = "'";
 1;
 \end{sreoutput}
 
@@ -53,8 +53,8 @@ your own compute resources.
 If you want the jobs to run in parallel on your local machine, you
 would replace these three lines with:
 \begin{sreoutput}
-\$cluster_prefix = "";
-\$cluster_suffix = " &";
+$cluster_prefix = "";
+$cluster_suffix = " &";
 1;
 \end{sreoutput}
 
@@ -71,8 +71,6 @@ To execute the script:
 
 The program finishes in about 1 second. It will print information on
 the files it has created:
-
-\newpage
 
 \begin{comment}
 # ssu-align :: define and align SSU rRNA sequences
@@ -127,7 +125,7 @@ start. Each run should take about 20 seconds, so all five will take a
 couple of minutes. 
 
 Once they're done we can move to the next step: merging
-the alignments. If we had defined \prog{\$cluster\_prefix} and
+the alignments. If we had defined \\ \prog{\$cluster\_prefix} and
 \prog{\$cluster\_suffix}, each line of our script would have submitted
 a separate job to our cluster. The script would finish quickly, but
 the jobs would still be running. \textbf{\emph{Important: }} you'll
@@ -135,6 +133,7 @@ need to wait until all the jobs are finished running on the
 cluster before attempting to merge the alignments.
 
 Continuing with our example, to merge the alignments:
+
 \user{perl seed-30-c5.merge.pl}
 
 This script will create a merged alignment for each model in the

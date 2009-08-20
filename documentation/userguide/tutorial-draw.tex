@@ -83,9 +83,9 @@ If the \prog{-q} option is omitted, the program will create the
 information content diagram as the first page by default.
 As an example of how these files were created, the command
 
-\user{esl-ssudraw -q --dall ../eukarya-0p1.stk eukarya-0p1.ps eukarya-0p1-dall.ps}
+\scriptuser{esl-ssudraw -q --dall ../eukarya-0p1.stk eukarya-0p1.ps eukarya-0p1-dall.ps}
 
-was used to create Figure~\ref{fig:eukdall} while in the 
+was used to create Figure~\ref{fig:eukdel} while in the 
 \prog{ssu-align-0.1/seeds/ss-diagrams/} directory.
 The shell script
 \prog{ssu-align-0.1/seeds/ss-diagrams/draw-ss-diagrams.sh}
@@ -100,7 +100,7 @@ circles. Figure~\ref{fig:bacdelmask} in section~\ref{section:chap9}
 shows an example. That figure was created from the
 \prog{ssu-align-0.1/seeds/ss-diagrams/} directory using the command:
 
-\prog{esl-ssudraw --mask ../bacteria-0p1-seed-realn.mask -q --dall
+\prog{esl-ssudraw --mask ../bacteria-0p1-seed-realn.mask -q --dall \\
   ../bacteria-0p1.stk bacteria-0p1.ps bacteria-0p1-dall-wmask.ps}
 
 The \prog{bacteria-0p1-seed-realn.mask} was created by realigning all
@@ -143,7 +143,7 @@ for each of the $N$ sequences.
 The next two pages include two diagrams from the postscript file 
 \prog{bacteria-0p1-indi-all.ps} created with:
 
-\user{esl-ssudraw -q --all --indi --prob ../bacteria-0p1.p.stk bacteria-0p1.ps bacteria-0p1-indi-all.ps}
+\user{esl-ssudraw -q --all --indi --prob ../bacteria-0p1.p.stk \\ bacteria-0p1.ps bacteria-0p1-indi-all.ps}
 
 Again from the \prog{ssu-align-0.1/seeds/ss-diagrams/} directory.
 The two diagrams included here correspond to the
@@ -152,17 +152,21 @@ is commonly used as a reference SSU sequence. The first diagram shows
 the sequence as it aligns to the default bacterial model and the
 second diagram shows the posterior probabilities of that alignment.
 
-\newpage
-
-\begin{figure}[h]
-\includegraphics[height=8.5in]{Figures/ecoli-seq}
+\begin{figure}
+\begin{center}
+\includegraphics[width=5.7in]{Figures/ecoli-seq}
+\end{center}
+\caption{\textbf{The E. coli J01695 sequence aligned to the bacterial
+SSU model.}}
 \label{fig:ecoli-seq}
 \end{figure}
 
-\newpage
-
-\begin{figure}[h]
-\includegraphics[height=8.5in]{Figures/ecoli-prob}
+\begin{figure}
+\begin{center}
+\includegraphics[width=5.7in]{Figures/ecoli-prob}
+\end{center}
+\caption{\textbf{The posterior probabilities of the aligned E. coli
+J01695 sequence to the bacterial SSU model.}}
 \label{fig:ecoli-prob}
 \end{figure}
 

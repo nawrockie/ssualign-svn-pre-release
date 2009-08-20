@@ -44,19 +44,14 @@ In the first section of this tutorial we'll use the following files:
     defines three SSU rRNA CMs: an archael model, a bacterial model,
     and a eukaryotic model. These are the three default models used by
     \sft{ssu-align}. More information can be found on these models
-    in section~\ref{section:seeds}.
+    in section~\ref{section:chap9}.
   \item[\prog{ssu-align-0.1/tutorial/seed-15.fa}] a sequence file containing
     fifteen SSU rRNA sequences, created specifically for use in this tutorial.
   \item[\prog{ssu-align-0.1/sa-0p1.params}] A file containing paths to
     \sft{infernal} executable files that \sft{ssu-align} needs
-    to run. \textbf{\emph{IMPORTANT:}} You will likely need to change
+    to run. You will likely need to change
     these paths to point to where you've installed the \prog{cmsearch}
-    and \prog{cmalign} programs (these are created in
-    \prog{infernal-1.01/src/} after building \sft{infernal} version
-    1.0 with \user{sh ./configure; make;}) and the \prog{esl-sfetch}
-    program (which is created in \\ 
-    \prog{infernal-1.01/easel/miniapps/}
-    after building \sft{infernal} version 1.0).
+    and \prog{cmalign} programs as noted in the Installation section.
   \end{sreitems}
 
 Other files will be explained as needed in the later sections of the tutorial.
@@ -78,13 +73,13 @@ The file \prog{seed-15.fa} contains five archaeal sequences, five
 bacterial sequences and five eukaryotic sequences from the
 \sft{ssu-align} v0.1 seed alignments. These seed alignments
 were derived from alignments from the \db{CRW} database
-\cite{CannoneGutell02} as described in section~\ref{section:seeds}.
+\cite{CannoneGutell02} as described in section~\ref{section:chap9}.
 This sequence file was created to allow a quick demonstration of
 \sft{ssu-align}'s ability to create structurally annotated multiple
 alignments of SSU sequences. To run this example, 
 execute the following command:
 
-\user{ssu-align ../seeds/ssu3-0p1.cm ../tutorial/seed-15.fa seed-15 ../sa-0p1.params}\\
+\scriptuser{ssu-align ../seeds/ssu3-0p1.cm ../tutorial/seed-15.fa seed-15 ../sa-0p1.params}\\
 
 As you can see, the \sft{ssu-align} script takes four command line
 arguments. The first is a CM file. The default CM file
@@ -209,9 +204,8 @@ This alignment includes consensus secondary structure annotation and
 is in \emph{Stockholm format}. 
 Stockholm format, the native alignment format used by \sft{hmmer} and
 \sft{infernal} and the \db{pfam} and \db{rfam}
-databases, is documented in detail in the \sft{infernal} User's
-Guide which is included in this distribution in
-\prog{infernal-1.01/Userguide.pdf}.
+databases, is documented in detail in the \sft{infernal} user's
+guide which is included as a PDF in \prog{infernal-1.01/}
 
 For now, what you need to know about the key features of the alignment file is:
 \begin{itemize}
@@ -317,8 +311,12 @@ does not correspond to a consensus model position.
 Next, we'll generate a mask based on the alignment confidence estimates
 in the insert-removed alignment :
 
-\user{esl-alimanip --omask my.mask --p-rf --pfract 0.95 --pthresh 0.95 -o trash.stk seed-15.archaea.noins.stk}
+\user{esl-alimanip --omask my.mask --p-rf --pfract 0.95 --pthresh
+  0.95 \\   -o trash.stk seed-15.archaea.noins.stk}
 
+(Note that the full command includes both lines above. Many of the
+commands in the rest of this tutorial are too long for a single line,
+and are split up like this one.)
 The following will print to the screen:
 
 \begin{sreoutput}
@@ -331,7 +329,7 @@ Average posterior value in non-gap #=GC RF columns: 0.98877 (6219 non-gap RF res
 And the mask file \prog{my.mask} is created. Take a look at this
 file. It is a single line of text of length $1508$ characters,
 containing only \prog{0}s and \prog{1}s. The length is 1508 because
-the consensus archaeal model (see section~\ref{section:seeds}) is 1508 residues
+the consensus archaeal model (see section~\ref{section:chap9}) is 1508 residues
 long. A \prog{0} at position \prog{n} indicates that consensus position \prog{n}
 will excluded (pruned away) when the mask is applied. A \prog{1} at
 position \prog{n} indicates that consensus position \prog{n} will be included (not
@@ -346,11 +344,11 @@ confidence estimate of 0.95 or better for that residue. All other
 columns are excluded.
 
 Using 0.95 for both \prog{--p-fract} and \prog{--p-thresh} are the
-recommended options for masking. My thesis includes results from 
-a simple experiment testing how different thresholds affect
+recommended options for masking. Section~\ref{section:chap9} 
+describes a simple experiment testing how different thresholds affect
 alignment accuracy, and using 0.95 for both thresholds resulted in 
-high accuracy (see \cite{Nawrocki09b} for details).
-However, These thresholds can be changed using command-line options to 
+high accuracy (see Table~\ref{tbl:kolbe09-pp}).
+However, these thresholds can be changed using command-line options to 
 \prog{esl-alimanip}. The fraction threshold can be changed to
 \prog{<x>} with the \prog{--pfract <x>} and the confidence estimate
 threshold can be changed to \prog{<y>} with the \prog{--pthresh <y>}
@@ -371,7 +369,8 @@ thresholds as the previous \prog{esl-alimanip} mask generation
 (\prog{--pfract 0.95 --pthresh 0.95}) but \emph{also} exclude any column 
 with more than 45\% gaps, execute the command:
 
-\user{esl-alimanip --omask my2.mask -g --gapthresh 0.45 --p-rf --pfract 0.95 --pthresh 0.95 -o trash.stk seed-15.archaea.noins.stk}
+\user{esl-alimanip --omask my2.mask -g --gapthresh 0.45 --p-rf
+  --pfract 0.95 \\ --pthresh 0.95 -o trash.stk seed-15.archaea.noins.stk}
 
 \begin{sreoutput}
 Average posterior value:                            0.98877 (6219 non-gap residues)
@@ -388,7 +387,8 @@ long, but now contains only $1435$ \prog{1}s.
 The final step of masking is applying the mask. This is also done with
 \prog{esl-alimanip}:
 
-\user{esl-alimanip -k --mask-rf my2.mask -o my2.masked.archaea.stk seed-15.archaea.noins.stk}
+\user{esl-alimanip -k --mask-rf my2.mask -o
+  my2.masked.archaea.stk \\ seed-15.archaea.noins.stk}
 
 The new alignment is saved in \prog{my2.masked.archaea.stk}.
 
@@ -415,11 +415,13 @@ The \prog{esl-ssudraw} program can be used to create a secondary
 structure diagram that shows which parts of the SSU consensus model
 are included and excluded by the mask. This requires the use of a
 postscript template file for the archaeal model. This is provided in 
-\prog{ssu-align-0.1/seeds/ss-diagrams/archaea-0p1.ps}. 
+\\ \prog{ssu-align-0.1/seeds/ss-diagrams/archaea-0p1.ps}. 
 %Copy that file into the working directory. To generate a diagram of our
 %mask: 
+To generate a diagram of our mask:
 
-\user{esl-ssudraw --mask my2.mask --mask-col seed-15/seed-15.archaea.stk ../seeds/ss-diagrams/archaea-0p1.ps my2.mask.ps}
+\user{esl-ssudraw --mask my2.mask --mask-col
+  seed-15/seed-15.archaea.stk \\ ../seeds/ss-diagrams/archaea-0p1.ps my2.mask.ps}
 
 The \prog{--mask} option tells \prog{esl-ssudraw} that we are
 supplying the mask \prog{my2.mask} for display. The \prog{--mask-col}
@@ -448,7 +450,13 @@ described next.
 
 \newpage
 
-\includegraphics[height=8.5in]{Figures/my2-mask}
+\begin{figure}
+\begin{center}
+\includegraphics[width=5.7in]{Figures/my2-mask}
+\end{center}
+\caption{\textbf{The my2.mask.ps diagram that shows the my2.mask on
+    the SSU archaeal consensus structure.}}
+\end{figure}
 
 \input{tutorial-draw}
 
@@ -457,10 +465,6 @@ described next.
 \input{tutorial-prep}
 
 \input{tutorial-merge}
-
-
-
-
 
 
 

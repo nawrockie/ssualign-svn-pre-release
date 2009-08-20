@@ -4,7 +4,7 @@
 ../../../easel/miniapps/esl-ssudraw -q --dint ../archaea-0p1.stk archaea-0p1.ps archaea-0p1-dint.ps
 ../../../easel/miniapps/esl-ssudraw -q --ins ../archaea-0p1.stk archaea-0p1.ps archaea-0p1-ins.ps
 ../../../easel/miniapps/esl-ssudraw -q --struct ../archaea-0p1.stk archaea-0p1.ps archaea-0p1-struct.ps
-../../../easel/miniapps/esl-ssudraw --indi ../archaea-0p1.stk archaea-0p1.ps archaea-0p1-rf.ps
+../../../easel/miniapps/esl-ssudraw --indi ../archaea-0p1.p.stk archaea-0p1.ps archaea-0p1-rf.ps
 
 ../../../easel/miniapps/esl-ssudraw --mask ../archaea-0p1-seed-realn.mask ../archaea-0p1.stk archaea-0p1.ps archaea-0p1-info-wmask.ps
 ../../../easel/miniapps/esl-ssudraw --mask ../archaea-0p1-seed-realn.mask -q --prob ../archaea-0p1.p.stk archaea-0p1.ps archaea-0p1-prob-wmask.ps
@@ -36,7 +36,7 @@ ps2pdf archaea-0p1-maskcol.ps
 ../../../easel/miniapps/esl-ssudraw -q --dint ../bacteria-0p1.stk bacteria-0p1.ps bacteria-0p1-dint.ps
 ../../../easel/miniapps/esl-ssudraw -q --ins ../bacteria-0p1.stk bacteria-0p1.ps bacteria-0p1-ins.ps
 ../../../easel/miniapps/esl-ssudraw -q --struct ../bacteria-0p1.stk bacteria-0p1.ps bacteria-0p1-struct.ps
-../../../easel/miniapps/esl-ssudraw --indi ../bacteria-0p1.stk bacteria-0p1.ps bacteria-0p1-rf.ps
+../../../easel/miniapps/esl-ssudraw --indi ../bacteria-0p1.p.stk bacteria-0p1.ps bacteria-0p1-rf.ps
 
 ../../../easel/miniapps/esl-ssudraw --mask ../bacteria-0p1-seed-realn.mask ../bacteria-0p1.stk bacteria-0p1.ps bacteria-0p1-info-wmask.ps
 ../../../easel/miniapps/esl-ssudraw --mask ../bacteria-0p1-seed-realn.mask -q --prob ../bacteria-0p1.p.stk bacteria-0p1.ps bacteria-0p1-prob-wmask.ps
@@ -70,7 +70,7 @@ ps2pdf bacteria-0p1-maskcol.ps
 ../../../easel/miniapps/esl-ssudraw -q --dint ../chloroplast-0p1.stk chloroplast-0p1.ps chloroplast-0p1-dint.ps
 ../../../easel/miniapps/esl-ssudraw -q --ins ../chloroplast-0p1.stk chloroplast-0p1.ps chloroplast-0p1-ins.ps
 ../../../easel/miniapps/esl-ssudraw -q --struct ../chloroplast-0p1.stk chloroplast-0p1.ps chloroplast-0p1-struct.ps
-../../../easel/miniapps/esl-ssudraw --indi ../chloroplast-0p1.stk chloroplast-0p1.ps chloroplast-0p1-rf.ps
+../../../easel/miniapps/esl-ssudraw --indi ../chloroplast-0p1.p.stk chloroplast-0p1.ps chloroplast-0p1-rf.ps
 
 ../../../easel/miniapps/esl-ssudraw --mask ../chloroplast-0p1-seed-realn.mask ../chloroplast-0p1.stk chloroplast-0p1.ps chloroplast-0p1-info-wmask.ps
 ../../../easel/miniapps/esl-ssudraw --mask ../chloroplast-0p1-seed-realn.mask -q --prob ../chloroplast-0p1.p.stk chloroplast-0p1.ps chloroplast-0p1-prob-wmask.ps
@@ -104,7 +104,7 @@ ps2pdf chloroplast-0p1-maskcol.ps
 ../../../easel/miniapps/esl-ssudraw -q --dint ../eukarya-0p1.stk eukarya-0p1.ps eukarya-0p1-dint.ps
 ../../../easel/miniapps/esl-ssudraw -q --ins ../eukarya-0p1.stk eukarya-0p1.ps eukarya-0p1-ins.ps
 ../../../easel/miniapps/esl-ssudraw -q --struct ../eukarya-0p1.stk eukarya-0p1.ps eukarya-0p1-struct.ps
-../../../easel/miniapps/esl-ssudraw --indi ../eukarya-0p1.stk eukarya-0p1.ps eukarya-0p1-rf.ps
+../../../easel/miniapps/esl-ssudraw --indi ../eukarya-0p1.p.stk eukarya-0p1.ps eukarya-0p1-rf.ps
 
 ../../../easel/miniapps/esl-ssudraw --mask ../eukarya-0p1-seed-realn.mask ../eukarya-0p1.stk eukarya-0p1.ps eukarya-0p1-info-wmask.ps
 ../../../easel/miniapps/esl-ssudraw --mask ../eukarya-0p1-seed-realn.mask -q --prob ../eukarya-0p1.p.stk eukarya-0p1.ps eukarya-0p1-prob-wmask.ps
@@ -137,7 +137,7 @@ ps2pdf eukarya-0p1-maskcol.ps
 ../../../easel/miniapps/esl-ssudraw -q --dint ../metamito-0p1.stk metamito-0p1.ps metamito-0p1-dint.ps
 ../../../easel/miniapps/esl-ssudraw -q --ins ../metamito-0p1.stk metamito-0p1.ps metamito-0p1-ins.ps
 ../../../easel/miniapps/esl-ssudraw -q --struct ../metamito-0p1.stk metamito-0p1.ps metamito-0p1-struct.ps
-../../../easel/miniapps/esl-ssudraw --indi ../metamito-0p1.stk metamito-0p1.ps metamito-0p1-rf.ps
+../../../easel/miniapps/esl-ssudraw --indi ../metamito-0p1.p.stk metamito-0p1.ps metamito-0p1-rf.ps
 
 ../../../easel/miniapps/esl-ssudraw --mask ../metamito-0p1-seed-realn.mask ../metamito-0p1.stk metamito-0p1.ps metamito-0p1-info-wmask.ps
 ../../../easel/miniapps/esl-ssudraw --mask ../metamito-0p1-seed-realn.mask -q --prob ../metamito-0p1.p.stk metamito-0p1.ps metamito-0p1-prob-wmask.ps

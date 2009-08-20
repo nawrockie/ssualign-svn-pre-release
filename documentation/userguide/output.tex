@@ -6,7 +6,7 @@ formats created by \prog{ssu-align}. The descriptions below refer to
 the files created in the \prog{seed-15/} directory by the example run
 at the beginning of the Tutorial section using the command:
 
-\user{ssu-align ../seeds/ssu3-0p1.cm ../tutorial/seed-15.fa seed-15 ../sa-0p1.params}\\
+\scriptuser{ssu-align ../seeds/ssu3-0p1.cm ../tutorial/seed-15.fa seed-15 ../sa-0p1.params}\\
 
 As shown in the Tutorial, that command results in \prog{ssu-align}
 printing the following information to the screen:
@@ -55,7 +55,8 @@ scores of each of these alignments. Let's look at the header of the
 \prog{seed-15.tab} file created here:
 
 \begin{sreoutput}
-# command:    /groups/eddy/home/nawrockie/infernal-1.01/src/cmsearch --hmm-cW 1.5 --no-null3 --noalign -T -1 --tab seed-15/seed-15.tab --viterbi seed-15/ssu3-0p1.cm ../tutorial/seed-15.fa
+# command:    /groups/eddy/home/nawrockie/infernal-1.01/src/cmsearch --hmm-cW 1.5 --no-null3 
+--noalign -T -1 --tab seed-15/seed-15.tab --viterbi seed-15/ssu3-0p1.cm ../tutorial/seed-15.fa
 # date:       Thu Aug 20 06:32:05 2009
 # num seqs:   15
 # dbsize(Mb): 0.040518
@@ -235,7 +236,8 @@ is the header section:
 # Copyright (C) 2009 HHMI Janelia Farm Research Campus
 # Freely distributed under the GNU General Public License (GPLv3)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# command: /groups/eddy/home/nawrockie/infernal-1.01/src/cmalign -p --mxsize 4096 --sub -o seed-15/seed-15.archaea.stk seed-15/ssu3-0p1.archaea.m1.cm seed-15/seed-15.archaea.hits.fa
+# command: /groups/eddy/home/nawrockie/infernal-1.01/src/cmalign -p --mxsize 4096 --sub -o 
+seed-15/seed-15.archaea.stk seed-15/ssu3-0p1.archaea.m1.cm seed-15/seed-15.archaea.hits.fa
 # date:    Thu Aug 20 06:32:20 2009
 \end{sreoutput}
 

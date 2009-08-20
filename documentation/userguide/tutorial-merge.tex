@@ -20,7 +20,7 @@ sequence \emph{E. coli} \db{genbank} accession J01695.
 
 Merging alignments only makes sense and saves time if you've already
 computed at least one of the two alignments you want to merge. For
-this example I've provided the two alignments in the
+this example I've provided the two alignments in the \\
 \prog{infernal-1.01/ssu-align-0.1/tutorial} directory:
 
 \begin{description}
@@ -38,7 +38,8 @@ To merge these two alignments into a single alignment called
 into the directory \prog{infernal-1.01/ssu-align-0.1/my-tutorial}, and
 execute: 
 
-\user{../../src/cmalign --merge -o seed-15-coli.bacteria.stk ../seeds/bacteria-0p1.cm ../tutorial/seed-15.bacteria.stk ../tutorial/ecoli.bacteria.stk}
+\user{../../src/cmalign --merge -o seed-15-coli.bacteria.stk \\
+../seeds/bacteria-0p1.cm ../tutorial/seed-15.bacteria.stk \\ ../tutorial/ecoli.bacteria.stk}
 
 The resulting alignment will be 100\% identical to the alignment
 \prog{cmalign} would have created if it were used to align a single
