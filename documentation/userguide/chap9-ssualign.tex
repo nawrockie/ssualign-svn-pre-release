@@ -1,6 +1,6 @@
-\chapter{SSU-align: a tool for structural alignment of SSU
+\section{SSU-align: a tool for structural alignment of SSU
   rRNA sequences}
-\label{chap:ssualign}
+\label{section:chap9}
 
 \sft{ssu-align} is a freely available, open source software program
 for creating large-scale alignments of small subunit ribosomal RNA
@@ -53,7 +53,7 @@ SSU alignment programs (reviewed in chapter 7 of \cite{Nawrocki09b}):
 
 \end{itemize}
 
-\section{Aligning SSU sequences with SSU-align}
+\subsection{Aligning SSU sequences with SSU-align}
 
 \sft{ssu-align} takes target sequences and a CM file with $N >=
 1$ SSU models as input and proceeds through two stages to generate
@@ -119,7 +119,7 @@ A User's Guide is supplied with \sft{ssu-align} that
 explains how to use the program for creating and masking alignments.
 % masking them and drawing secondary structure diagrams.
 
-\section{Automated probabilistic alignment masking}
+\subsection{Automated probabilistic alignment masking}
 
 The goal of masking is to identify and remove columns containing
 residues that are ambiguously aligned and therefore likely to contain
@@ -147,7 +147,7 @@ reduces the memory requirement for CM alignment, because only DP cells
 within the bands need be allocated, making it possible to run Inside
 and Outside on SSU.
 
-\subsection{Alignment ambiguity and length heterogeneity}
+\subsubsection{Alignment ambiguity and length heterogeneity}
 
 Alignment ambiguity often arises in regions of alignments with low
 sequence conservation where insertions and deletions are common,
@@ -212,7 +212,7 @@ sequences, is aligned confidently with high posterior probabilities.
 \label{fig:ambiguity}
 \end{figure}
 
-\subsection{Inserted columns should always be excluded during masking}
+\subsubsection{Inserted columns should always be excluded during masking}
 
 Importantly, any CM alignment mask should automatically exclude 
 every insert column of the alignment. This is because profile
@@ -226,7 +226,7 @@ analysis which assumes aligned residues are homologous.
 %An example of inserted residues that are obviously not correctly
 %aligned is shown in Figure~\ref{fig:inserts}.
 
-\subsection{Benchmarking probabilistic masking}
+\subsubsection{Benchmarking probabilistic masking}
 
 I decided on a simple method for defining masks that requires that
 a given fraction $x$ of the residues in an aligned consensus
@@ -398,7 +398,7 @@ always adjacent to a region with at least a few deletions.
 \label{fig:bacdelmask}
 \end{figure}
 
-\section{Implementation}
+\subsection{Implementation}
 
 \sft{ssu-align} is itself a \sft{perl} script that orchestrates the
 use of the \sft{infernal} software package's \texttt{cmsearch} and
@@ -416,7 +416,7 @@ masking is performed by \sft{easel}'s \texttt{esl-alimanip} program.
 %\sft{easel}'s \texttt{esl-ssudraw} program.
 %I will now explain each step in more detail.
 
-\section{SSU-align's SSU rRNA sequence and structure models}
+\subsection{SSU-align's SSU rRNA sequence and structure models}
 
 CMs model both the conserved sequence and secondary structure of an
 RNA family. Constructing CMs requires as input a multiple sequence
@@ -449,7 +449,7 @@ manually predicted their secondary structures. The alignment and
 structural data is publicly available in the \db{crw} database
 \cite{CannoneGutell02}. 
 
-\subsection{SSU secondary structure data from the Comparative RNA
+\subsubsection{SSU secondary structure data from the Comparative RNA
   Website} 
 
 \db{CRW} includes separate SSU alignments for archaea, bacteria,
@@ -500,7 +500,7 @@ the \db{crw} curators use the structure to revise the larger alignments,
 which suggests that these particular sequences are the most reliably
 aligned because they received the most expert attention.
 
-\subsection{Defining consensus structures from individual structures}
+\subsubsection{Defining consensus structures from individual structures}
 
 Obtaining the consensus structure annotated alignments needed to build
 CMs required combining the individual structural data and the
@@ -768,10 +768,9 @@ frequency of insertions          & Figure~\ref{fig:arcins} & Figure~\ref{fig:bac
 \label{fig:arcinfo}
 \end{figure}
 
-\begin{comment}
 \begin{figure}
 \begin{center}
-\includegraphics[width=5.5in]{figs/ss-diagrams/archaea-0p1-sinfo}
+\includegraphics[width=5.5in]{../../seeds/ss-diagrams/archaea-0p1-struct}
 \end{center}
 \caption[Secondary structure diagram displaying extra information 
   from conserved structure per consensus position of the archaeal SSU seed
@@ -787,7 +786,7 @@ frequency of insertions          & Figure~\ref{fig:arcins} & Figure~\ref{fig:bac
 
 \begin{figure}
 \begin{center}
-\includegraphics[width=5.5in]{figs/ss-diagrams/archaea-0p1-del}
+\includegraphics[width=5.5in]{../../seeds/ss-diagrams/archaea-0p1-dall}
 \end{center}
 \caption[Secondary structure diagram displaying frequency of deletions
   per consensus position of the archaeal SSU seed
@@ -803,7 +802,7 @@ frequency of insertions          & Figure~\ref{fig:arcins} & Figure~\ref{fig:bac
 
 \begin{figure}
 \begin{center}
-\includegraphics[width=5.5in]{figs/ss-diagrams/archaea-0p1-ins}
+\includegraphics[width=5.5in]{../../seeds/ss-diagrams/archaea-0p1-ins}
 \end{center}
 \caption[Secondary structure diagram displaying frequency of insertions
   after each consensus position in the archaeal SSU seed
@@ -822,7 +821,7 @@ frequency of insertions          & Figure~\ref{fig:arcins} & Figure~\ref{fig:bac
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{figure}
 \begin{center}
-\includegraphics[width=5.5in]{figs/ss-diagrams/bacteria-0p1-info}
+\includegraphics[width=5.5in]{../../seeds/ss-diagrams/bacteria-0p1-info}
 \end{center}
 \caption[Secondary structure diagram displaying primary sequence
   information content per consensus position of the bacterial SSU seed
@@ -838,7 +837,7 @@ frequency of insertions          & Figure~\ref{fig:arcins} & Figure~\ref{fig:bac
 
 \begin{figure}
 \begin{center}
-\includegraphics[width=5.5in]{figs/ss-diagrams/bacteria-0p1-sinfo}
+\includegraphics[width=5.5in]{../../seeds/ss-diagrams/bacteria-0p1-struct}
 \end{center}
 \caption[Secondary structure diagram displaying extra information 
   from conserved structure per consensus position of the bacterial SSU seed
@@ -854,7 +853,7 @@ frequency of insertions          & Figure~\ref{fig:arcins} & Figure~\ref{fig:bac
 
 \begin{figure}
 \begin{center}
-\includegraphics[width=5.5in]{figs/ss-diagrams/bacteria-0p1-del}
+\includegraphics[width=5.5in]{../../seeds/ss-diagrams/bacteria-0p1-dall}
 \end{center}
 \caption[Secondary structure diagram displaying frequency of deletions
   per consensus position of the bacterial SSU seed
@@ -870,7 +869,7 @@ frequency of insertions          & Figure~\ref{fig:arcins} & Figure~\ref{fig:bac
 
 \begin{figure}
 \begin{center}
-\includegraphics[width=5.5in]{figs/ss-diagrams/bacteria-0p1-ins}
+\includegraphics[width=5.5in]{../../seeds/ss-diagrams/bacteria-0p1-ins}
 \end{center}
 \caption[Secondary structure diagram displaying frequency of insertions
   after each consensus position in the bacterial SSU seed
@@ -891,7 +890,7 @@ frequency of insertions          & Figure~\ref{fig:arcins} & Figure~\ref{fig:bac
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{figure}
 \begin{center}
-\includegraphics[width=5.5in]{figs/ss-diagrams/eukarya-0p1-info}
+\includegraphics[width=5.5in]{../../seeds/ss-diagrams/eukarya-0p1-info}
 \end{center}
 \caption[Secondary structure diagram displaying primary sequence
   information content per consensus position of the eukaryotic SSU seed
@@ -907,7 +906,7 @@ frequency of insertions          & Figure~\ref{fig:arcins} & Figure~\ref{fig:bac
 
 \begin{figure}
 \begin{center}
-\includegraphics[width=5.5in]{figs/ss-diagrams/eukarya-0p1-sinfo}
+\includegraphics[width=5.5in]{../../seeds/ss-diagrams/eukarya-0p1-struct}
 \end{center}
 \caption[Secondary structure diagram displaying extra information 
   from conserved structure per consensus position of the eukaryotic SSU seed
@@ -923,7 +922,7 @@ frequency of insertions          & Figure~\ref{fig:arcins} & Figure~\ref{fig:bac
 
 \begin{figure}
 \begin{center}
-\includegraphics[width=5.5in]{figs/ss-diagrams/eukarya-0p1-del}
+\includegraphics[width=5.5in]{../../seeds/ss-diagrams/eukarya-0p1-dall}
 \end{center}
 \caption[Secondary structure diagram displaying frequency of deletions
   per consensus position of the eukaryotic SSU seed
@@ -939,7 +938,7 @@ frequency of insertions          & Figure~\ref{fig:arcins} & Figure~\ref{fig:bac
 
 \begin{figure}
 \begin{center}
-\includegraphics[width=5.5in]{figs/ss-diagrams/eukarya-0p1-ins}
+\includegraphics[width=5.5in]{../../seeds/ss-diagrams/eukarya-0p1-ins}
 \end{center}
 \caption[Secondary structure diagram displaying frequency of insertions
   after each consensus position in the eukaryotic SSU seed
@@ -953,5 +952,3 @@ frequency of insertions          & Figure~\ref{fig:arcins} & Figure~\ref{fig:bac
 \end{figure}
 
 
-
-\end{comment}

@@ -1,30 +1,63 @@
 \section{Description of output files}
 
 This section describes the content of the different output file
-formats created by \prog{ssu-align}. Many of the descriptions below
-refer to files in the \prog{tutorial/output/} directory. These files
-were created by an \prog{ssu-align} run with the command:
+formats created by \prog{ssu-align}. The descriptions below refer to
+the files created in the \prog{seed-15/} directory by the example run
+at the beginning of the Tutorial section using the command:
 
-\user{ssu-align ../seeds/ssu5-0p1.cm seed-10.fa seed-10
-  ../sa-0p1.params}
+\user{ssu-align ../seeds/ssu3-0p1.cm ../tutorial/seed-15.fa seed-15 ../sa-0p1.params}\\
+
+As shown in the Tutorial, that command results in \prog{ssu-align}
+printing the following information to the screen:
+
+\begin{sreoutput}
+# Stage 1: Determining SSU start/end positions and best matching models.
+#
+# output file name            description                                
+# --------------------------  -------------------------------------------
+  seed-15.tab                 locations/scores of hits defined by HMM(s)
+  seed-15.archaea.hits.list   list of sequences to align with archaea CM
+  seed-15.archaea.hits.fa           5 sequences to align with archaea CM
+  seed-15.bacteria.hits.list  list of sequences to align with bacteria CM
+  seed-15.bacteria.hits.fa          5 sequences to align with bacteria CM
+  seed-15.eukarya.hits.list   list of sequences to align with eukarya CM
+  seed-15.eukarya.hits.fa           5 sequences to align with eukarya CM
+#
+# Stage 2: Aligning each sequence to it's best matching model.
+#
+# output file name            description
+# --------------------------  -------------------------------------------
+  seed-15.archaea.stk         archaea alignment
+  seed-15.archaea.cmalign     archaea cmalign output
+  seed-15.bacteria.stk        bacteria alignment
+  seed-15.bacteria.cmalign    bacteria cmalign output
+  seed-15.eukarya.stk         eukarya alignment
+  seed-15.eukarya.cmalign     eukarya cmalign output
+  seed-15.scores              list of CM/HMM scores for each sequence
+  seed-15.log                 log file (*this* text printed to stdout)
+#
+# All output files created in directory ./seed-15/
+\end{sreoutput}
+
+In this section I'll walk through the format of these output files,
+which are created in \prog{seed-15/}, a subdirectory of the directory
+where the \prog{ssu-align} command was issued.
 
 \subsection{.tab suffixed files}
 
-The \prog{.tab} files are created by the \textsc{infernal} program
-\prog{cmsearch} which is called internally by
+The \prog{.tab} files are created by \textsc{infernal}'s
+\prog{cmsearch} program which is called internally by
 \prog{ssu-align}. \prog{cmsearch} builds profile HMMs for each model
 in the input CM file and scans each input sequence for high scoring
 alignments to the HMM\. The \prog{.tab} file lists the locations and
-scores of each of these alignments. An example \prog{.tab} file is in 
-\prog{tutorial/output/output.tab}. The first part of the file is the
-header section:
+scores of each of these alignments. Let's look at the header of the 
+\prog{seed-15.tab} file created here:
 
 \begin{sreoutput}
-# command:    /Users/eric/infernal-1.0/src/cmsearch --hmm-cW 1.5 -T -1 --no-null3 \\
---toponly --noalign --tab output/output.tab --viterbi output/ssu5-0p1.cm seed-10.fa
-# date:       Fri Jun 19 08:23:32 2009
-# num seqs:   10
-# dbsize(Mb): 0.014568
+# command:    /groups/eddy/home/nawrockie/infernal-1.01/src/cmsearch --hmm-cW 1.5 --no-null3 --noalign -T -1 --tab seed-15/seed-15.tab --viterbi seed-15/ssu3-0p1.cm ../tutorial/seed-15.fa
+# date:       Thu Aug 20 06:32:05 2009
+# num seqs:   15
+# dbsize(Mb): 0.040518
 #
 # Pre-search info for CM 1: archaea
 #
@@ -37,19 +70,18 @@ header section:
 The first four lines list the \prog{cmsearch} command executed from
 within \prog{ssu-align}, the date it was executed, the number of
 sequences in the sequence file being searched, and the number of
-millions of residues (Mb) in that sequence file. (I manually
-wrapped line 1 to make it readable). NOTE ON REVERSE COMPLEMENT!
+millions of residues (Mb) searched in that sequence file (double the
+actual size of the sequences because both strands are searched.
 
 Next, the pre-search information describing how the search will be
 conducted is printed for the first model in the CM file: archaea. 
 The \prog{rnd}, \prog{mod}, \prog{alg} and \prog{cfg} columns report
 that the first and only round of searching will be conducted with a
 profile \prog{hmm} using the \prog{vit}erbi algorithm for scoring
-\prog{loc}al alignments to the model. (The viterbi algorithm is
-briefly explained in the ``Background'' section). The \prog{beta}
+\prog{loc}al alignments to the model. The \prog{beta}
 column is irrelevant when searching with an HMM. The \prog{bit sc cut}
 column shows the minimum score threshold, alignments scoring above
-\prog{-1.00} bits will be reported. MORE HERE EXPLAINING WHY -1?
+\prog{-1.00} bits will be reported.
 
 After the pre-search information comes four lines of column headings
 followed by data lines reporting high scoring local alignments. One
@@ -58,21 +90,41 @@ more than one hit per sequence). Remember these are scores against the
 archaea model.
 
 \begin{sreoutputtiny}
-#                                                       target coord   query coord                         
-#                                             ----------------------  ------------                         
-# target name                                      start        stop  start   stop    bit sc   E-value  GC%
-# ------------------------------------------  ----------  ----------  -----  -----  --------  --------  ---
-
-  00841::Escherichia_coli::J01695                     54        1540      1   1508    622.99         -   55
-  00116::Pyrococcus_horikoshii::AP000001               1        1497      1   1508   2215.49         -   66
-  00628::Saccharomyces_cerevisiae.::U53879          1109        1797      1   1508    196.51         -   49
-  00230::Oxytricha_granulifera::X53486              1096        1775      1   1508    191.89         -   50
-  00366::Mitochondrion_Mus_musculus::J01420          831         927      1   1508     15.94         -   38
-  00173::chloroplast_Zea_mays_maize_::Z00028          54        1488      1   1508    703.54         -   56
-  00004::Nanoarchaeum_equitans::AJ318041               1        1500      1   1508   1916.64         -   68
-  01058::Mycobacterium_tuberculosis.::Z83862          57        1533      1   1508    702.11         -   58
-  00569::Mitochondrion_Gallus_gallus::X52392         856         948      1   1508      3.96         -   47
-  00127::Nostoc_muscorum::X59559                      10        1487      1   1508    697.37         -   54
+#                                                          target coord   query coord                         
+#                                                ----------------------  ------------                         
+# target name                                         start        stop  start   stop    bit sc   E-value  GC%
+# ---------------------------------------------  ----------  ----------  -----  -----  --------  --------  ---
+  00052::Halobacterium_sp.::AE005128                      1        1473      1   1508   2080.08         -   58
+  00052::Halobacterium_sp.::AE005128                   1229        1217      1   1508      1.41         -   54
+  00013::Methanobacterium_formicicum::M36508              1        1476      1   1508   2108.16         -   56
+  00013::Methanobacterium_formicicum::M36508           1227         984      1   1508      1.80         -   59
+  00004::Nanoarchaeum_equitans::AJ318041                  1         865      1   1508   1112.07         -   67
+  00004::Nanoarchaeum_equitans::AJ318041                619         570      1   1508      1.00         -   64
+  00115::Pyrococcus_furiosus::U20163|g643670            260         309      1   1508      1.00         -   62
+  00115::Pyrococcus_furiosus::U20163|g643670            922           1      1   1508   1354.25         -   66
+  00121::Thermococcus_celer::M21529                     202        1687      1   1508   2223.71         -   66
+  00121::Thermococcus_celer::M21529                    1237        1188      1   1508      1.00         -   62
+  00035::Bacteroides_fragilis::M61006|g143965            60        1533      1   1508    576.22         -   51
+  01106::Bacillus_subtilis::K00637                       55        1548      1   1508    768.61         -   55
+  01106::Bacillus_subtilis::K00637                      684         672      1   1508     -0.63         -   46
+  00072::Chlamydia_trachomatis.::AE001345               123         853      1   1508    212.41         -   51
+  01351::Mycoplasma_gallisepticum::M22441               110         120      1   1508      1.43         -   36
+  01351::Mycoplasma_gallisepticum::M22441               872          69      1   1508     95.30         -   45
+  00224::Rickettsia_prowazekii.::AJ235272               104        1590      1   1508    613.67         -   51
+  00224::Rickettsia_prowazekii.::AJ235272               748         739      1   1508      0.79         -   40
+  01223::Audouinella_hermannii.::AF026040              1079        1767      1   1508    222.16         -   54
+  01223::Audouinella_hermannii.::AF026040               880         871      1   1508      0.79         -   40
+  01240::Batrachospermum_gelatinosum.::AF026045        1077        1761      1   1508    219.14         -   54
+  01240::Batrachospermum_gelatinosum.::AF026045         878         869      1   1508      0.79         -   40
+  00220::Euplotes_aediculatus.::M14590                  710        1081      1   1508     96.64         -   48
+  00220::Euplotes_aediculatus.::M14590                  508         499      1   1508      0.79         -   40
+  00229::Oxytricha_granulifera.::AF164122               335         344      1   1508      0.79         -   40
+  00229::Oxytricha_granulifera.::AF164122               138          31      1   1508     86.31         -   53
+  01710::Oryza_sativa.::X00755                         1190        1883      1   1508    202.90         -   53
+  01710::Oryza_sativa.::X00755                          989         980      1   1508      0.79         -   40
+#
+# Post-search info for CM 1: archaea
+#
 \end{sreoutputtiny}
 
 Here's a brief description of each column:
@@ -85,9 +137,14 @@ Here's a brief description of each column:
 \item[\emprog{end (target coord)}] final sequence residue in the alignment
 \end{wideitem}
 
-The \prog{begin} and \prog{end} columns under \prog{query coord} are
-uninformative for HMM searches like those performed by
-\prog{ssu-align}. (\prog{cmsearch} will print informative numbers in
+Note that under \prog{target coord} some of the sequences' \prog{start} position is
+greather than their \prog{stop} positions. This occurs if the program
+has determined the sequence in the target sequence file is a reverse
+complemented SSU sequence. 
+
+The \prog{start} and \prog{stop} columns under \prog{query coord} are
+uninformative for HMM searches like these.
+(\prog{cmsearch} will print informative numbers in
 these columns when the CM is used for a search.) With HMM searches the
 \prog{begin} column will always be \prog{1} and the \prog{end} column
 will always be the final position of the model.
@@ -101,7 +158,7 @@ will always be the final position of the model.
   include an E-value of the bit score if the model had been calibrated
   with \prog{cmcalibrate}. Currently, \prog{ssu-align} does not use
   calibrated models, mainly because they are most useful for
-  identifying remotely homologous structural RNAs using much models of
+  identifying remotely homologous structural RNAs usingmodels of
   much smaller RNAs, such as transfer RNA. See the \textsc{infernal}
   user's guide for more information.
 
@@ -117,31 +174,35 @@ The \prog{.hits.list} files are simple files created for each model
 that list the sequences that were best-matches to that model, and as a
 result were aligned to that model in stage 2. If a model has zero
 sequences for which it is the best-matching model, this file will not
-be created. The file contains no new information absent from the
+be created. The file contains no new information that is not in the
 \prog{.tab} file and is only created as a convenience, because it is
 cumbersome to determine which model gave the highest score to a
-particular sequence in the \prog{tab} file.  For model \emph{x}, the
+particular sequence in the \prog{.tab} file.  For model \emph{x}, the
 \prog{hits.list} file contains four columns providing four pieces of
 data for each sequence whose best-matching model was \emph{x}. For
-example, take a look at the \prog{output/output.archaea.hits.list}
+example, take a look at the \prog{seed-15.archaea.hits.list}
 file:
 
 \begin{sreoutput}
-# List of 2 subsequences to align to CM: archaea
+# List of 5 subsequences to align to CM: archaea
 # Created by ssu-align.pl.
 #
-# target name                              start    stop     score
-# --------------------------------------  ------  ------  --------
-  00116::Pyrococcus_horikoshii::AP000001       1    1497   2215.49
-  00004::Nanoarchaeum_equitans::AJ318041       1    1500   1916.64
+# target name                                  start    stop     score
+# ------------------------------------------  ------  ------  --------
+  00052::Halobacterium_sp.::AE005128               1    1473   2080.08
+  00013::Methanobacterium_formicicum::M36508       1    1476   2108.16
+  00004::Nanoarchaeum_equitans::AJ318041           1     865   1112.07
+  00115::Pyrococcus_furiosus::U20163|g643670     922       1   1354.25
+  00121::Thermococcus_celer::M21529              202    1687   2223.71
 \end{sreoutput}
 
 The four columns correspond to those of the same name in the {.tab}
 suffixed files as explained above: the \prog{target name},
 \prog{start} and \prog{stop} (which correspond to the target sequence
 coordinates), and \prog{score}, which is the primary sequence HMM
-score assigned to the sequence by model \emph{x}: the HMM score of all
-other models to this sequence is less than this score.
+score assigned to this subsequence by model \emph{x}: the scores of
+all other hits from this and other other models are less than
+this score.
 
 \subsection{.hits.fa suffixed files}
 This is a fasta formatted sequence file containing the sequences
@@ -164,7 +225,7 @@ The \prog{.cmalign} files are the standard output created by the
 during stage 2 of the \prog{ssu-align} script. There is one such file
 created for each model that was the best-matching model to at least
 one sequence in \prog{ssu-align}'s search stage. Take a look at the
-file \prog{output/output.archaea.cmalign}. The first part of the file
+file \prog{seed-15.archaea.cmalign}. The first part of the file
 is the header section:
 
 \begin{sreoutput}
@@ -173,9 +234,8 @@ is the header section:
 # Copyright (C) 2009 HHMI Janelia Farm Research Campus
 # Freely distributed under the GNU General Public License (GPLv3)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# command: /Users/eric/infernal-1.0/src/cmalign -p --mxsize 4096 --sub \\
--o output/output.archaea.stk output/ssu5-0p1.archaea.m1.cm output/output.archaea.hits.fa
-# date:    Fri Jun 19 08:24:02 2009
+# command: /groups/eddy/home/nawrockie/infernal-1.01/src/cmalign -p --mxsize 4096 --sub -o seed-15/seed-15.archaea.stk seed-15/ssu3-0p1.archaea.m1.cm seed-15/seed-15.archaea.hits.fa
+# date:    Thu Aug 20 06:32:20 2009
 \end{sreoutput}
 
 This section includes the program version used, the copyright
@@ -195,37 +255,45 @@ The \prog{cm name} column reports the name of the model used for
 alignment. \prog{algorithm} gives the name of the algorithm, in this
 case \prog{opt acc} stands for \emph{optimal accuracy}. This is a
 dynamic programming algorithm that returns the maximal posterior
-labelling of all emitted residues in the alignment CITE(HolmesXX) (for
-more information see the ``Background'' section). The next two
-columns, \prog{config} and \prog{sub}, read \prog{global} and
-\prog{yes} respectively, which tells us the program will first predict
-the start and end points of the alignment to the model using an HMM
-(the \prog{sub yes} part) and then align the region of the model that
-spans from start to end \emph{globally} to the sequence (the
-\prog{global} part). In this case, \emph{global} alignment means that
-the program is forced to align the full model region from start to end
-to the sequence, e.g. it is \emph{not} allowed to skip large parts of
-the model without large score penalties as it would if \emph{local}
-alignment was being performed. The \prog{bands} column tells us that
-bands (constraints) from an HMM alignment will be used to accelerate
-alignment to the CM. This is explained more in the ``Background''
-section. The \prog{tau} column reports the probability loss allowed
-when computing the HMM bands. In this case, \prog{1e-07} probability
-mass is allowed outside each band (again, see ``Background'' for more
-information).
+labelling of all emitted residues in the alignment \cite{Holmes98}.
+This algorithm is similar to the CYK algorithm described in
+\cite{Nawrocki09b}, but returns the alignment that maximizes the sum
+of posterior probability labels on aligned residues instead of the
+maximally scoring alignment. In practice, the CYK and optimally
+accurate alignment are very often identical, and if not, they are
+nearly identical.  The next two columns, \prog{config} and \prog{sub},
+read \prog{global} and \prog{yes} respectively, which tells us the
+program will first predict the start and end points of the alignment
+to the model using an HMM (the \prog{sub yes} part) and then align the
+region of the model that spans from start to end \emph{globally} to
+the sequence (the \prog{global} part). In this case, \emph{global}
+alignment means that the program is forced to align the full model
+region from start to end to the sequence, e.g. it is \emph{not}
+allowed to skip large parts of the model without large score penalties
+as it would if \emph{local} alignment was being performed. The
+\prog{bands} column tells us that bands (constraints) from an HMM
+alignment will be used to accelerate alignment to the CM. This is
+explained more in Chapter 8 of \cite{Nawrocki09b}. The \prog{tau} column
+reports the probability loss allowed when computing the HMM bands. In
+this case, \prog{1e-07} probability mass is allowed outside each
+band. 
 
 The next section includes per-sequence information on the alignment
 that was created:
 
 \begin{sreoutputtiny}
-# seq idx  seq name                                  len     total    struct  avg prob      elapsed
-# -------  --------------------------------------  -----  --------  --------  --------  -----------
-        1  00116::Pyrococcus_horikoshii::AP000001   1497   2316.02    176.14     1.000  00:00:03.00
-        2  00004::Nanoarchaeum_equitans::AJ318041   1500   2094.59    265.20     0.996  00:00:02.90
+#                                                                 bit scores                           
+#                                                             ------------------                       
+# seq idx  seq name                                      len     total    struct  avg prob      elapsed
+# -------  ------------------------------------------  -----  --------  --------  --------  -----------
+        1  00052::Halobacterium_sp.::AE005128           1473   2295.11    266.03     1.000  00:00:01.36
+        2  00013::Methanobacterium_formicicum::M36508   1476   2306.88    247.42     0.999  00:00:01.36
+        3  00004::Nanoarchaeum_equitans::AJ318041        865   1203.43    119.11     0.999  00:00:00.64
+        4  00115::Pyrococcus_furiosus::U20163|g643670    922   1415.01     92.83     0.997  00:00:00.69
+        5  00121::Thermococcus_celer::M21529            1486   2309.87    174.98     0.998  00:00:01.38
 \end{sreoutputtiny}
 
 We'll go through each of these columns:
-
 
 \begin{wideitem}
 \item[\emprog{seq idx}] the index of the sequence in the file.
@@ -237,13 +305,13 @@ We'll go through each of these columns:
   stage with \prog{cmsearch}.
 
 \item[\emprog{total}] the bit score of the CM alignment. For more
-  information, see the ``Background'' section.
+  information, see section 5 of the \sft{infernal} User's Guide.
 
 \item[\emprog{struct}] the secondary structure score component of the
   \prog{total} bit score. These are the added bits that are due solely
   to the modelling of the consensus secondary structure of the
-  molecule by the CM\. For more information, see the ``Background'' section.
-
+  molecule by the CM\@. 
+  
 \item[\emprog{avg prob}] the average posterior labeling, or confidence
   estimate, of the aligned residues. The higher this value is the less
   ambiguous and more well-defined the alignment is. The highest this
@@ -255,7 +323,7 @@ We'll go through each of these columns:
   program derives this value by evaluating the score of every possible
   alignment (consistent with the HMM bands) of the sequence to the
   model, and comparing the best, optimal score versus all of the
-  rest. For more information, see the ``Background'' section.
+  rest. This is described in a bit more detail in section~\ref{section:chap9}.
 
 \item[\emprog{elapsed}] the amount of actual time (wall time) it took
   the program to align this sequence. In general, less well defined
@@ -273,8 +341,8 @@ files. These are the alignments generated by \prog{cmalign}. The
 statistics in the \prog{.cmalign} suffixed files correspond to these
 alignments. One alignment is created for each model that was the
 best-matching model to at least one sequence in \prog{ssu-align}'s
-search stage. An explanation of Stockholm alignments can be found in
-the ``Basic tutorial'' section.
+search stage. An explanation of Stockholm alignments can be found at
+the beginning of the Tutorial section.
 
 \subsection{.scores suffixed files}
 
@@ -286,25 +354,30 @@ sequence file.
 Take a look at the file \prog{tutorial/output/output.scores}
 
 \begin{sreoutputtinywide}
-#                                                                     best-matching model                   second-best model  
-#                                                      --------------------------------------------------  --------------------
-#     idx  sequence name                               model name    beg   end    CM sc   struct   HMM sc  model name    HMM sc  HMMdiff
-# -------  ------------------------------------------  -----------  ----  ----  -------  -------  -------  -----------  -------  -------
-        1  00841::Escherichia_coli::J01695             bacteria        1  1542  2398.43   303.43  2125.65  chloroplast  1427.15   698.50
-        2  00116::Pyrococcus_horikoshii::AP000001      archaea         1  1497  2316.02   176.14  2215.49  bacteria      601.72  1613.77
-        3  00628::Saccharomyces_cerevisiae.::U53879    eukarya         1  1800  2753.53   162.93  2627.74  archaea       196.51  2431.23
-        4  00230::Oxytricha_granulifera::X53486        eukarya         1  1778  2636.03   143.04  2515.92  archaea       191.89  2324.03
-        5  00366::Mitochondrion_Mus_musculus::J01420   metamito        1   956  1259.62    87.37  1219.28  -                  -        -
-        6  00173::chloroplast_Zea_mays_maize_::Z00028  chloroplast     2  1490  2381.70   118.29  2305.29  bacteria     1781.63   523.66
-        7  00004::Nanoarchaeum_equitans::AJ318041      archaea         1  1500  2094.59   265.20  1916.64  bacteria      480.94  1435.70
-        8  01058::Mycobacterium_tuberculosis.::Z83862  bacteria        2  1537  2324.10   238.30  2140.25  chloroplast  1410.10   730.15
-        9  00569::Mitochondrion_Gallus_gallus::X52392  metamito        1   976  1129.62   123.26  1061.76  -                  -        -
-       10  00127::Nostoc_muscorum::X59559              chloroplast     2  1489  2263.17   211.15  2101.91  bacteria     2017.96    83.95
+#                                                                        best-matching model                  second-best model 
+#                                                         -------------------------------------------------  -------------------
+#     idx  sequence name                                  model name   beg   end    CM sc   struct   HMM sc  model name   HMM sc  HMMdiff
+# -------  ---------------------------------------------  ----------  ----  ----  -------  -------  -------  ----------  -------  -------
+        1  00052::Halobacterium_sp.::AE005128             archaea        1  1473  2295.11   266.03  2080.08  bacteria     471.45  1608.63
+        2  00013::Methanobacterium_formicicum::M36508     archaea        1  1476  2306.88   247.42  2108.16  bacteria     693.10  1415.06
+        3  00004::Nanoarchaeum_equitans::AJ318041         archaea        1   865  1203.43   119.11  1112.07  bacteria     255.78   856.29
+        4  00115::Pyrococcus_furiosus::U20163|g643670     archaea      922     1  1415.01    92.83  1354.25  bacteria     378.49   975.76
+        5  00121::Thermococcus_celer::M21529              archaea      202  1687  2309.87   174.98  2223.71  bacteria     632.38  1591.33
+        6  00035::Bacteroides_fragilis::M61006|g143965    bacteria       5  1537  2126.24   376.62  1797.77  archaea      576.22  1221.55
+        7  01106::Bacillus_subtilis::K00637               bacteria       1  1552  2440.64   274.80  2212.50  archaea      768.61  1443.89
+        8  00072::Chlamydia_trachomatis.::AE001345        bacteria       1   879  1202.69   176.90  1030.27  archaea      212.41   817.86
+        9  01351::Mycoplasma_gallisepticum::M22441        bacteria     881     5  1143.43   206.27   940.15  -                 -        -
+       10  00224::Rickettsia_prowazekii.::AJ235272        bacteria      93  1594  2263.65   272.56  2037.49  archaea      613.67  1423.82
+       11  01223::Audouinella_hermannii.::AF026040        eukarya        1  1770  2672.59   216.62  2481.69  archaea      222.16  2259.53
+       12  01240::Batrachospermum_gelatinosum.::AF026045  eukarya        1  1764  2653.58   211.44  2463.49  archaea      219.14  2244.35
+       13  00220::Euplotes_aediculatus.::M14590           eukarya        1  1082  1204.38    75.02  1103.29  -                 -        -
+       14  00229::Oxytricha_granulifera.::AF164122        eukarya      600     1   844.65    21.89   788.12  -                 -        -
+       15  01710::Oryza_sativa.::X00755                   eukarya       75  1886  2684.77   141.04  2570.56  archaea      202.90  2367.66
 \end{sreoutputtinywide}
 
 There are four rows containing column headings prefixed with
-\prog{\#}. Then there are 10 data rows, one for each sequence in the
-input sequence file \prog{tutorial/seed-10.fa}. Data rows are
+\prog{\#}. Then there are 15 data rows, one for each sequence in the
+input sequence file \prog{seed-15.fa}. Data rows are
 separated into 12 columns:
 
 \begin{wideitem}
@@ -315,12 +388,13 @@ separated into 12 columns:
 
 The next 6 columns all describe the \emph{best-matching} model for the
 sequence. This is the model that assigned the highest primary
-sequence-based local profile HMM alignment score to the sequence. 
-If no model aligned the sequence with a score higher than the minimum
-threshold of $100$ bits then the sequence was skipped and not
-aligned, and all these columns will read \prog{-}. (Note: the minimum
-bit score threshold value can be changed to \prog{<x>} using the
-\prog{ssu-align} command-line option \prog{-b <x>}). 
+sequence-based local profile HMM alignment score to the sequence.  If
+no model aligned the sequence with a score higher than the minimum
+threshold of $100$ bits then the
+sequence was skipped and not aligned, and all these columns will read
+\prog{-}. (Note: the minimum bit score threshold value can be changed
+to \prog{<x>} using the \prog{ssu-align} command-line option \prog{-b
+  <x>}, as explained in the Manual page at the end of this guide).
 
 \begin{wideitem}
 \item[\emprog{model name}] name of best-matching model.
@@ -343,8 +417,8 @@ bit score threshold value can be changed to \prog{<x>} using the
   \prog{end}.
 \end{wideitem}
 
-The ``Background'' section contains a more detailed discussion of bit
-scores.
+Bit scores are explained more in section 5 of the \sft{infernal}
+User's Guide. 
 
 The next 2 columns describe the \prog{second-best model}. This is the
 model that assigned the second-highest primary sequence-based local 
@@ -360,7 +434,7 @@ exceeded the minimum of $100$ bits then these columns will each read
   not necessarily from \prog{beg} to \prog{end} (those were the
   coordinates of the alignment to the best-matching model). The
   sequence coordinates of the second-best model's alignment can be
-  found in the file \prog{output.tab}.
+  found in the file \prog{seed-15.tab}.
 \end{wideitem}
 
 The final column, \prog{HMMdiff}, reports the score difference between
@@ -371,8 +445,8 @@ instead of the second-best-matching model. The higher this score
 difference is the more obvious it is that the sequence falls within
 the sequence diversity represented by the best-matching model.
 Sequences that are phylogenetically novel and do not obviously match
-any single model much better than any other one will have score
-differences in this column.
+any single model much better than any other one should have relatively
+small score differences in this column.
 
 \subsection{.log suffixed files}
 

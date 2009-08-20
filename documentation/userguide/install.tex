@@ -1,35 +1,34 @@
 \section{Installation}
 
+\sft{ssu-align} is part of the larger \sft{infernal} software
+package. The first step in installing \sft{ssu-align} is to install
+\sft{infernal}. The following quick installation instructions are
+copied from the \sft{infernal} user's guide, where you will also find
+more detailed instructions on how to customize the installation. 
+After \sft{infernal} is installed, an additional crucial step is
+required before you can use \sft{ssu-align}. This step is explained
+in the section below entitled ``An additional crucial step before you
+can ssu-align''.
+
 \subsection{Quick installation instructions}
 
-Download the source tarball (\prog{ssualign.tar.gz}) from 
-\htmladdnormallink{ftp://selab.janelia.org/pub/software/ssualign/}
-                  {ftp://selab.janelia.org/pub/software/ssualign/}
+
+Download the source tarball (\prog{infernal.tar.gz}) from 
+\htmladdnormallink{ftp://selab.janelia.org/pub/software/infernal/}
+                  {ftp://selab.janelia.org/pub/software/infernal/}
 or \\
-\htmladdnormallink{http://ssualign.janelia.org}
-                  {http://ssualign.janelia.org}
+\htmladdnormallink{http://infernal.janelia.org}
+                  {http://infernal.janelia.org}
 
 Unpack the software:
 
-\user{tar xvf ssualign.tar.gz}
+\user{tar xvf infernal.tar.gz}
 
 Go into the newly created top-level directory (named either
-\prog{ssualign}, or \prog{ssualign-xx} where \prog{xx} is a release
-number:
+\prog{infernal}, or \prog{infernal-xx} where \prog{xx} is a release
+number):
 
-\user{cd ssualign}
-
-\begin{enumerate}
-\item
-Edit the top of the Makefile. Set the paths and other make variables
-to suit your system.
-
-In partciular, you need to specify:
-
-\begin{itemize}
-\item BINDIR
-\end{itemize}
-\end{enumerate}
+\user{cd infernal}
 
 Configure for your system, and build the programs:
 
@@ -41,13 +40,19 @@ pass:
 
 \user{make check}
 
-The programs are now in the \prog{src/} subdirectory. The user's guide
-(this document) is in the \\ 
-\prog{documentation/userguide}
-subdirectory. The man pages are in the \prog{documentation/manpages}
+The programs are now in the \prog{src/} subdirectory. The
+\sft{infernal} user's guide in the \\ 
+top-level \prog{infernal} directory. The man pages are in the
+\prog{documentation/manpages}
 subdirectory. You can manually move or copy all of these to
-appropriate locations if you want. You will want the programs to be in
-your \$PATH. 
+appropriate locations if you want. 
+
+\emph{IMPORTANT:}
+Make sure the \sft{infernal} programs (\prog{cmalign}, 
+\prog{cmbuild}, \prog{cmcalibrate}, \prog{cmemit}, \prog{cmscore},
+\prog{cmsearch}, and \prog{cmstat}) in the \prog{src/} subdirectory
+as well as the \sft{easel} programs in the \prog{easel/miniapps/}
+subdirectory are in your \$PATH.
 
 Optionally, you can install the man pages and programs in system-wide
 directories. If you are happy with the default (programs in
@@ -56,136 +61,64 @@ do:
 
 \user{make install}
 
-That's all.  More complete instructions follow, including how to
-change the default installation directories for \prog{make install}.
+That's all.  More complete instructions, including how to
+change the default installation directories for \prog{make install},
+can be found in the \sft{infernal} user's guide which is in 
+PDF format in the top-level \prog{infernal/} directory. 
 
-\subsection{More detailed installation notes}
+\subsection{SSU-align files}
+The \prog{ssu-align-0.1} subdirectory of \prog{infernal/} will include
+the \prog{ssu-align} PERL script, the user's guide (this file) in
+\prog{sa-userguide.pdf}, and the \emph{parameters} file 
+\prog{sa-0p1.params}. You will need to manually edit this file as
+explained above. Additionally you will find three subdirectories
+within \prog{ssu-align-0.1/}:
 
-\software{Infernal} is distributed as ANSI C source code.  It is
-designed to be built and used on UNIX platforms. It is developed on
-Intel GNU/Linux systems, and intermittently tested on a variety of
-other UNIX platforms. It is not currently tested on either Microsoft
-Windows or Apple OS/X, but it should work there; it should be possible
-to build it on any platform with an ANSI C compiler. The software
-itself is vanilla POSIX-compliant ANSI C. You may need to work around
-the configuration scripts and Makefiles to get it built on a non-UNIX
-platform.
+\begin{wideitem}
 
-The GNU configure script that comes with \software{Infernal} has a
-number of options. You can see them all by doing:
+\item[\emprog{documentation}] this includes the \prog{manpages/} and
+  \prog{userguide/} subdirectories with files used to build this
+  guide.
 
-\user{./configure --help}
+\item[\emprog{seeds}] this includes the Stockholm formatted alignments
+  used to build the three default SSU CM files. These were derived
+  from the \db{crw} database \cite{CannoneGutell02} as described in
+  section~\ref{section:chap9}. It also includes the three individual CM
+  files built from each of the seeds, and a subdirectory
+  \prog{ss-diagrams} which includes several dozen structure diagrams
+  created by \prog{esl-ssudraw} as explained in the Tutorial.
 
-All customizations can and should be done at the \prog{./configure}
-command line, unless you're a guru delving into the details of the
-source code.
+\item[\emprog{tutorial}] this includes some files that are used in the
+  Tutorial section.
 
-\subsubsection{setting installation targets}
+\end{wideitem}
 
-The most important options are those that let you set the installation
-directories for \prog{make install} to be appropriate to your system.
-What you need to know is that \software{Infernal} installs only two
-types of files: programs and man pages. It installs the programs in
-\prog{--bindir} (which defaults to \prog{/usr/local/bin}), and the man pages in the
-\prog{man1} subdirectory of \prog{--mandir} (default
-\prog{/usr/local/man}). Thus, say you want \prog{make install} to install programs
-in \prog{/usr/bioprogs/bin/} and man pages in
-\prog{/usr/share/man/man1}; you would configure with:
+\subsection{An additional crucial step before you
+can run SSU-align}
 
-\user{./configure --mandir=/usr/share/man --bindir=/usr/bioprogs/bin}
+The \prog{ssu-align} PERL script needs to know where the
+\sft{infernal} version 1.01 \prog{cmsearch} and \prog{cmalign}, and
+the \sft{easel} \prog{esl-sfetch} executables are on your file
+system. This is achieved by explicitly placing the paths in the text
+file \prog{sa-0p1.params}. Take a look at this file:
 
-That's really all you need to know, since \software{Infernal} installs
-so few files. But just so you know; GNU configure is very flexible,
-and has shortcuts that accomodates several standard conventions for
-where programs get installed. One common strategy is to install all
-files under one directory, like the default \prog{/usr/local}. To
-change this prefix to something else, say \prog{/usr/mylocal/}
-(so that programs go in \prog{/usr/mylocal/bin} and man pages in
-\prog{/usr/mylocal/man/man1}, you can use the \prog{--prefix}
-option:
+\begin{sreoutput}
+<[ssu-align-0.1]> cat sa-0p1.params 
+# Replace these paths with the corresponding paths to the infernal
+# 1.01 executables on your file system.
+$cmsearch = "/groups/eddy/home/nawrockie/infernal-1.01/src/cmsearch";
+$cmalign = "/groups/eddy/home/nawrockie/infernal-1.01/src/cmalign";
+$esl_sfetch = "/groups/eddy/home/nawrockie/infernal-1.01/easel/miniapps/esl-sfetch";
+1;
+\end{sreoutput}
 
-\user{./configure --prefix=/usr/mylocal}
+It is vital that you replace these paths with absolute paths (that is,
+no use of '~' or ``..'') to these executable files on your own
+filesystem. For example, if you unpacked \prog{infernal.tar.gz} in the 
+directory \prog{Users/Lucy/} to create
+\prog{Users/Lucy/infernal-1.01/}, then your \prog{sa-0p1.params} file
+should include the line: 
 
-Another common strategy (especially in multiplatform environments) is
-to put programs in an architecture-specific directory like
-\prog{/usr/share/Linux/bin} while keeping man pages in a shared,
-architecture-independent directory like \prog{/usr/share/man/man1}.
-GNU configure uses \prog{--exec-prefix} to set the path to
-architecture dependent files; normally it defaults to being the same
-as \prog{--prefix}. You could change this, for example, by:
-
-\user{./configure --prefix=/usr/share --exec-prefix=/usr/share/Linux/}\\
-
-In summary, a complete list of the \prog{./configure} installation
-options that affect \software{Infernal}:
-
-\begin{tabular}{lll}
-Option                       &   Meaning                       & Default\\ \hline
-\prog{--prefix=PREFIX}       & architecture independent files  & \prog{/usr/local/} \\
-\prog{--exec-prefix=EPREFIX} & architecture dependent files    & EPREFIX\\
-\prog{--bindir=DIR}          & programs                        & PREFIX/bin/\\
-\prog{--mandir=DIR}          & man pages                       & PREFIX/man/\\
-\end{tabular}
-
-
-\subsubsection{setting compiler and compiler flags}
-
-By default, \prog{configure} searches first for the GNU C compiler
-\prog{gcc}, and if that is not found, for a compiler called \prog{cc}. 
-This can be overridden by specifying your compiler with the \prog{CC}
-environment variable.
-
-By default, the compiler's optimization flags are set to
-\prog{-g -O2} for \prog{gcc}, or \prog{-g} for other compilers.
-This can be overridden by specifying optimization flags with the
-\prog{CFLAGS} environment variable. 
-
-For example, to use an Intel C compiler in
-\prog{/usr/intel/ia32/bin/icc} with 
-optimization flags \prog{-O3 -ipo}, you would do:
-
-\user{env CC=/usr/intel/ia32/bin/icc CFLAGS="-O3 -ipo" ./configure}
-
-which is the one-line shorthand for:
-
-\user{setenv CC     /usr/intel/ia32/bin/icc}\\
-\user{setenv CFLAGS "-O3 -ipo"}\\
-\user{./configure}
-
-If you are using a non-GNU compiler, you will almost certainly want to
-set \prog{CFLAGS} to some sensible optimization flags for your
-platform and compiler. The \prog{-g} default generated unoptimized
-code. At a minimum, turn on your compiler's default optimizations with
-\prog{CFLAGS=-O}.
-
-\subsubsection{turning on Message Passing Interface (MPI) support}
-
-\software{Infernal} includes four programs \prog{cmsearch}, \prog{cmcalibrate},
-\prog{cmalign} and \prog{cmscore} that optionally use MPI
-parallelization by invoking the \prog{--mpi} option. 
-To enable the option to use MPI in these four executables, add 
-\prog{--enable-mpi} to the configuration command:
-
-\user{./configure --enable-mpi}
-
-To run a program in MPI mode, you must run them 
-in an MPI environment with \prog{mpirun} or \prog{mpiexec}, with 
-the \prog{--mpi} option enabled.  For example, 
-in our LAM environment:
-
-\user{mpirun C cmsearch --mpi query.cm target.fa}
-
-Other environments besides LAM MPI should work also, but may
-require different command syntax.
-
-\subsection{Example configuration}
-
-The Intel GNU/Linux version installed at Janelia Farm is configured as
-follows:
-
-{\scriptuser{env CFLAGS="-O3" ./configure --enable-mpi --enable-lfs --prefix=/usr/local/infernal-1}}
-
-
-
+\prog{\$cmsearch = "/Users/Lucy/infernal-1.01/src/cmsearch";}
 
 
