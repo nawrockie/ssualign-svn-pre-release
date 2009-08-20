@@ -1,5 +1,10 @@
 # STOCKHOLM 1.0
 #=GF ID eukarya
+#=GF AU The original data for this alignment were obtained from the
+#=GF AU Comparative RNA Web Site (CRW; http://www.rna.ccbb.utexas.edu)
+#=GF AU on June 30, 2009. The procedure used to convert the original CRW data
+#=GF AU into this alignment is described in my (Eric Nawrocki's) Ph.D. thesis,
+#=GF AU which is available from http://selab.janelia.org/publications.html.
 
 00917::Mytilis_edulis::L24489                                           -------CAACCUGGUUGAUCCUGCCAGU-AGUCAUAUGCUUGUCUCAAA
 #=GR 00917::Mytilis_edulis::L24489                                   SS ...........<<<<<.......>>>>>..<<<.<<<<<<<.<<<<<...

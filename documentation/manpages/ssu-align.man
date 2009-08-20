@@ -59,9 +59,9 @@ In the first stage,
 the best-matching model and the begin and end positions of the SSU
 (sub)sequence are defined for each target sequence. This is achieved by
 searching each target with
-.B N
+.I N
 HMMs, one for each of the 
-.B N
+.I N
 models in 
 .I cm-file,
 to find the highest scoring SSU hit,
@@ -92,10 +92,10 @@ the SSU model are taken into account during alignment. The final
 output of an
 .B ssu-align 
 run is 
-.I N 
+.I M 
 multiple sequence alignments, one for each
 of the 
-.I N
+.I M
 models that was the best match for at least 1 target sequence. 
 
 .PP 
@@ -110,6 +110,7 @@ is executed, it creates a new directory called
 .I output-root
 in the current working directory where it places its output files.
 
+.PP 
 The 
 .B -n 
 and
@@ -133,7 +134,8 @@ the resulting alignments back into master alignments. These master
 alignments will be identical to the alignments that would have been
 created if a single, large
 .B ssu-align
-run was performed for the complete sequence file.
+run was performed for the complete sequence file. An example of
+running prep mode is included in the User's Guide Tutorial section.
 
 .SH OPTIONS
 
@@ -290,20 +292,20 @@ to the resulting alignments. By default, these probabilities are
 appended to the output alignments. These probabilities are useful for
 automatically masking out ambiguously aligned regions of the output
 alignments prior to phylogenetic inference as described in the User's
-Guide. This option will accelerate the alignment step by about 50\%,
-and result in alignment files that take up about 67\% less
+Guide. This option will accelerate the alignment step by about 50%,
+and result in alignment files that take up about 67% less
 space. However, it should only be used if you know you do not want to
 mask or prune the alignments at a later stage.
 
 .TP
 .B -k
 Do not erase the 
-.B N
-(one for each of the 
-.B N
+.I N
+local CM file copies (one for each of the 
+.I N
 CMs in 
 .I cm-file
-) local CM file copies from the
+) from the 
 .I output-root
 directory after running
 .B ssu-align.
@@ -322,6 +324,8 @@ is 4096 Mb (4 Gb). This option should only used if
 .B ssu-align
 is crashing due to insufficient RAM. The program should tell you if
 this is the case with an informative error message, but may not in all
-cases. It is not necessary to decrease 
+cases. It is 
+.I not 
+necessary to decrease 
 .I <x>
 if your computer has less than 4 Gb of RAM. 

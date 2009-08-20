@@ -1,4 +1,6 @@
-$cmsearch = "/groups/eddy/home/nawrockie/notebook/9_0817_ths_inf_ssualign_releases/wd-1p0-branch/src/cmsearch";
-$cmalign = "/groups/eddy/home/nawrockie/notebook/9_0817_ths_inf_ssualign_releases/wd-1p0-branch/src/cmalign";
-$esl_sfetch = "/groups/eddy/home/nawrockie/notebook/9_0817_ths_inf_ssualign_releases/wd-1p0-branch/easel/miniapps/esl-sfetch";
+# Replace these paths with the corresponding paths to the infernal
+# 1.01 executables on your file system.
+$cmsearch = "/groups/eddy/home/nawrockie/infernal-1.01/src/cmsearch";
+$cmalign = "/groups/eddy/home/nawrockie/infernal-1.01/src/cmalign";
+$esl_sfetch = "/groups/eddy/home/nawrockie/infernal-1.01/easel/miniapps/esl-sfetch";
 1;
