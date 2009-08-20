@@ -4,7 +4,7 @@
 # Freely distributed under the GNU General Public License (GPLv3)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # command: ../../src/cmbuild -F --enone --gapthresh 0.8 bacteria-0p1.cm bacteria-0p1.stk
-# date:    Wed Aug 19 16:33:00 2009
+# date:    Thu Aug 20 17:50:51 2009
 #
 #                                                                         rel entropy
 #                                                                        ------------
@@ -12,4 +12,4 @@
 # ----  ------  --------  --------  --------  ------  -----  ----  ----  -----  -----
      1       1  bacteria        93     93.00    1689   1582   480    31  1.488  1.306
 #
-# CPU time: 0.49u 0.01s 00:00:00.50 Elapsed: 00:00:01
+# CPU time: 0.48u 0.02s 00:00:00.50 Elapsed: 00:00:01

@@ -9,7 +9,7 @@ NSEQ     93
 EFFNSEQ  93.000
 CLEN     1582
 BCOM     ../../src/cmbuild -F --enone --gapthresh 0.8 bacteria-0p1.cm bacteria-0p1.stk
-BDATE    Wed Aug 19 16:33:00 2009
+BDATE    Thu Aug 20 17:50:51 2009
 NULL     0.000  0.000  0.000  0.000 
 MODEL:
 				[ ROOT    0 ]

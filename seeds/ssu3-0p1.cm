@@ -9,7 +9,7 @@ NSEQ     23
 EFFNSEQ  23.000
 CLEN     1508
 BCOM     ../../src/cmbuild -F --enone --gapthresh 0.8 ssu3-0p1.cm ssu3-0p1.stk
-BDATE    Wed Aug 19 16:32:58 2009
+BDATE    Thu Aug 20 17:50:49 2009
 NULL     0.000  0.000  0.000  0.000 
 MODEL:
 				[ ROOT    0 ]
@@ -5861,7 +5861,7 @@ NSEQ     93
 EFFNSEQ  93.000
 CLEN     1582
 BCOM     ../../src/cmbuild -F --enone --gapthresh 0.8 ssu3-0p1.cm ssu3-0p1.stk
-BDATE    Wed Aug 19 16:32:58 2009
+BDATE    Thu Aug 20 17:50:49 2009
 NULL     0.000  0.000  0.000  0.000 
 MODEL:
 				[ ROOT    0 ]
@@ -12009,7 +12009,7 @@ NSEQ     89
 EFFNSEQ  89.000
 CLEN     1881
 BCOM     ../../src/cmbuild -F --enone --gapthresh 0.8 ssu3-0p1.cm ssu3-0p1.stk
-BDATE    Wed Aug 19 16:32:58 2009
+BDATE    Thu Aug 20 17:50:49 2009
 NULL     0.000  0.000  0.000  0.000 
 MODEL:
 				[ ROOT    0 ]

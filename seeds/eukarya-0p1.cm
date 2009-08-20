@@ -9,7 +9,7 @@ NSEQ     89
 EFFNSEQ  89.000
 CLEN     1881
 BCOM     ../../src/cmbuild -F --enone --gapthresh 0.8 eukarya-0p1.cm eukarya-0p1.stk
-BDATE    Wed Aug 19 16:33:01 2009
+BDATE    Thu Aug 20 17:50:52 2009
 NULL     0.000  0.000  0.000  0.000 
 MODEL:
 				[ ROOT    0 ]

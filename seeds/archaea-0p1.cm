@@ -9,7 +9,7 @@ NSEQ     23
 EFFNSEQ  23.000
 CLEN     1508
 BCOM     ../../src/cmbuild -F --enone --gapthresh 0.8 archaea-0p1.cm archaea-0p1.stk
-BDATE    Wed Aug 19 16:33:00 2009
+BDATE    Thu Aug 20 17:50:51 2009
 NULL     0.000  0.000  0.000  0.000 
 MODEL:
 				[ ROOT    0 ]

@@ -4,7 +4,7 @@
 # Freely distributed under the GNU General Public License (GPLv3)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # command: ../../src/cmbuild -F --enone --gapthresh 0.8 archaea-0p1.cm archaea-0p1.stk
-# date:    Wed Aug 19 16:33:00 2009
+# date:    Thu Aug 20 17:50:51 2009
 #
 #                                                                        rel entropy
 #                                                                       ------------
