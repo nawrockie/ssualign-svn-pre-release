@@ -14,7 +14,8 @@ small dataset.  The sequence file \prog{tutorial/seed-30.fa} includes
 from the 5 default models of \textsc{ssu-align} (there are 205 total
 seed sequences, as shown in the table of seed alignment statistics in
 section~\ref{section:chap9}). To follow this example, create a new
-directory and copy \prog{ssu-align-0.1/tutorial/seed-50.fa}, the file
+directory and copy \prog{ssu-align-0.1/tutorial/seed-50.fa}, the files
+\prog{ssu-align-0.1/seeds/ssu3-0p1.cm},
 \\ \prog{ssu-align-0.1/tutorial/janelia-sa-0p1.params} and the default parameters file
 \\ \prog{ssu-align-0.1/sa-0p1.params} there.
 
@@ -106,7 +107,7 @@ file \prog{seed-30.fa}. Each has 6 sequences in it. The file
 If we had defined \prog{\$cluster\_prefix} and
 \prog{\$cluster\_suffix} this script would include those strings to
 allow submission to a cluster. Since we did not our script will simply
-execute \prog{ssu-align} three times in succession. The file
+execute \prog{ssu-align} five times in succession. The file
 \prog{seed-30-c5.merge.pl} is a perl script we can use to merge the
 individual alignments created by each of the five jobs together.
 The \prog{seed-30-c5.log} file contains the exact text that was just
@@ -114,31 +115,30 @@ printed to the screen. All of these files were created in a new
 directory called \prog{seed-30-c5}.
 
 The next step is to run the \prog{seed-30-c5.sh} script, which will
-execute \prog{ssu-align} three times. First, enter the
-\prog{seed-30-c5/} directory, then type:
+execute \prog{ssu-align} five times. First, enter the
+\prog{seed-30-c5/} directory, then execute:
 
-\prog{sh seed-30-c5.sh}
+\user{sh seed-30-c5.sh}
 
 The output of the five \prog{ssu-align} runs will begin to print to
 the screen. When one run finishes, the next will immediately
 start. Each run should take about 20 seconds, so all five will take a
 couple of minutes. 
 
-Once they're done we can move to the next step: merging
-the alignments. If we had defined \\ \prog{\$cluster\_prefix} and
+If we had defined \\ \prog{\$cluster\_prefix} and
 \prog{\$cluster\_suffix}, each line of our script would have submitted
 a separate job to our cluster. The script would finish quickly, but
 the jobs would still be running. \textbf{\emph{Important: }} you'll
 need to wait until all the jobs are finished running on the
 cluster before attempting to merge the alignments.
-
-Continuing with our example, to merge the alignments:
+Once they're done we can move to the next step: merging
+the alignments. 
 
 \user{perl seed-30-c5.merge.pl}
 
 This script will create a merged alignment for each model in the
 original cm file (\prog{ssu3-0p1.cm} in this case) that was the
-best-matching model for at least 1 sequence in any of the three runs.
+best-matching model for at least 1 sequence in any of the five runs.
 For each such model, the script will merge two alignments at a time
 using \textsc{infernal}'s \prog{cmalign} program (see the next section
 on ``Merging multiple alignments together'' for an example)

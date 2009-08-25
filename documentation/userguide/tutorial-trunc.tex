@@ -9,7 +9,7 @@ decreases as the model size it's using decreases. The second reason is
 that aligning a SSU subsequence to a model of only the region that
 subsequence is derived from, relative to a model of the entire SSU
 molecule, should slightly increase alignment accuracy. This is because
-the uncertainty of what region of the full molecule the subsequence
+the uncertainty regarding what region of the full molecule the subsequence
 should align to is eliminated. In this section I'll demonstrate how to
 create a CM of a specific region of SSU and use it to create
 alignments. 
@@ -106,15 +106,15 @@ the sequences you will analyze are expected to match the truncated
 model. In that case, the other models you combine the truncated model
 with should span the diversity of the other sequences you expect in
 your sequence dataset. (An example of using the multi-model file
-\prog{\$SADIR/seeds/ssu3-0p1.cm} with \textsc{ssu-align} was
+\prog{ssu-align-0.1/seeds/ssu3-0p1.cm} with \textsc{ssu-align} was
 demonstrated at the beginning of this tutorial.)
 
 For demonstration, we'll imagine all the sequences in our sequence
 dataset are bacterial sequences that match near the 35-397 region. The
 example sequence file \prog{partial.fa} includes 5 such sequences
 derived from full length sequences in the bacterial seed alignment
-\prog{\$SADIR/seeds/bacteria-0p1.fa} file. I artificially added 10
-random residues to the 5\' and 3\' ends of the 5th sequence to
+\prog{ssu-align-0.1/seeds/bacteria-0p1.fa} file. I artificially added 10
+random residues to the 5' and 3' ends of the 5th sequence to
 demonstrate that the program can trim residues it deems nonhomologous
 to the model from the ends of the sequences before alignment.
 

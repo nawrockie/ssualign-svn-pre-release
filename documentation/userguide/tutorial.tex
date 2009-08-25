@@ -9,7 +9,7 @@ create a new directory, something like \prog{my-tutorial} and move
 into it. The instructions in this tutorial assume that you have the
 \prog{ssu-align-0.1/ssu-align} perl script and
 \sft{easel} programs in \prog{infernal-1.01/easel/miniapps/} in your
-\$PATH. For example, you should be able to run \prog{ssu-align},
+\$PATH\@. For example, you should be able to run \prog{ssu-align},
 \prog{esl-alimanip} and \prog{esl-reformat} by simply typing
 \prog{ssu-align}, \prog{esl-alimanip} or \prog{esl-alimanip} at the
 UNIX prompt.  These instructions also assume that you have setup your
@@ -50,9 +50,10 @@ In the first section of this tutorial we'll use the following files:
     fifteen SSU rRNA sequences, created specifically for use in this tutorial.
   \item[\prog{ssu-align-0.1/sa-0p1.params}] A file containing paths to
     \sft{infernal} executable files that \sft{ssu-align} needs
-    to run. You will likely need to change
-    these paths to point to where you've installed the \prog{cmsearch}
-    and \prog{cmalign} programs as noted in the Installation section.
+    to run. 
+    %You will need to change these paths to point to where
+    %you've installed the \prog{cmsearch} and \prog{cmalign} programs
+    %as noted in the Installation section.
   \end{sreitems}
 
 Other files will be explained as needed in the later sections of the tutorial.
@@ -84,8 +85,8 @@ execute the following command:
 
 As you can see, the \sft{ssu-align} script takes four command line
 arguments. The first is a CM file. The default CM file
-\prog{ssu3-0p1.cm} contains three CMs: an archaeal SSU model, a
-bacterial SSU model and a eukaryotic SSU model. The second argument is
+\prog{ssu3-0p1.cm} contains three CMs as mentioned above, but you can
+make your own as described later in this tutorial. The second argument is
 the target sequence file to search (this must be in FASTA format). The
 third is a string that is used as the basis for naming output
 files. In this case, the script will create a new directory called
@@ -138,8 +139,8 @@ guide). When it finishes you'll see:
 \end{sreoutput}
 
 This lists and briefly describes the seven new files the script created
-in a newly created subdirectory of the current working dir called
-\prog{seed-15/}. The content and format of these files are described
+in the newly created \prog{seed-15/} subdirectory of the current directory.
+The content and format of these files are described
 in detail in section~\ref{section:output}. For now a brief explanation
 should be sufficient. The first file \prog{seed-15.tab} is output from
 \sft{infernal}'s \prog{cmsearch} program. The other six files are
@@ -227,15 +228,20 @@ For now, what you need to know about the key features of the alignment file is:
 \item Special lines starting with {\small\verb+#=GR+} followed by a
   sequence name and then {\small\verb+POST+} contain posterior
   probabilities for each aligned residue for the sequence they
-  correspond to. These are confidence estimates in the correctness of
-  the alignment.  The POSTX. row indicates the ’tens’ place of the
-  confidence estimate while POST.X row indicates the ’ones’ place. So
+  correspond to. 
+  These are confidence estimates in the correctness of
+  the alignment.  
+  Figure~\ref{fig:ambiguity} in
+  section~\ref{section:chap9} provides an example of confidence estimates
+  and posterior probabilities. 
+  The POSTX. row indicates the tens place of the
+  confidence estimate while POST.X row indicates the ones place. So
   the confidence estimate for a residue with 9 in the POSTX. row, and
   7 in the POST.X row to two significant digits is 97\%. This means that
   if you sampled alignments from the posterior distribution of all
-  possible alignments of this sequence to the model, about 97% of the
+  possible alignments of this sequence to the model, about 97\% of the
   time that residue would appear in that of the alignment. One special
-  case: if the posterior probability is very nearly 100% (it’s
+  case: if the posterior probability is very nearly 100\% (it is
   difficult to be more precise on the exact percentage due to
   numerical precision issues) the annotated posterior values will be
   ``*'' characters in both the tens and ones places. These confidence
@@ -336,7 +342,7 @@ save the new alignment to \prog{seed-15.archaea.noins.stk}:
 %\prog{/usr/people/nawrocki/infernal-1.01/easel/miniapps/esl-alimanip}.
 
 The program will create the new alignment file
-\prog{seed-15.archaea.noins.stk} almost instantly. 
+\prog{seed-15.archaea.noins.stk} almost instantly.
 The \prog{-k} option to \prog{esl-alimanip} tells it to remove all
 columns of the alignment that are gaps in the \prog{\#\=GC RF}
 annotation. In \sft{ssu-align} generated alignments, gaps in the
@@ -475,7 +481,7 @@ To generate a diagram of our mask:
 The \prog{--mask} option tells \prog{esl-ssudraw} that we are
 supplying the mask \prog{my2.mask} for display. The \prog{--mask-col}
 option specifies the color scheme for the mask (other types of mask
-coloring are demonstrated later in this tutorial. Additionally, 
+coloring are demonstrated later in this tutorial). Additionally, 
 \prog{esl-ssudraw} takes three command-line arguments. The first is
 the alignment file that the mask pertains to. Note that we use
 \prog{seed-15.archaea.stk}, this is the original alignment we created,
@@ -491,13 +497,11 @@ available for download for most unices). Note that Mac OS/X's
 automatic conversion with the \prog{Preview} program is not reliable
 for converting these postscript files to PDFs.
 
-The masked secondary structure diagram is displayed on the next page.
-The color legend and other information on the diagram is meant to be
-self explanatory. \prog{esl-ssudraw} can be used to draw secondary
+The masked secondary structure diagram is included as Figure~\ref{fig:mymask2}.
+The color legend and other information on the diagram are meant to be
+self-explanatory. \prog{esl-ssudraw} can be used to draw secondary
 structures displaying different types of information than masks, as
 described next.
-
-\newpage
 
 \begin{figure}
 \begin{center}
@@ -505,6 +509,7 @@ described next.
 \end{center}
 \caption{\textbf{The my2.mask.ps diagram that shows the my2.mask on
     the SSU archaeal consensus structure.}}
+\label{fig:mymask2}
 \end{figure}
 
 \input{tutorial-draw}

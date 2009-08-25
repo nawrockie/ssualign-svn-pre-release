@@ -50,7 +50,7 @@ The \prog{.tab} files are created by \textsc{infernal}'s
 \prog{cmsearch} program which is called internally by
 \prog{ssu-align}. \prog{cmsearch} builds profile HMMs for each model
 in the input CM file and scans each input sequence for high scoring
-alignments to the HMM\. The \prog{.tab} file lists the locations and
+alignments to the HMM\@. The \prog{.tab} file lists the locations and
 scores of each of these alignments. Let's look at the header of the 
 \prog{seed-15.tab} file created here:
 
@@ -73,7 +73,7 @@ The first four lines list the \prog{cmsearch} command executed from
 within \prog{ssu-align}, the date it was executed, the number of
 sequences in the sequence file being searched, and the number of
 millions of residues (Mb) searched in that sequence file (double the
-actual size of the sequences because both strands are searched.
+actual size of the sequences because both strands are searched).
 
 Next, the pre-search information describing how the search will be
 conducted is printed for the first model in the CM file: archaea. 
@@ -81,7 +81,7 @@ The \prog{rnd}, \prog{mod}, \prog{alg} and \prog{cfg} columns report
 that the first and only round of searching will be conducted with a
 profile \prog{hmm} using the \prog{vit}erbi algorithm for scoring
 \prog{loc}al alignments to the model. The \prog{beta}
-column is irrelevant when searching with an HMM. The \prog{bit sc cut}
+column is irrelevant when searching with an HMM\@. The \prog{bit sc cut}
 column shows the minimum score threshold, alignments scoring above
 \prog{-1.00} bits will be reported.
 
@@ -268,9 +268,9 @@ to the model using an HMM (the \prog{sub yes} part) and then align the
 region of the model that spans from start to end \emph{globally} to
 the sequence (the \prog{global} part). In this case, \emph{global}
 alignment means that the program is forced to align the full model
-region from start to end to the sequence, e.g. it is \emph{not}
+region from start to end to the sequence (it is \emph{not}
 allowed to skip large parts of the model without large score penalties
-as it would if \emph{local} alignment was being performed. The
+as it would if \emph{local} alignment was being performed). The
 \prog{bands} column tells us that bands (constraints) from an HMM
 alignment will be used to accelerate alignment to the CM. This is
 explained more in Chapter 8 of \cite{Nawrocki09b}. The \prog{tau} column
@@ -344,8 +344,6 @@ best-matching model to at least one sequence in \prog{ssu-align}'s
 search stage. An explanation of Stockholm alignments can be found at
 the beginning of the Tutorial section.
 
-\newpage
-
 \subsection{.scores suffixed files}
 
 The \prog{.scores} file are meant to be a useful summary file for each
@@ -353,7 +351,8 @@ run of \prog{ssu-align}. They contain various statistics from each of
 the other output files for every sequence in the original input
 sequence file. 
 
-Take a look at the file \prog{tutorial/output/output.scores}
+Take a look at the file \prog{seed-15.scores}:
+
 
 \begin{sreoutputtinywide}
 #                                                                        best-matching model                  second-best model 

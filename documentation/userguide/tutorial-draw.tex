@@ -8,7 +8,7 @@ model used to create the alignment. As just shown in the previous example,
 using \prog{esl-ssudraw} requires a template postscript file of the
 consensus secondary structure. The template files for the 3 default
 \textsc{ssu-align} version 0.1 seed models are included as
-\prog{ssu-align-0.1/seeds/ss-diagrams/{archaea,bacteria,eukarya}-0p1.ps}. 
+\prog{ssu-align-0.1/seeds/ss-diagrams/\{archaea,bacteria,eukarya\}-0p1.ps}. 
 (Unfortunately, it is difficult to create new template files for
 additional models you might build for your own analyses.) 
 
@@ -35,44 +35,22 @@ Section~\ref{section:chap9} includes examples of some of these
 figures for each seed, as indicated by the figure numbers in 
 the ``figure'' column. 
 
-\begin{comment}
-\begin{center}
-\begin{tabular}{llll} \hline
-\prog{esl-ssudraw} options  & statistic                     &  figure & file \\ \hline
-\prog{<none>}                & information content           & \ref{fig:eukinfo} & \prog{eukarya-0p1-info} \\
-& & & \\
-\prog{-q --prob}                & average posterior probability &  none        & \prog{eukarya-0p1-prob} \\
-& & & \\
-\prog{-q --ins}                 & frequency of insertions       & \ref{fig:eukins}   & \prog{eukarya-0p1-ins} \\
-                             & after each position           & & \\
-& & & \\
-\prog{-q --dall}                & frequency of deletions        & \ref{fig:eukdel}  & \prog{eukarya-0p1-dall} \\
-& & & \\
-\prog{-q --dint}                & frequency of internal deletions & none  & \prog{eukarya-0p1-dint} \\
-                             & (excluding terminal deletions)  & & \\
-& & & \\
-\prog{-q --struct}              & additional information from     & \ref{fig:euksinfo} & \prog{eukarya-0p1-struct} \\
-                             & conserved structure \\
-\end{tabular}
-\end{center}
-\end{comment}
-
 \begin{center}
 \begin{tabular}{llll} \hline
 \prog{esl-ssudraw} option(s) & statistic                     &  figure & file \\ \hline
-\prog{<none>}                & information content           & \ref{fig:eukinfo} & \prog{eukarya-0p1-info} \\
+\prog{<none>}                & information content           & \ref{fig:eukinfo} & \prog{<fam>-0p1-info} \\
 & & & \\
-\prog{-q --prob}                & average posterior probability & none & \prog{eukarya-0p1-prob} \\
+\prog{-q --prob}                & average posterior probability & none & \prog{<fam>-0p1-prob} \\
 & & & \\
-\prog{-q --ins}                 & frequency of insertions       & \ref{fig:eukins}   & \prog{eukarya-0p1-ins} \\
+\prog{-q --ins}                 & frequency of insertions       & \ref{fig:eukins}   & \prog{<fam>-0p1-ins} \\
                              & after each position           & & \\
 & & & \\
-\prog{-q --dall}                & frequency of deletions        & \ref{fig:eukdel}  & \prog{eukarya-0p1-dall} \\
+\prog{-q --dall}                & frequency of deletions        & \ref{fig:eukdel}  & \prog{<fam>-0p1-dall} \\
 & & & \\
-\prog{-q --dint}                & frequency of internal deletions & none  & \prog{eukarya-0p1-dint} \\
+\prog{-q --dint}                & frequency of internal deletions & none  & \prog{<fam>-0p1-dint} \\
                              & (excluding terminal deletions)  & & \\
 & & & \\
-\prog{-q --struct}              & additional information from     & \ref{fig:euksinfo} & \prog{eukarya-0p1-struct} \\
+\prog{-q --struct}              & additional information from     & \ref{fig:euksinfo} & \prog{<fam>-0p1-struct} \\
                              & conserved structure \\
 \end{tabular}
 \end{center}
@@ -94,13 +72,13 @@ was used to create all of these diagrams.
 \subsubsection{Displaying masks and alignment statistics simultaneously}
 
 The \prog{--mask} option can be used in combination with any of the
-options listed in the above table to create a diagram as above but
-with columns that are excluded from the mask appearing as open
+options listed in the above table to create diagrams 
+with positions that are excluded from a mask appearing as open
 circles. Figure~\ref{fig:bacdelmask} in section~\ref{section:chap9}
 shows an example. That figure was created from the
 \prog{ssu-align-0.1/seeds/ss-diagrams/} directory using the command:
 
-\prog{esl-ssudraw --mask ../bacteria-0p1-seed-realn.mask -q --dall \\
+\user{esl-ssudraw --mask ../bacteria-0p1-seed-realn.mask -q --dall \\
   ../bacteria-0p1.stk bacteria-0p1.ps bacteria-0p1-dall-wmask.ps}
 
 The \prog{bacteria-0p1-seed-realn.mask} was created by realigning all
@@ -114,7 +92,7 @@ postscript files showing each of the masks on each of the diagrams
 from the above table are included in 
 \prog{ssu-align-0.1/seeds/ss-diagrams/}. The naming convention for
 these diagrams is the same as indicated in the ``file'' column of the
-above table, but with the suffix ``-wmask'' appended.
+above table, but with the suffix \prog{-wmask} appended.
 
 \subsubsection{Displaying individual aligned sequences}
 
@@ -130,7 +108,7 @@ When the \prog{--indi} option is used together with \prog{--all}, the
 resulting postscript file will have $N+1$ pages, one for each of the
 $N$ sequences in the alignment, displaying the residue that sequence
 contains at each consensus position of the alignment (gaps are
-indicated by \prog{-} characters). The $+1$ page is the first page
+indicated by \prog{-} characters). The $+1$ is due to the first page,
 which again displays the consensus sequence. This page is omitted if
 the \prog{-q} option is also used.
 
