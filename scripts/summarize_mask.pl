@@ -24,11 +24,11 @@ if (defined $opt_L) { $do_list = 1; }
 if (defined $opt_I) { $list_1s = 1; }
 if (defined $opt_O) { $list_0s = 1; }
 
-$usage = "Usage: perl summarize_mask.pl\n\t<mask file (1s, 0s, single line, no spaces)>\n\n";
+$usage = "Usage: perl summarize_mask.pl [-options]\n\t<mask file (1s, 0s, single line, no spaces)>\n\n";
 $options_usage  = "Options:\n\t";
 $options_usage .= "-L : the mask file is actually a list of mask files\n\t";
 $options_usage .= "-I : list each column that is a '1' on a separate line\n\t";
-$options_usage .= "-O : list each column that is a '0' on a separate line\n\t";
+$options_usage .= "-O : list each column that is a '0' on a separate line\n\n";
 
 
 if(@ARGV != 1)

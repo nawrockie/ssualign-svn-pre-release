@@ -19,7 +19,7 @@ $do_GR = 0;
 if(defined $opt_C) { $do_GC = 1; }
 if(defined $opt_R) { $do_GR = 1; }
 
-$usage =  "usage: perl stk2fa.pl <non-interleaved stockholm alignment (1 line per sequence)>\n\n";
+$usage =  "usage: perl stk2fa.pl [-options] <non-interleaved stockholm alnment (1 line per seq)>\n\n";
 $usage .= "Options:\n\t";
 $usage .= "-C : include #=GC <x> markup, named as \"GC-<x>\"\n\t";
 $usage .= "-R : include #=GR <x> <tag> markup, named as \"GR-<x>-tag\"\n\n";

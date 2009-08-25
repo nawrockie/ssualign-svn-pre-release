@@ -28,7 +28,7 @@ if (defined $opt_P) { $prefix = $opt_P; };
 if (defined $opt_F) { $do_five = 1; }
 if (defined $opt_T) { $do_three = 1; }
 
-$usage = "Usage: perl rename_mask.pl\n\t<mask (1s, 0s, single line, no spaces) with <x> 1s of length <y>>\n\n\tFile will be copied to a new file named \"<x>-1s.<y>c.mask\n\n";
+$usage = "Usage: perl rename_mask.pl [-options]\n\t<mask (1s, 0s, single line, no spaces) with <x> 1s of length <y>>\n\n\tFile will be copied to a new file named \"<x>-1s.<y>c.mask\n\n";
 $options_usage  = "Options:\n\t";
 $options_usage .= "-L     : the mask file is actually a list of mask files\n\t";
 $options_usage .= "-P <x> : use <x> as a prefix for the name\n\t";

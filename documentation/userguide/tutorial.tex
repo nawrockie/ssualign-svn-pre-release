@@ -8,11 +8,11 @@ where you unpacked and built the \sft{infernal} package. Once there
 create a new directory, something like \prog{my-tutorial} and move
 into it. The instructions in this tutorial assume that you have the
 \sft{ssu-align} perl script and \sft{easel} programs in your path. For
-example, you should be able to run \prog{ssu-align} and
-\prog{esl-alimanip} by simply typing \prog{ssu-align} or
-\prog{esl-alimanip} at the UNIX prompt.  These instructions also
-assume that you have setup your local
-\prog{ssu-align-0.1/sa-0p1.params} file to include your local
+example, you should be able to run \prog{ssu-align},
+\prog{esl-alimanip} and \prog{esl-reformat} by simply typing
+\prog{ssu-align}, \prog{esl-alimanip} or \prog{esl-alimanip} at the
+UNIX prompt.  These instructions also assume that you have setup your
+local \prog{ssu-align-0.1/sa-0p1.params} file to include your local
 paths. Instructions on how to do all of this are included in the
 Installation section.
 
@@ -256,10 +256,44 @@ For now, what you need to know about the key features of the alignment file is:
   residues are less well conserved.
 \end{itemize}
 
-\begin{comment}
-To convert the alignment to fasta format that includes gaps, you can use the
-\prog{scripts/stk2aln\_fa.pl} script. 
-\end{comment}
+\subsubsection{converting Stockholm alignments to FASTA format}
+
+Two steps are required to convert a Stockholm alignment to an aligned
+FASTA formatted file that includes gap characters. First you must
+convert a \prog{ssu-align} output alignment to a special
+non-interleaved Stockholm formatted file using the
+\prog{esl-reformat} program. To convert our archaeal alignment:
+
+\user{esl-reformat -o new.stk pfam seed-15/seed-15.archaea.stk}
+
+The second step is to use the \sft{perl} script \prog{stk2fa.pl}
+provided in the \prog{scripts/} subdirectory of \prog{ssu-align-0.1/}
+to create a FASTA file. To see the usage of this script, do:
+
+\user{perl scripts/stk2fa.pl}
+\begin{sreoutput}
+usage: perl stk2fa.pl [-options] <non-interleaved stockholm alnment (1 line per seq)>
+
+Options:
+	-C : include #=GC <x> markup, named as "GC-<x>"
+	-R : include #=GR <x> <tag> markup, named as "GR-<x>-tag"
+
+Note that the stockholm alignment must be non-interleaved.
+You can convert an interleaved ssu-align/cmalign output alignment "foo.stk"
+to non-interleaved "foo2.stk" with "esl-reformat -o foo2.stk pfam foo.stk"
+\end{sreoutput}
+
+To convert our \prog{new.stk} alignment to the FASTA file
+\prog{new.fa}, do:
+
+\user{perl scripts/stk2fa.pl new.stk > new.fa}
+
+Note that this will remove the \prog{\#=GC} markup, which includes the
+consensus secondary structure (\prog{\#=GC SS\_cons}) and reference
+(consensus) sequence (\prog{\#=GC RF}) as well as the posterior
+probability annotation. To include those, as listed above in the
+script's usage, use the \prog{-C} and/or \prog{-R} options to the
+script.
 
 \subsection{Creating masks for pruning alignments with the
   \prog{esl-alimanip} program}
@@ -408,6 +442,20 @@ Largest:             1435
 Average length:      1213.8
 Average identity:    82%
 \end{sreoutput}
+
+The \prog{ssu-align-0.1/scripts/} directory includes three simple
+\sft{perl} scripts that may be useful for getting information on mask
+files created with \prog{esl-alimanip}. The \prog{summarize_mask.pl}
+script reports on the number of {0}s and {1}s in a mask. The
+\prog{rename_mask.pl} script will copy a mask to a file with a name
+that includes the number of {1}s and length of a mask. The
+\prog{compare_equiwidth_masks.pl} script will compare and report on
+the overlap of two masks that have the same number of total characters
+(same number of {0}s plus {1}s). To get usage information on these
+scripts, simply execute them with no arguments, for example:
+
+\user{perl summarize_mask.pl}
+
 
 \subsection{Visualizing alignment masks}
 

@@ -26,12 +26,11 @@ if (defined $opt_X) { $do_x_intersection = 1; $x_intersection_file = $opt_X; }
 if (defined $opt_Y) { $do_y_intersection = 1; $y_intersection_file = $opt_Y; }
 if (defined $opt_Z) { $do_z_intersection = 1; $z_intersection_file = $opt_Z; }
 
-$usage = "Usage: perl compare_equiwidth_masks.pl\n\t<mask 1 (1s, 0s, single line, no spaces) of length <x> with <y> 1s>\n\t<mask 2 (1s, 0s, single line, no spaces) of length <x> with <z> 1s>\n\n";
+$usage = "Usage: perl compare_equiwidth_masks.pl [-options]\n\t<mask 1 (1s, 0s, single line, no spaces) of length <x> with <y> 1s>\n\t<mask 2 (1s, 0s, single line, no spaces) of length <x> with <z> 1s>\n\n";
 $options_usage  = "Options:\n\t";
-$options_usage .= "-X <f> : save intersection mask of 1 and 2 of width <x> file <f>\n\t";
-$options_usage .= "-Y <f> : save intersection mask of 1 and 2 of width <y> file <f>\n\t";
-$options_usage .= "-Z <f> : save intersection mask of 1 and 2 of width <z> file <f>\n\n";
-
+$options_usage .= "-X <f> : save intersection mask of 1 and 2 of width <x> to file <f>\n\t";
+$options_usage .= "-Y <f> : save intersection mask of 1 and 2 of width <y> to file <f>\n\t";
+$options_usage .= "-Z <f> : save intersection mask of 1 and 2 of width <z> to file <f>\n\n";
 
 if(@ARGV != 2)
 {
