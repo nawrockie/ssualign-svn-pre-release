@@ -3,12 +3,13 @@
 
 Here is a tutorial walk-through of some small projects with
 \sft{ssu-align}. To follow along with this tutorial, move into the
-\prog{ssu-align-0.1} subdirectory of \prog{infernal-1.01/} directory
+\prog{ssu-align-0.1/} subdirectory of \prog{infernal-1.01/} directory
 where you unpacked and built the \sft{infernal} package. Once there
 create a new directory, something like \prog{my-tutorial} and move
 into it. The instructions in this tutorial assume that you have the
-\sft{ssu-align} perl script and \sft{easel} programs in your path. For
-example, you should be able to run \prog{ssu-align},
+\prog{ssu-align-0.1/ssu-align} perl script and
+\sft{easel} programs in \prog{infernal-1.01/easel/miniapps/} in your
+\$PATH. For example, you should be able to run \prog{ssu-align},
 \prog{esl-alimanip} and \prog{esl-reformat} by simply typing
 \prog{ssu-align}, \prog{esl-alimanip} or \prog{esl-alimanip} at the
 UNIX prompt.  These instructions also assume that you have setup your
@@ -445,16 +446,16 @@ Average identity:    82%
 
 The \prog{ssu-align-0.1/scripts/} directory includes three simple
 \sft{perl} scripts that may be useful for getting information on mask
-files created with \prog{esl-alimanip}. The \prog{summarize_mask.pl}
+files created with \prog{esl-alimanip}. The \prog{summarize\_mask.pl}
 script reports on the number of {0}s and {1}s in a mask. The
-\prog{rename_mask.pl} script will copy a mask to a file with a name
+\prog{rename\_mask.pl} script will copy a mask to a file with a name
 that includes the number of {1}s and length of a mask. The
-\prog{compare_equiwidth_masks.pl} script will compare and report on
+\prog{compare\_equiwidth\_masks.pl} script will compare and report on
 the overlap of two masks that have the same number of total characters
 (same number of {0}s plus {1}s). To get usage information on these
 scripts, simply execute them with no arguments, for example:
 
-\user{perl summarize_mask.pl}
+\user{perl summarize\_mask.pl}
 
 
 \subsection{Visualizing alignment masks}
