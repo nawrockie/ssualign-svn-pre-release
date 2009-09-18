@@ -72,8 +72,7 @@ all: core
 
 core:
 	(cd easel;        make CC="$(CC)" CFLAGS="$(CFLAGS)"; make)
-#	(cd infernal/src; make CC="$(CC)" CFLAGS="$(CFLAGS)"; make module)
-	(cd infernal/src; make CC="$(CC)" CFLAGS="$(CFLAGS)"; make ssu)
+	(cd infernal/src; make CC="$(CC)" CFLAGS="$(CFLAGS)"; make module)
 	(cd src;          make CC="$(CC)" CFLAGS="$(CFLAGS)"; make)
 #	(cd testsuite;    make CC="$(CC)" CFLAGS="$(CFLAGS)")
 

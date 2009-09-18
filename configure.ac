@@ -368,7 +368,7 @@ AC_CONFIG_HEADERS(src/config.h)
 #
 AC_CONFIG_FILES(src/Makefile)
 #eventually AC_CONFIG_FILES(testsuite/Makefile)
-AC_CONFIG_HEADERS([infernal/inf_config.h])
+AC_CONFIG_HEADERS([infernal/src/config.h])
 AC_CONFIG_FILES([infernal/src/Makefile])
 AC_CONFIG_FILES([infernal/testsuite/Makefile])
 AC_CONFIG_FILES([infernal/Makefile])
