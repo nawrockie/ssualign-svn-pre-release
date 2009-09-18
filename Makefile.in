@@ -63,6 +63,14 @@ REPOSITORY  = https://svn.janelia.org/eddylab/eddys/src/
 # of SSU-ALIGN programs.)
 #
 PROGS = ssu-draw\
+	ssu-mask\
+
+INFPROGS = ssu-cmalign\
+	   ssu-cmbuild\
+           ssu-cmsearch\
+
+ESLPROGS = ssu-esl-sfetch\
+	   ssu-esl-weight\
 
 # all: if we don't have precompiled binaries, compiles all packages, 
 #      and moves the supported executables into binaries/ subdirectory.
@@ -71,8 +79,8 @@ PROGS = ssu-draw\
 all: core 
 
 core:
-	(cd easel;        make CC="$(CC)" CFLAGS="$(CFLAGS)"; make)
-	(cd infernal/src; make CC="$(CC)" CFLAGS="$(CFLAGS)"; make module)
+	(cd easel;        make CC="$(CC)" CFLAGS="$(CFLAGS)"; make ssu)
+	(cd infernal/src; make CC="$(CC)" CFLAGS="$(CFLAGS)"; make ssu)
 	(cd src;          make CC="$(CC)" CFLAGS="$(CFLAGS)"; make)
 #	(cd testsuite;    make CC="$(CC)" CFLAGS="$(CFLAGS)")
 
@@ -192,6 +200,12 @@ install:
 	mkdir -p ${BINDIR}
 	for file in $(PROGS); do\
 		cp src/$$file $(BINDIR)/;\
+	done
+	for file in $(INFPROGS); do\
+		cp infernal/src/$$file $(BINDIR)/;\
+	done
+	for file in $(ESLPROGS); do\
+		cp easel/miniapps/$$file $(BINDIR)/;\
 	done
 
 # "make clean" removes almost everything except configuration files
