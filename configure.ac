@@ -41,9 +41,8 @@
 
 
 AC_PREREQ(2.60)
-AC_INIT(SSU-align, 0.1, nawrockie@janelia.hhmi.org, ssu-align)
-AC_MSG_NOTICE([Configuring SSU-align for your system.])
-
+AC_INIT(SSU-ALIGN, 0.1, nawrockie@janelia.hhmi.org, ssu-align)
+AC_MSG_NOTICE([Configuring SSU-ALIGN for your system.])
 
 ################################################################
 # 3. Info on the package
@@ -155,7 +154,7 @@ AC_CANONICAL_HOST
 # Implements a sneaky if statement that wraps most of the configure.ac M4 code.
 #
 if ((! test -d binaries) && test -d src); then 
-AC_MSG_NOTICE([Full SSU-align source distribution - using full configuration])
+AC_MSG_NOTICE([Full SSU-ALIGN source distribution - using full configuration])
 
 ################################################################
 # Process the ./configure command line
@@ -364,7 +363,7 @@ AC_SYS_LARGEFILE
 
 AC_CONFIG_HEADERS(src/config.h)
 
-# Write SSU-align's config.h header
+# Write SSU-ALIGN's config.h header
 #
 AC_CONFIG_FILES(src/Makefile)
 #eventually AC_CONFIG_FILES(testsuite/Makefile)

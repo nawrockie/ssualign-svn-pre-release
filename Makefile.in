@@ -11,6 +11,7 @@
 #
 # Post-configuration, you may still want to modify the following make variables:
 #   BINDIR  - where the executables will be installed by a 'make install'
+#   LIBDIR  - where the library files (CM files, postscript templates)  will be installed by a 'make install'
 #   MANDIR  - where the man pages will be installed by a 'make install'
 #   CC      - which compiler to use
 #   CFLAGS  - compiler flags to use
@@ -24,6 +25,7 @@
 prefix      = @prefix@
 exec_prefix = @exec_prefix@
 BINDIR      = @bindir@
+LIBDIR      = @libdir@
 MANDIR      = @mandir@
 DATAROOTDIR = @datarootdir@
 
@@ -71,6 +73,18 @@ INFPROGS = ssu-cmalign\
 
 ESLPROGS = ssu-esl-sfetch\
 	   ssu-esl-weight\
+
+
+# List of the files to be copied to the lib/ directory.
+#
+SEEDLIBFILES = ssu3-0p1.cm\
+	       archaea-0p1.cm\
+	       bacteria-0p1.cm\
+	       eukarya-0p1.cm
+
+PSLIBFILES = archaea-0p1.ps\
+	     bacteria-0p1.ps\
+	     eukarya-0p1.ps
 
 # all: if we don't have precompiled binaries, compiles all packages, 
 #      and moves the supported executables into binaries/ subdirectory.
@@ -194,9 +208,11 @@ devcheck:
 	 ./sqc -p ../easel/miniapps 4 cmsearch.sqc     . ../src;\
 	 ./sqc -p ../easel/miniapps 4 cmstat.sqc       . ../src;)
 
-# "make install" installs the programs in BINDIR
+# "make install" installs the programs in BINDIR and the CM and postscript templates in LIBDIR
 #
-install:
+install: actually-install setpaths
+
+actually-install:
 	mkdir -p ${BINDIR}
 	for file in $(PROGS); do\
 		cp src/$$file $(BINDIR)/;\
@@ -206,6 +222,13 @@ install:
 	done
 	for file in $(ESLPROGS); do\
 		cp easel/miniapps/$$file $(BINDIR)/;\
+	done
+	mkdir -p ${LIBDIR}
+	for file in $(SEEDLIBFILES); do\
+		cp seeds/$$file $(LIBDIR)/;\
+	done
+	for file in $(PSLIBFILES); do\
+		cp seeds/ss-diagrams/$$file $(LIBDIR)/;\
 	done
 
 # "make clean" removes almost everything except configuration files
@@ -231,3 +254,40 @@ distclean:
 	(cd infernal/src;            make distclean)
 	-rm Makefile
 
+setpaths:
+	@echo 'setenv PATH "$$PATH"":""$(BINDIR)"' > setup.ssu-align.cshrc
+	@echo 'export PATH="$$PATH"":""$(BINDIR)"' > setup.ssu-align.bash
+	@echo 'setenv MANPATH "$$MANPATH"":""$(MANDIR)"' >> setup.ssu-align.cshrc
+	@echo 'export MANPATH="$$MANPATH"":""$(MANDIR)"' >> setup.ssu-align.bash
+	@echo 'setenv SSUALIGNDIR "$(SSUALIGNDIR)"' >> setup.ssu-align.cshrc
+	@echo 'export SSUALIGNDIR="$(SSUALIGNDIR)"' >> setup.ssu-align.bash
+	@echo ""
+	@echo "The files \"setup.ssu-align.bash\" and \"setup.ssu-align.cshrc\" have been created."
+	@echo "If you use the bash shell, type \"source setup.ssu-align.bash; rehash\"."
+	@echo "If you use the C shell, type \"source setup.ssu-align.cshrc; rehash\"."
+	@echo "This will update your environment for this session."
+	@echo ""
+	@echo "To update your environment upon every login, you should"
+	@echo "add the line:"
+	@echo ""
+	@echo "source $(PWD)/setup.ssu-align.bash"
+	@echo ""
+	@echo "to your \".bashrc\" file."
+	@echo ""
+	@echo "or"
+	@echo ""
+	@echo "source $(PWD)/setup.ssu-align.cshrc"
+	@echo ""
+	@echo "to your \".cshrc\" file."
+	@echo ""
+	@echo "To determine which shell you use, type:"
+	@echo ""
+	@echo "echo \$SHELL"
+	@echo ""
+	@echo "If you prefer to manually update your environment variables,"
+	@echo "be sure to make the following changes:"
+	@echo ""
+	@echo "1. Add $(BINDIR) to your PATH variable"
+	@echo "2. Add $(MANDIR) to your MANPATH variable"
+	@echo "3. Set $$SSUALIGNDIR as $(SSUALIGNDIR) 
+	@echo ""
