@@ -11,7 +11,6 @@
 #
 # Post-configuration, you may still want to modify the following make variables:
 #   BINDIR  - where the executables will be installed by a 'make install'
-#   LIBDIR  - where the library files (CM files, postscript templates)  will be installed by a 'make install'
 #   MANDIR  - where the man pages will be installed by a 'make install'
 #   CC      - which compiler to use
 #   CFLAGS  - compiler flags to use
@@ -25,9 +24,9 @@
 prefix      = @prefix@
 exec_prefix = @exec_prefix@
 BINDIR      = @bindir@
-LIBDIR      = @libdir@
 MANDIR      = @mandir@
-DATAROOTDIR = @datarootdir@
+datarootdir = @datarootdir@
+datadir     = @datadir@
 
 # how to install the man pages; 
 # cp is generally fine, unless you preformat your pages.
@@ -210,7 +209,7 @@ devcheck:
 
 # "make install" installs the programs in BINDIR and the CM and postscript templates in LIBDIR
 #
-install: actually-install setpaths
+install: actually-install ssu-align setpaths
 
 actually-install:
 	mkdir -p ${BINDIR}
@@ -223,13 +222,69 @@ actually-install:
 	for file in $(ESLPROGS); do\
 		cp easel/miniapps/$$file $(BINDIR)/;\
 	done
-	mkdir -p ${LIBDIR}
+	mkdir -p ${datadir}/${BASENAME}-${RELEASE}
 	for file in $(SEEDLIBFILES); do\
-		cp seeds/$$file $(LIBDIR)/;\
+		cp seeds/$$file ${datadir}/${BASENAME}-${RELEASE}/;\
 	done
 	for file in $(PSLIBFILES); do\
-		cp seeds/ss-diagrams/$$file $(LIBDIR)/;\
+		cp seeds/ss-diagrams/$$file ${datadir}/${BASENAME}-${RELEASE}/;\
 	done
+
+ssu-align:
+#	$(PERLDIR)/$(PERLBIN) checkversion.pl
+#	sed 's#/tmp#$(TEMPDIR)#g' tRNAscan-SE.src | \
+#	sed 's#bindir = ""#bindir =\"$(BINDIR)/"#g' | \
+#	sed 's#/usr/local/lib/tRNAscanSE#$(LIBDIR)#g' | \
+#	sed 's#version = ""#version = $(SE_RELEASE)#' | \
+#	sed 's#release_date = ""#release_date = $(RELEASEDATE)#' | \
+#	sed 's#/usr/bin/perl#$(PERLDIR)/$(PERLBIN)#' > tRNAscan-SE
+#	sed 's#/usr/bin/perl#$(PERLDIR)/$(PERLBIN)#' instman.pl > instman 
+#	sed 's#/usr/bin/perl#$(PERLDIR)/$(PERLBIN)#' sstofa.pl > sstofa 
+#	@chmod +x tRNAscan-SE
+#	@chmod +x instman
+	@echo ""
+	@echo "SSU-ALIGN built"
+	@echo ""
+	@echo ""
+
+setpaths:
+#	@echo 'setenv PATH "$$PATH"":""$(BINDIR)"' > setup.ssu-align.csh
+	@echo 'setenv PATH "$$PATH:$(BINDIR)"' > setup.ssu-align.csh
+	@echo 'export PATH="$$PATH:$(BINDIR)"' > setup.ssu-align.bash
+	@echo 'setenv MANPATH "$$MANPATH:$(MANDIR)"' >> setup.ssu-align.csh
+	@echo 'export MANPATH="$$MANPATH:$(MANDIR)"' >> setup.ssu-align.bash
+	@echo 'setenv SSUALIGNDIR "$(datadir)/$(BASENAME)-$(RELEASE)"' >> setup.ssu-align.csh
+	@echo 'export SSUALIGNDIR="$(datadir)/$(BASENAME)-$(RELEASE)"' >> setup.ssu-align.bash
+	@echo ""
+	@echo "The files \"setup.ssu-align.bash\" and \"setup.ssu-align.csh\" have been created."
+	@echo "If you use the bash shell, type \"source setup.ssu-align.bash; rehash\"."
+	@echo "If you use the C shell, type \"source setup.ssu-align.csh; rehash\"."
+	@echo "This will update your environment for this session."
+	@echo ""
+	@echo "To update your environment upon every login, you should"
+	@echo "add the line:"
+	@echo ""
+	@echo "source $(PWD)/setup.ssu-align.bash"
+	@echo ""
+	@echo "to your \".bashrc\" file."
+	@echo ""
+	@echo "or"
+	@echo ""
+	@echo "source $(PWD)/setup.ssu-align.csh"
+	@echo ""
+	@echo "to your \".cshrc\" file."
+	@echo ""
+	@echo "To determine which shell you use, type:"
+	@echo ""
+	@echo "echo $$SHELL"
+	@echo ""
+	@echo "If you prefer to manually update your environment variables,"
+	@echo "be sure to make the following changes:"
+	@echo ""
+	@echo "1. Add $(BINDIR) to your PATH variable"
+	@echo "2. Add $(MANDIR) to your MANPATH variable"
+	@echo "3. Set $$SSUALIGNDIR as $(datadir)/$(BASENAME)-$(RELEASE)"
+	@echo ""
 
 # "make clean" removes almost everything except configuration files
 #              and binaries.
@@ -253,41 +308,3 @@ distclean:
 	(cd easel;                   make distclean)
 	(cd infernal/src;            make distclean)
 	-rm Makefile
-
-setpaths:
-	@echo 'setenv PATH "$$PATH"":""$(BINDIR)"' > setup.ssu-align.cshrc
-	@echo 'export PATH="$$PATH"":""$(BINDIR)"' > setup.ssu-align.bash
-	@echo 'setenv MANPATH "$$MANPATH"":""$(MANDIR)"' >> setup.ssu-align.cshrc
-	@echo 'export MANPATH="$$MANPATH"":""$(MANDIR)"' >> setup.ssu-align.bash
-	@echo 'setenv SSUALIGNDIR "$(SSUALIGNDIR)"' >> setup.ssu-align.cshrc
-	@echo 'export SSUALIGNDIR="$(SSUALIGNDIR)"' >> setup.ssu-align.bash
-	@echo ""
-	@echo "The files \"setup.ssu-align.bash\" and \"setup.ssu-align.cshrc\" have been created."
-	@echo "If you use the bash shell, type \"source setup.ssu-align.bash; rehash\"."
-	@echo "If you use the C shell, type \"source setup.ssu-align.cshrc; rehash\"."
-	@echo "This will update your environment for this session."
-	@echo ""
-	@echo "To update your environment upon every login, you should"
-	@echo "add the line:"
-	@echo ""
-	@echo "source $(PWD)/setup.ssu-align.bash"
-	@echo ""
-	@echo "to your \".bashrc\" file."
-	@echo ""
-	@echo "or"
-	@echo ""
-	@echo "source $(PWD)/setup.ssu-align.cshrc"
-	@echo ""
-	@echo "to your \".cshrc\" file."
-	@echo ""
-	@echo "To determine which shell you use, type:"
-	@echo ""
-	@echo "echo \$SHELL"
-	@echo ""
-	@echo "If you prefer to manually update your environment variables,"
-	@echo "be sure to make the following changes:"
-	@echo ""
-	@echo "1. Add $(BINDIR) to your PATH variable"
-	@echo "2. Add $(MANDIR) to your MANPATH variable"
-	@echo "3. Set $$SSUALIGNDIR as $(SSUALIGNDIR) 
-	@echo ""
