@@ -275,6 +275,7 @@ static ESL_OPTIONS options[] = {
   { "--mask-diff",eslARG_INFILE,NULL, NULL, NULL, NULL,"--mask",INCOMPATWITHSINGLEOPTS, "with --mask-col <f1>, compare mask in <f1> to mask in <f>", 5 },
 
   { "--dfile",  eslARG_INFILE, NULL, NULL, NULL, NULL,NULL, INCOMPATWITHDFILEOPTS, "read 'draw' file specifying >=1 diagrams", 6 },
+  { "--tfile",  eslARG_INFILE, NULL, NULL, NULL, NULL,NULL, NULL,           "read template file <f>, do not use default template file", 8 },
 
   { "--no-leg", eslARG_NONE,  FALSE, NULL, NULL, NULL,NULL, NULL,          "do not draw legend", 7 },
   { "--no-head",eslARG_NONE,  FALSE, NULL, NULL, NULL,NULL, NULL,          "do not draw header", 7 },
@@ -330,6 +331,8 @@ main(int argc, char **argv)
       esl_opt_DisplayHelp(stdout, go, 5, 2, 80); 
       puts("\noption for reading in a file dictating colors:");
       esl_opt_DisplayHelp(stdout, go, 6, 2, 80); 
+      puts("\noption for reading a specific template file:");
+      esl_opt_DisplayHelp(stdout, go, 8, 2, 80); 
       puts("\noptions for omitting parts of the diagram:");
       esl_opt_DisplayHelp(stdout, go, 7, 2, 80); 
       exit(0);
@@ -1605,14 +1608,22 @@ parse_template_file(const ESL_GETOPTS *go, char *errbuf, int msa_clen, SSPostscr
   int             status;
   ESL_FILEPARSER *efp;
   SSPostscript_t *ps;
-  char           *ssualigndir;
-  char           *filename;
+  char           *ssualigndir = NULL;
+  char           *filename = NULL;
   int             found_match = FALSE;
 
-  ssualigndir = getenv("SSUALIGNDIR");
-  if(ssualigndir == NULL) ESL_FAIL(eslENOTFOUND, errbuf, "ERROR, the SSUALIGNDIR environment variable should be set but it's not.\nFor help, see the User's Guide Installation section.");
+  /* If --tfile not enabled, read the default template file */
+  if(esl_opt_IsDefault(go, "--tfile")) { 
+    ssualigndir = getenv("SSUALIGNDIR");
+    if(ssualigndir == NULL) ESL_FAIL(eslENOTFOUND, errbuf, "ERROR, the SSUALIGNDIR environment variable should be set but it's not.\nFor help, see the User's Guide Installation section.");
 
-  if((status = esl_FileConcat(ssualigndir, DEFAULT_TEMPLATE_FILE, &filename)) != eslOK) ESL_FAIL(status, errbuf, "ERROR, concatenating SSUALIGNDIR and default template file %s\n", DEFAULT_TEMPLATE_FILE);
+    if((status = esl_FileConcat(ssualigndir, DEFAULT_TEMPLATE_FILE, &filename)) != eslOK) ESL_FAIL(status, errbuf, "ERROR, concatenating SSUALIGNDIR and default template file %s\n", DEFAULT_TEMPLATE_FILE);
+  }
+  else { 
+    filename = esl_opt_GetString(go, "--tfile");
+  }
+
+  printf("filename: %s\n", filename);
 
   if (esl_fileparser_Open(filename, &efp) != eslOK) esl_fatal("ERROR, failed to open template file %s in parse_template_file\n", filename);
   esl_fileparser_SetCommentChar(efp, '#');
@@ -1629,8 +1640,14 @@ parse_template_file(const ESL_GETOPTS *go, char *errbuf, int msa_clen, SSPostscr
   }
   if(found_match == FALSE) { 
     esl_fileparser_Close(efp);
-    esl_fatal("ERROR, did not find template structure to match alignment consensus length of %d in:\n%s\nWas the alignment created usign a default CM model of ssu-align?\n", msa_clen, filename);
+    if(esl_opt_IsDefault(go, "--tfile")) { 
+      esl_fatal("ERROR, did not find template structure to match alignment consensus length of %d in:\n%s\nWas the alignment created usign a default CM model of ssu-align?\n", msa_clen, filename);
+    }
+    else { 
+      esl_fatal("ERROR, did not find template structure to match alignment consensus length of %d in:\n%s\n", msa_clen, filename);
+    }
   }
+
   /* if we get here, we've found a match */
 
   /* validate the template we just read */
@@ -1638,6 +1655,7 @@ parse_template_file(const ESL_GETOPTS *go, char *errbuf, int msa_clen, SSPostscr
 
   esl_fileparser_Close(efp);
   *ret_ps = ps;
+
   return eslOK;
 }
   
