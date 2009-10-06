@@ -2,7 +2,7 @@
 
 .SH NAME
 .TP 
-ssu-align - align small subunit ribosomal RNA (SSU rRNA) sequences
+ssu-align - align small subunit ribosomal RNA (16s/18s SSU rRNA) sequences
 
 .SH SYNOPSIS
 .B ssu-align

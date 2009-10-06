@@ -58,21 +58,19 @@ COMPRESS    = gzip
 REPOSITORY  = https://svn.janelia.org/eddylab/eddys/src/
 
 
-# The program lists below for SSU-ALIGN are not necessarily
-# a complete manifest. They are the list of stable programs that the
-# package will install. (The list in src/Makefile.in is the complete manifest
-# of SSU-ALIGN programs.)
-#
-PROGS = ssu-draw\
+PROGS = ssu-align\
+#	ssu-draw\
 	ssu-mask\
 
 INFPROGS = ssu-cmalign\
 	   ssu-cmbuild\
            ssu-cmsearch\
 
-ESLPROGS = ssu-esl-sfetch\
+ESLPROGS = ssu-esl-alimanip\
+	   ssu-esl-seqstat\
+	   ssu-esl-sfetch\
+	   ssu-esl-ssdraw\
 	   ssu-esl-weight\
-
 
 # List of the files to be copied to the lib/ directory.
 #
@@ -94,7 +92,9 @@ all: core
 core:
 	(cd easel;        make CC="$(CC)" CFLAGS="$(CFLAGS)"; make ssu)
 	(cd infernal/src; make CC="$(CC)" CFLAGS="$(CFLAGS)"; make ssu)
-	(cd src;          make CC="$(CC)" CFLAGS="$(CFLAGS)"; make)
+#
+# we don't need to cd src; and make, because the src/ execs are perl scripts.
+#	(cd src;          make CC="$(CC)" CFLAGS="$(CFLAGS)"; make)
 #	(cd testsuite;    make CC="$(CC)" CFLAGS="$(CFLAGS)")
 
 # dist: build a new distribution directory in ssu-align-$RELEASE
@@ -164,9 +164,6 @@ dist:
 	for prog in $(PROGS); do\
 	   cat ../${BASENAME}-${RELEASE}/documentation/manpages/boilerplate.trailer >> ../${BASENAME}-${RELEASE}/documentation/manpages/$$prog.man;\
 	done
-	for prog in $(RFPROGS); do\
-	   cat ../${BASENAME}-${RELEASE}/documentation/manpages/boilerplate.trailer >> ../${BASENAME}-${RELEASE}/documentation/manpages/$$prog.man;\
-	done;
 	-rm -f ../${BASENAME}-${RELEASE}/documentation/manpages/boilerplate.trailer
 	#
 	# Remove SVN-controlled files/directories that don't belong in the
