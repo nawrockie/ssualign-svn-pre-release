@@ -226,7 +226,7 @@ static int  validate_and_update_sspostscript_given_msa(const ESL_GETOPTS *go, SS
 static int  individual_seqs_sspostscript(const ESL_GETOPTS *go, char *errbuf, SSPostscript_t *ps, ESL_MSA *msa);
 static int  rf_seq_sspostscript (const ESL_GETOPTS *go, char *errbuf, SSPostscript_t *ps, ESL_MSA *msa);
 static int  infocontent_sspostscript(const ESL_GETOPTS *go, char *errbuf, SSPostscript_t *ps, ESL_MSA *msa, float ***hc_scheme, int hc_scheme_idx, int hc_nbins, float **hc_onecell, int hc_onecell_idx);
-static int  structural_infocontent_sspostscript(const ESL_GETOPTS *go, char *errbuf, SSPostscript_t *ps, ESL_MSA *msa, float ***hc_scheme, int hc_scheme_idx, int hc_bins, float **hc_onecell, int ss_idx, int zerores_idx);
+static int  structural_infocontent_sspostscript(const ESL_GETOPTS *go, char *errbuf, SSPostscript_t *ps, ESL_MSA *msa, float ***hc_scheme, int hc_scheme_idx, int hc_nbins, float **hc_onecell, int ss_idx, int zerores_idx);
 static int  delete_sspostscript(const ESL_GETOPTS *go, char *errbuf, SSPostscript_t *ps, ESL_MSA *msa, int do_all, float ***hc_scheme, int hc_scheme_idx, int hc_nbins, float **hc_onecell, int hc_onecell_idx);
 static int  insert_sspostscript(const ESL_GETOPTS *go, char *errbuf, SSPostscript_t *ps, ESL_MSA *msa, float ***hc_scheme, int hc_scheme_idx, int hc_nbins, float **hc_onecell, int hc_onecell_idx);
 static int  posteriors_sspostscript(const ESL_GETOPTS *go, char *errbuf, SSPostscript_t *ps, ESL_MSA *msa, float ***hc_scheme, int hc_scheme_idx, int hc_nbins, float **hc_onecell, int hc_onecell_idx);
@@ -527,9 +527,6 @@ main(int argc, char **argv)
     if(msa->rf == NULL) esl_fatal("First MSA in %s does not have RF annotation.", alifile);
     clen = 0;
     for(apos = 0; apos < msa->alen; apos++) if(! esl_abc_CIsGap(msa->abc, msa->rf[apos])) clen++;
-
-    /* add the mask if there is one */
-    if(mask != NULL && (master_mode != SIMPLEMASKMODE)) add_mask_to_ss_postscript(ps, mask);
     
     /* We've read the alignment, now read the template postscript file (we do this second b/c the RF len of the alignment tells us which postscript template to use) */
     if((status = parse_template_file(go, errbuf, clen, &ps) != eslOK)) esl_fatal(errbuf);
@@ -538,6 +535,9 @@ main(int argc, char **argv)
 
     if(ps->clen == 0)    esl_fatal("MSA has consensus (non-gap RF) length of %d which != template file consensus length of %d.", clen, ps->clen);
     if(clen != ps->clen) esl_fatal("MSA has consensus (non-gap RF) length of %d which != template file consensus length of %d.", clen, ps->clen);
+
+    /* add the mask if there is one */
+    if(mask != NULL && (master_mode != SIMPLEMASKMODE)) add_mask_to_ss_postscript(ps, mask);
     if(mask != NULL && ps->clen != masklen) esl_fatal("MSA has consensus (non-gap RF) length of %d which != lane mask length of %d from mask file %s.", clen, masklen, esl_opt_GetString(go, "--mask"));
 
     if((status = validate_and_update_sspostscript_given_msa(go, ps, msa, errbuf)) != eslOK) esl_fatal(errbuf);
@@ -588,6 +588,7 @@ main(int argc, char **argv)
     }
 
     if((status = draw_sspostscript(ofp, go, errbuf, command, date, hc_scheme, ps)) != eslOK) esl_fatal(errbuf);
+    free(command);
     fclose(ofp);
     esl_msa_Destroy(msa);
   }
@@ -611,6 +612,18 @@ main(int argc, char **argv)
   esl_alphabet_Destroy(abc);
   esl_msafile_Close(afp);
   esl_getopts_Destroy(go);
+  free(hc_nbins);
+  for(z = 0; z < NOC; z++) free(hc_onecell[z]);
+  free(hc_onecell);
+  for(z = 0; z < 11; z++) free(hc_scheme[0][z]);
+  for(z = 0; z < 11; z++) free(hc_scheme[1][z]);
+  for(z = 0; z < 6; z++) free(hc_scheme[2][z]);
+  for(z = 0; z < 6; z++) free(hc_scheme[3][z]);
+  free(hc_scheme[0]);
+  free(hc_scheme[1]);
+  free(hc_scheme[2]);
+  free(hc_scheme[3]);
+  free(hc_scheme);
   return 0;
 
  ERROR: 
@@ -788,7 +801,8 @@ free_sspostscript(SSPostscript_t *ps)
     for(p = 0; p < ps->npage; p++) { 
       if(ps->occlAAA[p] != NULL) { 
 	for(l = 0; l < ps->nocclA[p]; l++) { 
-	  free(ps->occlAAA[p][l]); /* all statically allocated memory */
+	  if(ps->occlAAA[p][l]->text != NULL) free(ps->occlAAA[p][l]->text);
+	  free(ps->occlAAA[p][l]); /* rest is statically allocated memory */
 	}
       free(ps->occlAAA[p]);
       }
@@ -812,6 +826,7 @@ free_sspostscript(SSPostscript_t *ps)
 
   if(ps->nocclA != NULL) free(ps->nocclA);
   if(ps->msa_ct != NULL) free(ps->msa_ct);
+  if(ps->mask != NULL) free(ps->mask);
   if(ps->seqidxA != NULL) free(ps->seqidxA);
   if(ps->uaseqlenA != NULL) free(ps->uaseqlenA);
 
@@ -1623,8 +1638,6 @@ parse_template_file(const ESL_GETOPTS *go, char *errbuf, int msa_clen, SSPostscr
     filename = esl_opt_GetString(go, "--tfile");
   }
 
-  printf("filename: %s\n", filename);
-
   if (esl_fileparser_Open(filename, &efp) != eslOK) esl_fatal("ERROR, failed to open template file %s in parse_template_file\n", filename);
   esl_fileparser_SetCommentChar(efp, '#');
 
@@ -1641,7 +1654,7 @@ parse_template_file(const ESL_GETOPTS *go, char *errbuf, int msa_clen, SSPostscr
   if(found_match == FALSE) { 
     esl_fileparser_Close(efp);
     if(esl_opt_IsDefault(go, "--tfile")) { 
-      esl_fatal("ERROR, did not find template structure to match alignment consensus length of %d in:\n%s\nWas the alignment created usign a default CM model of ssu-align?\n", msa_clen, filename);
+      esl_fatal("ERROR, did not find template structure to match alignment consensus length of %d in:\n%s\nWas the alignment created using a default CM model of ssu-align?\n", msa_clen, filename);
     }
     else { 
       esl_fatal("ERROR, did not find template structure to match alignment consensus length of %d in:\n%s\n", msa_clen, filename);
@@ -1653,6 +1666,7 @@ parse_template_file(const ESL_GETOPTS *go, char *errbuf, int msa_clen, SSPostscr
   /* validate the template we just read */
   if((status = validate_justread_sspostscript(ps, errbuf)) != eslOK) return status;
 
+  if(filename != NULL) free(filename);
   esl_fileparser_Close(efp);
   *ret_ps = ps;
 
@@ -1818,6 +1832,7 @@ parse_modelname_section(ESL_FILEPARSER *efp, char *errbuf, SSPostscript_t *ps)
   if((status = esl_fileparser_GetToken(efp, &tok, &toklen)) != eslOK) ESL_FAIL(status, errbuf, "Error, parsing modelname section, reading end line token 3 of 3"); 
   if (strcmp(tok, "modelname") != 0)  ESL_FAIL(eslEINVAL, errbuf, "Error, parsing modelname section, end line token 3 of 3 should be 'modelname' but it's %s", tok); 
 
+  if(curstr != NULL) free(curstr);
   return eslOK;
 
  ERROR: ESL_FAIL(status, errbuf, "Error, parsing modelname section, memory error?");
@@ -2371,6 +2386,8 @@ infocontent_sspostscript(const ESL_GETOPTS *go, char *errbuf, SSPostscript_t *ps
   for(cpos = 0; cpos < ps->clen; cpos++) free(obs[cpos]);
   free(obs);
   free(bg);
+  free(limits);
+
   return eslOK;
   
  ERROR: ESL_FAIL(status, errbuf, "infocontent_sspostscript(): memory allocation error.");
@@ -2523,6 +2540,7 @@ delete_sspostscript(const ESL_GETOPTS *go, char *errbuf, SSPostscript_t *ps, ESL
   free(dct_internal);
   free(fA);
   free(lA);
+  free(limits);
 
   return eslOK;
   
@@ -2689,6 +2707,7 @@ insert_sspostscript(const ESL_GETOPTS *go, char *errbuf, SSPostscript_t *ps, ESL
   free(total_ict);
   free(nseq_ict);
   free(med_ict);
+  free(limits);
 
   return eslOK;
   
@@ -3497,6 +3516,8 @@ structural_infocontent_sspostscript(const ESL_GETOPTS *go, char *errbuf, SSPosts
   free(c2a_map);
   free(a2c_map);
   free(ct);
+  free(limits);
+
   return eslOK;
   
  ERROR: ESL_FAIL(status, errbuf, "infocontent_sspostscript(): memory allocation error.");
@@ -3550,9 +3571,6 @@ PairCount(const ESL_ALPHABET *abc, double *counters, ESL_DSQ syml, ESL_DSQ symr,
  ERROR:
   esl_fatal("Memory error");
 }
-
-
-
 
 /* Function: get_command
  * Date:     EPN, Fri Jan 25 13:56:10 2008
@@ -3817,7 +3835,7 @@ draw_header_and_footer(FILE *fp, const ESL_GETOPTS *go, char *errbuf, SSPostscri
   float header_fontsize;
   int model_width, desc_width, desc_column_width;
   char *model_dashes, *desc_dashes, *desc2print;
-  char *desc_string;
+  char *desc_string = NULL;
   float xmodel;
   char *model2print = NULL;
 

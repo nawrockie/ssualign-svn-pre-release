@@ -4,8 +4,7 @@
 # Eric Nawrocki
 # EPN, Wed Oct 29 10:12:05 2008
 #
-# Usage: perl ssu-align
-#             <SSU rRNA CM file with >= 1 CMs>
+# Usage: perl ssu-align [options]
 #             <target database sequence file name>
 #             <output root for output files>
 #             
@@ -51,7 +50,7 @@ my $total_time = -1 * time();
 my $usage = "Usage: ssu-align [-options] <sequence file> <output root>\n";
 my $options_usage  = "where general options are:\n";
 $options_usage .= "  -h     : show brief help on version and usage\n";
-$options_usage .= "  -M <x> : use CM file <x> instead of the default CM file\n";
+$options_usage .= "  -M <f> : use CM file <f> instead of the default CM file\n";
 $options_usage .= "  -F     : allow file clobbering\n";
 $options_usage .= "  -b <x> : minimum cmsearch hit bit score to allow for a surviving subsequence (default: 100)\n";
 $options_usage .= "  -l <n> : minimum cmsearch hit length    to allow for a surviving subsequence (default: 1)\n";
@@ -159,8 +158,8 @@ process_cm_file($do_prep, $my_cm_file_copy, $out_root, \@indi_cm_name_A, \@indi_
 my $ncm = scalar(@indi_cm_file_name_A); 
 if((!$do_search) && ($ncm > 1)) { printf("ERROR, the -a option only works if the CM file contains exactly 1 CM, $cm_file has $ncm CMs in it.\n"); exit(1); }
 
-my $log_file       = $out_dir_root . ".log";
-my $log_file2print = $out_root . ".log";
+my $log_file       = $out_dir_root . ".ssu-align.log";
+my $log_file2print = $out_root . ".ssu-align.log";
 my ($tab_file, $max_file_name_width, $description_width, $search_time);
 my $abs_orig_cm_file = abs_path($cm_file);
 
@@ -296,10 +295,10 @@ sub validate_setup {
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, validate_setup() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my($target_file, $do_altcmfile, $opt_M, $ssualign_ref, $cmsearch_ref, $cmalign_ref, $esl_sfetch_ref, $esl_weight_ref, $cm_file_ref, $do_filteraln) = @_;
 
-    #Make sure the SADIR environmental variable is set.
-    my $sadir = $ENV{'SADIR'};
-    if(! exists($ENV{'SADIR'})) { 
-	printf STDERR ("ERROR, the environment variable SADIR is not set, please set it to the directory where you installed SSU-ALIGN.\n"); 
+    #Make sure the SSUALIGNDIR environmental variable is set.
+    my $ssualigndir = $ENV{'SSUALIGNDIR'};
+    if(! exists($ENV{'SSUALIGNDIR'})) { 
+	printf STDERR ("ERROR, the environment variable SSUALIGNDIR is not set, please set it to the directory where you installed SSU-ALIGN.\n"); 
 	exit(1); 
     }
 
@@ -310,26 +309,31 @@ sub validate_setup {
 	if(!(-e $cm_file))   { printf STDERR ("ERROR, CM file $cm_file, specified with -M does not exist.\n"); exit(1); }
     }
     else { 
-	$cm_file = $sadir . "seeds/ssu3-0p1.cm";
+	$cm_file = $ssualigndir . "/ssu-align-0p1.cm";
 	if(!(-e $cm_file))   { printf STDERR ("ERROR, the default CM file $cm_file does not exist.\n"); exit(1); }
     }
 
     #Make sure the target file exists
     if(!(-e $target_file))   { printf STDERR ("ERROR, target sequence file $target_file does not exist.\n"); exit(1); }
 
-    my $cmsearch   = $sadir . "infernal/src/cmsearch";
-    my $cmalign    = $sadir . "infernal/src/cmalign";
-    my $esl_sfetch = $sadir . "easel/miniapps/esl-sfetch";
-    my $esl_weight = $sadir . "easel/miniapps/esl-weight";
-    my $ssualign   = $sadir . "src/ssu-align";
+    my $cmsearch   = "ssu-cmsearch";
+    my $cmalign    = "ssu-cmalign";
+    my $esl_sfetch = "ssu-esl-sfetch";
+    my $esl_weight = "ssu-esl-weight";
+    my $ssualign   = "ssu-align";
 
-    # check that the programs exist
-    if(!(-e $cmsearch))       { printf STDERR ("ERROR, cmsearch executable $cmsearch does not exist.\n"); exit(1); }
-    if(!(-e $cmalign))        { printf STDERR ("ERROR, cmalign executable $cmsearch does not exist.\n"); exit(1); }
-    if(!(-e $esl_sfetch))     { printf STDERR ("ERROR, esl-sfetch executable $esl_sfetch does not exist.\n"); exit(1); }
+    # check that the programs are in the PATH
+    my $trash = `$cmsearch -h`;
+    if($? == -1) { printf STDERR ("\nERROR, the required executable $cmsearch is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
+    my $trash = `$cmalign -h`;
+    if($? == -1) { printf STDERR ("\nERROR, the required executable $cmalign is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
+    my $trash = `$esl_sfetch -h`;
+    if($? == -1) { printf STDERR ("\nERROR, the required executable $esl_sfetch is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
     if($do_filteraln) { 
-	if(!(-e $esl_weight)) { printf STDERR ("ERROR, esl-weight executable $esl_weight does not exist.\n"); exit(1); }
-    }    
+	my $trash = `$esl_weight -h`;
+	if($? == -1) { printf STDERR ("\nERROR, the required executable $esl_weight is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
+    }
+
     $$ssualign_ref = $ssualign;
     $$cmsearch_ref = $cmsearch;
     $$cmalign_ref  = $cmalign;
