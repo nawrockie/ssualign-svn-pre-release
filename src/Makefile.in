@@ -37,7 +37,7 @@ MYLIBS   = -leasel -linfernal
 MYLIBDIR = -L../easel -L../infernal/src/
 MYINCDIR = -I../easel -I../infernal/src/
 
-PROGS = ssu-draw ssu-mask
+#PROGS = ssu-draw ssu-mask
 
 #OBJS  = ssu-draw.o\
 

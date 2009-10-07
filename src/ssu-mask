@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# ssu-mask.pl
+# ssu-mask
 # Eric Nawrocki
 # EPN, Wed Sep 23 06:18:47 2009
 #
@@ -20,7 +20,7 @@ use strict;
 
 my $total_time = -1 * time();
 my $usage =  "Usage: ssu-mask [options] <directory created by ssu-align (includes >= 1 alignment file(s))>\n";
-$usage .= "Usage: ssu-mask [options] -a <Stockholm alignment file (must have .stk suffix)>\n";
+   $usage .= "Usage: ssu-mask [options] -a <Stockholm alignment file (must have .stk suffix)>\n";
 my $options_usage  = "where general options are:\n";
 #                           1         2         3         4         5         6         7         8
 #                  12345678901234567890123456789012345678901234567890123456789012345678901234567890
@@ -31,20 +31,21 @@ $options_usage .= "  --key-in <s>  : assume <s> is part of input file names, bef
 $options_usage .= "  --key-out <s> : add <s> to all output file names, before the suffix\n";
 #$options_usage .= "  -a            : the command-line argument is a stockholm alignment, not a directory\n";
 $options_usage .= "\n  Options related to masking alignments\n";
-$options_usage .= "  --pf <x>      : include columns w/<x> fraction of seqs w/prob >= --pt <y> [df: 0.95]\n";
-$options_usage .= "  --pt <y>      : set probability threshold for --pf as <x> [default=0.95]\n";
-$options_usage .= "  --no-prob     : exclude insert columns only, do not mask based on probabilities\n";
-$options_usage .= "  -g <x>        : only consider columns with <= <x> fraction gaps\n";
-$options_usage .= "  --filter <x>  : filter aln(s) based on seq identity, allow no 2 seqs > <x> identical\n";
-$options_usage .= "  --in-mask <f> : mask alignment given 1/0s in 1-line mask file <f>, requires -a\n";
-$options_usage .= "  --keep        : keep all intermediate files which are normally removed\n";
-$options_usage .= "  --ps2pdf      : convert mask postscript drawings to pdfs using ps2pdf\n";
-$options_usage .= "  --ps-keep     : with --ps2pdf, keep both postcript files and pdf files\n";
+$options_usage .= "  --pf <x>        : include columns w/<x> fraction of seqs w/prob >= --pt <y> [df: 0.95]\n";
+$options_usage .= "  --pt <y>        : set probability threshold for --pf as <x> [default=0.95]\n";
+$options_usage .= "  --no-prob       : exclude insert columns only, do not mask based on probabilities\n";
+$options_usage .= "  --gapthresh <x> : only consider columns with <= <x> fraction gaps\n";
+$options_usage .= "  --in-mask <f>   : mask alignment given 1/0s in 1-line mask file <f>, requires -a\n";
+$options_usage .= "  --keep          : keep all intermediate files which are normally removed\n";
+$options_usage .= "  --ps2pdf        : convert mask postscript drawings to pdfs using ps2pdf\n";
+$options_usage .= "  --ps-keep       : with --ps2pdf, keep both postcript files and pdf files\n";
+$options_usage .= "\n  Option for filtering alignments based on sequence identity (no masking)\n";
+$options_usage .= "  --filter <x> : remove seqs such that no 2 seqs > <x> identical (1st seq is always kept)\n";
 $options_usage .= "\n  Option for listing sequences in alignment(s) (no masking)\n";
-$options_usage .= "  --list        : output list of sequence names in alignment(s)\n";    
+$options_usage .= "  --list : output list of sequence names in alignment(s)\n";    
 $options_usage .= "\n  Options for only removing sequences from an alignment, require -a (no masking):\n";
-$options_usage .= "  --seq-r <f>   : with -a, remove sequences with names listed in file <f>\n"; 
-$options_usage .= "  --seq-k <f>   : with -a, remove all sequences *except* those listed in file <f>\n"; 
+$options_usage .= "  --seq-r <f> : with -a, remove sequences with names listed in file <f>\n"; 
+$options_usage .= "  --seq-k <f> : with -a, remove all sequences *except* those listed in file <f>\n"; 
 
 ###################
 # Process options #
@@ -79,13 +80,13 @@ my $opt_return = GetOptions
      '1' => \$do_1,
      'key-in=s' => \$key_in,
      'key-out=s' => \$key_out,
-     'g=f' => \$gapthresh,
-     'filter=f' => \$fthresh,
+     'gapthresh=f' => \$gapthresh,
      'pf=f' => \$pfract,
      'pt=f' => \$pthresh,
      'no-prob' => \$do_no_prob,
      'in-mask=s' => \$inmaskfile,
      'keep' => \$do_keep,
+     'filter=f' => \$fthresh,
      'list' => \$do_list,
      'ps2pdf' => \$do_ps2pdf,
      'ps-keep' => \$do_pskeep,
@@ -102,11 +103,12 @@ if ($do_help) { print $usage . "\n"; print $options_usage; exit(1); }
 ###############################
 # Determine the "mode" to run #
 ###############################
-# There are 3 possible modes, each is exclusive.
+# There are 4 possible modes, each is exclusive.
 
 my $enabled_options = "";
 my $do_mask_mode        = 0; # default mode, mask the alignment
-my $do_remove_seqs_mode = 0; # remove some sequences from the alignment, no masking
+my $do_remove_seqs_mode = 0; # remove some sequences from the alignment given a list file, no masking
+my $do_filter_mode      = 0; # filter alignment(s), no masking
 my $do_list_mode        = 0; # list sequences in the alignment, no masking
 
 # Mask mode options.
@@ -122,14 +124,13 @@ if($do_no_prob)
     if($do_mask_mode) { printf STDERR ("\nERROR, --no-prob is incompatible with --pfract and --pthresh.\n"); exit(1); }
     $do_mask_mode = 1; 
 }
-if($gapthresh ne '')     { $enabled_options .= " -g $gapthresh";     $do_mask_mode = 1; }
+if($gapthresh ne '')     { $enabled_options .= " --gapthresh $gapthresh";     $do_mask_mode = 1; }
 if($inmaskfile ne '') { 
     $enabled_options .= " --in-mask $inmaskfile"; 
     if(!($do_dir_is_aln)) { printf STDERR ("\nERROR, --in-mask requires the -a option.\n"); exit(1); }
-    if($do_mask_mode) { printf STDERR ("\nERROR, --in-mask is incompatible with --pfract, --pthresh, --no-prob, and -g.\n"); exit(1); }
+    if($do_mask_mode) { printf STDERR ("\nERROR, --in-mask is incompatible with --pfract, --pthresh, --no-prob, and --gapthresh.\n"); exit(1); }
     $do_mask_mode = 1; 
 }
-if($fthresh ne '')       { $enabled_options .= " --filter $fthresh"; $do_mask_mode = 1; }
 
 # Remove sequences options.
 if($seqrfile ne '')      { $enabled_options .= " --seq-r $seqrfile"; $do_remove_seqs_mode = 1; }
@@ -141,25 +142,37 @@ if($seqkfile ne '')      {
     $do_remove_seqs_mode = 1;
 }
 if($do_remove_seqs_mode && $do_mask_mode) { 
-    printf STDERR ("\nERROR, --pfract, --pthresh, -g, --filter, --no-prob and --in-mask are incompatible with --seq-k and --seq-r.\n"); exit(1); 
+    printf STDERR ("\nERROR, --pfract, --pthresh, --gapthresh, --filter, --no-prob and --in-mask are incompatible with --seq-k and --seq-r.\n"); exit(1); 
 }
 if($do_remove_seqs_mode && (! $do_dir_is_aln)) { 
     printf STDERR ("\nERROR,--seq-k and --seq-r require -a. They can only be used on a single alignment.\n"); exit(1); 
 }
 
+# Filter options.
+if($fthresh ne '') { $enabled_options .= " --filter $fthresh"; $do_filter_mode = 1; }
+if($do_filter_mode && $do_mask_mode) { 
+    printf STDERR ("\nERROR, --pfract, --pthresh, --gapthresh, --filter, --no-prob and --in-mask are incompatible with --filter.\nFilter first, then mask filtered alignments with a subsequent ssu-mask call\n"); exit(1); 
+}
+if($do_filter_mode && $do_remove_seqs_mode) { 
+    printf STDERR ("\nERROR, --seq-k and --seq-r are incompatible with --filter.\n"); exit(1); 
+}
+
 # List sequences options.
 if($do_list)      { $enabled_options .= " --list"; $do_list_mode = 1;}
 if($do_list_mode && $do_mask_mode) { 
-    printf STDERR ("\nERROR, --pfract, --pthresh, -g, --filter, --no-prob and --in-mask are incompatible with --list.\n"); exit(1); 
+    printf STDERR ("\nERROR, --pfract, --pthresh, --gapthresh, --filter, --no-prob and --in-mask are incompatible with --list.\n"); exit(1); 
 }
 if($do_list_mode && $do_remove_seqs_mode) { 
     printf STDERR ("\nERROR, --seq-k and --seq-r are incompatible with --list.\n"); exit(1); 
 }
+if($do_list_mode && $do_filter_mode) { 
+    printf STDERR ("\nERROR, --list is incompatible with --filter.\n"); exit(1); 
+}
 
-if(($do_remove_seqs_mode + $do_list_mode) == 0) { $do_mask_mode = 1; }
+if(($do_remove_seqs_mode + $do_list_mode + $do_filter_mode) == 0) { $do_mask_mode = 1; }
 
-if($do_ps2pdf && (! $do_mask_mode)) { printf STDERR ("\nERROR, --ps2pdf is incompatible with --list, --seq-r and --seq-k\n"); exit(1); }
-if($do_keep   && (! $do_mask_mode)) { printf STDERR ("\nERROR, --keep is incompatible with --list, --seq-r and --seq-k\n"); exit(1); }
+if($do_ps2pdf && (! $do_mask_mode)) { printf STDERR ("\nERROR, --ps2pdf is incompatible with --filter, --list, --seq-r and --seq-k\n"); exit(1); }
+if($do_keep   && (! $do_mask_mode)) { printf STDERR ("\nERROR, --keep is incompatible with --filter, --list, --seq-r and --seq-k\n"); exit(1); }
 
 ################
 # Print banner #
@@ -188,27 +201,10 @@ my $alimanip_options = "";
 # Handle Mask mode #
 ####################
 my $max_width;
-my ($i, $tmp, $command, $aln_root, $aln_root2print, $final_key, $nec_width, $dashes);
+my ($i, $tmp, $command, $aln_root, $aln_root2print, $final_key, $nec_width, $dashes, $print_input_aln);
 
 if($do_mask_mode) 
 { 
-    # If --filter <f> enabled, filter all alignments first. Then mask them all
-    if($fthresh ne '') { 
-	for($i = 0; $i < $naln; $i++) { 
-	    $aln_file         = $stk_list_A[$i];
-	    ($aln_root)       = ($aln_file =~ /(.+)\.stk/);
-	    if($do_dir_is_aln) { #print directory as well as aln name
-		($aln_root2print) = ($aln_file =~ /(.+)\.stk/);
-	    }
-	    else {
-		($aln_root2print) = ($aln_file =~ /.+\/(.+)\.stk/);
-	    }
-	    # make $fil_aln_aln, 'f.' before '.stk', then modify $stk_list_A[i]
-	    filter_alignment($weight, $do_1, $ssdraw, $aln_root, $aln_root2print, $mask_root, $aln_file, $do_keep, $do_ps2pdf, $do_pskeep, $keep_mask, $print_input_aln, 
-			   "-k --num-rf", "", "", $do_draw, $max_width, $its_okay_to_fail, \$cn0, \$cn1, \$cmasked_aln_file, \$cmask_file, \@log2printA);
-	}
-    }
-
     my ($do_pmask, $do_gmask, $extra_chars);
     if($do_no_prob)      { $do_pmask = 0; }
     else                 { $do_pmask = 1; }
@@ -259,7 +255,7 @@ if($do_mask_mode)
 	}
 	
 	if($inmaskfile ne '') { # mask the alignment using the --in-mask mask 
-	    my ($mask_worked, $n0, $n1, $inmask_masked_aln_file, $mask_file, $keep_mask, $print_input_aln, $do_draw, $its_okay_to_fail);
+	    my ($mask_worked, $n0, $n1, $inmask_masked_aln_file, $mask_file, $keep_mask, $do_draw, $its_okay_to_fail);
 
 	    # first try --mask-rf (to see if the mask is non-gap RF length (instead of full alignment length))
 	    if($naln != 1) { 
@@ -402,6 +398,56 @@ if($do_mask_mode)
     }
 }    
 
+######################
+# Handle filter mode #
+######################
+my $filtered_aln_file;
+if($do_filter_mode) { 
+    my $max_width_fil = length("file name");
+    my ($filter_root);
+    $filter_root = "fil";
+    for($i = 0; $i < $naln; $i++) { 
+	$aln_file         = $stk_list_A[$i];
+	($aln_root)       = ($aln_file =~ /.+\/(.+)\.stk/);
+	$nec_width = length($aln_root) + length($key_out) + length(".") + length($filter_root) + length(".stk");
+	if($max_width_fil < $nec_width) { $max_width_fil = $nec_width; }
+    }
+    my $dashes_fil = ""; for($i = 0; $i < $max_width_fil; $i++) { $dashes_fil .= "-"; }
+    my $wide_dashes_fil = $dashes_fil . "----------";
+    my $max_width_in = $max_width_fil - length($key_out) - 4; #max_width_in is max length of a filtered file, minus 4 for diff between .fil.stk and .stk
+    if($max_width_in < length("file name")) { $max_width_in = length("file name"); }
+    my $dashes_in = ""; for($i = 0; $i < $max_width_in; $i++) { $dashes_in .= "-"; }
+    my $wide_dashes_in = $dashes_in . "----------";
+
+    push(@log2printA, sprintf("#\n# Filtering alignments so that no 2 seqs are more than $fthresh identical.\n"));
+    printf($log2printA[(scalar(@log2printA)-1)]);
+    push(@log2printA, sprintf("#\n"));
+    printf($log2printA[(scalar(@log2printA)-1)]);
+    push(@log2printA, sprintf("# %-*s  %-*s\n", $max_width_in+10, "input alignment", $max_width_fil+10, "filtered alignment"));
+    printf($log2printA[(scalar(@log2printA)-1)]);
+    push(@log2printA, sprintf("# %-*s  %-*s\n", $max_width_in+10, $wide_dashes_in, $max_width_fil+10, $wide_dashes_fil));
+    printf($log2printA[(scalar(@log2printA)-1)]);
+    push(@log2printA, sprintf("# %-*s  %8s  %-*s  %8s\n", $max_width_in, "file name", "num seqs", $max_width_fil, "file name", "num seqs"));
+    printf($log2printA[(scalar(@log2printA)-1)]);
+    push(@log2printA, sprintf("# %-*s  %8s  %-*s  %8s\n", $max_width_in, $dashes_in, "--------", $max_width_fil, $dashes_fil, "--------"));
+    printf($log2printA[(scalar(@log2printA)-1)]);
+
+    for($i = 0; $i < $naln; $i++) { 
+	$filter_root = "fil";
+	$aln_file         = $stk_list_A[$i];
+	($aln_root)       = ($aln_file =~ /(.+)\.stk/);
+	if($do_dir_is_aln) { #print directory as well as aln name
+	    ($aln_root2print) = ($aln_file =~ /(.+)\.stk/);
+	}
+	else {
+	    ($aln_root2print) = ($aln_file =~ /.+\/(.+)\.stk/);
+	}
+	filter_alignment($weight, $seqstat, $aln_root, $aln_root2print, $filter_root, $aln_file, $aln_root2print . ".stk",
+			 $fthresh, $max_width_in, $max_width_fil, \$filtered_aln_file, \@log2printA);
+    }
+}    
+
+
 ####################
 # Handle list mode #
 ####################
@@ -423,7 +469,8 @@ if($do_list_mode)
 	if($max_width_list < $nec_width) { $max_width_list = $nec_width; }
     }					     
     my $dashes_list = ""; for($i = 0; $i < $max_width_list; $i++) { $dashes_list.= "-"; }
-    my $max_width_aln = $max_width_list - length($key_out) - 1; #max_width2 is max length of a list file, minus 1 for diff between .list and .stk
+    my $max_width_aln = $max_width_list - length($key_out) - 1; #max_width_aln is max length of a list file, minus 1 for diff between .list and .stk
+    if($max_width_aln < length("aln file name")) { $max_width_aln = length("aln file name"); } 
     my $dashes_aln = ""; for($i = 0; $i < $max_width_aln; $i++) { $dashes_aln .= "-"; }
 
     push(@log2printA, sprintf("#\n# Listing sequences in alignments.\n"));
@@ -555,8 +602,21 @@ if(!($do_dir_is_aln)) {
     printf($log2printA[(scalar(@log2printA)-1)]);
     push(@log2printA, sprintf("# \n"));
     printf($log2printA[(scalar(@log2printA)-1)]);
+    if($do_filter_mode) {
+	my $fil_key2print = $key_out . "." . "fil";
+	$fil_key2print =~ s/\.//;
+	push(@log2printA, sprintf("# To mask these alignments run ssu-mask with the option \"--key-in $fil_key2print\"\n"));
+	printf($log2printA[(scalar(@log2printA)-1)]);
+    }
+    # add output regarding how to mask alignments in list mode, seq removal mode (?)
 }
-
+else { 
+    if($do_filter_mode) {
+	my $fil_key2print = "fil." . $key_out;
+	push(@log2printA, sprintf("# To mask this alignment with another ssu-mask run, use the options\n\t\"-a $filtered_aln_file\"\n"));
+	printf($log2printA[(scalar(@log2printA)-1)]);
+    }
+}
 print_log($log_file, \@log2printA);
 
 exit(0);
@@ -598,9 +658,9 @@ exit(0);
 #
 ####################################################################
 sub validate_setup { 
-    my $narg_expected = 12;
+    my $narg_expected = 13;
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, validate_setup() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($dir, $do_dir_is_aln, $do_mask_mode, $do_ps2pdf, $alt_cm_file, $key_in, $fthresh, $cm_file_ref, $alimanip_ref, $ssdraw_ref, $weight_ref, $stk_list_arr_ref) = @_;
+    my($dir, $do_dir_is_aln, $do_mask_mode, $do_ps2pdf, $alt_cm_file, $key_in, $fthresh, $cm_file_ref, $alimanip_ref, $ssdraw_ref, $weight_ref, $seqstat_ref, $stk_list_arr_ref) = @_;
 
     #Validate that we can read the CM file
     my $ssualigndir;
@@ -1060,94 +1120,90 @@ sub mask_alignment {
 #             a call to the esl-weight program.
 #
 # Arguments:  
-#   $weight:              path and name of esl-weight/ssu-esl-weight executable
-#   $seqstat:             path and name of esl-weight/ssu-esl-seqstat executable
-#   $aln_root:            root with dir for alignment and output file names, this is normally 
-#                         the <output root> supplied with original ssu-align call
-#   $aln_root2print:      $aln_root without preceding dir/path
-#   $filter_root:         name for mask-related files, usually 'f'
-#   $aln_file2filter:     name of alignment file to filter, with path
-#   $do_keep:             '1' to keep filter alignment (usually 1)
-#   $print_input_aln:     '1' to print info on input alignment to the screen
-#   $fthresh              seq id threshold to filter with (<x> from --filter <x>)
-#   $max_width:           width of output string for printing output file names
-#   $filtered_aln_file_R: RETURN; name of masked alignment file just created
-#   $log2printAR:         reference to log2print array with log file text
+#   $weight:                path and name of esl-weight/ssu-esl-weight executable
+#   $seqstat:               path and name of esl-weight/ssu-esl-seqstat executable
+#   $aln_root:              root with dir for alignment and output file names, this is normally 
+#                           the <output root> supplied with original ssu-align call
+#   $aln_root2print:        $aln_root without preceding dir/path
+#   $filter_root:           name for mask-related files, usually 'f'
+#   $aln_file2filter:       name of alignment file to filter, with path
+#   $aln_file2filter2print: $aln_file2filter with no preceding path
+#   $fthresh                seq id threshold to filter with (<x> from --filter <x>)
+#   $max_width_in:          width of output string for input alignment file names
+#   $max_width_fil:         width of output string for filtered alignment file names
+#   $filtered_aln_file_R:   RETURN; name of masked alignment file just created
+#   $log2printAR:           reference to log2print array with log file text
 # 
 # Returns:  Nothing, if it returns, everything is valid.
 #
 ####################################################################
 sub filter_alignment { 
-    my $narg_expected = 11;
+    my $narg_expected = 12;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, filter_alignment() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($weight, $seqstat, $aln_root, $aln_root2print, $filter_root, $aln_file2filter, $do_keep, $print_input_aln, 
-	$fthresh, $max_width, $filtered_aln_file_R, $log2printAR) = @_;
+    my ($weight, $seqstat, $aln_root, $aln_root2print, $filter_root, $aln_file2filter, $aln_file2filter2print,
+	$fthresh, $max_width_in, $max_width_fil, $filtered_aln_file_R, $log2printAR) = @_;
 
-    my($filtered_aln_file, $nseq_in, $nseq_filtered); 
+    my($filtered_aln_file, $nseq_input, $nseq_filtered, $filtered_aln_file2print); 
 
-    $filtered_aln_file = $aln_root . $filter_root . $key_out . "." . $filter_root . ".stk";
+    $filtered_aln_file       = $aln_root . $key_out . "." . $filter_root . ".stk";
+    $filtered_aln_file2print = $aln_root2print . $key_out . "." . $filter_root . ".stk";
+    
+    seqstat_seqfile($seqstat, $aln_file2filter, \$nseq_input);
 
     # esl-weight -f --idf 0.75 10.stk
     if($fthresh < 0.) { printf STDERR ("\nERROR, with --filter <f>, <f> must be between 0.0 and 1.0, you entered %.4f.\n", $fthresh); exit(1); }
     if($fthresh > 1.) { printf STDERR ("\nERROR, with --filter <f>, <f> must be between 0.0 and 1.0, you entered %.4f.\n", $fthresh); exit(1); }
-    $command = "$esl-weight -f --idf $fthresh $aln_file2filter > filtered_aln_file 2mask 2>&1";
+    $command = "$weight -o $filtered_aln_file -f --idf $fthresh $aln_file2filter 2>&1";
     $tmp = `$command`;
     if(($? >> 8) != 0) { 
-	if($its_okay_to_fail) { return 0; }
-	else { 
-	    printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); 
-	} 
+	printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); 
     }
 
-    summarize_mask($mask_file, \$n0, \$n1); 
+    seqstat_seqfile($seqstat, $filtered_aln_file, \$nseq_filtered);
+    push(@{$log2printAR}, sprintf("  %-*s  %8d  %-*s  %8d\n", $max_width_in, $aln_file2filter2print, $nseq_input, $max_width_fil, $filtered_aln_file2print, $nseq_filtered));
+    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
 
-    if($print_input_aln) { 
-	push(@{$log2printAR}, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $aln_root2print . ".stk", "input", "aln", ($n0+$n1), "-", "-"));
-	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
-    }
-    if((($rfmask_file2use ne "") || ($allmask_file2use ne "")) 
-       && ($do_keep || $keep_mask || $is_final)) { 
-	push(@{$log2printAR}, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $mask_file2print, "output", "mask", ($n0+$n1), $n1, $n0));
-	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
-    }
-
-    if($do_draw) { 
-	# Draw the mask, if we can. 
-	# (if the default template structure file recognizes the CM that built the alignment,
-	#  this is done in a very fragile manner, by checking that the name of the alignment 
-	#  is what we'd expect if ssu-align was used with a default CM).
-	$command = "$ssdraw --mask-col --mask $mask_file $aln_file2mask $mask_ps 2>&1";
-	$tmp = `$command`;
-	if($tmp =~ m/ERROR/) { $ssdraw_worked = 0; }
-	else                 { $ssdraw_worked = 1; }
-	if($ssdraw_worked) { 
-	    if($do_ps2pdf) { 
-		$command = "ps2pdf $mask_ps $mask_pdf";
-		$tmp = `$command`;
-		if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
-		push(@{$log2printAR}, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $mask_pdf2print, "output", "pdf", ($n0+$n1), $n1, $n0));
-		printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
-		if((! $do_keep) && (! $do_pskeep)) { 
-		    $command = "rm $mask_ps";
-		    $tmp = `$command`;
-		    if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
-		}
-	    }
-	    if((!($do_ps2pdf)) || ($do_keep || $do_pskeep)) { 
-		push(@{$log2printAR}, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $mask_ps2print, "output", "ps", ($n0+$n1), $n1, $n0));
-		printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
-	    }
-	}
-    }
-    if($do_keep || $is_final) { 
-	push(@{$log2printAR}, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $masked_aln_file2print, "output", "aln", $n1, "-", "-"));
-	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
-    }
-
-    $$n0_R = $n0;
-    $$n1_R = $n1;
-    $$masked_aln_file_R = $masked_aln_file;
-    $$mask_file_R = $mask_file;
+    $$filtered_aln_file_R = $filtered_aln_file;
     return 1;
 }    
 
+
+#####################################################################
+# Subroutine: seqstat_seqfile()
+# Incept:     EPN, Tue Oct  6 18:06:22 2009
+# 
+# Purpose:    Call esl-seqstat on a sequence file to get the number
+#             of sequences in the file.
+#
+# Arguments: 
+#   $seqstat:   path and name of esl-weight/ssu-esl-seqstat executable
+#   $seqfile:   sequence file
+#   $nseq_ref:  RETURN: number of sequences in the file
+# 
+# Returns:    Nothing, if it returns, everything is valid.
+# 
+# Exits:      If anything unexpected occurs, print a message to 
+#             STDERR explaining why we're exiting early and then 
+#             exit with non-zero status.
+#
+####################################################################
+sub seqstat_seqfile {
+    my $narg_expected = 3;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, seqstat_seqfile() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my($seqstat, $seqfile, $nseq_ref) = @_;
+
+    my ($nseq, $tmp, $command, $line);
+    $command = "$seqstat $seqfile 2>&1";
+    $tmp = `$command`;
+    if(($? >> 8) != 0) { 
+	printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); 
+    }
+    my @tmpA = split("\n", $tmp);
+    foreach $line (@tmpA) { 
+	if($line =~ /Number of sequences\:\s+(\d+)/) { 
+	    $nseq = $1;
+	}
+    }
+    $$nseq_ref = $nseq;
+    return;
+}
