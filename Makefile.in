@@ -59,27 +59,28 @@ REPOSITORY  = https://svn.janelia.org/eddylab/eddys/src/
 
 
 PROGS = ssu-align\
-#	ssu-draw\
-	ssu-mask\
+	ssu-draw\
+	ssu-mask
 
 INFPROGS = ssu-cmalign\
 	   ssu-cmbuild\
-           ssu-cmsearch\
+           ssu-cmsearch
 
 ESLPROGS = ssu-esl-alimanip\
 	   ssu-esl-seqstat\
 	   ssu-esl-sfetch\
 	   ssu-esl-ssdraw\
-	   ssu-esl-weight\
+	   ssu-esl-weight
 
 # List of the files to be copied to the lib/ directory.
 #
-SEEDLIBFILES = ssu3-0p1.cm\
+SEEDLIBFILES = ssu-align-0p1.cm\
 	       archaea-0p1.cm\
 	       bacteria-0p1.cm\
 	       eukarya-0p1.cm
 
-PSLIBFILES = archaea-0p1.ps\
+PSLIBFILES = ssu-align-0p1.ps\
+             archaea-0p1.ps\
 	     bacteria-0p1.ps\
 	     eukarya-0p1.ps
 
