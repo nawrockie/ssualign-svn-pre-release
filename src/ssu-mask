@@ -95,9 +95,6 @@ my $opt_return = GetOptions
 
 if($opt_return != 1) { exit(1); }
 
-if($key_out ne '') { $key_out = "." . $key_out; }
-if($key_in  ne '') { $key_in  = "." . $key_in; }
-
 if ($do_help) { print $usage . "\n"; print $options_usage; exit(1); } 
 
 ###############################
@@ -117,6 +114,11 @@ if($do_dir_is_aln)       { $enabled_options .= " -a"; }
 if($do_1)                { $enabled_options .= " -1"; }
 if($pfract ne '')        { $enabled_options .= " --pfract $pfract";          $do_mask_mode = 1; }
 if($pthresh ne '')       { $enabled_options .= " --pthresh $pthresh";        $do_mask_mode = 1; }
+if($key_in ne '')        { $enabled_options .= " --key-in $key_in"; }
+if($key_out ne '')       { $enabled_options .= " --key-out $key_out"; }
+
+if($key_out ne '') { $key_out = "." . $key_out; }
+if($key_in  ne '') { $key_in  = "." . $key_in; }
 
 if($do_no_prob) 
 { 
@@ -679,12 +681,12 @@ sub validate_setup {
 	if(!(-e $cm_file)) { printf STDERR ("\nERROR, the default CM file $cm_file does not exist.\nIf you used a different CM file to create the alignments in $dir, use the -m option.\n"); exit(1); }
     }
 
-    #Validate that esl-alimanip and ssu-draw exist
+    #Validate that esl-alimanip and esl-ssdraw exist
     my $alimanip = "ssu-esl-alimanip";
     my $trash = `$alimanip -h`;
     if($? == -1) { printf STDERR ("\nERROR, the required executable $alimanip is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
 
-    my $ssdraw = "ssu-draw";
+    my $ssdraw = "ssu-esl-ssdraw";
     $trash = `$ssdraw -h`;
     if($? == -1) { printf STDERR ("\nERROR, the required executable $ssdraw is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
 
@@ -1066,7 +1068,7 @@ sub mask_alignment {
 	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
     }
     if((($rfmask_file2use ne "") || ($allmask_file2use ne "")) 
-       && ($do_keep || $keep_mask || $is_final)) { 
+       || ($do_keep || $keep_mask || $is_final)) { 
 	push(@{$log2printAR}, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $mask_file2print, "output", "mask", ($n0+$n1), $n1, $n0));
 	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
     }

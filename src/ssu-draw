@@ -1,0 +1,697 @@
+#!/usr/bin/perl
+#
+# ssu-draw
+# Eric Nawrocki
+# EPN, Wed Oct  7 11:47:02 2009
+#
+# Usage: ssu-draw [options] <directory created by ssu-align (includes alignment file(s))>
+# Usage: ssu-draw [options] -a <Stockholm alignment file (must have .stk suffix)>
+#             
+# Synopsis:
+# Draws secondary structure diagrams of alignment files created by ssu-align.
+#
+# See definition of $options_usage for options, below.
+#
+use Getopt::Long;
+use Cwd 'abs_path';
+use strict;
+
+my $total_time = -1 * time();
+my $usage =  "Usage: ssu-draw [options] <directory created by ssu-align (includes >= 1 alignment file(s))>\n";
+   $usage .= "Usage: ssu-draw [options] -a <Stockholm alignment file (must have .stk suffix)>\n";
+my $options_usage  = "where general options are:\n";
+#                           1         2         3         4         5         6         7         8
+#                  12345678901234567890123456789012345678901234567890123456789012345678901234567890
+$options_usage .= "  -h            : show brief help on version and usage\n";
+$options_usage .= "  -m <f>        : CM file <f> created the alignment(s) (with ssu-align -m <f>)\n";
+$options_usage .= "  -t <f>        : use template file <f>, not the default template file\n";
+$options_usage .= "  --key-in <s>  : assume <s> is part of input file names, before the suffix\n";
+$options_usage .= "  --key-out <s> : add <s> to all output file names, before the suffix\n";
+$options_usage .= "  --use-masks   : draw masks from ssu-mask created '.mask' files in the aln dir\n";
+$options_usage .= "  --in-mask <f> : mask alignment given 1/0s in 1-line mask file <f>, requires -a\n";
+$options_usage .= "  --ps2pdf      : convert postscript drawings to pdfs using ps2pdf\n";
+$options_usage .= "  --ps-keep     : with --ps2pdf, keep both postcript files and pdf files\n";
+$options_usage .= "\noptions for 1-page alignment summary diagrams (by default, all are drawn):\n";
+$options_usage .= "  --no-aln : do not create multi-page pdf with all alignment stats\n";
+$options_usage .= "  --prob   : draw average posterior probability per column (save as *.prob.pdf)\n";
+$options_usage .= "  --ins    : draw frequency of insertions per column (save as *.ins.pdf)\n";
+$options_usage .= "  --dall   : draw frequency of deletions per column (save as *.dall.pdf)\n";
+$options_usage .= "  --dint   : draw frequency of internal deletions per column (save as *.dint.pdf)\n";
+$options_usage .= "  --info   : draw sequence information content per position (save as *.info.pdf)\n";
+$options_usage .= "  --struct : draw structural information content per position (save as *.struct.pdf)\n";
+$options_usage .= "\noptions for structure diagrams for individual sequences:\n";
+$options_usage .= "  --indi    : draw sequence and probability diagrams for all aligned sequences\n";
+$options_usage .= "  --no-prob : with --indi, omit probability diagrams\n";
+$options_usage .= "  --cons    : draw consensus sequence/structure only (save as *.cons.pdf)\n";
+$options_usage .= "\noptions for omitting parts of the diagrams:\n";
+$options_usage .= "  --no-leg  : do not draw legends\n";
+$options_usage .= "  --no-head : do not draw headers\n";
+$options_usage .= "  --no-foot : do not draw footers\n";
+
+
+###################
+# Process options #
+###################
+my %opt_H = ();
+$opt_H{"-h"}          = 0;
+$opt_H{"-m"}          = '';
+$opt_H{"-t"}          = '';
+$opt_H{"-a"}          = 0;
+$opt_H{"--use-masks"} = 0;
+$opt_H{"--in-mask"}   = '';
+$opt_H{"--ps2pdf"}    = 0;
+$opt_H{"--ps-keep"}   = 0;
+$opt_H{"--key-in"}    = '';
+$opt_H{"--key-out"}   = '';
+
+$opt_H{"--no-aln"}    = 0;
+$opt_H{"--prob"}      = 0;
+$opt_H{"--ins"}       = 0;
+$opt_H{"--dall"}      = 0;
+$opt_H{"--dint"}      = 0;
+$opt_H{"--info"}      = 0;
+$opt_H{"--struct"}    = 0;
+
+$opt_H{"--indi"}      = 0;
+$opt_H{"--no-prob"}   = 0;
+$opt_H{"--cons"}      = 0;
+
+$opt_H{"--no-leg"}    = 0;
+$opt_H{"--no-head"}   = 0;
+$opt_H{"--no-foot"}   = 0;
+
+Getopt::Long::Configure ("bundling");
+my $opt_return = GetOptions
+    ('h'         => \$opt_H{"-h"}, 
+     'm=s'       => \$opt_H{"-m"},
+     't=s'       => \$opt_H{"-t"},
+     'a'         => \$opt_H{"-a"},
+     'key-in=s'  => \$opt_H{"key-in"},
+     'key-out=s' => \$opt_H{"key-out"},
+     'use-masks' => \$opt_H{"--use-masks"},
+     'in-mask=s' => \$opt_H{"in-mask"},
+     'ps2pdf'    => \$opt_H{"--ps2pdf"},
+     'ps-keep'   => \$opt_H{"--ps-keep"},
+     'no-aln'    => \$opt_H{"--no-aln"},
+     'prob'      => \$opt_H{"--prob"},
+     'ins'       => \$opt_H{"--ins"},
+     'dall'      => \$opt_H{"--dall"},
+     'dint'      => \$opt_H{"--dint"},
+     'info'      => \$opt_H{"--info"},
+     'struct'    => \$opt_H{"--struct"},
+     'indi'      => \$opt_H{"--indi"},
+     '--no-prob' => \$opt_H{"--no-prob"},
+     '--cons'    => \$opt_H{"--cons"},
+     '--no-leg'  => \$opt_H{"--no-leg"},
+     '--no-head' => \$opt_H{"--no-head"},
+     '--no-foot' => \$opt_H{"--no-foot"});
+
+if($opt_return != 1) { exit(1); }
+
+if ($opt_H{"-h"}) { print $usage . "\n"; print $options_usage; exit(1); } 
+
+
+my $key_in;
+if($opt_H{"--key-in"}  ne '') { $key_in   = "." . opt_H{"--key-in"};  }
+my $key_out;
+if($opt_H{"--key-out"}  ne '') { $key_out   = "." . opt_H{"--key-out"};  }
+
+# Check for incompatible options combinations.
+if($opt_H{"--use-masks"} && ($opt_H{"--in-mask"} ne '')) { 
+    printf STDERR ("\nERROR, --in-mask is incompatible with --use-masks.\n"); exit(1); 
+}
+if(($opt_H{"--in-mask"} ne '') && ($opt_H{"-a"} == 0)) { 
+    printf STDERR ("\nERROR, --in-mask requires the -a option.\n"); exit(1);
+}    
+if(($opt_H{"--no-prob"}) && (!($opt_H{"--indi"}))) {
+    printf STDERR ("\nERROR, --no-prob only makes sense in combination with --indi.\n"); exit(1);
+}    
+
+
+################
+# Print banner #
+################
+my @log2printA = ();
+print_banner($0, \%opt_H, \@ARGV, \@log2printA);
+
+if(scalar(@ARGV) != 1) {   
+    print "Incorrect number of command line arguments.\n";
+    print $usage;
+    print "\nTo see more help on available options, do ssu-draw -h\n\n";
+    exit(1);
+}
+my ($dir) = $ARGV[0];
+$dir =~ s/\/$//;
+
+my @stk_list_A = ();
+my @mask_list_A = ();
+my @log2printA = ();
+my ($cm_file, $template_file, $ssdraw);
+validate_setup($dir, $key_in, \%opt_H, \$cm_file, \$template_file, \$ssdraw, \@stk_list_A, \@mask_list_A);
+my $naln = scalar(@stk_list_A);
+my $aln_file;
+
+
+# determine max file name width
+my $max_width_aln = length("alignment file name");
+my ($nec_width, $i, $max_width_draw, $aln_root, $aln_root2print);
+my $extra_draw_chars = 0;
+if($opt_H{"--ins"}) { $extra_draw_chars = 3+1; } # +1 is for the '.'
+if($opt_H{"--prob"} || $opt_H{"--dall"} || $opt_H{"--dint"} || $opt_H{"--info"} || $opt_H{"--indi"} || $opt_H{"--cons"}) { 
+    $extra_draw_chars = 4+1; 
+}
+if($opt_H{"--struct"}) { $extra_draw_chars = 5+1; }
+
+for($i = 0; $i < $naln; $i++) { 
+    $aln_file         = $stk_list_A[$i];
+    ($aln_root)       = ($aln_file =~ /(.+)\.stk/);
+    if($opt_H{"-a"}) { #print directory as well as aln name
+	($aln_root2print) = ($aln_file =~ /(.+)\.stk/);
+    }
+    else {
+	($aln_root2print) = ($aln_file =~ /.+\/(.+)\.stk/);
+    }
+    $nec_width = length($aln_root2print) + length($key_out) + length(".stk");
+    if($max_width_aln < $nec_width) { $max_width_aln = $nec_width; }
+}					     
+my $max_width_draw = $max_width_aln - 1 + $extra_draw_chars; # (-1 is diff between .stk and .ps) ($extra_draw_chars is for adding keys, such as 'struct.' to names )
+if($opt_H{"--ps2pdf"}) { $max_width_draw++; }    # diff between .ps .pdf
+if($max_width_draw < length("structure diagram file")) { $max_width_draw = length("structure diagram file"); }
+my $dashes_aln = "";  for($i = 0; $i < $max_width_aln; $i++)  { $dashes_aln .= "-"; }
+my $dashes_draw = ""; for($i = 0; $i < $max_width_draw; $i++) { $dashes_draw .= "-"; }
+
+push(@log2printA, sprintf("#\n# Drawing secondary structures...\n"));
+printf($log2printA[(scalar(@log2printA)-1)]);
+push(@log2printA, sprintf("#\n"));
+printf($log2printA[(scalar(@log2printA)-1)]);
+
+push(@log2printA, sprintf("# %-*s  %-*s\n", $max_width_aln, "alignment file name", $max_width_draw, "structure diagram file"));
+printf($log2printA[(scalar(@log2printA)-1)]);
+push(@log2printA, sprintf("# %-*s  %-*s\n", $max_width_aln, $dashes_aln, $max_width_draw, $dashes_draw));
+printf($log2printA[(scalar(@log2printA)-1)]);
+
+my ($aln_file, $mask_file, $aln_file2print);
+for($i = 0; $i < $naln; $i++) { 
+    $aln_file  = $stk_list_A[$i];
+    $mask_file = $mask_list_A[$i]; 
+    if($opt_H{"-a"}) { #print directory as well as aln name
+	$aln_file2print = $aln_file;
+    }
+    else { 
+	($aln_file2print) = ($aln_file =~ /.+\/(.+)$/);
+    }
+
+    draw_alignment($ssdraw, $template_file, $aln_file, $aln_file2print, $mask_file,
+		   $max_width_aln, $max_width_draw, $key_out, \%opt_H, \@log2printA);
+}
+
+my ($log_file, $log_file2print);
+push(@log2printA, sprintf("#\n"));
+printf($log2printA[(scalar(@log2printA)-1)]);
+
+if(!($opt_H{"-a"})) { 
+    $log_file       = $dir . "/" . $dir . ".ssu-draw" . $key_out . ".log";
+    $log_file2print = $dir . ".ssu-draw" . $key_out . ".log";
+    push(@log2printA, sprintf("# This output saved to log file: $log_file2print.\n"));
+    printf($log2printA[(scalar(@log2printA)-1)]);
+    push(@log2printA, sprintf("# \n"));
+    printf($log2printA[(scalar(@log2printA)-1)]);
+    push(@log2printA, sprintf("# All files saved in directory: \.\/$dir\/\n"));
+    printf($log2printA[(scalar(@log2printA)-1)]);
+}
+else { 
+    $dir =~ s/\.stk$//;
+    $log_file       = $dir . ".ssu-draw" . $key_out . ".log";
+    $log_file2print = $log_file;
+    push(@log2printA, sprintf("# This output saved to log file:\n#  $log_file2print.\n"));
+    printf($log2printA[(scalar(@log2printA)-1)]);
+}
+push(@log2printA, sprintf("# \n"));
+printf($log2printA[(scalar(@log2printA)-1)]);
+print_log($log_file, \@log2printA);
+
+exit(0);
+
+###############
+# subroutines #
+###############
+
+#####################################################################
+# Subroutine: validate_setup()
+# Incept:     EPN, Mon Nov  3 15:05:56 2008
+# 
+# Purpose:    Validate that: 
+#             - the CM file exists. 
+#             - the required executable programs exist.
+#             - there is at least 1 alignment in $dir directory
+#               to operate on
+# Arguments: 
+# $dir:              the directory we will install into 
+# $key_in:           '' or a key that is included in input file names, just prior to the suffix
+#                    e.g. $key_in = "fookey", $dir = "foodir", aln file is foodir/foodir.archaea.fookey.stk
+# $opt_HR:           reference to the hash of command-line options
+# $cm_file_ref:      RETURN; the path to the CM file, either default CM file or $alt_cm_file
+# $template_file_ref:RETURN; the path to the template file, either default template file or $alt_template_file
+# $ssdraw_ref:       RETURN; the esl-ssdraw command
+# $stk_list_arr_ref: RETURN; ref to array of alignment files to operate on
+# $mask_list_arr_ref:RETURN; ref to array of alignment files to operate on
+#
+# Returns:    Nothing, if it returns, everything is valid.
+# 
+# Exits:      If any of the above validations do not occur, we
+#             print a message to STDERR explaining why it's
+#             exiting early and then exit with non-zero status.
+#
+####################################################################
+sub validate_setup { 
+    my $narg_expected = 8;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, validate_setup() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my($dir, $key_in, $opt_HR, $cm_file_ref, $template_file_ref, $ssdraw_ref, $stk_list_arr_ref, $mask_list_arr_ref) = @_;
+
+    #Validate that we can read the CM file
+    my $ssualigndir;
+    my $cm_file = "";
+    if($opt_HR->{"-m"} ne '') {
+	$cm_file = $opt_HR->{"-m"};
+	if(!(-e $cm_file)) { printf STDERR ("\nERROR, CM file $cm_file, specified with -m does not exist.\n"); exit(1); }
+    }
+    else { # -m not enabled, assume the user used the default CM file:
+	$ssualigndir = $ENV{'SSUALIGNDIR'};
+	if(! exists($ENV{'SSUALIGNDIR'})) { 
+	    printf STDERR ("\nERROR, the SSUALIGNDIR environment variable should be set but it's not.\nFor help, see the User's Guide Installation section.\n"); exit(1);
+	    exit(1); 
+	}
+	$cm_file = $ssualigndir . "/ssu-align-0p1.cm";
+	if(!(-e $cm_file)) { printf STDERR ("\nERROR, the default CM file $cm_file does not exist.\nIf you used a different CM file to create the alignments in $dir, use the -m option.\n"); exit(1); }
+    }
+
+    #Validate that we can read the template postscript diagram file
+    if($opt_HR->{"-t"} ne '') {
+	$template_file = $opt_HR->{"-t"};
+	if(!(-e $template_file)) { printf STDERR ("\nERROR, template postscript file $template_file, specified with -m does not exist.\n"); exit(1); }
+    }
+    else { # -m not enabled, assume the user used the default CM file:
+	$ssualigndir = $ENV{'SSUALIGNDIR'};
+	if(! exists($ENV{'SSUALIGNDIR'})) { 
+	    printf STDERR ("\nERROR, the SSUALIGNDIR environment variable should be set but it's not.\nFor help, see the User's Guide Installation section.\n"); exit(1);
+	    exit(1); 
+	}
+	$template_file = $ssualigndir . "/ssu-align-0p1.ps";
+	if(!(-e $cm_file)) { printf STDERR ("\nERROR, the default CM file $cm_file does not exist.\nIf you used a different CM file to create the alignments in $dir, use the -m option.\n"); exit(1); }
+    }
+
+    #Validate that esl-ssdraw exist
+    my $ssdraw = "ssu-esl-ssdraw";
+    my $trash = `$ssdraw -h`;
+    if($? == -1) { printf STDERR ("\nERROR, the required executable $ssdraw is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
+
+    #Validate that 'ps2pdf' exists if --ps2pdf.
+    if($opt_HR->{"--ps2pdf"}) { 
+	#If --ps2pdf, validate that ps2pdf is in PATH
+	$trash = `ps2pdf 2>&1`;
+	if($? == -1) { printf STDERR ("\nERROR, --ps2pdf was enabled, but ps2pdf is not in your PATH environment variable.\n"); }
+    }
+
+    if($opt_HR->{"--in-mask"} ne "") { 
+	if(!(-e $opt_HR->{"--in-mask"})) { 
+	    printf STDERR ("\nERROR, the --in-mask file %s does not exist.\n", $opt_HR->{"--in-mask"}); exit(1); 
+	}
+    }
+
+    my $naln = 0;
+    my $aln_name = '';
+    my $mask_name = '';
+    if($opt_HR->{"-a"}) { # special mode, single command line argument is not a directory, it's an alignment
+	$aln_name = $dir;
+	if(! (-e $aln_name)) { 
+	    printf STDERR ("\nERROR, the alignment file $aln_name does not exist.\n"); exit(1); 
+	}
+	my $aln_root = $aln_name;
+	if($aln_root !~ s/\.stk$//) { 
+	    printf STDERR ("\nERROR, the alignment file must end with \".stk\", $aln_name does not.\n"); exit(1); 
+	}
+	push(@{$stk_list_arr_ref}, $aln_name);
+	$naln++; 
+
+	if($opt_HR->{"--use-masks"}) { #ensure that the mask for this alignment exists
+	    $mask_name = $aln_root . ".mask";
+	    if(! (-e $mask_name)) { 
+		printf STDERR ("\nERROR, --use-masks enabled, but the mask file $mask_name does not exist.\n"); exit(1); 
+	    }
+	    push(@{$mask_list_arr_ref}, $mask_name);
+	}
+    }
+    else { 
+	# Validate there is at least 1 alignment in the input dir
+	if(! (-d $dir)) { 
+	    if(-e $dir) { 
+		printf STDERR ("\nERROR, the command-line argument $dir is a file, not a directory.\nIt should be the directory that includes the input alignment files,\nor if you want to operate on a single alignment, use the -a option.\n"); exit(1); 
+	    }
+	    else { 
+		printf STDERR ("\nERROR, the directory $dir with input alignment files does not exist.\n"); exit(1); 
+	    }
+	}
+	my ($name);
+	my $names = `grep NAME $cm_file`;
+	$names =~ s/NAME\s+//g;
+	my @names_A = split(/\n/, $names);
+	foreach $name (@names_A) { 
+	    $aln_name = $dir . "/" . $dir . "." . $name . $key_in . ".stk";
+	    if(-e $aln_name) { 
+		push(@{$stk_list_arr_ref}, $aln_name);
+		$naln++; 
+		if($opt_HR->{"--use-masks"}) { 
+		    $mask_name = $dir . "/" . $dir . "." . $name . $key_in . ".mask";
+		    if(!(-e $mask_name)) { 
+			printf STDERR ("\nERROR, --use-masks enabled, but the mask file $mask_name for aln $aln_name does not exist.\n"); exit(1); 
+		    }
+		    push(@{$mask_list_arr_ref}, $mask_name);
+		}
+	    }
+	}
+	if($naln == 0) { 
+	    printf STDERR ("\nERROR, found 0 alignments created by ssu-align using the CM file $cm_file\nin directory $dir.\n\n");
+	    printf STDERR ("The following alignments were searched for, but none were found:\n");
+	    foreach $name (@names_A) { 
+		$aln_name = $dir . "/" . $dir . "." . $name . $key_in . ".stk";
+		printf STDERR ("\t$aln_name\n");
+	    }
+	    exit(1);
+	}
+    }
+
+    $$cm_file_ref  = $cm_file;
+    $$template_file_ref  = $template_file;
+    $$ssdraw_ref  = $ssdraw;
+    
+    return;
+}
+
+
+
+#####################################################################
+# Subroutine: print_banner()
+# Incept:     EPN, Thu Sep 24 14:40:39 2009
+# 
+# Purpose:    Print the ssu-mask banner.
+#
+# Arguments: 
+#    $script_call:     call used to invoke this (ssu-mask) script
+#    $opt_HR:          REFERENCE to hash of command-line options
+#    $argv_ref:        reference to @ARGV, command-line arguments
+#    $log2printAR:     reference to log2print array with flog file text
+#
+# Returns:    Nothing, if it returns, everything is valid.
+# 
+####################################################################
+sub print_banner { 
+    my $narg_expected = 4;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_banner() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($script_call, $opt_HR, $argv_ref, $log2printAR) = @_;
+    my ($i, $script_name, $start_log_line);
+
+    my $enabled_options;
+    if($opt_H{"-m"} ne '')        { $enabled_options .= " -m " . $opt_H{"alt_cm_file"}; }
+    if($opt_H{"-t"} ne '')        { $enabled_options .= " -t " . $opt_H{"alt_template_file"}; }
+    if($opt_H{"--key-in"} ne '')  { $enabled_options .= " --key-in " . $opt_H{"key_in"}; }
+    if($opt_H{"--key-out"} ne '') { $enabled_options .= " --key-out " . $opt_H{"key_out"}; }
+    if($opt_H{"--in-mask"} ne '') { $enabled_options .= " --in-mask " . $opt_H{"inmaskefile"}; }
+
+    if($opt_H{"-h"})          { $enabled_options .= " -h"; }
+    if($opt_H{"-a"})          { $enabled_options .= " -a "; }
+    if($opt_H{"--use-masks"}) { $enabled_options .= " --use-masks"; }
+    if($opt_H{"--ps2pdf"})    { $enabled_options .= " --ps2pdf"; }
+    if($opt_H{"--ps-keep"})   { $enabled_options .= " --ps-keep"; }
+    if($opt_H{"--no-aln"})    { $enabled_options .= " --no-aln"; }
+    if($opt_H{"--prob"})      { $enabled_options .= " --prob"; }
+    if($opt_H{"--ins"})       { $enabled_options .= " --ins"; }
+    if($opt_H{"--dall"})      { $enabled_options .= " --dall"; }
+    if($opt_H{"--dint"})      { $enabled_options .= " --dint"; }
+    if($opt_H{"--info"})      { $enabled_options .= " --info"; }
+    if($opt_H{"--struct"})    { $enabled_options .= " --struct"; }
+    if($opt_H{"--indi"})      { $enabled_options .= " --indi"; }
+    if($opt_H{"--no-prob"})   { $enabled_options .= " --no-prob"; }
+    if($opt_H{"--cons"})      { $enabled_options .= " --cons"; }
+    if($opt_H{"--no-leg"})    { $enabled_options .= " --no-leg"; }
+    if($opt_H{"--no-head"})   { $enabled_options .= " --no-head"; }
+    if($opt_H{"--no-foot"})   { $enabled_options .= " --no-foot"; }
+
+    $script_call =~ s/^\.+\///;
+    $script_name = $script_call;
+    $script_name =~ s/.+\///;
+
+    $start_log_line = scalar(@{$log2printAR});
+
+    push(@{$log2printAR}, sprintf("\# $script_name :: draw SSU rRNA secondary structure diagrams\n"));
+    push(@{$log2printAR}, sprintf("\# SSU-ALIGN 0.1 (June 2009)\n"));
+    push(@{$log2printAR}, sprintf("\# Copyright (C) 2009 HHMI Janelia Farm Research Campus\n"));
+    push(@{$log2printAR}, sprintf("\# Freely distributed under the GNU General Public License (GPLv3)\n"));
+    push(@{$log2printAR}, sprintf("\# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n"));
+    push(@{$log2printAR}, sprintf("%-10s %s ", "# command:", $script_call . $enabled_options));
+    for($i = 0; $i < scalar(@{$argv_ref}) - 1; $i++) { 
+	push(@{$log2printAR}, sprintf("$argv_ref->[$i] "));
+    }
+    push(@{$log2printAR}, sprintf("$argv_ref->[$i]\n"));
+    push(@{$log2printAR}, sprintf("%-10s ", "# date:"));
+    push(@{$log2printAR}, sprintf(scalar localtime()));
+    push(@{$log2printAR}, sprintf("\n"));
+
+    for($i = $start_log_line; $i < scalar(@{$log2printAR}); $i++) { 
+	printf($log2printAR->[$i]);
+    }
+    return;
+}
+
+#####################################################################
+# Subroutine: print_timing()
+# Incept:     EPN, Tue Jun 16 08:52:08 2009
+# 
+# Purpose:    Print a timing in hhhh:mm:ss format to 1 second precision.
+#
+# Arguments: 
+#   $prefix:      string that will precede timing output
+#   $inseconds:   number of seconds the script required
+#   $log2printAR: reference to log2print array with log file text
+#
+# Returns:    Nothing, if it returns, everything is valid.
+# 
+####################################################################
+sub print_timing { 
+    my $narg_expected = 3;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, print_timing() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($prefix, $inseconds, $log2printAR) = @_;
+    my ($hours, $minutes, $seconds, $thours, $tminutes, $tseconds, $start_log_line, $i);
+
+    $start_log_line = scalar(@{$log2printAR});
+
+    $hours = int($inseconds / 3600);
+    $inseconds -= ($hours * 3600);
+    $minutes = int($inseconds / 60);
+    $inseconds -= ($minutes * 60);
+    $seconds = $inseconds;
+    $thours   = $hours;
+    $tminutes = $minutes;
+    $tseconds = $seconds;
+
+    if($hours < 10)   { $thours   = "0" . $thours; }
+    if($minutes< 10)  { $tminutes = "0" . $tminutes; }
+    if($seconds< 10)  { $tseconds = "0" . $tseconds; }
+
+    push(@{$log2printAR}, sprintf("%s %2s:%2s:%2s\n", $prefix, $thours, $tminutes, $tseconds));
+
+    for($i = $start_log_line; $i < scalar(@{$log2printAR}); $i++) { 
+	printf($log2printAR->[$i]);
+    }
+}
+
+#####################################################################
+# subroutine: draw_alignment()
+# incept:     EPN, Wed Oct  7 13:55:56 2009
+# 
+# Purpose:    Draw an alignment using the easel miniapp esl-ssdraw.
+#
+# Arguments:  
+#   $ssdraw:            path and name of esl-alimanip/ssu-esl-alimanip executable
+#   $template_file:     template file for esl-ssdraw
+#   $aln_file:          alignment file with path to draw
+#   $aln_file2print:    name of alignment file, minus the directory
+#   $mask_file2use:     mask file to use with --mask, or don't use --mask if ''
+#   $max_width_aln:     width of output string for printing aln file names
+#   $max_width_draw:    width of output string for printing draw file names
+#   $key_out:           <s> from --key-out ("" if --key-out not enabled)
+#   $opt_HR:            REFERENCE to hash of command-line options
+#   $log2printAR:       reference to log2print array with log file text
+# 
+# Returns:  Nothing, if it returns, everything is valid.
+# 
+####################################################################
+sub draw_alignment { 
+    my $narg_expected = 10;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, draw_alignment() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my($ssdraw, $template_file, $aln_file, $aln_file2print, $mask_file2use, $max_width_aln, $max_width_draw, $key_out, $opt_HR, $log2printAR) = @_;
+
+    my ($all_aln_opts, $mask_opts, $draw_opts, $draw_key);
+    if($mask_file2use ne '')  { $mask_opts = "--mask $mask_file2use"; }
+    else                      { $mask_opts = ""; }
+
+    # Default multi-page align call, or not if --no-aln enabled
+    if(! ($opt_HR->{"--no-aln"})) { 
+	$draw_opts = "--prob --ins --dall --dint --struct"; 
+	$draw_key = $key_out; #this will be "" unless --key-out was enabled
+	run_ssdraw($ssdraw, ($draw_opts . $mask_opts), $aln_file, $aln_file2print, $template_file, 
+		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $log2printAR);
+    }
+    if($opt_HR->{"--prob"}) { 
+	$draw_opts = "-q --prob"; 
+	$draw_key = $key_out . "prob.";
+	run_ssdraw($ssdraw, ($draw_opts . $mask_opts), $aln_file, $aln_file2print, $template_file, 
+		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $log2printAR);
+    }
+    if($opt_HR->{"--ins"}) { 
+	$draw_opts = "-q --ins"; 
+	$draw_key = $key_out . "ins.";
+	run_ssdraw($ssdraw, ($draw_opts . $mask_opts), $aln_file, $aln_file2print, $template_file, 
+		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $log2printAR);
+    }
+    if($opt_HR->{"--dall"}) { 
+	$draw_opts = "-q --dall"; 
+	$draw_key = $key_out . "dall.";
+	run_ssdraw($ssdraw, ($draw_opts . $mask_opts), $aln_file, $aln_file2print, $template_file, 
+		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $log2printAR);
+    }
+    if($opt_HR->{"--dint"}) { 
+	$draw_opts = "-q --dint"; 
+	$draw_key = $key_out . "dint.";
+	run_ssdraw($ssdraw, ($draw_opts . $mask_opts), $aln_file, $aln_file2print, $template_file, 
+		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $log2printAR);
+    }
+    if($opt_HR->{"--info"}) { 
+	$draw_opts = ""; 
+	$draw_key = $key_out . "info.";
+	run_ssdraw($ssdraw, ($draw_opts . $mask_opts), $aln_file, $aln_file2print, $template_file, 
+		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $log2printAR);
+    }
+    if($opt_HR->{"--struct"}) { 
+	$draw_opts = "--struct"; 
+	$draw_key = $key_out . "struct.";
+	run_ssdraw($ssdraw, ($draw_opts . $mask_opts), $aln_file, $aln_file2print, $template_file, 
+		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $log2printAR);
+    }
+    if($opt_HR->{"--indi"}) { 
+	if($opt_HR->{"--no-prob"}) { 
+	    $draw_opts = "--indi --all"; 
+	}
+	else { 
+	    $draw_opts = "--indi --all --prob"; 
+	}
+	$draw_key = $key_out . "indi.";
+	run_ssdraw($ssdraw, ($draw_opts . $mask_opts), $aln_file, $aln_file2print, $template_file, 
+		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $log2printAR);
+    }
+    if($opt_HR->{"--cons"}) { 
+	$draw_opts = "--indi"; 
+	$draw_key = $key_out . "cons.";
+	run_ssdraw($ssdraw, ($draw_opts . $mask_opts), $aln_file, $aln_file2print, $template_file, 
+		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $log2printAR);
+    }
+    return 1;
+}    
+
+
+#####################################################################
+# Subroutine: print_log()
+# Incept:     EPN, Tue Jun 16 09:23:55 2009
+# 
+# Purpose:    Print the log.
+#
+# Arguments:
+#   $log_file:    file to print log to.
+#   $log2printAR: reference to array, each element is line of text in log.
+#
+# Returns:    Nothing, if it returns, everything is valid.
+# 
+####################################################################
+sub print_log { 
+    my $narg_expected = 2;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_log() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($log_file, $log2printAR) = @_;
+    my ($start_log_line, $line);
+
+    if(open(LOG,  ">" . $log_file) == 0) { printf STDERR ("ERROR, could not open $log_file for writing.\n"); exit(1); }
+    foreach $line (@{$log2printAR}) { print LOG $line; }
+    close(LOG);
+
+    return;
+}
+
+
+#####################################################################
+# Subroutine: run_ssdraw
+# Incept:     EPN, Sat Oct 10 15:34:33 2009
+# 
+# Purpose:    Call esl-ssdraw for a given alignment and template file.
+#             Convert the postscript to pdf if --ps2pdf is enabled.
+#
+# Arguments:
+#   $ssdraw:            path and name of esl-alimanip/ssu-esl-alimanip executable
+#   $ssdraw_opts:       string defining options for esl-ssdraw call
+#   $aln_file           name of alignment file 
+#   $aln_file2print:    name of alignment file, minus the directory
+#   $template_file:     name of template file to use
+#   $draw_key:          string to use for naming ps and pdf files
+#   $max_width_aln:     width of output string for printing align file names
+#   $max_width_draw:    width of output string for printing draw file names
+#   $opt_HR:            REFERENCE to hash of command-line options
+#   $log2printAR:       reference to log2print array with log file text
+#
+# Returns:    Nothing, if it returns, everything is valid.
+# 
+####################################################################
+sub run_ssdraw { 
+    my $narg_expected = 10;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, run_ssdraw() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($ssdraw, $ssdraw_opts, $aln_file, $aln_file2print, $template_file, $draw_key, $max_width_aln,
+	$max_width_draw, $opt_HR, $log2printAR) = @_;
+
+    my($draw_ps, $draw_pdf, $draw_ps2print, $draw_pdf2print);
+
+    $draw_ps  = $aln_file;
+    $draw_ps  =~ s/\.stk$/\.$draw_key/; # we've ensured all alignments end with .stk in validate_input
+    $draw_ps .= "ps";
+    $draw_pdf = $aln_file;
+    $draw_pdf =~ s/\.stk$/\.$draw_key/; # we've ensured all alignments end with .stk in validate_input
+    $draw_pdf.= "pdf";
+
+    $draw_ps2print  = $aln_file2print;
+    $draw_ps2print  =~ s/\.stk$/\.$draw_key/;
+    $draw_ps2print .= "ps";
+    $draw_pdf2print = $aln_file2print;
+    $draw_pdf2print =~ s/\.stk$/\.$draw_key/;
+    $draw_pdf2print.= "pdf";
+
+    my $command = "$ssdraw $ssdraw_opts $aln_file $template_file $draw_ps 2>&1";
+    #printf("command: $command\n");
+    my $tmp = `$command`;
+    if(($? >> 8) != 0) { 
+	printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); 
+    }
+    
+    if($opt_HR->{"--ps2pdf"}) { 
+	$command = "ps2pdf $draw_ps $draw_pdf";
+	$tmp = `$command`;
+	if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
+	push(@{$log2printAR}, sprintf("  %-*s  %-*s\n", $max_width_aln, $aln_file2print, $max_width_draw, $draw_pdf2print));
+	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+
+	if(!($opt_HR->{"--ps-keep"})) { 
+	    $command = "rm $draw_ps";
+	    $tmp = `$command`;
+	    if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
+	}
+    }
+    # if we didn't do ps2pdf, or if --ps-keep is enabled
+    if(!($opt_HR->{"--ps2pdf"}) || ($opt_HR->{"--ps-keep"})) {
+	push(@{$log2printAR}, sprintf("  %-*s  %-*s\n", $max_width_aln, $aln_file2print, $max_width_draw, $draw_ps2print));
+	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+    }
+}
