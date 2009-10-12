@@ -27,6 +27,7 @@ my $options_usage  = "where general options are:\n";
 $options_usage .= "  -h            : show brief help on version and usage\n";
 $options_usage .= "  -1            : output alignment(s) in non-interleaved, 1 line/seq format\n";
 $options_usage .= "  -m <f>        : CM file <f> created the alignment(s) (with ssu-align -m <f>)\n";
+$options_usage .= "  -t <f>        : for structure diagrams, use template file <f>, not the default\n";
 $options_usage .= "  --key-in <s>  : assume <s> is part of input file names, before the suffix\n";
 $options_usage .= "  --key-out <s> : add <s> to all output file names, before the suffix\n";
 #$options_usage .= "  -a            : the command-line argument is a stockholm alignment, not a directory\n";
@@ -52,6 +53,7 @@ $options_usage .= "  --seq-k <f> : with -a, remove all sequences *except* those 
 ###################
 my $do_help = 0;
 my $alt_cm_file = '';
+my $alt_template_file = '';
 my $do_dir_is_aln = 0;
 my $do_1    = 0;
 my $gapthresh = '';
@@ -76,6 +78,7 @@ Getopt::Long::Configure ("bundling");
 my $opt_return = GetOptions
     ('h' => \$do_help, 
      'm=s' => \$alt_cm_file,
+     't=s' => \$alt_template_file,
      'a' => \$do_dir_is_aln,
      '1' => \$do_1,
      'key-in=s' => \$key_in,
@@ -110,6 +113,7 @@ my $do_list_mode        = 0; # list sequences in the alignment, no masking
 
 # Mask mode options.
 if($alt_cm_file ne '')   { $enabled_options .= " -m $alt_cm_file"; }
+if($alt_template_file ne '') { $enabled_options .= " -t $alt_template_file"; }
 if($do_dir_is_aln)       { $enabled_options .= " -a"; }
 if($do_1)                { $enabled_options .= " -1"; }
 if($pfract ne '')        { $enabled_options .= " --pfract $pfract";          $do_mask_mode = 1; }
@@ -192,8 +196,8 @@ my ($dir) = $ARGV[0];
 $dir =~ s/\/$//;
 
 my @stk_list_A = ();
-my ($cm_file, $alimanip, $ssdraw, $weight, $seqstat);
-validate_setup($dir, $do_dir_is_aln, $do_mask_mode, $do_ps2pdf, $alt_cm_file, $key_in, $fthresh, \$cm_file, \$alimanip, \$ssdraw, \$weight, \$seqstat, \@stk_list_A);
+my ($cm_file, $template_file, $alimanip, $ssdraw, $weight, $seqstat);
+validate_setup($dir, $do_dir_is_aln, $do_mask_mode, $do_ps2pdf, $alt_cm_file, $alt_template_file, $key_in, $fthresh, \$cm_file, \$template_file, \$alimanip, \$ssdraw, \$weight, \$seqstat, \@stk_list_A);
 my $naln = scalar(@stk_list_A);
 my $aln_file;
 
@@ -272,13 +276,13 @@ if($do_mask_mode)
 	    $do_draw = 1;
 	    $its_okay_to_fail = 1;
 	    $mask_worked = mask_alignment($alimanip, $do_1, $ssdraw, $aln_root, $aln_root2print, "mask", $aln_file, $do_keep, $do_ps2pdf, $do_pskeep, 
-					  $keep_mask, $print_input_aln, "", $inmaskfile, '', $do_draw, $max_width, $its_okay_to_fail,
+					  $keep_mask, $print_input_aln, "", $inmaskfile, '', $do_draw, $max_width, $its_okay_to_fail, $template_file,
 					  \$n0, \$n1, \$inmask_masked_aln_file, \$mask_file, \@log2printA);
 	    if(!($mask_worked)) { 
 		#try --mask-all (to see if the mask is full alignment length)
 		$its_okay_to_fail = 0;
 		$mask_worked = mask_alignment($alimanip, $do_1, $ssdraw, $aln_root, $aln_root2print, "mask", $aln_file, $do_keep, $do_ps2pdf, $do_pskeep, 
-					      $keep_mask, $print_input_aln, "", '', $inmaskfile, $do_draw, $max_width, $its_okay_to_fail,
+					      $keep_mask, $print_input_aln, "", '', $inmaskfile, $do_draw, $max_width, $its_okay_to_fail, $template_file,
 					      \$n0, \$n1, \$inmask_masked_aln_file, \$mask_file, \@log2printA);
 		if(!($mask_worked)) { printf STDERR ("\nERROR, the mask file $inmaskfile does not correspond with the alignment file $aln_file. MORE HERE.\n"); exit(1); }
 	    }
@@ -306,7 +310,7 @@ if($do_mask_mode)
 	    }
 
 	    mask_alignment($alimanip, $do_1, $ssdraw, $aln_root, $aln_root2print, $mask_root, $aln_file, $do_keep, $do_ps2pdf, $do_pskeep, $keep_mask, $print_input_aln, 
-			   "-k --num-rf", "", "", $do_draw, $max_width, $its_okay_to_fail, \$cn0, \$cn1, \$cmasked_aln_file, \$cmask_file, \@log2printA);
+			   "-k --num-rf", "", "", $do_draw, $max_width, $its_okay_to_fail, $template_file, \$cn0, \$cn1, \$cmasked_aln_file, \$cmask_file, \@log2printA);
 	    
 	    # Probabilistic masking, if necessary
 	    if($do_pmask) { 
@@ -328,7 +332,7 @@ if($do_mask_mode)
 		$do_draw = 1;
 		$its_okay_to_fail = 0;
 		mask_alignment($alimanip, $do_1, $ssdraw, $aln_root, $aln_root2print, $mask_root, $cmasked_aln_file, $do_keep, $do_ps2pdf, $do_pskeep, $keep_mask, $print_input_aln,
-			       "-k --p-rf --pfract $pfract --pthresh $pthresh", "", "", $do_draw, $max_width, $its_okay_to_fail, \$pn0, \$pn1, \$pmasked_aln_file, \$pmask_file, \@log2printA);
+			       "-k --p-rf --pfract $pfract --pthresh $pthresh", "", "", $do_draw, $max_width, $its_okay_to_fail, $template_file, \$pn0, \$pn1, \$pmasked_aln_file, \$pmask_file, \@log2printA);
 	    }
 	    
 	    # Gap-based masking, if necessary
@@ -348,7 +352,7 @@ if($do_mask_mode)
 		$do_draw = 1;
 		$its_okay_to_fail = 0;
 		mask_alignment($alimanip, $do_1, $ssdraw, $aln_root, $aln_root2print, $mask_root, $cmasked_aln_file, $do_keep, $do_ps2pdf, $do_pskeep, $keep_mask, $print_input_aln,
-			       "-k -g --gapthresh $gapthresh", "", $do_draw, $max_width, $its_okay_to_fail, \$gn0, \$gn1, \$gmasked_aln_file, \$gmask_file, \@log2printA);
+			       "-k -g --gapthresh $gapthresh", "", "", $do_draw, $max_width, $its_okay_to_fail, $template_file, \$gn0, \$gn1, \$gmasked_aln_file, \$gmask_file, \@log2printA);
 	    }
 	    
 	    # If we did both probabilistic and gap-based masking, take the union of the masks
@@ -367,15 +371,16 @@ if($do_mask_mode)
 		$do_draw = 1;
 		$its_okay_to_fail = 0;
 		mask_alignment($alimanip, $do_1, $ssdraw, $aln_root, $aln_root2print, "mask", $cmasked_aln_file, $do_keep, $do_ps2pdf, $do_pskeep, $keep_mask, $print_input_aln,
-			       "-k", $pgmask_file, '', $do_draw, $max_width, $its_okay_to_fail, \$pgn0, \$pgn1, \$pgmasked_aln_file, \$pgmask_file, \@log2printA);
+			       "-k", $pgmask_file, "", $do_draw, $max_width, $its_okay_to_fail, $template_file, \$pgn0, \$pgn1, \$pgmasked_aln_file, \$pgmask_file, \@log2printA);
 		
 		#Draw the difference between the pmask and gmask
-		$tmp = `$ssdraw --mask-diff $pmask_file --mask $gmask_file $cmasked_aln_file $pgmaskdiff_ps 2>&1`;
+		$command = "$ssdraw --mask-diff $pmask_file --mask $gmask_file $cmasked_aln_file $template_file $pgmaskdiff_ps 2>&1";
+		$tmp = `$command`;
 		if($tmp =~ m/ERROR/) { $ssdraw_worked = 0; }
 		else                 { $ssdraw_worked = 1; }
 		if($ssdraw_worked) { 
 		    if($do_ps2pdf) { 
-			$command = "ps2pdf $pgmaskdiff_ps";
+			$command = "ps2pdf $pgmaskdiff_ps $pgmaskdiff_pdf";
 			$tmp = `$command`;
 			if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
 			push(@log2printA, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $pgmaskdiff_pdf2print, "output", "pdf", ($pgn0+$pgn1), "-", "-"));
@@ -637,20 +642,22 @@ exit(0);
 #             - there is at least 1 alignment in $dir directory
 #               to operate on
 # Arguments: 
-# $dir:              the directory we will install into 
-# $do_dir_is_aln:    '1' if $dir is actually a file
-# $do_mask_mode:     '1' if we are in mask mode
-# $do_ps2pdf:        '1' if postscripts will be converted to pdfs (--ps2pdf)
-# $alt_cm_file:      '' or the file (full path) to the CM file <s>, if -M <s> is used
-# $key_in:           '' or a key that is included in input file names, just prior to the suffix
-#                    e.g. $key_in = "fookey", $dir = "foodir", aln file is foodir/foodir.archaea.fookey.stk
-# $fthresh:          '' or the fractional id <f> specified with --filter <f>
-# $cm_file_ref:      RETURN; the path to the CM file, either default CM file or $alt_cm_file
-# $alimanip_ref:     RETURN; the esl-alimanip command
-# $ssdraw_ref:       RETURN; the esl-ssdraw command
-# $weight_ref:       RETURN; the esl-weight command, only relevant if --filter enabled
-# $seqstat_ref:      RETURN; the esl-seqstat command, only relevant if --filter enabled
-# $stk_list_arr_ref: RETURN: ref to array of alignment files to operate on
+# $dir:               the directory we will install into 
+# $do_dir_is_aln:     '1' if $dir is actually a file
+# $do_mask_mode:      '1' if we are in mask mode
+# $do_ps2pdf:         '1' if postscripts will be converted to pdfs (--ps2pdf)
+# $alt_cm_file:       '' or the file (full path) to the CM file <s>, if -m <s> is used
+# $alt_template_file: '' or the file (full path) to the template file <s>, if -t <s> is used
+# $key_in:            '' or a key that is included in input file names, just prior to the suffix
+#                     e.g. $key_in = "fookey", $dir = "foodir", aln file is foodir/foodir.archaea.fookey.stk
+# $fthresh:           '' or the fractional id <f> specified with --filter <f>
+# $cm_file_ref:       RETURN; the path to the CM file, either default CM file or $alt_cm_file
+# $template_file_ref: RETURN; the path to the template file, either default template file or $alt_template_file
+# $alimanip_ref:      RETURN; the esl-alimanip command
+# $ssdraw_ref:        RETURN; the esl-ssdraw command
+# $weight_ref:        RETURN; the esl-weight command, only relevant if --filter enabled
+# $seqstat_ref:       RETURN; the esl-seqstat command, only relevant if --filter enabled
+# $stk_list_arr_ref:  RETURN: ref to array of alignment files to operate on
 #
 # Returns:    Nothing, if it returns, everything is valid.
 # 
@@ -660,9 +667,9 @@ exit(0);
 #
 ####################################################################
 sub validate_setup { 
-    my $narg_expected = 13;
+    my $narg_expected = 15;
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, validate_setup() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($dir, $do_dir_is_aln, $do_mask_mode, $do_ps2pdf, $alt_cm_file, $key_in, $fthresh, $cm_file_ref, $alimanip_ref, $ssdraw_ref, $weight_ref, $seqstat_ref, $stk_list_arr_ref) = @_;
+    my($dir, $do_dir_is_aln, $do_mask_mode, $do_ps2pdf, $alt_cm_file, $alt_template_file, $key_in, $fthresh, $cm_file_ref, $template_file_ref, $alimanip_ref, $ssdraw_ref, $weight_ref, $seqstat_ref, $stk_list_arr_ref) = @_;
 
     #Validate that we can read the CM file
     my $ssualigndir;
@@ -679,6 +686,21 @@ sub validate_setup {
 	}
 	$cm_file = $ssualigndir . "/ssu-align-0p1.cm";
 	if(!(-e $cm_file)) { printf STDERR ("\nERROR, the default CM file $cm_file does not exist.\nIf you used a different CM file to create the alignments in $dir, use the -m option.\n"); exit(1); }
+    }
+
+    #Validate that we can read the template postscript diagram file
+    if($alt_template_file ne '') { 
+	$template_file = $alt_template_file;
+	if(!(-e $template_file)) { printf STDERR ("\nERROR, template postscript file $template_file, specified with -t does not exist.\n"); exit(1); }
+    }
+    else { # -t not enabled, assume the user used the default template file:
+	$ssualigndir = $ENV{'SSUALIGNDIR'};
+	if(! exists($ENV{'SSUALIGNDIR'})) { 
+	    printf STDERR ("\nERROR, the SSUALIGNDIR environment variable should be set but it's not.\nFor help, see the User's Guide Installation section.\n"); exit(1);
+	    exit(1); 
+	}
+	$template_file = $ssualigndir . "/ssu-align-0p1.ps";
+	if(!(-e $template_file)) { printf STDERR ("\nERROR, the default template file $template_file does not exist.\nIf you used a different CM file to create the alignments in $dir, use the -m option.\n"); exit(1); }
     }
 
     #Validate that esl-alimanip and esl-ssdraw exist
@@ -754,11 +776,12 @@ sub validate_setup {
 	}
     }
 
-    $$cm_file_ref  = $cm_file;
-    $$alimanip_ref = $alimanip;
-    $$ssdraw_ref  = $ssdraw;
-    $$weight_ref  = $weight;
-    $$seqstat_ref = $seqstat;
+    $$cm_file_ref       = $cm_file;
+    $$template_file_ref = $template_file;
+    $$alimanip_ref      = $alimanip;
+    $$ssdraw_ref        = $ssdraw;
+    $$weight_ref        = $weight;
+    $$seqstat_ref       = $seqstat;
     
     return;
 }
@@ -1007,6 +1030,7 @@ sub print_log {
 #   $max_width:         width of output string for printing output file names
 #   $its_okay_to_fail:  '1' if we keep going upon a esl-alimanip failure, '0' to exit
 #                       if esl-alimanip fails with non-0 return code.
+#   $template_file:     path to template file needed by esl-ssdraw
 #   $n0_R:              RETURN; number of 0s in computed mask
 #   $n1_R:              RETURN; number of 1s in computed mask
 #   $masked_aln_file_R: RETURN; name of masked alignment file just created
@@ -1017,11 +1041,11 @@ sub print_log {
 # 
 ####################################################################
 sub mask_alignment { 
-    my $narg_expected = 23;
+    my $narg_expected = 24;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, mask_alignment() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my ($alimanip, $do_1, $ssdraw, $aln_root, $aln_root2print, $mask_root, $aln_file2mask, $do_keep, $do_ps2pdf, 
 	$do_pskeep, $keep_mask, $print_input_aln, $mask_opts, $rfmask_file2use, $allmask_file2use, $do_draw, 
-	$max_width, $its_okay_to_fail, $n0_R, $n1_R, $masked_aln_file_R, $mask_file_R, $log2printAR) = @_;
+	$max_width, $its_okay_to_fail, $template_file, $n0_R, $n1_R, $masked_aln_file_R, $mask_file_R, $log2printAR) = @_;
 
     if(($rfmask_file2use ne '') && ($allmask_file2use ne '')) { 
 	printf STDERR ("\nERROR, mask_alignment() entered with both \$rfmask_file2use ($rfmask_file2use) and \$allmask_file2use $allmask_file2use defined.\nThese are incompatible: one must be the empty string.\n"); exit(1); 
@@ -1078,10 +1102,10 @@ sub mask_alignment {
 	# (if the default template structure file recognizes the CM that built the alignment,
 	#  this is done in a very fragile manner, by checking that the name of the alignment 
 	#  is what we'd expect if ssu-align was used with a default CM).
-	$command = "$ssdraw --mask-col --mask $mask_file $aln_file2mask $mask_ps 2>&1";
+	$command = "$ssdraw --mask-col --mask $mask_file $aln_file2mask $template_file $mask_ps 2>&1";
 	$tmp = `$command`;
-	if($tmp =~ m/ERROR/) { $ssdraw_worked = 0; }
-	else                 { $ssdraw_worked = 1; }
+	if(($tmp =~ m/ERROR/) || ($? >> 8))  { $ssdraw_worked = 0; }
+	else                                 { $ssdraw_worked = 1; }
 	if($ssdraw_worked) { 
 	    if($do_ps2pdf) { 
 		$command = "ps2pdf $mask_ps $mask_pdf";

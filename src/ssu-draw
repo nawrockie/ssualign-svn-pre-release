@@ -288,16 +288,16 @@ sub validate_setup {
     #Validate that we can read the template postscript diagram file
     if($opt_HR->{"-t"} ne '') {
 	$template_file = $opt_HR->{"-t"};
-	if(!(-e $template_file)) { printf STDERR ("\nERROR, template postscript file $template_file, specified with -m does not exist.\n"); exit(1); }
+	if(!(-e $template_file)) { printf STDERR ("\nERROR, template postscript file $template_file, specified with -t does not exist.\n"); exit(1); }
     }
-    else { # -m not enabled, assume the user used the default CM file:
+    else { # -t not enabled, assume the user used the default CM file:
 	$ssualigndir = $ENV{'SSUALIGNDIR'};
 	if(! exists($ENV{'SSUALIGNDIR'})) { 
 	    printf STDERR ("\nERROR, the SSUALIGNDIR environment variable should be set but it's not.\nFor help, see the User's Guide Installation section.\n"); exit(1);
 	    exit(1); 
 	}
 	$template_file = $ssualigndir . "/ssu-align-0p1.ps";
-	if(!(-e $cm_file)) { printf STDERR ("\nERROR, the default CM file $cm_file does not exist.\nIf you used a different CM file to create the alignments in $dir, use the -m option.\n"); exit(1); }
+	if(!(-e $template_file)) { printf STDERR ("\nERROR, the default template file $template_file does not exist.\nIf you used a different CM file to create the alignments in $dir, use the -m option.\n"); exit(1); }
     }
 
     #Validate that esl-ssdraw exist
