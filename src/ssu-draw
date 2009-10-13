@@ -53,10 +53,10 @@ $options_usage .= "  --no-foot : do not draw footers\n";
 # Process options #
 ###################
 my %opt_H = ();
+$opt_H{"-a"}          = 0;
 $opt_H{"-h"}          = 0;
 $opt_H{"-m"}          = '';
 $opt_H{"-t"}          = '';
-$opt_H{"-a"}          = 0;
 $opt_H{"--use-masks"} = 0;
 $opt_H{"--in-mask"}   = '';
 $opt_H{"--ps2pdf"}    = 0;
@@ -82,10 +82,10 @@ $opt_H{"--no-foot"}   = 0;
 
 Getopt::Long::Configure ("bundling");
 my $opt_return = GetOptions
-    ('h'         => \$opt_H{"-h"}, 
+    ('a'         => \$opt_H{"-a"},
+     'h'         => \$opt_H{"-h"}, 
      'm=s'       => \$opt_H{"-m"},
      't=s'       => \$opt_H{"-t"},
-     'a'         => \$opt_H{"-a"},
      'key-in=s'  => \$opt_H{"key-in"},
      'key-out=s' => \$opt_H{"key-out"},
      'use-masks' => \$opt_H{"--use-masks"},
@@ -242,11 +242,13 @@ exit(0);
 # 
 # Purpose:    Validate that: 
 #             - the CM file exists. 
+#             - the postscript template file exists. 
 #             - the required executable programs exist.
 #             - there is at least 1 alignment in $dir directory
 #               to operate on
+#
 # Arguments: 
-# $dir:              the directory we will install into 
+# $dir:              the directory we will create files in
 # $key_in:           '' or a key that is included in input file names, just prior to the suffix
 #                    e.g. $key_in = "fookey", $dir = "foodir", aln file is foodir/foodir.archaea.fookey.stk
 # $opt_HR:           reference to the hash of command-line options
@@ -297,7 +299,7 @@ sub validate_setup {
 	    exit(1); 
 	}
 	$template_file = $ssualigndir . "/ssu-align-0p1.ps";
-	if(!(-e $template_file)) { printf STDERR ("\nERROR, the default template file $template_file does not exist.\nIf you used a different CM file to create the alignments in $dir, use the -m option.\n"); exit(1); }
+	if(!(-e $template_file)) { printf STDERR ("\nERROR, the default template file $template_file does not exist.\nIf you want to use a different postscript template file to create the structure diagrams, use the -t option.\n"); exit(1); }
     }
 
     #Validate that esl-ssdraw exist

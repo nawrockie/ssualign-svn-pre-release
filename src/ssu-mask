@@ -24,13 +24,13 @@ my $usage =  "Usage: ssu-mask [options] <directory created by ssu-align (include
 my $options_usage  = "where general options are:\n";
 #                           1         2         3         4         5         6         7         8
 #                  12345678901234567890123456789012345678901234567890123456789012345678901234567890
+#$options_usage .= "  -a            : the command-line argument is a stockholm alignment, not a directory\n";
 $options_usage .= "  -h            : show brief help on version and usage\n";
 $options_usage .= "  -1            : output alignment(s) in non-interleaved, 1 line/seq format\n";
 $options_usage .= "  -m <f>        : CM file <f> created the alignment(s) (with ssu-align -m <f>)\n";
 $options_usage .= "  -t <f>        : for structure diagrams, use template file <f>, not the default\n";
 $options_usage .= "  --key-in <s>  : assume <s> is part of input file names, before the suffix\n";
 $options_usage .= "  --key-out <s> : add <s> to all output file names, before the suffix\n";
-#$options_usage .= "  -a            : the command-line argument is a stockholm alignment, not a directory\n";
 $options_usage .= "\n  Options related to masking alignments\n";
 $options_usage .= "  --pf <x>        : include columns w/<x> fraction of seqs w/prob >= --pt <y> [df: 0.95]\n";
 $options_usage .= "  --pt <y>        : set probability threshold for --pf as <x> [default=0.95]\n";
@@ -51,58 +51,64 @@ $options_usage .= "  --seq-k <f> : with -a, remove all sequences *except* those 
 ###################
 # Process options #
 ###################
-my $do_help = 0;
-my $alt_cm_file = '';
-my $alt_template_file = '';
-my $do_dir_is_aln = 0;
-my $do_1    = 0;
-my $gapthresh = '';
-my $pfract = '';
-my $pthresh = '';
-my $do_no_prob = 0;
-my $inmaskfile = '';
-my $do_ps2pdf = 0;
-my $do_keep = 0;
-my $key_in = '';
-my $key_out = '';
-my $do_pskeep = 0;
-my $do_list = 0;
-my $seqrfile = '';
-my $seqkfile = '';
-my $fthresh = '';
+my %opt_H = ();
+$opt_H{"-a"}          = 0;
+$opt_H{"-h"}          = 0;
+$opt_H{"-1"}          = "";
+$opt_H{"-m"}          = "";
+$opt_H{"-t"}          = "";
+$opt_H{"--key-in"}    = "";
+$opt_H{"--key-out"}   = "";
+$opt_H{"--pf"}        = "";
+$opt_H{"--pt"}        = "";
+$opt_H{"--no-prob"}   = 0;
+$opt_H{"--gapthresh"} = "";
+$opt_H{"--in-mask"}   = "";
+$opt_H{"--keep"}      = 0;
+$opt_H{"--ps2pdf"}    = 0;
+$opt_H{"--ps-keep"}   = 0;
+$opt_H{"--filter"}    = "";
+$opt_H{"--list"}      = 0;
+$opt_H{"--seq-r"}     = "";
+$opt_H{"--seq-k"}     = "";
 
 my $df_pfract  = 0.95;
 my $df_pthresh = 0.95;
 
 Getopt::Long::Configure ("bundling");
 my $opt_return = GetOptions
-    ('h' => \$do_help, 
-     'm=s' => \$alt_cm_file,
-     't=s' => \$alt_template_file,
-     'a' => \$do_dir_is_aln,
-     '1' => \$do_1,
-     'key-in=s' => \$key_in,
-     'key-out=s' => \$key_out,
-     'gapthresh=f' => \$gapthresh,
-     'pf=f' => \$pfract,
-     'pt=f' => \$pthresh,
-     'no-prob' => \$do_no_prob,
-     'in-mask=s' => \$inmaskfile,
-     'keep' => \$do_keep,
-     'filter=f' => \$fthresh,
-     'list' => \$do_list,
-     'ps2pdf' => \$do_ps2pdf,
-     'ps-keep' => \$do_pskeep,
-     'seq-r=s' => \$seqrfile,
-     'seq-k=s' => \$seqkfile);
+    ('a'         => \$opt_H{"-a"},
+     'h'         => \$opt_H{"-h"}, 
+     '1'         => \$opt_H{"-1"},
+     'm=s'       => \$opt_H{"-m"},
+     't=s'       => \$opt_H{"-t"},
+     'key-in=s'  => \$opt_H{"key-in"},
+     'key-out=s' => \$opt_H{"key-out"},
+     'pf'        => \$opt_H{"--pf"},
+     'pt'        => \$opt_H{"--pt"},
+     'no-prob'   => \$opt_H{"--no-prob"},
+     'gapthresh' => \$opt_H{"--gapthresh"},
+     'in-mask'   => \$opt_H{"--in-mask"},
+     'keep'      => \$opt_H{"--keep"},
+     'ps2pdf'    => \$opt_H{"--ps2pdf"},
+     'ps-keep'   => \$opt_H{"--ps-keep"},
+     'filter'    => \$opt_H{"--filter"},
+     'list'      => \$opt_H{"--list"},
+     'seq-r=s'   => \$opt_H{"--seq-r"},
+     'seq-k=s'   => \$opt_H{"--seq-k"});
 
 if($opt_return != 1) { exit(1); }
 
-if ($do_help) { print $usage . "\n"; print $options_usage; exit(1); } 
+if ($opt_H{"-h"}) { print $usage . "\n"; print $options_usage; exit(1); } 
 
-###############################
-# Determine the "mode" to run #
-###############################
+my $key_in;
+if($opt_H{"--key-in"}  ne "") { $key_in   = "." . opt_H{"--key-in"};  }
+my $key_out;
+if($opt_H{"--key-out"}  ne "") { $key_out   = "." . opt_H{"--key-out"};  }
+
+##############################################################################
+# Determine the "mode" to run and check for incompatible option combinations.#
+##############################################################################
 # There are 4 possible modes, each is exclusive.
 
 my $enabled_options = "";
@@ -112,61 +118,58 @@ my $do_filter_mode      = 0; # filter alignment(s), no masking
 my $do_list_mode        = 0; # list sequences in the alignment, no masking
 
 # Mask mode options.
-if($alt_cm_file ne '')   { $enabled_options .= " -m $alt_cm_file"; }
-if($alt_template_file ne '') { $enabled_options .= " -t $alt_template_file"; }
-if($do_dir_is_aln)       { $enabled_options .= " -a"; }
-if($do_1)                { $enabled_options .= " -1"; }
-if($pfract ne '')        { $enabled_options .= " --pfract $pfract";          $do_mask_mode = 1; }
-if($pthresh ne '')       { $enabled_options .= " --pthresh $pthresh";        $do_mask_mode = 1; }
-if($key_in ne '')        { $enabled_options .= " --key-in $key_in"; }
-if($key_out ne '')       { $enabled_options .= " --key-out $key_out"; }
+if($opt_H{"-a"})                { $enabled_options .= " -a"; }
+if($opt_H{"-m"} ne "")          { $enabled_options .= " -m " . $opt_H{"-m"}; }
+if($opt_H{"-t"} ne "")          { $enabled_options .= " -t " . $opt_H{"-t"}; }
+if($opt_H{"-1"})                { $enabled_options .= " -1"; }
+if($opt_H{"--pf"} ne "")        { $enabled_options .= " --pf " . $opt_H{"--pf"};  $do_mask_mode = 1; }
+if($opt_H{"--pt"} ne "")        { $enabled_options .= " --pt " . $opt_H{"--pt"};  $do_mask_mode = 1; }
+if($opt_H{"--key-in"} ne "")    { $enabled_options .= " --key-in "  . $opt_H{"--key-in"}; }
+if($opt_H{"--key-out"} ne "")   { $enabled_options .= " --key-out " . $opt_H{"--key-out"}; }
 
-if($key_out ne '') { $key_out = "." . $key_out; }
-if($key_in  ne '') { $key_in  = "." . $key_in; }
-
-if($do_no_prob) 
+if($opt_H{"--no-prob"}) 
 { 
     $enabled_options .= " --no-prob";
-    if($do_mask_mode) { printf STDERR ("\nERROR, --no-prob is incompatible with --pfract and --pthresh.\n"); exit(1); }
+    if($do_mask_mode) { printf STDERR ("\nERROR, --no-prob is incompatible with --pf and --pt.\n"); exit(1); }
     $do_mask_mode = 1; 
 }
-if($gapthresh ne '')     { $enabled_options .= " --gapthresh $gapthresh";     $do_mask_mode = 1; }
-if($inmaskfile ne '') { 
-    $enabled_options .= " --in-mask $inmaskfile"; 
-    if(!($do_dir_is_aln)) { printf STDERR ("\nERROR, --in-mask requires the -a option.\n"); exit(1); }
-    if($do_mask_mode) { printf STDERR ("\nERROR, --in-mask is incompatible with --pfract, --pthresh, --no-prob, and --gapthresh.\n"); exit(1); }
+if($opt_H{"--gapthresh"} ne "")    { $enabled_options .= " --gapthresh " . $opt_H{"--gapthresh"};     $do_mask_mode = 1; }
+if($opt_H{"--in-mask"} ne "") { 
+    $enabled_options .= " --in-mask " . $opt_H{"--in-mask"}; 
+    if(!($opt_H{"-a"})) { printf STDERR ("\nERROR, --in-mask requires the -a option.\n"); exit(1); }
+    if($do_mask_mode)   { printf STDERR ("\nERROR, --in-mask is incompatible with --pf, --pt, --no-prob, and --gapthresh.\n"); exit(1); }
     $do_mask_mode = 1; 
 }
 
 # Remove sequences options.
-if($seqrfile ne '')      { $enabled_options .= " --seq-r $seqrfile"; $do_remove_seqs_mode = 1; }
-if($seqkfile ne '')      { 
-    $enabled_options .= " --seq-k $seqkfile"; 
+if($opt_H{"--seq-r"} ne "")  { $enabled_options .= " --seq-r " . $opt_H{"--seq-r"}; $do_remove_seqs_mode = 1; }
+if($opt_H{"--seq-k"} ne "")  { 
+    $enabled_options .= " --seq-k " . $opt_H{"--seq-k"}; 
     if($do_remove_seqs_mode) { 
 	printf STDERR ("\nERROR, --seq-r and --seq-k are incompatible, choose one.\n"); exit(1); 
     }
     $do_remove_seqs_mode = 1;
 }
 if($do_remove_seqs_mode && $do_mask_mode) { 
-    printf STDERR ("\nERROR, --pfract, --pthresh, --gapthresh, --filter, --no-prob and --in-mask are incompatible with --seq-k and --seq-r.\n"); exit(1); 
+    printf STDERR ("\nERROR, --pf, --pt, --gapthresh, --filter, --no-prob and --in-mask are incompatible with --seq-k and --seq-r.\n"); exit(1); 
 }
-if($do_remove_seqs_mode && (! $do_dir_is_aln)) { 
+if($do_remove_seqs_mode && (! $opt_H{"-a"})) { 
     printf STDERR ("\nERROR,--seq-k and --seq-r require -a. They can only be used on a single alignment.\n"); exit(1); 
 }
 
 # Filter options.
-if($fthresh ne '') { $enabled_options .= " --filter $fthresh"; $do_filter_mode = 1; }
+if($opt_H{"--filter"} ne "") { $enabled_options .= " --filter " . $opt_H{"--filter"}; $do_filter_mode = 1; }
 if($do_filter_mode && $do_mask_mode) { 
-    printf STDERR ("\nERROR, --pfract, --pthresh, --gapthresh, --filter, --no-prob and --in-mask are incompatible with --filter.\nFilter first, then mask filtered alignments with a subsequent ssu-mask call\n"); exit(1); 
+    printf STDERR ("\nERROR, --pf, --pt, --gapthresh, --filter, --no-prob and --in-mask are incompatible with --filter.\nFilter first, then mask filtered alignments with a subsequent ssu-mask call\n"); exit(1); 
 }
 if($do_filter_mode && $do_remove_seqs_mode) { 
     printf STDERR ("\nERROR, --seq-k and --seq-r are incompatible with --filter.\n"); exit(1); 
 }
 
 # List sequences options.
-if($do_list)      { $enabled_options .= " --list"; $do_list_mode = 1;}
+if($opt_H{"--list"})      { $enabled_options .= " --list"; $do_list_mode = 1;}
 if($do_list_mode && $do_mask_mode) { 
-    printf STDERR ("\nERROR, --pfract, --pthresh, --gapthresh, --filter, --no-prob and --in-mask are incompatible with --list.\n"); exit(1); 
+    printf STDERR ("\nERROR, --pf, --pt, --gapthresh, --filter, --no-prob and --in-mask are incompatible with --list.\n"); exit(1); 
 }
 if($do_list_mode && $do_remove_seqs_mode) { 
     printf STDERR ("\nERROR, --seq-k and --seq-r are incompatible with --list.\n"); exit(1); 
@@ -177,14 +180,17 @@ if($do_list_mode && $do_filter_mode) {
 
 if(($do_remove_seqs_mode + $do_list_mode + $do_filter_mode) == 0) { $do_mask_mode = 1; }
 
-if($do_ps2pdf && (! $do_mask_mode)) { printf STDERR ("\nERROR, --ps2pdf is incompatible with --filter, --list, --seq-r and --seq-k\n"); exit(1); }
-if($do_keep   && (! $do_mask_mode)) { printf STDERR ("\nERROR, --keep is incompatible with --filter, --list, --seq-r and --seq-k\n"); exit(1); }
+if($opt_H{"--ps2pdf"} && (! $do_mask_mode)) { printf STDERR ("\nERROR, --ps2pdf is incompatible with --filter, --list, --seq-r and --seq-k\n"); exit(1); }
+if($opt_H{"--keep"}   && (! $do_mask_mode)) { printf STDERR ("\nERROR, --keep is incompatible with --filter, --list, --seq-r and --seq-k\n"); exit(1); }
 
 ################
 # Print banner #
 ################
 my @log2printA = ();
 print_banner($0, $enabled_options, \@ARGV, \@log2printA);
+
+if($opt_H{"--pf"} eq "")  { $opt_H{"--pf"} = $df_pfract; }
+if($opt_H{"--pt"} eq "")  { $opt_H{"--pt"} = $df_pthresh; }
 
 if(scalar(@ARGV) != 1) {   
     print "Incorrect number of command line arguments.\n";
@@ -197,7 +203,7 @@ $dir =~ s/\/$//;
 
 my @stk_list_A = ();
 my ($cm_file, $template_file, $alimanip, $ssdraw, $weight, $seqstat);
-validate_setup($dir, $do_dir_is_aln, $do_mask_mode, $do_ps2pdf, $alt_cm_file, $alt_template_file, $key_in, $fthresh, \$cm_file, \$template_file, \$alimanip, \$ssdraw, \$weight, \$seqstat, \@stk_list_A);
+validate_setup($dir, $key_in, \%opt_H, \$cm_file, \$template_file, \$alimanip, \$ssdraw, \$weight, \$seqstat, \@stk_list_A);
 my $naln = scalar(@stk_list_A);
 my $aln_file;
 
@@ -208,24 +214,26 @@ my $alimanip_options = "";
 ####################
 my $max_width;
 my ($i, $tmp, $command, $aln_root, $aln_root2print, $final_key, $nec_width, $dashes, $print_input_aln);
+my $ssdraw_failed_at_least_once = 0;
+my $ssdraw_worked_at_least_once = 0;
 
 if($do_mask_mode) 
 { 
     my ($do_pmask, $do_gmask, $extra_chars);
-    if($do_no_prob)      { $do_pmask = 0; }
-    else                 { $do_pmask = 1; }
-    if($gapthresh ne '') { $do_gmask = 1; }
-    else                 { $do_gmask = 0; }
-    if($do_pmask && $do_gmask) { $extra_chars = 13; } #13 is for ".maskdiff" + (".pdf" or ".stk")
-    elsif($do_keep)            { $extra_chars = 10; } #10 is for ".cmask" + (".pdf" or ".stk")
-    else                       { $extra_chars = 9; }   #9 is for ".mask" + (".pdf" or ".stk")
+    if($opt_H{"--no-prob"})         { $do_pmask = 0; }
+    else                            { $do_pmask = 1; }
+    if($opt_H{"--gapthresh"} ne "") { $do_gmask = 1; }
+    else                            { $do_gmask = 0; }
+    if($do_pmask && $do_gmask)      { $extra_chars = 13; } #13 is for ".maskdiff" + (".pdf" or ".stk")
+    elsif($opt_H{"--keep"})         { $extra_chars = 10; } #10 is for ".cmask" + (".pdf" or ".stk")
+    else                            { $extra_chars = 9; }   #9 is for ".mask" + (".pdf" or ".stk")
 
     # determine max file name width
     $max_width = length("file name");
     for($i = 0; $i < $naln; $i++) { 
 	$aln_file         = $stk_list_A[$i];
 	($aln_root)       = ($aln_file =~ /(.+)\.stk/);
-	if($do_dir_is_aln) { #print directory as well as aln name
+	if($opt_H{"-a"}) { #print directory as well as aln name
 	    ($aln_root2print) = ($aln_file =~ /(.+)\.stk/);
 	}
 	else {
@@ -236,7 +244,7 @@ if($do_mask_mode)
     }					     
     $dashes = ""; for($i = 0; $i < $max_width; $i++) { $dashes .= "-"; }
 
-    push(@log2printA, sprintf("#\n# Masking alignments.\n"));
+    push(@log2printA, sprintf("#\n# Masking alignments...\n"));
     printf($log2printA[(scalar(@log2printA)-1)]);
     push(@log2printA, sprintf("#\n"));
     printf($log2printA[(scalar(@log2printA)-1)]);
@@ -250,54 +258,70 @@ if($do_mask_mode)
     printf($log2printA[(scalar(@log2printA)-1)]);
     
     # Mask each alignment
+    my $rfmask2use = "";
+    my $allmask2use = "";
+    my $mask_opts = "";
+    my $mask_root = "";
+    my $keep_mask = 0;
+    my $print_input_aln = 0;
+    my $mask_ok_if_fails = 0;
+    my $do_draw = 0;
+    my $ssdraw_worked = 0;
     for($i = 0; $i < $naln; $i++) { 
 	$aln_file         = $stk_list_A[$i];
 	($aln_root)       = ($aln_file =~ /(.+)\.stk/);
-	if($do_dir_is_aln) { #print directory as well as aln name
+	if($opt_H{"-a"}) { #print directory as well as aln name
 	    ($aln_root2print) = ($aln_file =~ /(.+)\.stk/);
 	}
 	else {
 	    ($aln_root2print) = ($aln_file =~ /.+\/(.+)\.stk/);
 	}
 	
-	if($inmaskfile ne '') { # mask the alignment using the --in-mask mask 
-	    my ($mask_worked, $n0, $n1, $inmask_masked_aln_file, $mask_file, $keep_mask, $do_draw, $its_okay_to_fail);
+	if($opt_H{"--in-mask"} ne "") { # mask the alignment using the --in-mask mask 
+	    my ($mask_worked, $n0, $n1, $inmask_masked_aln_file, $mask_file, $keep_mask, $do_draw, $mask_ok_if_fails);
+
+	    if(!($opt_H{"-a"})) { 
+		printf STDERR ("\nERROR, --in-mask requires the -a option.\n"); exit(1); 
+	    }
+	    if(!(-e $opt_H{"--in-mask"})) { 
+		printf STDERR ("\nERROR, the --in-mask file " . $opt_H{"--in-mask"} . " does not exist.\n"); exit(1); 
+	    }
 
 	    # first try --mask-rf (to see if the mask is non-gap RF length (instead of full alignment length))
-	    if($naln != 1) { 
-		printf STDERR ("\nERROR, --in-mask require the -a option.\n"); exit(1); 
-	    }
-	    if(!(-e $inmaskfile)) { 
-		printf STDERR ("\nERROR, the --in-mask file $inmaskfile does not exist.\n"); exit(1); 
-	    }
-
-	    $keep_mask = 0; 
-	    $print_input_aln = 1;
-	    $do_draw = 1;
-	    $its_okay_to_fail = 1;
-	    $mask_worked = mask_alignment($alimanip, $do_1, $ssdraw, $aln_root, $aln_root2print, "mask", $aln_file, $do_keep, $do_ps2pdf, $do_pskeep, 
-					  $keep_mask, $print_input_aln, "", $inmaskfile, '', $do_draw, $max_width, $its_okay_to_fail, $template_file,
-					  \$n0, \$n1, \$inmask_masked_aln_file, \$mask_file, \@log2printA);
+	    $rfmask2use       = $opt_H{"--in-mask"};
+	    $allmask2use      = "";
+	    $keep_mask        = 0; 
+	    $print_input_aln  = 1;
+	    $mask_ok_if_fails = 1; #it's okay if --mask-rf does not work, we'll try --mask-all 
+	    $mask_opts        = "";
+	    $mask_root        = "mask";
+	    if(($ssdraw ne "") && ($template_file ne "")) { $do_draw          = 1; }
+	    else                                          { $do_draw          = 0; }
+	    $mask_worked = mask_alignment($alimanip, \%opt_H, $ssdraw, $aln_root, $aln_root2print, $mask_root, $aln_file, $keep_mask, $print_input_aln, 
+					  $mask_opts, $rfmask2use, "", $do_draw, $max_width, $mask_ok_if_fails, $template_file,
+					  \$n0, \$n1, \$inmask_masked_aln_file, \$mask_file, \$ssdraw_worked, \@log2printA);
 	    if(!($mask_worked)) { 
 		#try --mask-all (to see if the mask is full alignment length)
-		$its_okay_to_fail = 0;
-		$mask_worked = mask_alignment($alimanip, $do_1, $ssdraw, $aln_root, $aln_root2print, "mask", $aln_file, $do_keep, $do_ps2pdf, $do_pskeep, 
-					      $keep_mask, $print_input_aln, "", '', $inmaskfile, $do_draw, $max_width, $its_okay_to_fail, $template_file,
-					      \$n0, \$n1, \$inmask_masked_aln_file, \$mask_file, \@log2printA);
-		if(!($mask_worked)) { printf STDERR ("\nERROR, the mask file $inmaskfile does not correspond with the alignment file $aln_file. MORE HERE.\n"); exit(1); }
+		$mask_ok_if_fails = 0;
+		$rfmask2use       = "";
+		$allmask2use      = $opt_H{"--in-mask"};
+		mask_alignment($alimanip, \%opt_H, $ssdraw, $aln_root, $aln_root2print, $mask_root, $aln_file, $keep_mask, $print_input_aln, 
+			       $mask_opts, "", $allmask2use, $do_draw, $max_width, $mask_ok_if_fails, $template_file,
+			       \$n0, \$n1, \$inmask_masked_aln_file, \$mask_file, \$ssdraw_worked, \@log2printA);
+		# mask_alignment will exit in error in masking does not work this time
 	    }
+	    if   ($do_draw && $ssdraw_worked)    { $ssdraw_worked_at_least_once = 1; }
+	    elsif($do_draw && (!$ssdraw_worked)) { $ssdraw_failed_at_least_once = 1; }
 	}
-	else { 
+	else {  #--in-mask not enabled
 	    my ($cmasked_aln_file, $cmask_file, $pmasked_aln_file, $pmask_file, $gmasked_aln_file, $gmask_file, $pgmasked_aln_file, $pgmask_file);
 	    my ($pgmaskdiff_ps, $pgmaskdiff_ps2print, $pgmaskdiff_pdf, $pgmaskdiff_pdf2print);
 	    my ($cn0, $cn1, $pn0, $pn1, $gn0, $gn1, $pgn0, $pgn1);
-	    my ($mask_root, $ssdraw_worked, $keep_mask, $print_input_aln, $do_draw, $its_okay_to_fail);
+	    $mask_ok_if_fails = 0;
+	    $rfmask2use       = "";
+	    $allmask2use      = "";
 
 	    # First masking: remove all insert columns and number the RF columns 
-	    $keep_mask = 0;
-	    $print_input_aln = 1;
-	    $do_draw = 0;
-	    $its_okay_to_fail = 0;
 	    if($do_pmask || $do_gmask) { 
 		$mask_root = "cmask"; 
 		$cmasked_aln_file = $aln_root . $key_out . "." . $mask_root . ".stk";
@@ -308,9 +332,15 @@ if($do_mask_mode)
 		$cmasked_aln_file = $aln_root . $key_out . "." . $mask_root . ".stk";
 		$cmask_file       = $aln_root . $key_out . ".mask";
 	    }
-
-	    mask_alignment($alimanip, $do_1, $ssdraw, $aln_root, $aln_root2print, $mask_root, $aln_file, $do_keep, $do_ps2pdf, $do_pskeep, $keep_mask, $print_input_aln, 
-			   "-k --num-rf", "", "", $do_draw, $max_width, $its_okay_to_fail, $template_file, \$cn0, \$cn1, \$cmasked_aln_file, \$cmask_file, \@log2printA);
+	    $keep_mask        = 0;
+	    $print_input_aln  = 1;
+	    $do_draw          = 0; #don't draw this time
+	    $mask_opts = "-k --num-rf";
+	    mask_alignment($alimanip, \%opt_H, $ssdraw, $aln_root, $aln_root2print, $mask_root, $aln_file, $keep_mask, $print_input_aln, 
+			   $mask_opts, "", "", $do_draw, $max_width, $mask_ok_if_fails, $template_file,
+			   \$cn0, \$cn1, \$cmasked_aln_file, \$cmask_file, \$ssdraw_worked, \@log2printA);
+	    if   ($do_draw && $ssdraw_worked)    { $ssdraw_worked_at_least_once = 1; }
+	    elsif($do_draw && (!$ssdraw_worked)) { $ssdraw_failed_at_least_once = 1; }
 	    
 	    # Probabilistic masking, if necessary
 	    if($do_pmask) { 
@@ -324,15 +354,17 @@ if($do_mask_mode)
 		    $pmasked_aln_file = $aln_root . $key_out . "." . $mask_root . ".stk";
 		    $pmask_file       = $aln_root . $key_out . ".mask";
 		}
-		if($pfract eq '')  { $pfract = $df_pfract; }
-		if($pthresh eq '') { $pthresh = $df_pthresh; }
 
-		$keep_mask = 1;
+		$keep_mask = $opt_H{"--keep"};
 		$print_input_aln = 0;
-		$do_draw = 1;
-		$its_okay_to_fail = 0;
-		mask_alignment($alimanip, $do_1, $ssdraw, $aln_root, $aln_root2print, $mask_root, $cmasked_aln_file, $do_keep, $do_ps2pdf, $do_pskeep, $keep_mask, $print_input_aln,
-			       "-k --p-rf --pfract $pfract --pthresh $pthresh", "", "", $do_draw, $max_width, $its_okay_to_fail, $template_file, \$pn0, \$pn1, \$pmasked_aln_file, \$pmask_file, \@log2printA);
+		if(($ssdraw ne "") && ($template_file ne "")) { $do_draw          = 1; }
+		else                                          { $do_draw          = 0; }
+		$mask_opts = "-k --p-rf --pf " . $opt_H{"--pf"} . " --pt " . $opt_H{"--pt"};
+		mask_alignment($alimanip, \%opt_H, $ssdraw, $aln_root, $aln_root2print, $mask_root, $cmasked_aln_file, $keep_mask, $print_input_aln, 
+			       $mask_opts, "", "", $do_draw, $max_width, $mask_ok_if_fails, $template_file,
+			       \$pn0, \$pn1, \$pmasked_aln_file, \$pmask_file, \$ssdraw_worked, \@log2printA);
+		if   ($do_draw && $ssdraw_worked)    { $ssdraw_worked_at_least_once = 1; }
+		elsif($do_draw && (!$ssdraw_worked)) { $ssdraw_failed_at_least_once = 1; }
 	    }
 	    
 	    # Gap-based masking, if necessary
@@ -341,22 +373,28 @@ if($do_mask_mode)
 		    $mask_root = "gmask"; 
 		    $gmasked_aln_file = $aln_root . $key_out . "." . $mask_root . ".stk";
 		    $gmask_file       = $aln_root . $key_out . "." . $mask_root . ".mask";
+		    $keep_mask = $opt_H{"--keep"};
 		}
 		else { #the final mask
 		    $mask_root = "mask";  
 		    $gmasked_aln_file = $aln_root . $key_out . "." . $mask_root . ".stk";
 		    $gmask_file       = $aln_root . $key_out . ".mask";
+		    $keep_mask = 1;
 		}
-		$keep_mask = 1;
 		$print_input_aln = 0;
-		$do_draw = 1;
-		$its_okay_to_fail = 0;
-		mask_alignment($alimanip, $do_1, $ssdraw, $aln_root, $aln_root2print, $mask_root, $cmasked_aln_file, $do_keep, $do_ps2pdf, $do_pskeep, $keep_mask, $print_input_aln,
-			       "-k -g --gapthresh $gapthresh", "", "", $do_draw, $max_width, $its_okay_to_fail, $template_file, \$gn0, \$gn1, \$gmasked_aln_file, \$gmask_file, \@log2printA);
+		if(($ssdraw ne "") && ($template_file ne "")) { $do_draw          = 1; }
+		else                                          { $do_draw          = 0; }
+		$mask_opts = "-k -g --gapthresh " . $opt_H{"--gapthresh"};
+		mask_alignment($alimanip, \%opt_H, $ssdraw, $aln_root, $aln_root2print, $mask_root, $cmasked_aln_file, $keep_mask, $print_input_aln, 
+			       $mask_opts, "", "", $do_draw, $max_width, $mask_ok_if_fails, $template_file,
+			       \$gn0, \$gn1, \$gmasked_aln_file, \$gmask_file, \$ssdraw_worked, \@log2printA);
+		if   ($do_draw && $ssdraw_worked)    { $ssdraw_worked_at_least_once = 1; }
+		elsif($do_draw && (!$ssdraw_worked)) { $ssdraw_failed_at_least_once = 1; }
 	    }
 	    
 	    # If we did both probabilistic and gap-based masking, take the union of the masks
 	    if($do_pmask && $do_gmask) { # this is always the final mask
+		$mask_root = "mask";
 		$pgmasked_aln_file = $aln_root . $key_out . ".mask.stk";
 		$pgmask_file       = $aln_root . $key_out . ".mask";
 		#create the union of the masks, any column that is excluded (a '0') in either mask is a '0' in the union
@@ -368,33 +406,24 @@ if($do_mask_mode)
 		
 		$keep_mask = 1;
 		$print_input_aln = 0;
-		$do_draw = 1;
-		$its_okay_to_fail = 0;
-		mask_alignment($alimanip, $do_1, $ssdraw, $aln_root, $aln_root2print, "mask", $cmasked_aln_file, $do_keep, $do_ps2pdf, $do_pskeep, $keep_mask, $print_input_aln,
-			       "-k", $pgmask_file, "", $do_draw, $max_width, $its_okay_to_fail, $template_file, \$pgn0, \$pgn1, \$pgmasked_aln_file, \$pgmask_file, \@log2printA);
-		
-		#Draw the difference between the pmask and gmask
-		$command = "$ssdraw --mask-diff $pmask_file --mask $gmask_file $cmasked_aln_file $template_file $pgmaskdiff_ps 2>&1";
-		$tmp = `$command`;
-		if($tmp =~ m/ERROR/) { $ssdraw_worked = 0; }
-		else                 { $ssdraw_worked = 1; }
-		if($ssdraw_worked) { 
-		    if($do_ps2pdf) { 
-			$command = "ps2pdf $pgmaskdiff_ps $pgmaskdiff_pdf";
-			$tmp = `$command`;
-			if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
-			push(@log2printA, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $pgmaskdiff_pdf2print, "output", "pdf", ($pgn0+$pgn1), "-", "-"));
-			printf($log2printA[(scalar(@log2printA)-1)]);
-			if((! $do_keep) && (! $do_pskeep)) { 
-			    $command = "rm $pgmaskdiff_ps";
-			    $tmp = `$command`;
-			    if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
-			}
-		    }
-		    if((!($do_ps2pdf)) || ($do_keep || $do_pskeep)) { 
-			push(@log2printA, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $pgmaskdiff_ps2print, "output", "ps", ($pgn0+$pgn1), "-", "-"));
-			printf($log2printA[(scalar(@log2printA)-1)]);
-		    }
+		if(($ssdraw ne "") && ($template_file ne "")) { $do_draw          = 1; }
+		else                                          { $do_draw          = 0; }
+		$mask_opts = "-k";
+		$rfmask2use = $pgmask_file;
+		mask_alignment($alimanip, \%opt_H, $ssdraw, $aln_root, $aln_root2print, $mask_root, $cmasked_aln_file, $keep_mask, $print_input_aln, 
+			       $mask_opts, $pgmask_file, "", $do_draw, $max_width, $mask_ok_if_fails, $template_file,
+			       \$pgn0, \$pgn1, \$pgmasked_aln_file, \$pgmask_file, \$ssdraw_worked, \@log2printA);
+		if   ($do_draw && $ssdraw_worked)    { $ssdraw_worked_at_least_once = 1; }
+		elsif($do_draw && (!$ssdraw_worked)) { $ssdraw_failed_at_least_once = 1; }
+
+		if(($ssdraw ne "") && ($template_file ne "")) 
+		{ 
+		    # draw the difference between the pmask and the gmask
+		    my $do_column_breakdown = 0;
+		    $ssdraw_worked = run_ssdraw($ssdraw, $template_file, "--mask-diff $pmask_file --mask $gmask_file", $cmasked_aln_file, $aln_root, $aln_root2print, 
+						$key_out, ".maskdiff", $max_width, \%opt_H, $pgn0, $pgn1, $do_column_breakdown, \@log2printA);
+		    if   ($ssdraw_worked)  { $ssdraw_worked_at_least_once = 1; }
+		    elsif(!$ssdraw_worked) { $ssdraw_failed_at_least_once = 1; }
 		}
 	    }
 	}
@@ -426,7 +455,7 @@ if($do_filter_mode) {
     my $dashes_in = ""; for($i = 0; $i < $max_width_in; $i++) { $dashes_in .= "-"; }
     my $wide_dashes_in = $dashes_in . "----------";
 
-    push(@log2printA, sprintf("#\n# Filtering alignments so that no 2 seqs are more than $fthresh identical.\n"));
+    push(@log2printA, sprintf("#\n# Filtering alignments so that no 2 seqs are more than " . $opt_H{"--filter"} . " identical.\n"));
     printf($log2printA[(scalar(@log2printA)-1)]);
     push(@log2printA, sprintf("#\n"));
     printf($log2printA[(scalar(@log2printA)-1)]);
@@ -443,14 +472,14 @@ if($do_filter_mode) {
 	$filter_root = "fil";
 	$aln_file         = $stk_list_A[$i];
 	($aln_root)       = ($aln_file =~ /(.+)\.stk/);
-	if($do_dir_is_aln) { #print directory as well as aln name
+	if($opt_H{"-a"}) { #print directory as well as aln name
 	    ($aln_root2print) = ($aln_file =~ /(.+)\.stk/);
 	}
 	else {
 	    ($aln_root2print) = ($aln_file =~ /.+\/(.+)\.stk/);
 	}
-	filter_alignment($weight, $seqstat, $aln_root, $aln_root2print, $filter_root, $aln_file, $aln_root2print . ".stk",
-			 $fthresh, $max_width_in, $max_width_fil, \$filtered_aln_file, \@log2printA);
+	filter_alignment($weight, $seqstat, \%opt_H, $aln_root, $aln_root2print, $filter_root, $aln_file, $aln_root2print . ".stk",
+			 $max_width_in, $max_width_fil, \$filtered_aln_file, \@log2printA);
     }
 }    
 
@@ -466,7 +495,7 @@ if($do_list_mode)
     for($i = 0; $i < $naln; $i++) { 
 	$aln_file         = $stk_list_A[$i];
 	($aln_root)       = ($aln_file =~ /(.+)\.stk/);
-	if($do_dir_is_aln) { #print directory as well as aln name
+	if($opt_H{"-a"}) { #print directory as well as aln name
 	    ($aln_root2print) = ($aln_file =~ /(.+)\.stk/);
 	}
 	else {
@@ -494,7 +523,7 @@ if($do_list_mode)
 	$aln_file         = $stk_list_A[$i];
 	($aln_file2print) = ($aln_file =~ /.+\/(.+)/);
 	($aln_root)       = ($aln_file =~ /(.+)\.stk/);
-	if($do_dir_is_aln) { #print directory as well as aln name
+	if($opt_H{"-a"}) { #print directory as well as aln name
 	    ($aln_root2print) = ($aln_file =~ /(.+)\.stk/);
 	}
 	else {
@@ -503,7 +532,7 @@ if($do_list_mode)
 	$list_file        = $aln_root . $key_out . ".list";
 	$list_file2print  = $aln_root2print . $key_out . ".list";
 
-	if($do_dir_is_aln) { $list_file2print = $list_file; } #print full path with -a is invoked
+	if($opt_H{"-a"}) { $list_file2print = $list_file; } #print full path with -a is invoked
 	$command = "$alimanip --list $list_file $aln_file 2>&1";
 	$tmp = `$command`;
 	if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
@@ -545,12 +574,12 @@ if($do_remove_seqs_mode)
     if($naln != 1) { 
 	printf STDERR ("\nERROR, --seq-r and --seq-k require the -a option.\n"); exit(1); 
     }
-    if($seqrfile ne '') { 
+    if($opt_H{"--seq-r"} ne "") { 
 	my $seqr_aln = $aln_root . $key_out . ".seqr.stk";
-	if(!(-e $seqrfile)) { 
-	    printf STDERR ("\nERROR, the --seq-r file $seqrfile does not exist.\n"); exit(1); 
+	if(!(-e $opt_H{"--seq-r"})) { 
+	    printf STDERR ("\nERROR, the --seq-r file " . $opt_H{"--seq-r"} . " does not exist.\n"); exit(1); 
 	}
-	$command = "$alimanip -o $seqr_aln --seq-r $seqrfile $aln_file 2>&1";
+	$command = "$alimanip -o $seqr_aln --seq-r " . $opt_H{"--seq-r"} . " $aln_file 2>&1";
 	$tmp = `$command`;
 	if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
 
@@ -574,17 +603,17 @@ if($do_remove_seqs_mode)
 
 	push(@log2printA, sprintf("  %-*s  %8d\n", $max_width, $seqr_aln, $nseq));
     }
-    elsif($seqkfile ne '') { 
+    elsif($opt_H{"--seq-k"} ne "") { 
 	my $seqk_aln = $aln_root . $key_out . ".seqk.stk";
-	if(!(-e $seqkfile)) { 
-	    printf STDERR ("\nERROR, the --seq-k file $seqkfile does not exist.\n"); exit(1); 
+	if(!(-e $opt_H{"--seq-k"})) { 
+	    printf STDERR ("\nERROR, the --seq-k file " . $opt_H{"--seq-k"} . " does not exist.\n"); exit(1); 
 	}
-	$command = "$alimanip -o $seqk_aln --seq-k $seqkfile $aln_file 2>&1";
+	$command = "$alimanip -o $seqk_aln --seq-k " . $opt_H{"--seq-k"} . " $aln_file 2>&1";
 	$tmp = `$command`;
 	if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
 
 	#determine number of sequences in alignment (just number of sequences in the --seq-klist file) 
-	$command = "nl $seqkfile | tail -1 2>&1";
+	$command = "nl " . $opt_H{"--seq-k"} . " | tail -1 2>&1";
 	$tmp = `$command`;
 	if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
 	$tmp =~ s/^\s+//;
@@ -598,16 +627,12 @@ if($do_remove_seqs_mode)
 my $log_file       = $dir . "/" . $dir . ".ssu-mask" . $key_out . ".log";
 my $log_file2print = $dir . ".ssu-mask" . $key_out . ".log";
 
-push(@log2printA, sprintf("#\n"));
-printf($log2printA[(scalar(@log2printA)-1)]);
-if(!($do_dir_is_aln)) { 
-    push(@log2printA, sprintf("# This output saved to log file: $log_file2print.\n"));
-    printf($log2printA[(scalar(@log2printA)-1)]);
-    push(@log2printA, sprintf("# \n"));
+if(!($opt_H{"-a"})) { 
+    push(@log2printA, sprintf("#\n"));
     printf($log2printA[(scalar(@log2printA)-1)]);
     push(@log2printA, sprintf("# All files saved in directory: \.\/$dir\/\n"));
     printf($log2printA[(scalar(@log2printA)-1)]);
-    push(@log2printA, sprintf("# \n"));
+    push(@log2printA, sprintf("#\n"));
     printf($log2printA[(scalar(@log2printA)-1)]);
     if($do_filter_mode) {
 	my $fil_key2print = $key_out . "." . "fil";
@@ -615,15 +640,42 @@ if(!($do_dir_is_aln)) {
 	push(@log2printA, sprintf("# To mask these alignments run ssu-mask with the option \"--key-in $fil_key2print\"\n"));
 	printf($log2printA[(scalar(@log2printA)-1)]);
     }
-    # add output regarding how to mask alignments in list mode, seq removal mode (?)
 }
 else { 
     if($do_filter_mode) {
+	push(@log2printA, sprintf("#\n"));
+	printf($log2printA[(scalar(@log2printA)-1)]);
 	my $fil_key2print = "fil." . $key_out;
 	push(@log2printA, sprintf("# To mask this alignment with another ssu-mask run, use the options\n\t\"-a $filtered_aln_file\"\n"));
 	printf($log2printA[(scalar(@log2printA)-1)]);
     }
 }
+if($do_mask_mode) { 
+    push(@log2printA, sprintf("#\n"));
+    if    ($ssdraw_worked_at_least_once && (! $ssdraw_failed_at_least_once)) { 
+	push(@log2printA, sprintf("# All attempts to draw structure diagrams of masks were successful.\n"));
+    }
+    elsif($ssdraw_worked_at_least_once && $ssdraw_failed_at_least_once) { 
+	push(@log2printA, sprintf("# Some, but not all, attempts to draw structure diagrams of masks were successful.\n"));
+    }
+    elsif((! $ssdraw_worked_at_least_once) && (! $ssdraw_failed_at_least_once)) { 
+	push(@log2printA, sprintf("# No structure diagrams were attempted. Unable to locate default template file.\n"));
+    }
+    elsif((! $ssdraw_worked_at_least_once) && $ssdraw_failed_at_least_once) { 
+	if($opt_H{"-m"} eq "") { 
+	    push(@log2printA, sprintf("# All attempts to draw structure diagrams failed.\n# This shouldn't happen, but masking was unaffected.\n"));
+	}
+	else {
+	    push(@log2printA, sprintf("# All attempts to draw structure diagrams failed.\n# " . $opt_H{"-m"} . " must contain non-default, user-created model(s).\n"));
+	}
+    }
+    printf($log2printA[(scalar(@log2printA)-1)]);
+}
+
+push(@log2printA, sprintf("#\n"));
+printf($log2printA[(scalar(@log2printA)-1)]);
+push(@log2printA, sprintf("# This output saved to log file: $log_file2print.\n"));
+printf($log2printA[(scalar(@log2printA)-1)]);
 print_log($log_file, \@log2printA);
 
 exit(0);
@@ -641,18 +693,14 @@ exit(0);
 #             - the required executable programs exist.
 #             - there is at least 1 alignment in $dir directory
 #               to operate on
+#
 # Arguments: 
-# $dir:               the directory we will install into 
-# $do_dir_is_aln:     '1' if $dir is actually a file
-# $do_mask_mode:      '1' if we are in mask mode
-# $do_ps2pdf:         '1' if postscripts will be converted to pdfs (--ps2pdf)
-# $alt_cm_file:       '' or the file (full path) to the CM file <s>, if -m <s> is used
-# $alt_template_file: '' or the file (full path) to the template file <s>, if -t <s> is used
-# $key_in:            '' or a key that is included in input file names, just prior to the suffix
-#                     e.g. $key_in = "fookey", $dir = "foodir", aln file is foodir/foodir.archaea.fookey.stk
-# $fthresh:           '' or the fractional id <f> specified with --filter <f>
-# $cm_file_ref:       RETURN; the path to the CM file, either default CM file or $alt_cm_file
-# $template_file_ref: RETURN; the path to the template file, either default template file or $alt_template_file
+# $dir:               the directory we will create files in
+# $key_in:           "" or a key that is included in input file names, just prior to the suffix
+#                    e.g. $key_in = "fookey", $dir = "foodir", aln file is foodir/foodir.archaea.fookey.stk
+# $opt_HR:           reference to the hash of command-line options
+# $cm_file_ref:       RETURN; the path to the CM file, either default CM file or $opt_HR->{"-m"}
+# $template_file_ref: RETURN; the path to the template file, either default template file or $opt_HR->{"-t"}
 # $alimanip_ref:      RETURN; the esl-alimanip command
 # $ssdraw_ref:        RETURN; the esl-ssdraw command
 # $weight_ref:        RETURN; the esl-weight command, only relevant if --filter enabled
@@ -667,15 +715,15 @@ exit(0);
 #
 ####################################################################
 sub validate_setup { 
-    my $narg_expected = 15;
+    my $narg_expected = 10;
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, validate_setup() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($dir, $do_dir_is_aln, $do_mask_mode, $do_ps2pdf, $alt_cm_file, $alt_template_file, $key_in, $fthresh, $cm_file_ref, $template_file_ref, $alimanip_ref, $ssdraw_ref, $weight_ref, $seqstat_ref, $stk_list_arr_ref) = @_;
+    my($dir, $key_in, $opt_HR, $cm_file_ref, $template_file_ref, $alimanip_ref, $ssdraw_ref, $weight_ref, $seqstat_ref, $stk_list_arr_ref) = @_;
 
     #Validate that we can read the CM file
     my $ssualigndir;
     my $cm_file = "";
-    if($alt_cm_file ne '') {
-	$cm_file = $alt_cm_file;
+    if($opt_HR->{"-m"} ne "") {
+	$cm_file = $opt_HR->{"-m"};
 	if(!(-e $cm_file)) { printf STDERR ("\nERROR, CM file $cm_file, specified with -m does not exist.\n"); exit(1); }
     }
     else { # -m not enabled, assume the user used the default CM file:
@@ -688,40 +736,59 @@ sub validate_setup {
 	if(!(-e $cm_file)) { printf STDERR ("\nERROR, the default CM file $cm_file does not exist.\nIf you used a different CM file to create the alignments in $dir, use the -m option.\n"); exit(1); }
     }
 
-    #Validate that we can read the template postscript diagram file
-    if($alt_template_file ne '') { 
-	$template_file = $alt_template_file;
+    #if --in-mask <s> enabled, verify that <s> exists
+    if($opt_HR->{"--in-mask"} ne "") { 
+	if(!(-e $opt_HR->{"--in-mask"})) { printf STDERR ("\nERROR, mask file " . $opt_HR->{"--in-mask"} . ", specified with --in-mask does not exist.\n"); exit(1); }
+    }	
+
+    #Validate that we can read the template postscript diagram file, if we can't that's okay but only if a non-default CM has been specified with -m.
+    if($opt_HR->{"-t"} ne "") { 
+	$template_file = $opt_HR->{"-t"};
 	if(!(-e $template_file)) { printf STDERR ("\nERROR, template postscript file $template_file, specified with -t does not exist.\n"); exit(1); }
     }
-    else { # -t not enabled, assume the user used the default template file:
+    elsif($opt_HR->{"-m"} eq "") { # -t not enabled and -m not enabled, we assume default template file should exist for the default CM file
 	$ssualigndir = $ENV{'SSUALIGNDIR'};
 	if(! exists($ENV{'SSUALIGNDIR'})) { 
 	    printf STDERR ("\nERROR, the SSUALIGNDIR environment variable should be set but it's not.\nFor help, see the User's Guide Installation section.\n"); exit(1);
 	    exit(1); 
 	}
 	$template_file = $ssualigndir . "/ssu-align-0p1.ps";
-	if(!(-e $template_file)) { printf STDERR ("\nERROR, the default template file $template_file does not exist.\nIf you used a different CM file to create the alignments in $dir, use the -m option.\n"); exit(1); }
+	if(!(-e $template_file)) { printf STDERR ("\nERROR, the default template file $template_file does not exist and you did not specify a non-default CM file with -m.\nIf you used a non-default CM file, use -m.\nIf you want to use a non-default structure template file use -t.\n"); exit(1); }
+    }
+    else { #-m enabled, -t not enabled: with this combo if the default template file exists we'll try to do ssu-align with it,
+	   # if not, then we can still do masking but we won't try to call ssu-draw
+	#check if default template exists:
+	$template_file = "";
+	$ssualigndir = $ENV{'SSUALIGNDIR'};
+	if(exists($ENV{'SSUALIGNDIR'})) { 
+	    if(-e ($ssualigndir . "/ssu-align-0p1.ps")) { 
+		$template_file = $ssualigndir . "/ssu-align-0p1.ps";
+	    }
+	}
     }
 
-    #Validate that esl-alimanip and esl-ssdraw exist
+    #Validate that esl-alimanip and esl-ssdraw (if we need it) exist
     my $alimanip = "ssu-esl-alimanip";
     my $trash = `$alimanip -h`;
     if($? == -1) { printf STDERR ("\nERROR, the required executable $alimanip is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
 
-    my $ssdraw = "ssu-esl-ssdraw";
-    $trash = `$ssdraw -h`;
-    if($? == -1) { printf STDERR ("\nERROR, the required executable $ssdraw is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
+    my $ssdraw = "";
+    if($template_file ne "") { 
+	$ssdraw = "ssu-esl-ssdraw";
+	$trash = `$ssdraw -h`;
+	if($? == -1) { printf STDERR ("\nERROR, the required executable $ssdraw is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
+    }
 
     #Validate that 'ps2pdf' exists if --ps2pdf.
-    if($do_ps2pdf) { 
+    if($opt_HR->{"--ps2pdf"}) { 
 	#If --ps2pdf, validate that ps2pdf is in PATH
 	$trash = `ps2pdf 2>&1`;
 	if($? == -1) { printf STDERR ("\nERROR, --ps2pdf was enabled, but ps2pdf is not in your PATH environment variable.\n"); }
     }
     #Validate that 'esl-weight' and 'esl-seqstat' exist if --filter enabled.
-    my $weight = '';
-    my $seqstat = '';
-    if($fthresh ne '') { 
+    my $weight = "";
+    my $seqstat = "";
+    if($opt_HR->{"--filter"} ne "") { 
 	$weight = "ssu-esl-weight";
 	$trash = `$weight -h`;
 	if($? == -1) { printf STDERR ("\nERROR, the required executable $weight (required b/c --filter enabled) is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
@@ -732,7 +799,7 @@ sub validate_setup {
 
     my $naln = 0;
     my ($aln_name);
-    if($do_dir_is_aln) { # special mode, single command line argument is not a directory, it's an alignment
+    if($opt_HR->{"-a"}) { # special mode, single command line argument is not a directory, it's an alignment
 	$aln_name = $dir;
 	if(! (-e $aln_name)) { 
 	    printf STDERR ("\nERROR, the alignment file $aln_name does not exist.\n"); exit(1); 
@@ -742,7 +809,7 @@ sub validate_setup {
 	    printf STDERR ("\nERROR, the alignment file must end with \".stk\", $aln_name does not.\n"); exit(1); 
 	}
 	push(@{$stk_list_arr_ref}, $aln_name);
-	$naln++; 
+	$naln = 1; 
     }
     else { 
 	# Validate there is at least 1 alignment in the input dir
@@ -1011,16 +1078,13 @@ sub print_log {
 #
 # Arguments:  
 #   $alimanip:          path and name of esl-alimanip/ssu-esl-alimanip executable
-#   $do_1:              '1' to pass -1 to esl-alimanip, '0' not to
+#   $opt_HR:           reference to the hash of command-line options
 #   $ssdraw:            path and name of esl-ssdraw/ssu-esl-ssdraw executable
 #   $aln_root:          root with dir for alignment and output file names, this is normally 
 #                       the <output root> supplied with original ssu-align call
 #   $aln_root2print:    $aln_root without preceding dir/path
 #   $mask_root:         name for mask-related files, e.g. 'cmask'
 #   $aln_file2mask:     name of alignment file to mask, with path
-#   $do_keep:           '1' to keep all intermediate files (usually if --keep)
-#   $do_ps2pdf:         '1' to convert postscript to pdf (usually if --ps2pdf)
-#   $do_pskeep:         '1' to keep postscript files (only used if $do_ps2pdf)
 #   $keep_mask:         '1' to keep 'mask' file output from esl-alimanip
 #   $print_input_aln:   '1' to print info on input alignment to the screen
 #   $mask_opts:         string of options to pass to esl-alimanip
@@ -1028,58 +1092,55 @@ sub print_log {
 #   $allmask_file2use:  name of file to use as argument with --mask-all to esl-alimanip
 #   $do_draw:           '1' to draw masks with esl-ssdraw
 #   $max_width:         width of output string for printing output file names
-#   $its_okay_to_fail:  '1' if we keep going upon a esl-alimanip failure, '0' to exit
+#   $mask_ok_if_fails:  '1' if we keep going upon a esl-alimanip failure, '0' to exit
 #                       if esl-alimanip fails with non-0 return code.
 #   $template_file:     path to template file needed by esl-ssdraw
 #   $n0_R:              RETURN; number of 0s in computed mask
 #   $n1_R:              RETURN; number of 1s in computed mask
 #   $masked_aln_file_R: RETURN; name of masked alignment file just created
 #   $mask_file_R:       RETURN; name of mask file just created
+#   $ssdraw_worked_R:   RETURN; '1' if esl-ssdraw successfully run, else '0'
 #   $log2printAR:       reference to log2print array with log file text
 # 
 # Returns:  Nothing, if it returns, everything is valid.
 # 
 ####################################################################
 sub mask_alignment { 
-    my $narg_expected = 24;
+    my $narg_expected = 22;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, mask_alignment() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($alimanip, $do_1, $ssdraw, $aln_root, $aln_root2print, $mask_root, $aln_file2mask, $do_keep, $do_ps2pdf, 
-	$do_pskeep, $keep_mask, $print_input_aln, $mask_opts, $rfmask_file2use, $allmask_file2use, $do_draw, 
-	$max_width, $its_okay_to_fail, $template_file, $n0_R, $n1_R, $masked_aln_file_R, $mask_file_R, $log2printAR) = @_;
+    my ($alimanip, $opt_HR, $ssdraw, $aln_root, $aln_root2print, $mask_root, $aln_file2mask, $keep_mask, $print_input_aln, 
+	$mask_opts, $rfmask_file2use, $allmask_file2use, $do_draw, $max_width, $mask_ok_if_fails, $template_file, 
+	$n0_R, $n1_R, $masked_aln_file_R, $mask_file_R, $ssdraw_worked_R, $log2printAR) = @_;
 
-    if(($rfmask_file2use ne '') && ($allmask_file2use ne '')) { 
+    if(($rfmask_file2use ne "") && ($allmask_file2use ne "")) { 
 	printf STDERR ("\nERROR, mask_alignment() entered with both \$rfmask_file2use ($rfmask_file2use) and \$allmask_file2use $allmask_file2use defined.\nThese are incompatible: one must be the empty string.\n"); exit(1); 
     } 	
 
-    my($masked_aln_file, $mask_ps, $mask_pdf, $mask_file);
-    my($masked_aln_file2print, $mask_ps2print, $mask_pdf2print, $mask_file2print);
-    my($n0, $n1, $is_final, $extra_opts, $ssdraw_worked);
+    my($masked_aln_file, $mask_file);
+    my($masked_aln_file2print, $mask_file2print);
+    my($n0, $n1, $is_final, $extra_opts, $ssdraw_failed);
     if($mask_root eq "mask") { $is_final = 1; }
     else                     { $is_final = 0; }
 
     $masked_aln_file = $aln_root . $key_out . "." . $mask_root . ".stk";
-    $mask_ps         = $aln_root . $key_out . "." . $mask_root . ".ps";
-    $mask_pdf        = $aln_root . $key_out . "." . $mask_root . ".pdf";
     if($mask_root ne "mask") { $mask_file = $aln_root . $key_out . "." . $mask_root . ".mask"; }
     else                     { $mask_file = $aln_root . $key_out . ".mask"; }
     $masked_aln_file2print = $aln_root2print . $key_out . "." . $mask_root . ".stk";
-    $mask_ps2print         = $aln_root2print . $key_out . "." . $mask_root . ".ps";
-    $mask_pdf2print        = $aln_root2print . $key_out . "." . $mask_root . ".pdf";
     if($mask_root ne "mask") { $mask_file2print = $aln_root2print . $key_out . "." . $mask_root . ".mask"; }
     else                     { $mask_file2print = $aln_root2print . $key_out . ".mask"; }
 
     # cmask: $command = "$alimanip -k --num-rf --kmask $cmask_file -o $cmasked_aln_file $aln_file2mask 2>&1";
-    # pmask: $command = "$alimanip --p-rf --pfract $pfract --pthresh $pthresh -k --kmask $pmask_file -o $pmasked_aln_file $cmasked_aln_file 2>&1";
-    # gmask: $command = "$alimanip --verbose -g --gapthresh $gapthresh -k --kmask $gmask_file -o $gmasked_aln_file $cmasked_aln_file 2>&1";
+    # pmask: $command = "$alimanip --p-rf --pf $opt_HR->{"--pf"} --pt $opt_HR->{"--pt"} -k --kmask $pmask_file -o $pmasked_aln_file $cmasked_aln_file 2>&1";
+    # gmask: $command = "$alimanip --verbose -g --gapthresh $opt_HR->{"--gapthresh"} -k --kmask $gmask_file -o $gmasked_aln_file $cmasked_aln_file 2>&1";
     # pgmask:$command = "$alimanip -k --mask-rf $pgmask_file -o $pgmasked_aln_file $cmasked_aln_file 2>&1";
-    if($rfmask_file2use ne "")     { $extra_opts = "--mask-rf $rfmask_file2use";  $mask_file = $rfmask_file2use; }
+    if   ($rfmask_file2use ne "")  { $extra_opts = "--mask-rf $rfmask_file2use";  $mask_file = $rfmask_file2use; }
     elsif($allmask_file2use ne "") { $extra_opts = "--mask-all $allmask_file2use"; $mask_file = $allmask_file2use; }
     else                           { $extra_opts = "--kmask $mask_file"; }
-    if($do_1)                      { $extra_opts .= " -1"; }
+    if($opt_HR->{"-1"})                      { $extra_opts .= " -1"; }
     $command = "$alimanip $mask_opts $extra_opts -o $masked_aln_file $aln_file2mask 2>&1";
     $tmp = `$command`;
     if(($? >> 8) != 0) { 
-	if($its_okay_to_fail) { return 0; }
+	if($mask_ok_if_fails) { return 0; }
 	else { 
 	    printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); 
 	} 
@@ -1092,48 +1153,24 @@ sub mask_alignment {
 	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
     }
     if((($rfmask_file2use ne "") || ($allmask_file2use ne "")) 
-       || ($do_keep || $keep_mask || $is_final)) { 
+       || ($opt_HR->{"--keep"} || $keep_mask || $is_final)) { 
 	push(@{$log2printAR}, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $mask_file2print, "output", "mask", ($n0+$n1), $n1, $n0));
 	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
     }
 
+    my $ssdraw_worked = 0;
     if($do_draw) { 
-	# Draw the mask, if we can. 
-	# (if the default template structure file recognizes the CM that built the alignment,
-	#  this is done in a very fragile manner, by checking that the name of the alignment 
-	#  is what we'd expect if ssu-align was used with a default CM).
-	$command = "$ssdraw --mask-col --mask $mask_file $aln_file2mask $template_file $mask_ps 2>&1";
-	$tmp = `$command`;
-	if(($tmp =~ m/ERROR/) || ($? >> 8))  { $ssdraw_worked = 0; }
-	else                                 { $ssdraw_worked = 1; }
-	if($ssdraw_worked) { 
-	    if($do_ps2pdf) { 
-		$command = "ps2pdf $mask_ps $mask_pdf";
-		$tmp = `$command`;
-		if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
-		push(@{$log2printAR}, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $mask_pdf2print, "output", "pdf", ($n0+$n1), $n1, $n0));
-		printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
-		if((! $do_keep) && (! $do_pskeep)) { 
-		    $command = "rm $mask_ps";
-		    $tmp = `$command`;
-		    if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
-		}
-	    }
-	    if((!($do_ps2pdf)) || ($do_keep || $do_pskeep)) { 
-		push(@{$log2printAR}, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $mask_ps2print, "output", "ps", ($n0+$n1), $n1, $n0));
-		printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
-	    }
-	}
-    }
-    if($do_keep || $is_final) { 
-	push(@{$log2printAR}, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $masked_aln_file2print, "output", "aln", $n1, "-", "-"));
-	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+	# Draw the mask, if we can, if we can't that's okay just alert the caller by setting $ssdraw_worked = 0
+	my $do_column_breakdown = 1;
+	$ssdraw_worked = run_ssdraw($ssdraw, $template_file, "--mask-col --mask $mask_file", $aln_file2mask, $aln_root, $aln_root2print, 
+				       $key_out, "." . $mask_root, $max_width, $opt_HR, $n0, $n1, $do_column_breakdown, $log2printAR);
     }
 
     $$n0_R = $n0;
     $$n1_R = $n1;
     $$masked_aln_file_R = $masked_aln_file;
     $$mask_file_R = $mask_file;
+    $$ssdraw_worked_R = $ssdraw_worked;
     return 1;
 }    
 
@@ -1148,13 +1185,13 @@ sub mask_alignment {
 # Arguments:  
 #   $weight:                path and name of esl-weight/ssu-esl-weight executable
 #   $seqstat:               path and name of esl-weight/ssu-esl-seqstat executable
+#   $opt_HR:                reference to the hash of command-line options
 #   $aln_root:              root with dir for alignment and output file names, this is normally 
 #                           the <output root> supplied with original ssu-align call
 #   $aln_root2print:        $aln_root without preceding dir/path
 #   $filter_root:           name for mask-related files, usually 'f'
 #   $aln_file2filter:       name of alignment file to filter, with path
 #   $aln_file2filter2print: $aln_file2filter with no preceding path
-#   $fthresh                seq id threshold to filter with (<x> from --filter <x>)
 #   $max_width_in:          width of output string for input alignment file names
 #   $max_width_fil:         width of output string for filtered alignment file names
 #   $filtered_aln_file_R:   RETURN; name of masked alignment file just created
@@ -1166,8 +1203,8 @@ sub mask_alignment {
 sub filter_alignment { 
     my $narg_expected = 12;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, filter_alignment() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($weight, $seqstat, $aln_root, $aln_root2print, $filter_root, $aln_file2filter, $aln_file2filter2print,
-	$fthresh, $max_width_in, $max_width_fil, $filtered_aln_file_R, $log2printAR) = @_;
+    my ($weight, $seqstat, $opt_HR, $aln_root, $aln_root2print, $filter_root, $aln_file2filter, $aln_file2filter2print,
+	$max_width_in, $max_width_fil, $filtered_aln_file_R, $log2printAR) = @_;
 
     my($filtered_aln_file, $nseq_input, $nseq_filtered, $filtered_aln_file2print); 
 
@@ -1177,9 +1214,9 @@ sub filter_alignment {
     seqstat_seqfile($seqstat, $aln_file2filter, \$nseq_input);
 
     # esl-weight -f --idf 0.75 10.stk
-    if($fthresh < 0.) { printf STDERR ("\nERROR, with --filter <f>, <f> must be between 0.0 and 1.0, you entered %.4f.\n", $fthresh); exit(1); }
-    if($fthresh > 1.) { printf STDERR ("\nERROR, with --filter <f>, <f> must be between 0.0 and 1.0, you entered %.4f.\n", $fthresh); exit(1); }
-    $command = "$weight -o $filtered_aln_file -f --idf $fthresh $aln_file2filter 2>&1";
+    if($opt_HR->{"--filter"} < 0.) { printf STDERR ("\nERROR, with --filter <f>, <f> must be between 0.0 and 1.0, you entered %.4f.\n", $opt_HR->{"--filter"}); exit(1); }
+    if($opt_HR->{"--filter"} > 1.) { printf STDERR ("\nERROR, with --filter <f>, <f> must be between 0.0 and 1.0, you entered %.4f.\n", $opt_HR->{"--filter"}); exit(1); }
+    $command = "$weight -o $filtered_aln_file -f --idf " . $opt_HR->{"--filter"} . " $aln_file2filter 2>&1";
     $tmp = `$command`;
     if(($? >> 8) != 0) { 
 	printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); 
@@ -1232,4 +1269,81 @@ sub seqstat_seqfile {
     }
     $$nseq_ref = $nseq;
     return;
+}
+
+#####################################################################
+# Subroutine: run_ssdraw
+# Incept:     EPN, Tue Oct 13 07:15:09 2009
+# 
+# Purpose:    Call esl-ssdraw for a given alignment and template file.
+#             Convert the postscript to pdf if --ps2pdf is enabled.
+#
+# Arguments:
+#   $ssdraw:              path and name of esl-alimanip/ssu-esl-alimanip executable
+#   $template_file:       name of template file to use
+#   $ssdraw_opts:         string defining options for esl-ssdraw call
+#   $aln_file:            alignment file to draw
+#   $root:                root for naming output files (with dir)
+#   $root2print:          root for naming output files (without dir unless -a, then with dir)
+#   $key_out:             optional extra key for output files
+#   $draw_key:            another optional extra key for output files
+#   $max_width:           width of output string for printing output file names
+#   $opt_HR:              REFERENCE to hash of command-line options
+#   $n0:                  number of 0s in the mask (passed in)
+#   $n1:                  number of 1s in the mask (passed in)
+#   $do_column_breakdown: TRUE to print number of columns included vs excluded in output
+#   $log2printAR:         reference to log2print array with log file text
+#
+# Returns:    '1' if esl-ssdraw worked (exited cleanly (returned 0)), 
+#             '0' if it did not work (returned non-0 value)
+# 
+####################################################################
+sub run_ssdraw { 
+    my $narg_expected = 14;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, run_ssdraw() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($ssdraw, $template_file, $ssdraw_opts, $aln_file, $root, $root2print, $key_out, 
+	$draw_key, $max_width, $opt_HR, $n0, $n1, $do_column_breakdown, $log2printAR) = @_;
+
+    my($draw_ps, $draw_pdf, $draw_ps2print, $draw_pdf2print);
+    $draw_ps         = $root . $key_out . $draw_key . ".ps";
+    $draw_pdf        = $root . $key_out . $draw_key . ".pdf";
+    $draw_ps2print   = $root2print . $key_out . $draw_key . ".ps";
+    $draw_pdf2print  = $root2print . $key_out . $draw_key . ".pdf";
+
+    my $command = "$ssdraw $ssdraw_opts $aln_file $template_file $draw_ps 2>&1";
+    #printf("run_ssdraw command: $command\n");
+    my $tmp = `$command`;
+    if(($? >> 8) != 0) { # it didn't work, don't exit just alert caller by returning 0
+	return 0; 
+    } 
+    
+    if($opt_HR->{"--ps2pdf"}) { 
+	$command = "ps2pdf $draw_ps $draw_pdf";
+	$tmp = `$command`;
+	if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
+	if($do_column_breakdown) { 
+	    push(@{$log2printAR}, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $draw_pdf2print, "output", "pdf", ($n0+$n1), $n1, $n0));
+	}
+	else { 
+	    push(@{$log2printAR}, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $draw_pdf2print, "output", "pdf", ($n0+$n1), "-", "-"));
+	}
+	printf($log2printAR->[(scalar(@log2printA)-1)]);
+
+	if(!($opt_HR->{"--ps-keep"})) { 
+	    $command = "rm $draw_ps";
+	    $tmp = `$command`;
+	    if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
+	}
+    }
+    # if we didn't do ps2pdf, or if --ps-keep is enabled
+    if(!($opt_HR->{"--ps2pdf"}) || ($opt_HR->{"--ps-keep"})) {
+	if($do_column_breakdown) { 
+	    push(@{$log2printAR}, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $draw_ps2print, "output", "ps", ($n0+$n1), $n1, $n0));
+	}
+	else { 
+	    push(@{$log2printAR}, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $draw_ps2print, "output", "ps", ($n0+$n1), "-", "-"));
+	}
+	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+    }
+    return 1; #if ssdraw failed we returned 0 above
 }
