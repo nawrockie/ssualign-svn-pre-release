@@ -31,7 +31,7 @@ $options_usage .= "  -m <f>        : CM file <f> created the alignment(s) (with 
 $options_usage .= "  -t <f>        : for structure diagrams, use template file <f>, not the default\n";
 $options_usage .= "  --key-in <s>  : assume <s> is part of input file names, before the suffix\n";
 $options_usage .= "  --key-out <s> : add <s> to all output file names, before the suffix\n";
-$options_usage .= "\n  Options related to masking alignments\n";
+$options_usage .= "\noptions related to masking alignments\n";
 $options_usage .= "  --pf <x>        : include columns w/<x> fraction of seqs w/prob >= --pt <y> [df: 0.95]\n";
 $options_usage .= "  --pt <y>        : set probability threshold for --pf as <x> [default=0.95]\n";
 $options_usage .= "  --no-prob       : exclude insert columns only, do not mask based on probabilities\n";
@@ -40,9 +40,9 @@ $options_usage .= "  --in-mask <f>   : mask alignment given 1/0s in 1-line mask 
 $options_usage .= "  --keep          : keep all intermediate files which are normally removed\n";
 $options_usage .= "  --ps2pdf        : convert mask postscript drawings to pdfs using ps2pdf\n";
 $options_usage .= "  --ps-keep       : with --ps2pdf, keep both postcript files and pdf files\n";
-$options_usage .= "\n  Option for filtering alignments based on sequence identity (no masking)\n";
+$options_usage .= "\noption for filtering alignments based on sequence identity (no masking)\n";
 $options_usage .= "  --filter <x> : remove seqs such that no 2 seqs > <x> identical (1st seq is always kept)\n";
-$options_usage .= "\n  Option for listing sequences in alignment(s) (no masking)\n";
+$options_usage .= "\noption for listing sequences in alignment(s) (no masking)\n";
 $options_usage .= "  --list : output list of sequence names in alignment(s)\n";    
 $options_usage .= "\n  Options for only removing sequences from an alignment, require -a (no masking):\n";
 $options_usage .= "  --seq-r <f> : with -a, remove sequences with names listed in file <f>\n"; 

@@ -127,7 +127,6 @@ if(($opt_H{"--no-prob"}) && (!($opt_H{"--indi"}))) {
     printf STDERR ("\nERROR, --no-prob only makes sense in combination with --indi.\n"); exit(1);
 }    
 
-
 ################
 # Print banner #
 ################
@@ -143,9 +142,12 @@ if(scalar(@ARGV) != 1) {
 my ($dir) = $ARGV[0];
 $dir =~ s/\/$//;
 
+##################################
+# Validate that everything is go #
+##################################
+
 my @stk_list_A = ();
 my @mask_list_A = ();
-my @log2printA = ();
 my ($cm_file, $template_file, $ssdraw);
 validate_setup($dir, $key_in, \%opt_H, \$cm_file, \$template_file, \$ssdraw, \@stk_list_A, \@mask_list_A);
 my $naln = scalar(@stk_list_A);
@@ -395,10 +397,10 @@ sub validate_setup {
 # Subroutine: print_banner()
 # Incept:     EPN, Thu Sep 24 14:40:39 2009
 # 
-# Purpose:    Print the ssu-mask banner.
+# Purpose:    Print the ssu-draw banner.
 #
 # Arguments: 
-#    $script_call:     call used to invoke this (ssu-mask) script
+#    $script_call:     call used to invoke this (ssu-draw) script
 #    $opt_HR:          REFERENCE to hash of command-line options
 #    $argv_ref:        reference to @ARGV, command-line arguments
 #    $log2printAR:     reference to log2print array with flog file text
