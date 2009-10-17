@@ -1206,7 +1206,7 @@ sub print_banner {
     $start_log_line = scalar(@{$log2printAR});
 
     push(@{$log2printAR}, sprintf("\# $script_name :: define and align SSU rRNA sequences\n"));
-    push(@{$log2printAR}, sprintf("\# SSU-ALIGN 0.1 (June 2009)\n"));
+    push(@{$log2printAR}, sprintf("\# SSU-ALIGN 0.1 (October 2009)\n"));
     push(@{$log2printAR}, sprintf("\# Copyright (C) 2009 HHMI Janelia Farm Research Campus\n"));
     push(@{$log2printAR}, sprintf("\# Freely distributed under the GNU General Public License (GPLv3)\n"));
     push(@{$log2printAR}, sprintf("\# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n"));

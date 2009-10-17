@@ -624,10 +624,13 @@ if($do_remove_seqs_mode)
     printf($log2printA[(scalar(@log2printA)-1)]);
 }
 
-my $log_file       = $dir . "/" . $dir . ".ssu-mask" . $key_out . ".log";
-my $log_file2print = $dir . ".ssu-mask" . $key_out . ".log";
+my $log_file;
+my $log_file2print;
 
 if(!($opt_H{"-a"})) { 
+    $log_file       = $dir . "/" . $dir . $key_out . ".ssu-mask.log";
+    $log_file2print = $dir . $key_out . ".ssu-mask.log";
+
     push(@log2printA, sprintf("#\n"));
     printf($log2printA[(scalar(@log2printA)-1)]);
     push(@log2printA, sprintf("# All files saved in directory: \.\/$dir\/\n"));
@@ -642,6 +645,8 @@ if(!($opt_H{"-a"})) {
     }
 }
 else { 
+    $log_file       = $dir . $key_out . ".ssu-mask.log";
+    $log_file2print = $log_file;
     if($do_filter_mode) {
 	push(@log2printA, sprintf("#\n"));
 	printf($log2printA[(scalar(@log2printA)-1)]);
@@ -880,7 +885,7 @@ sub print_banner {
     $start_log_line = scalar(@{$log2printAR});
 
     push(@{$log2printAR}, sprintf("\# $script_name :: mask SSU rRNA alignments\n"));
-    push(@{$log2printAR}, sprintf("\# SSU-ALIGN 0.1 (June 2009)\n"));
+    push(@{$log2printAR}, sprintf("\# SSU-ALIGN 0.1 (October 2009)\n"));
     push(@{$log2printAR}, sprintf("\# Copyright (C) 2009 HHMI Janelia Farm Research Campus\n"));
     push(@{$log2printAR}, sprintf("\# Freely distributed under the GNU General Public License (GPLv3)\n"));
     push(@{$log2printAR}, sprintf("\# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n"));

@@ -32,12 +32,10 @@ $options_usage .= "  --start-rf <n>  : build a model that starts at *consensus* 
 $options_usage .= "  --end-rf <n>    : with --start-rf, set model end *consensus* position as <n>\n";
 $options_usage .= "  --start-all <n> : build a model that starts at *alignment* position <s>\n";
 $options_usage .= "  --end-all <n>   : with --start-all, set model end *alignment* position as <n>\n";
-$options_usage .= "  --no-build      : save truncated alignment but do not build CM from it\n";
+$options_usage .= "  -1              : output alignment(s) in non-interleaved, 1 line/seq format\n";
 $options_usage .= "  --ps2pdf        : convert mask postscript drawings to pdfs using ps2pdf\n";
 $options_usage .= "  --ps-keep       : with --ps2pdf, keep both postcript files and pdf files\n";
-$options_usage .= "  --omask-rf <s>  : save consensus length mask pertaining to alnment truncation\n";
-$options_usage .= "  --omask-all <s> : save full alignment length mask pertaining to alnment truncation\n";
-$options_usage .= "\noptions for numbering alignment columns (no model will be built):\n";
+$options_usage .= "\noptions for defining consensus and numbering alignment columns (no model will be built):\n";
 $options_usage .= "  --num-rf <n>  : define and number the consensus columns and exit\n";
 $options_usage .= "  --num-all <n> : number all columns in the alignment and exit\n";
 $options_usage .= "\nexpert options for model construction:\n";
@@ -59,6 +57,9 @@ $opt_H{"--start-rf"}  = "";
 $opt_H{"--end-rf"}    = "";
 $opt_H{"--start-all"} = "";
 $opt_H{"--end-all"}   = "";
+$opt_H{"-1"}          = 0;
+$opt_H{"--ps2pdf"}    = 0;
+$opt_H{"--ps-keep"}   = 0;
 $opt_H{"--num-rf"}    = 0;
 $opt_H{"--num-all"}   = 0;
 $opt_H{"--gapthresh"} = "";
@@ -79,6 +80,9 @@ my $opt_return = GetOptions
      'end-rf=i'    => \$opt_H{"--end-rf"},
      'start-all=i' => \$opt_H{"--start-all"},
      'end-all=i'   => \$opt_H{"--end-all"},
+     '1'           => \$opt_H{"-1"},
+     'ps2pdf'      => \$opt_H{"--ps2pdf"},
+     'ps-keep'     => \$opt_H{"--ps-keep"},
      'num-rf'      => \$opt_H{"--num-rf"},
      'num-all'     => \$opt_H{"--num-all"},
      'gapthresh=f' => \$opt_H{"--gapthresh"},
@@ -99,13 +103,17 @@ if($opt_H{"--key-out"}  ne "") { $key_out   = "." . opt_H{"--key-out"};  }
 # There are only 2 possible modes, they are exclusive.
 my $do_build_mode  = 1; # default mode, build a CM
 my $do_number_mode = 0; # number alignment columns and exit
-if(($opt_H{"--num-all"}) || ($opt_H{"--num-all"})) {
+if(($opt_H{"--num-rf"}) || ($opt_H{"--num-all"})) {
     $do_build_mode  = 0;
     $do_number_mode = 1;
 }
+# In build mode, we may also optionally truncate the alignment
+my $do_truncate = 0;
+if($opt_HR->{"--start-rf"}  ne "") { $do_truncate = 1; }
+if($opt_HR->{"--start-all"} ne "") { $do_truncate = 1; }
 
-if($opt_H{"--num-all"}) { 
-    # --num-all is incompatible with all other options except --key-out
+if(($opt_H{"--num-all"}) || ($opt_H{"--num-rf"})) { 
+    # --num-all and --num-rf are  incompatible with all other options except --rf, --key-out, -1
     if(($opt_H{"-o"}          ne "") || 
        ($opt_H{"-F"})                ||
        ($opt_H{"--append"})          ||
@@ -113,24 +121,11 @@ if($opt_H{"--num-all"}) {
        ($opt_H{"--end-rf"}    ne "") ||
        ($opt_H{"--start-all"} ne "") || 
        ($opt_H{"--end-all"}   ne "") ||
-       ($opt_H{"--rf"})              ||
+       ($opt_H{"--ps2pdf"})          ||
+       ($opt_H{"--ps-keep"})         ||
        ($opt_H{"--eent"})            ||
        ($opt_H{"--ere"}       ne "")) {
-	printf STDERR ("\nERROR, --num-all is incompatible with all other options except for --key-out.\n"); exit(1);
-    }
-}
-if($opt_H{"--num-rf"}) { 
-    # --num-rf is incompatible with all other options except --key-out and --rf
-    if(($opt_H{"-o"}          ne "") || 
-       ($opt_H{"-F"})                ||
-       ($opt_H{"--append"})          ||
-       ($opt_H{"--start-rf"}  ne "") || 
-       ($opt_H{"--end-rf"}    ne "") ||
-       ($opt_H{"--start-all"} ne "") || 
-       ($opt_H{"--end-all"}   ne "") ||
-       ($opt_H{"--eent"})            ||
-       ($opt_H{"--ere"}       ne "")) {
-	printf STDERR ("\nERROR, --num-rf is incompatible with all other options except for --key-out and --rf.\n"); exit(1);
+	printf STDERR ("\nERROR, --num-rf and --num-all are incompatible with all other options except for --rf, -1, and --key-out.\n"); exit(1);
     }
 }
 if(($opt_H{"--start-rf"} ne "") && ($opt_H{"--end-rf"} eq "")) { 
@@ -152,7 +147,6 @@ if(($opt_H{"--append"} ne "") && (($opt_H{"-o"}) ne "")) {
     printf STDERR ("\nERROR, --append is incompatible with -o.\n"); exit(1); 
 }
 
-
 ################
 # Print banner #
 ################
@@ -170,8 +164,9 @@ my ($aln_file) = $ARGV[0];
 ##################################
 # Validate that everything is go #
 ##################################
-my ($cmbuild, $cm_file, $alimanip, $ssdraw, $template_file);
-validate_setup($aln_file, \%opt_H, \$cmbuild, \$cm_file, \$alimanip, \$ssdraw, \$template_file);
+my ($cmbuild, $cm_file, $alimanip, $ssdraw, $template_file, $num_aln_file, $log_file);
+validate_setup($aln_file, $key_out, \%opt_H, $do_build_mode, $do_number_mode, $do_truncate,
+	       \$cmbuild, \$cm_file, \$alimanip, \$ssdraw, \$template_file, \$log_file);
 
 if(scalar(@ARGV) != 1) {   
     print "Incorrect number of command line arguments.\n";
@@ -183,37 +178,35 @@ if(scalar(@ARGV) != 1) {
 #####################
 # Handle Build mode #
 #####################
-my $max_width;
-my ($i, $tmp, $command, $aln_root, $aln_root2print, $final_key, $nec_width, $dashes, $print_input_aln);
 my $ssdraw_failed_at_least_once = 0;
 my $ssdraw_worked_at_least_once = 0;
+my $gapthresh = $opt_H{"--gapthresh"};
+if($gapthresh eq "")  { $gapthresh = $df_gapthresh; }
 
 if($do_build_mode) 
 { 
-    my $gapthresh = $opt_H{"--gapthresh"};
-    if($gapthresh eq "")  { $gapthresh = $df_gapthresh; }
-
-    # Build a CM 
-    build_cm($cmbuild, $aln_file, $cm_file, $gapthresh, \%opt_H, \@log2printA);
+    if($do_truncate) { 
+	run_alimanip_to_truncate($alimanip, $aln_file, $num_aln_file, $gapthresh, \%opt_H, \@log2printA);
+	
+    run_cmbuild($cmbuild, $aln_file, $cm_file, $gapthresh, \%opt_H, \@log2printA);
 }    
 
 ######################
 # Handle Number mode #
 ######################
-if($do_number_mode) { 
-    printf("number mode.\n");
+if($do_number_mode) 
+{ 
+    run_alimanip_to_number($alimanip, $aln_file, $gapthresh, \%opt_H, \@log2printA);
 }
 
-#my $log_file       = $dir . ".ssu-build" . $key_out . ".log";
-#my $log_file2print = $dir . ".ssu-build" . $key_out . ".log";
-
-#push(@log2printA, sprintf("#\n"));
-#printf($log2printA[(scalar(@log2printA)-1)]);
-#push(@log2printA, sprintf("# This output saved to log file: $log_file2print.\n"));
-#printf($log2printA[(scalar(@log2printA)-1)]);
-#print_log($log_file, \@log2printA);
+push(@log2printA, sprintf("#\n"));
+printf($log2printA[(scalar(@log2printA)-1)]);
+push(@log2printA, sprintf("# This output saved to log file: $log_file.\n"));
+printf($log2printA[(scalar(@log2printA)-1)]);
+print_log($log_file, \@log2printA);
 
 exit(0);
+
 
 ###############
 # subroutines #
@@ -241,21 +234,21 @@ sub print_banner {
     my ($i, $script_name, $start_log_line);
 
     my $enabled_options;
-    if($opt_H{"-h"})                { $enabled_options .= " -h"; }
-    if($opt_H{"-o"}          ne "") { $enabled_options .= " -o " .          $opt_H{"-o"}; }
-    if($opt_H{"-F"})                { $enabled_options .= " -F"; }
-    if($opt_H{"--append"})          { $enabled_options .= " --append"; }
-    if($opt_H{"--key-out"}   ne "") { $enabled_options .= " --key-out " .   $opt_H{"--key-out"}; }   
-    if($opt_H{"--start-rf"}  ne "") { $enabled_options .= " --start-rf " .  $opt_H{"--start-rf"}; }  
-    if($opt_H{"--end-rf"}    ne "") { $enabled_options .= " --end-rf " .    $opt_H{"--end-rf"}; }   
-    if($opt_H{"--start-all"} ne "") { $enabled_options .= " --start-all " . $opt_H{"--start-all"}; }  
-    if($opt_H{"--end-all"}   ne "") { $enabled_options .= " --end-all " .   $opt_H{"--end-all"}; }  
-    if($opt_H{"--num-rf"})          { $enabled_options .= " --num-rf"; }  
-    if($opt_H{"--num-all"})         { $enabled_options .= " --num-all"; }
-    if($opt_H{"--gapthresh"} ne "") { $enabled_options .= " --gapthresh " . $opt_H{"--gapthresh"}; } 
-    if($opt_H{"--rf"})              { $enabled_options .= " --rf"; }  
-    if($opt_H{"--eent"})            { $enabled_options .= " --eent"; }
-   if($opt_H{"--ere"}        ne "") { $enabled_options .= " --ere " .       $opt_H{"--ere"}; }
+    if($opt_HR->{"-h"})                { $enabled_options .= " -h"; }
+    if($opt_HR->{"-o"}          ne "") { $enabled_options .= " -o " .          $opt_HR->{"-o"}; }
+    if($opt_HR->{"-F"})                { $enabled_options .= " -F"; }
+    if($opt_HR->{"--append"})          { $enabled_options .= " --append"; }
+    if($opt_HR->{"--key-out"}   ne "") { $enabled_options .= " --key-out " .   $opt_HR->{"--key-out"}; }   
+    if($opt_HR->{"--start-rf"}  ne "") { $enabled_options .= " --start-rf " .  $opt_HR->{"--start-rf"}; }  
+    if($opt_HR->{"--end-rf"}    ne "") { $enabled_options .= " --end-rf " .    $opt_HR->{"--end-rf"}; }   
+    if($opt_HR->{"--start-all"} ne "") { $enabled_options .= " --start-all " . $opt_HR->{"--start-all"}; }  
+    if($opt_HR->{"--end-all"}   ne "") { $enabled_options .= " --end-all " .   $opt_HR->{"--end-all"}; }  
+    if($opt_HR->{"--num-rf"})          { $enabled_options .= " --num-rf"; }  
+    if($opt_HR->{"--num-all"})         { $enabled_options .= " --num-all"; }
+    if($opt_HR->{"--gapthresh"} ne "") { $enabled_options .= " --gapthresh " . $opt_HR->{"--gapthresh"}; } 
+    if($opt_HR->{"--rf"})              { $enabled_options .= " --rf"; }  
+    if($opt_HR->{"--eent"})            { $enabled_options .= " --eent"; }
+   if($opt_HR->{"--ere"}        ne "") { $enabled_options .= " --ere " .       $opt_HR->{"--ere"}; }
 
     $script_call =~ s/^\.+\///;
     $script_name = $script_call;
@@ -263,8 +256,8 @@ sub print_banner {
 
     $start_log_line = scalar(@{$log2printAR});
 
-    push(@{$log2printAR}, sprintf("\# $script_name :: draw SSU rRNA secondary structure diagrams\n"));
-    push(@{$log2printAR}, sprintf("\# SSU-ALIGN 0.1 (June 2009)\n"));
+    push(@{$log2printAR}, sprintf("\# $script_name :: build SSU rRNA covariance models\n"));
+    push(@{$log2printAR}, sprintf("\# SSU-ALIGN 0.1 (October 2009)\n"));
     push(@{$log2printAR}, sprintf("\# Copyright (C) 2009 HHMI Janelia Farm Research Campus\n"));
     push(@{$log2printAR}, sprintf("\# Freely distributed under the GNU General Public License (GPLv3)\n"));
     push(@{$log2printAR}, sprintf("\# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n"));
@@ -292,15 +285,23 @@ sub print_banner {
 #             - the alignment file exists and ends in '.stk' or '.sto'
 #             - the required executable programs exist.
 #             - the CM file we're building does not exist (unless -F or -A)
+#             - determine name for output '.log' file
+#             - determine name for numbered alignment file (we may or may not need this)
+#             - determine name for truncated alignment file (we may or may not need this)
 #
 # Arguments: 
-# $aln_file:          the alignment file we'll build CM from (or number columns for)
-# $opt_HR:            reference to the hash of command-line options
-# $cmbuild_ref:       RETURN; the cmbuild command
-# $cm_file_ref:       RETURN; the path to the CM file we'll write to
-# $alimanip_ref:      RETURN; the esl-alimanip command (only nec if building truncated model)
-# $ssdraw_ref:        RETURN; the esl-ssdraw command (only nec if building truncated model)
-# $template_file_ref: RETURN; the path to the template file for ssdraw (only nec if building truncated model)
+# $aln_file:           the alignment file we'll build CM from (or number columns for)
+# $key_out:            string to append to names of output files
+# $opt_HR:             reference to the hash of command-line options
+# $do_build_mode:      TRUE if we're in build mode (will build a CM)
+# $do_number_mode:     TRUE if we're in number mode, we'll not build a CM
+# $do_truncate:        TRUE if we will truncate the alignment
+# $cmbuild_ref:        RETURN; the cmbuild command
+# $cm_file_ref:        RETURN; the path to the CM file we'll write to
+# $alimanip_ref:       RETURN; the esl-alimanip command (only nec if building truncated model)
+# $ssdraw_ref:         RETURN; the esl-ssdraw command (only nec if building truncated model)
+# $template_file_ref:  RETURN; the path to the template file for ssdraw (only nec if building truncated model)
+# $log_file_ref:       RETURN; the path and name of what will become the log output file
 #
 # Returns:    Nothing, if it returns, everything is valid.
 # 
@@ -310,9 +311,9 @@ sub print_banner {
 #
 ####################################################################
 sub validate_setup { 
-    my $narg_expected = 7;
+    my $narg_expected = 12;
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, validate_setup() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($aln_file, $opt_HR, $cmbuild_ref, $cm_file_ref, $alimanip_ref, $ssdraw_ref, $template_file_ref) = @_;
+    my($aln_file, $key_out, $opt_HR, $do_build_mode, $do_number_mode, $do_truncate, $cmbuild_ref, $cm_file_ref, $alimanip_ref, $ssdraw_ref, $template_file_ref, $log_file_ref) = @_;
 
     #Validate that the alignment file exists.
     if(!(-e $aln_file)) { printf STDERR ("\nERROR, alignment file $aln_file does not exist.\n"); exit(1); }
@@ -322,45 +323,51 @@ sub validate_setup {
     elsif($root =~ s/\.sto$//) { ; }
     # otherwise we'll just append '.cm' to the full name of the alignment file
 
-    my $cm_file;
-    if($opt_HR->{"--append"} ne "") { 
-	$cm_file = $opt_HR->{"--append"};
-	if(!(-e $cm_file)) { 
-	    printf STDERR ("\nERROR, --append $cm_file enabled, but $cm_file does not exist.\n"); exit(1); 
-	}
-    }
-    else { 
-	if($opt_HR->{"-o"} ne "") { # we've already checked that user did not enable both -o and --append (before printing banner in main)
-	    $cm_file = $opt_HR->{"-o"};
-	}
-	else { 
-	    $cm_file = $root . ".cm";
-	}
-	if(-e $cm_file) { 
-	    if(!($opt_HR->{"-F"})) { 
-		printf STDERR ("ERROR, CM file $cm_file already exists. Delete it or use -F to overwrite it.\n"); exit(1); 
+    my $log_file = $root . $key_out . ".ssu-build.log";
+
+    my $cm_file = "";
+    my $cmbuild = "";
+    my $trash = "";
+    my $alimanip = "";
+    if($do_build_mode) { 
+	if($opt_HR->{"--append"} ne "") { 
+	    $cm_file = $opt_HR->{"--append"};
+	    if(!(-e $cm_file)) { 
+		printf STDERR ("\nERROR, --append $cm_file enabled, but $cm_file does not exist.\n"); exit(1); 
 	    }
 	}
-    }
+	else { 
+	    if($opt_HR->{"-o"} ne "") { # we've already checked that user did not enable both -o and --append (before printing banner in main)
+		$cm_file = $opt_HR->{"-o"};
+	    }
+	    else { 
+		$cm_file = $root . ".cm";
+	    }
+	    if(-e $cm_file) { 
+		if(!($opt_HR->{"-F"})) { 
+		    printf STDERR ("ERROR, CM file $cm_file already exists. Delete it or use -F to overwrite it.\n"); exit(1); 
+		}
+	    }
+	}
 
-    #Validate that ssu-cmbuild exists and is in path
-    my $cmbuild = "ssu-cmbuild";
-    my $trash = `$cmbuild -h`;
-    if($? == -1) { printf STDERR ("\nERROR, the required executable $cmbuild is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
+	#Validate that ssu-cmbuild exists and is in path
+	$cmbuild = "ssu-cmbuild";
+	$trash = `$cmbuild -h`;
+	if($? == -1) { printf STDERR ("\nERROR, the required executable $cmbuild is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
+    }
 
     my $alimanip = "";
     my $ssdraw_file = "";
     my $template_file = "";
 
-    my $do_truncated_model = 0;
-    if($opt_HR->{"--start-rf"}  ne "") { $do_truncated_model = 1; }
-    if($opt_HR->{"--start-all"} ne "") { $do_truncated_model = 1; }
-    if($do_truncated_model) { 
+    if($do_truncate || $do_number_mode) { 
 	# verify that we can run esl-alimanip
 	$alimanip = "ssu-esl-alimanip";
 	$trash = `$alimanip -h`;
 	if($? == -1) { printf STDERR ("\nERROR, the required executable $alimanip is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
-	
+    }
+    if($do_truncate) { 
+	#verify that we know where the template file and esl-ssdraw are 
 	my $ssualigndir = $ENV{'SSUALIGNDIR'};
 	if(! exists($ENV{'SSUALIGNDIR'})) { 
 	    printf STDERR ("\nERROR, the SSUALIGNDIR environment variable should be set but it's not.\nFor help, see the User's Guide Installation section.\n"); exit(1);
@@ -376,7 +383,6 @@ sub validate_setup {
 	    if($? == -1) { $ssdraw = ""; }
 	}
     }	
-
     #Validate that 'ps2pdf' exists if --ps2pdf.
     if($opt_HR->{"--ps2pdf"}) { 
 	#If --ps2pdf, validate that ps2pdf is in PATH
@@ -389,6 +395,8 @@ sub validate_setup {
     $$alimanip_ref      = $alimanip;
     $$ssdraw_ref        = $ssdraw;
     $$template_file_ref = $template_file;
+    $$num_aln_file_ref  = $num_aln_file;
+    $$log_file_ref      = $log_file;
     
     return;
 }
@@ -430,6 +438,7 @@ sub print_timing {
 
     push(@{$log2printAR}, sprintf("%s %2s:%2s:%2s\n", $prefix, $thours, $tminutes, $tseconds));
 
+    my $i;
     for($i = $start_log_line; $i < scalar(@{$log2printAR}); $i++) { 
 	printf($log2printAR->[$i]);
     }
@@ -463,10 +472,10 @@ sub print_log {
 
 
 #####################################################################
-# subroutine: build_cm()
+# subroutine: run_cmbuild()
 # incept:     EPN, Wed Oct 14 14:29:00 2009
 # 
-# Purpose:    Build a CM from an alignment using cmbuild.
+# Purpose:    Run cmbuild on an alignment file to create CM(s).
 #
 # Arguments:  
 #   $cmbuild:          path and name of cmbuild/ssu-cmbuild executable
@@ -479,31 +488,233 @@ sub print_log {
 # Returns:  Nothing, if it returns, everything is valid.
 # 
 ####################################################################
-sub build_cm {
+sub run_cmbuild {
     my $narg_expected = 6;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, mask_alignment() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, run_cmbuild() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my ($cmbuild, $aln_file, $cm_file, $gapthresh, $opt_HR, $log2printAR) = @_;
 
     my $extra_opts = "";
 
-    if($opt_H{"--append"} ne "") { $extra_opts .= " -A "; }
-    if($opt_H{"--rf"})           { $extra_opts .= " --rf " . $opt_H{"--rf"}; }
-    if($opt_H{"-F"})             { $extra_opts .= " -F"; }
+    if($opt_HR->{"--append"} ne "") { $extra_opts .= " -A "; }
+    if($opt_HR->{"--rf"})           { $extra_opts .= " --rf " . $opt_HR->{"--rf"}; }
+    if($opt_HR->{"-F"})             { $extra_opts .= " -F"; }
 
-    if($opt_H{"--eent"})  { $extra_opts .= " --eent"; }
+    if($opt_HR->{"--eent"})  { $extra_opts .= " --eent"; }
     else                  { $extra_opts .= " --enone"; }
-    if($opt_H{"--ere"})   { $extra_opts .= " --ere " . $opt_H{"--ere"}; }
+    if($opt_HR->{"--ere"})   { $extra_opts .= " --ere " . $opt_HR->{"--ere"}; }
     
-    $command = "$cmbuild $extra_opts --gapthresh $gapthresh $cm_file $aln_file 2>&1";
-    $tmp = `$command`;
+    push(@{$log2printAR}, sprintf("#\n# Building CM(s)...\n"));
+    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+    push(@{$log2printAR}, sprintf("#\n"));
+    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+    
+    my $command = "$cmbuild $extra_opts --gapthresh $gapthresh $cm_file $aln_file 2>&1";
+    my $tmp = `$command`;
     if(($? >> 8) != 0) { 
 	printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); 
     }
-    printf("cmbuild output:\n$tmp\n");
+    
+    my @tmpA = split("\n", $tmp);
+    my ($i, $line);
+    my $ncm       = 0;
+    my @cm_nameA  = ();
+    my @nseqA     = ();
+    my @eff_nseqA = ();
+    my @alenA     = ();
+    my @clenA     = ();
+    my @bpsA      = ();
+    my @bifA      = ();
+    my @cm_reA    = ();
+    my @hmm_reA   = ();
+    my $max_width_name = length("CM name"); 
+    my $max_width_file = length($cm_file);
+    if($max_width_file < length("CM file name")) { $max_width_file = length("CM file name"); }
+    foreach $line (@tmpA) { 
+	  ######################################################################################
+	  # Example cmbuild output:
+	  #
+          #  aln  cm idx  name         nseq  eff_nseq    alen   clen   bps  bifs     CM    HMM
+          # ----  ------  -------  --------  --------  ------  -----  ----  ----  -----  -----
+          #    1       1  archaea        23     23.00    1563   1508   471    30  1.434  1.235
+	  ######################################################################################
+	if($line =~ /^\s*\d+\s+\d+\s+(\S+)\s+(\d+)\s+(\S+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\S+)\s+(\S+)/) { 
+	    push(@cm_nameA,  $1);
+	    push(@nseqA,     $2); 
+	    push(@eff_nseqA, $3); #not printed
+	    push(@alenA,     $4); 
+	    push(@clenA,     $5);
+	    push(@bpsA,      $6); 
+	    push(@bifA,      $7); #not printed
+	    push(@cm_reA,    $8); #not printed
+	    push(@hmm_reA,   $9); #not printed
+	    if(length($1) > $max_width_name) { $max_width_name = length($1); }
+	    $ncm++;
+	}
+    }
 
-    return 0;
+    my $dashes_file = ""; for($i = 0; $i < $max_width_file; $i++) { $dashes_file .= "-"; }
+    my $dashes_name = ""; for($i = 0; $i < $max_width_name; $i++) { $dashes_name .= "-"; }
+    if($ncm > 0) { 
+	push(@{$log2printAR}, sprintf("# %-*s  %-*s  %6s  %9s  %9s  %4s\n", $max_width_file, "", $max_width_name, "", "num", "alignment", "consensus", "num"));
+	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+	push(@{$log2printAR}, sprintf("# %-*s  %-*s  %6s  %9s  %9s  %4s\n", $max_width_file, "CM file name", $max_width_name, "CM name", "seqs", "length", "length", "bps"));
+	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+	push(@{$log2printAR}, sprintf("# %-*s  %-*s  %6s  %9s  %9s  %4s\n", $max_width_file, $dashes_file, $max_width_name, $dashes_name, "------", "---------", "---------", "----"));
+	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+
+	for($i = 0; $i < $ncm; $i++) { 
+	    push(@{$log2printAR}, sprintf("  %-*s  %-*s  %6s  %9s  %9s  %4s\n", $max_width_file, $cm_file, $max_width_name, $cm_nameA[$i], $nseqA[$i], $alenA[$i], $clenA[$i], $bpsA[$i]));
+	    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+	}
+    }
+    return;
 }
 
+
+#####################################################################
+# subroutine: run_alimanip_to_number()
+# incept:     EPN, Fri Oct 16 14:08:22 2009
+# 
+# Purpose:    Run esl-alimanip/ssu-esl-alimanip on an alignment file 
+#             to number the columns within it. This is only called if
+#             either --num-rf or --num-all (or both) are enabled.
+#
+# Arguments:  
+#   $alimanip:         path and name of esl-alimanip/ssu-esl-alimanip executable
+#   $aln_file:         path and name of alignment file to build CM from
+#   $gapthresh:        gap threshold to use when building the model
+#   $opt_HR:           reference to the hash of command-line options
+#   $log2printAR:      reference to log2print array with log file text
+# 
+# Returns:  Nothing, if it returns, everything is valid.
+# 
+####################################################################
+sub run_alimanip_to_number{
+    my $narg_expected = 5;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, run_alimanip() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($alimanip, $aln_file, $gapthresh, $opt_HR, $log2printAR) = @_;
+
+    my $root = $aln_file; 
+    $root =~ s/.+\///;  #remove directory path
+    if($root =~ s/\.stk$//)    { ; }
+    elsif($root =~ s/\.sto$//) { ; }
+    # otherwise we'll just append '.cm' to the full name of the alignment file
+    my $num_aln_file = $root . $key_out . ".num.stk";
+
+    my $extra_opts = "";
+    if(!($opt_HR->{"--rf"})) { # if --rf enabled, we don't redefine consensus columns
+	$extra_opts .= " -g --gapthresh $gapthresh";
+    }
+
+    if(($opt_HR->{"--num-rf"}) && ($opt_HR->{"--num-all"})) { 
+	$extra_opts .= " --num-rf --num-all"; 
+	push(@{$log2printAR}, sprintf("#\n# Defining and numbering consensus columns and all columns in alignment file...\n"));
+	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+    }
+    elsif($opt_HR->{"--num-rf"})  { 
+	$extra_opts .= " --num-rf"; 
+	push(@{$log2printAR}, sprintf("#\n# Defining and numbering consensus columns in alignment file...\n"));
+	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+    }
+    elsif($opt_HR->{"--num-all"}) { 
+	$extra_opts .= " --num-all"; 
+	push(@{$log2printAR}, sprintf("#\n# Defining consensus columns and numbering columns in alignment file...\n"));
+	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+    }
+    push(@{$log2printAR}, sprintf("#\n"));
+    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+    
+    my $command = "$alimanip $extra_opts -o $num_aln_file $aln_file 2>&1";
+    my $tmp = `$command`;
+    printf("$command\n");
+    if(($? >> 8) != 0) { 
+	printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); 
+    }
+
+    my $max_width = length($num_aln_file);
+    if($max_width < length("output aln file")) { $max_width = length("output aln file"); }; 
+    my $i;
+    my $dashes = ""; for($i = 0; $i < $max_width; $i++) { $dashes .= "-"; }
+
+    push(@{$log2printAR}, sprintf("# %-*s\n", $max_width, "output aln file"));
+    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+    push(@{$log2printAR}, sprintf("# %-*s\n", $max_width, $dashes));
+    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+    push(@{$log2printAR}, sprintf("  %-*s\n", $max_width, $num_aln_file));
+    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+
+    return;
+}
+
+
+#####################################################################
+# subroutine: run_alimanip_to_truncate()
+# incept:     EPN, Fri Oct 16 16:20:17 2009
+# 
+# Purpose:    Run esl-alimanip/ssu-esl-alimanip on an alignment file 
+#             to remove leading and trailing columns of the alignment
+#             as specified by range <x>..<y> for alignment columns 
+#             (with --start-all <x> --end-all <y>) or for consensus
+#             columns (with --start-rf <x> --end-rf <y>).
+#
+# Arguments:  
+#   $alimanip:         path and name of esl-alimanip/ssu-esl-alimanip executable
+#   $aln_file:         path and name of alignment file to build CM from
+#   $gapthresh:        gap threshold to use when building the model
+#   $opt_HR:           reference to the hash of command-line options
+#   $log2printAR:      reference to log2print array with log file text
+# 
+# Returns:  Nothing, if it returns, everything is valid.
+# 
+####################################################################
+sub run_alimanip_to_truncate{
+    my $narg_expected = 5;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, run_alimanip() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($alimanip, $aln_file, $opt_HR, $log2printAR) = @_;
+
+    my $root = $aln_file; 
+    $root =~ s/.+\///;  #remove directory path
+    if($root =~ s/\.stk$//)    { ; }
+    elsif($root =~ s/\.sto$//) { ; }
+    # otherwise we'll just append '.cm' to the full name of the alignment file
+    my $trunc_aln_file = $root . $key_out;
+
+    if(($opt_HR->{"--start-rf"} ne "") && ($opt_HR->{"--end-rf"} ne "")) {
+	$extra_opts .= " --start-rf " . $opt_HR->{"--start-rf"} . " --end-rf " . $opt_HR->{"--end-rf"};
+	push(@{$log2printAR}, sprintf("#\n# Truncating alignment; saving columns between consensus columns " . $opt_HR->{"--start-rf"} . " and " . $opt_HR->{"--end-rf"} . "...\n"));
+	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+	$trunc_aln_file .= "rf." . $opt_HR->{"--start-rf"} . "-" . $opt_HR->{"--end-rf"} . ".stk";
+    }
+    elsif(($opt_HR->{"--start-all"} ne "") && ($opt_HR->{"--end-all"} ne "")) {
+	$extra_opts .= " --start-all " . $opt_HR->{"--start-all"} . " --end-all " . $opt_HR->{"--end-all"};
+	push(@{$log2printAR}, sprintf("#\n# Truncating alignment; saving columns between columns " . $opt_HR->{"--start-all"} . " and " . $opt_HR->{"--end-all"} . "...\n"));
+	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+	$trunc_aln_file .= "all." . $opt_HR->{"--start-all"} . "-" . $opt_HR->{"--end-all"} . ".stk";
+    }
+    push(@{$log2printAR}, sprintf("#\n"));
+    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+    
+    my $command = "$alimanip $extra_opts -o $trunc_aln_file $aln_file 2>&1";
+    my $tmp = `$command`;
+    printf("$command\n");
+    if(($? >> 8) != 0) { 
+	printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); 
+    }
+
+    my $max_width = length($trunc_aln_file);
+    if($max_width < length("output aln file")) { $max_width = length("output aln file"); }; 
+    my $i;
+    my $dashes = ""; for($i = 0; $i < $max_width; $i++) { $dashes .= "-"; }
+
+    push(@{$log2printAR}, sprintf("# %-*s\n", $max_width, "output aln file"));
+    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+    push(@{$log2printAR}, sprintf("# %-*s\n", $max_width, $dashes));
+    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+    push(@{$log2printAR}, sprintf("  %-*s\n", $max_width, $trunc_aln_file));
+    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+
+    return;
+}
 
 #####################################################################
 # Subroutine: run_ssdraw
