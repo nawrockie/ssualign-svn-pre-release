@@ -45,8 +45,7 @@ $options_usage .= "  --rf            : use consensus column (#=GC RF) annotation
 $options_usage .= "  --eent          : use 'entropy weighting' method to achieve target relative entropy\n";
 $options_usage .= "  --ere <x>       : with --eent, set target relative entropy as <x>\n";
 $options_usage .= "\noptions for output of secondary structure diagram, only relevant with -d and -t:\n";
-$options_usage .= "  --ps2pdf  : convert mask postscript drawings to pdfs using ps2pdf\n";
-$options_usage .= "  --ps-keep : with --ps2pdf, keep both postcript files and pdf files\n";
+$options_usage .= "  --rm-ps : if ps2pdf is in your path, convert ps to pdf and delete postscripts\n";
 
 ###################
 # Process options #
@@ -68,8 +67,6 @@ $opt_H{"--eent"}      = 0;
 $opt_H{"--ere"}       = "";
 $opt_H{"--ps2pdf"}    = 0;
 $opt_H{"--ps-keep"}   = 0;
-
-my $df_gapthresh = 0.80;
 
 Getopt::Long::Configure ("bundling");
 my $opt_return = GetOptions
@@ -107,10 +104,9 @@ if($opt_H{"--num"}) {
     $do_build_mode  = 0;
     $do_number_mode = 1;
 }
+
 # In build mode, we may also optionally truncate the alignment
-my $do_truncate = 0;
 if($opt_H{"-t"} ne "") { 
-    $do_truncate = 1; 
     #check if the -t argument is valid
     if($opt_H{"-t"} =~ /(\d+)\-(\d+)/) { 
 	if($1 > $2) { 
@@ -134,6 +130,16 @@ if($opt_H{"-t"} ne "") {
 	printf STDERR ("\nERROR, formatting of the -t argument " . $opt_H{"-t"} . " is invalid.\nIt must include two integers separated by a \"-\"; such as \"-t 822-930\"\n");
 	exit(1);
     }
+}
+
+# In build mode, if we're truncating we may also want to try to draw a secondary structure diagram
+# of the truncation, but only if -d and --gapthresh not enabled (or set to default)
+my $do_draw = 0;
+if(($opt_HR->{"-t"} ne "") && 
+   ($opt_HR->{"-d"})       && 
+   (($opt_HR->{"--gapthresh"} eq "") || ($opt_HR->{"--gapthresh"} == $df_gapthresh))) 
+{ 
+    $do_draw = 1; 
 }
 
 if($opt_H{"--num"}) { 
@@ -174,27 +180,31 @@ if(scalar(@ARGV) != 1) {
 }
 my ($aln_file_or_model_name) = $ARGV[0];
 
-##################################
-# Validate that everything is go #
-##################################
-my ($aln_file, $cmbuild, $cm_file, $alimanip, $ssdraw, $template_file, $num_aln_file, $log_file);
-validate_setup($aln_file_or_model_name, $key_out, \%opt_H, $do_build_mode, $do_number_mode, $do_truncate, 
-	       \$aln_file, \$cmbuild, \$cm_file, \$alimanip, \$ssdraw, \$template_file, \$log_file);
-
+##################################################################
+# Validate that everything is go and determine output file names #
+##################################################################
+my ($aln_file, $cmbuild, $cm_file, $cm_name, $alimanip, $ssdraw, $template_file, $num_aln_file, $trunc_aln_file, $log_file, $ps2pdf, $ps_file, $pdf_file);
+validate_and_setup($aln_file_or_model_name, $key_out, \%opt_H, $do_build_mode, $do_number_mode, $do_draw, 
+		   \$aln_file, \$cmbuild, \$cm_file, \$cm_name, \$alimanip, \$ssdraw, \$template_file, \$ps2pdf, \$ps_file, \$pdf_file, \$num_aln_file, \$trunc_aln_file, \$log_file);
 #####################
 # Handle Build mode #
 #####################
 my $ssdraw_failed_at_least_once = 0;
 my $ssdraw_worked_at_least_once = 0;
 my $gapthresh = $opt_H{"--gapthresh"};
+my $df_gapthresh = 0.80;
 if($gapthresh eq "")  { $gapthresh = $df_gapthresh; }
 
 if($do_build_mode) 
 { 
-    if($do_truncate) { 
-	run_alimanip_to_truncate($alimanip, $aln_file, $num_aln_file, $gapthresh, \%opt_H, \@log2printA);
+    if($opt_H{"-t"} ne "") { 
+	run_alimanip_to_truncate($alimanip, $aln_file, $trunc_aln_file, $gapthresh, \%opt_H, \@log2printA);
+	$aln_file = $trunc_aln_file;
     }	
-    run_cmbuild($cmbuild, $aln_file, $cm_file, $gapthresh, \%opt_H, \@log2printA);
+    run_cmbuild($cmbuild, $aln_file, $cm_file, $cm_name, $gapthresh, \%opt_H, \@log2printA);
+    if($do_draw) { 
+	run_ssdraw($ssdraw, $template_file, $aln_file, $ps_file, $pdf_file, $ps2pdf, \%opt_H, \@log2printA);
+    }
 }    
 
 ######################
@@ -202,7 +212,7 @@ if($do_build_mode)
 ######################
 if($do_number_mode) 
 { 
-    run_alimanip_to_number($alimanip, $aln_file, $gapthresh, \%opt_H, \@log2printA);
+    run_alimanip_to_number($alimanip, $aln_file, $num_aln_file, $gapthresh, \%opt_H, \@log2printA);
 }
 
 push(@log2printA, sprintf("#\n"));
@@ -283,16 +293,18 @@ sub print_banner {
 
 
 #####################################################################
-# Subroutine: validate_setup()
+# Subroutine: validate_and_setup()
 # Incept:     EPN, Mon Nov  3 15:05:56 2008
 # 
-# Purpose:    Validate that: 
-#             - the alignment file exists and ends in '.stk' or '.sto'
-#             - the required executable programs exist.
-#             - the CM file we're building does not exist (unless -F or -A)
+# Purpose:    Validation and setup:
+#             - validate that the alignment file exists and ends in '.stk' or '.sto'
+#             - validate that the required executable programs exist.
+#             - validate that the CM file we're building does not exist (unless -F or -A)
 #             - determine name for output '.log' file
 #             - determine name for numbered alignment file (we may or may not need this)
 #             - determine name for truncated alignment file (we may or may not need this)
+#             - determine the name for the CM, or leave it as empty string for cmbuild automatic naming 
+#             - determine the name for ps and pdf files, if $do_draw is true
 #
 # Arguments: 
 # $aln_file_or_model_name: the alignment file we'll build CM from (or number columns for), 
@@ -301,13 +313,19 @@ sub print_banner {
 # $opt_HR:             reference to the hash of command-line options
 # $do_build_mode:      TRUE if we're in build mode (will build a CM)
 # $do_number_mode:     TRUE if we're in number mode, we'll not build a CM
-# $do_truncate:        TRUE if we will truncate the alignment
+# $do_draw:            TRUE to set up variables to attempt and esl-ssdraw later
 # $aln_file_ref:       RETURN; the path to the alignment file we'll use
 # $cmbuild_ref:        RETURN; the cmbuild command
 # $cm_file_ref:        RETURN; the path to the CM file we'll write to
+# $cm_name_ref:        RETURN; the name for the CM (will be empty string if we want cmbuild auto naming)
 # $alimanip_ref:       RETURN; the esl-alimanip command (only nec if building truncated model)
 # $ssdraw_ref:         RETURN; the esl-ssdraw command (only nec if building truncated model)
 # $template_file_ref:  RETURN; the path to the template file for ssdraw (only nec if building truncated model)
+# $ps2pdf_ref:         RETURN; the ps2pdf command, or "" if it doesn't work or is irrelevant
+# $ps_file_ref:        RETURN; the postscript file we may or may not create
+# $pdf_file_ref:       RETURN; the pdf file we may or may not create
+# $num_aln_file_ref:   RETURN; the path to the numbered aln file we may or may not create
+# $trunc_aln_file_ref: RETURN; the path to the truncated aln file we may or may not create
 # $log_file_ref:       RETURN; the path and name of what will become the log output file
 #
 # Returns:    Nothing, if it returns, everything is valid.
@@ -317,10 +335,11 @@ sub print_banner {
 #             exiting early and then exit with non-zero status.
 #
 ####################################################################
-sub validate_setup { 
-    my $narg_expected = 13;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, validate_setup() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($aln_file_or_model_name, $key_out, $opt_HR, $do_build_mode, $do_number_mode, $do_truncate, $aln_file_ref, $cmbuild_ref, $cm_file_ref, $alimanip_ref, $ssdraw_ref, $template_file_ref, $log_file_ref) = @_;
+sub validate_and_setup { 
+    my $narg_expected = 15;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, validate_and_setup() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my($aln_file_or_model_name, $key_out, $opt_HR, $do_build_mode, $do_number_mode, $do_draw, $aln_file_ref, $cmbuild_ref, 
+       $cm_file_ref, $cm_name_ref, $alimanip_ref, $ssdraw_ref, $template_file_ref, $num_aln_file_ref, $trunc_aln_file_ref, $log_file_ref) = @_;
 
     my ($aln_file, $root);
     #Validate that the alignment file exists, unless -d.
@@ -347,7 +366,28 @@ sub validate_setup {
 	$root = $opt_HR->{"-o"};
 	$root =~ s/\.cm//; # remove .cm if it's there
     }
+    my $num_aln_file   = $root . $key_out . ".num.stk";
 
+    #determine truncated aln file name (we may or may not create this alignment
+    my $trunc_aln_file = "";
+    if($opt_HR->{"-t"} ne "") { 
+	my ($start, $end);
+	if   ($opt_HR->{"-t"} =~ /(\d+)\-(\d+)/)  { $start = $1; $end   = $2; }
+	elsif($opt_HR->{"-t"} =~ /(\d+)\:(\d+)/)  { $start = $1; $end   = $2; }
+	elsif($opt_HR->{"-t"} =~ /(\d+)\.+(\d+)/) { $start = $1; $end   = $2; }
+	else { 
+	    printf STDERR ("\nERROR, formatting of the -t argument " . $opt_H{"-t"} . " is invalid.\nIt must include two integers separated by a \"-\"; such as \"-t 822-930\"\n");
+	    exit(1);
+	}
+	$root .= "." . $start . "-" . $end;
+	$trunc_aln_file = $root . $key_out . ".stk";
+    }
+    # determine CM name, if -d or -t we will set it as the $root, if -n <s> enabled, set it as <s>,
+    # otherwise, let cmbuild name it (by leaving it as "").
+    my $cm_name = "";
+    if($opt_HR->{"-n"} ne "")                           { $cm_name = $opt_HR->{"-n"}; }
+    elsif(($opt_HR->{"-d"}) || ($opt_HR->{"-t"} ne "")) { $cm_name = $root; }
+    
     my $log_file = $root . $key_out . ".ssu-build.log";
 
     my $cm_file = "";
@@ -384,15 +424,20 @@ sub validate_setup {
     my $alimanip = "";
     my $ssdraw_file = "";
     my $template_file = "";
+    my $ps2pdf = "";
+    my $ps_file = "";
+    my $pdf_file = "";
 
-    if($do_truncate || $do_number_mode) { 
+    if(($opt_HR->{"-t"}) || $do_number_mode) { 
 	# verify that we can run esl-alimanip
 	$alimanip = "ssu-esl-alimanip";
 	$trash = `$alimanip -h`;
 	if($? == -1) { printf STDERR ("\nERROR, the required executable $alimanip is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
     }
-    if($do_truncate) { 
-	#verify that we know where the template file and esl-ssdraw are 
+
+    # if $do_draw (passed in), we'll try to draw a secondary structure diagram showing the part of the model included/excluded by the truncation,
+    # if we can find the template file and esl-ssdraw, also we determine if we can find ps2pdf here.
+    if($do_draw) { 
 	my $ssualigndir = $ENV{'SSUALIGNDIR'};
 	if(! exists($ENV{'SSUALIGNDIR'})) { 
 	    printf STDERR ("\nERROR, the SSUALIGNDIR environment variable should be set but it's not.\nFor help, see the User's Guide Installation section.\n"); exit(1);
@@ -407,21 +452,34 @@ sub validate_setup {
 	    $trash = `$ssdraw -h`;
 	    if($? == -1) { $ssdraw = ""; }
 	}
-    }	
-    #Validate that 'ps2pdf' exists if --ps2pdf.
-    if($opt_HR->{"--ps2pdf"}) { 
-	#If --ps2pdf, validate that ps2pdf is in PATH
-	$trash = `ps2pdf 2>&1`;
-	if($? == -1) { printf STDERR ("\nERROR, --ps2pdf was enabled, but ps2pdf is not in your PATH environment variable.\n"); }
+	
+	$ps_file = $root . $key_out . ".ps";
+	$pdf_file = $root . $key_out . ".pdf";
+
+	# is ps2pdf executable?
+	$ps2pdf = "ps2pdf";
+	$trash = `$ps2pdf 2>&1`;
+	if($? == -1) { 
+	    $ps2pdf = ""; 
+	    if($opt_HR->{"--rm-ps"}) { printf STDERR ("\nERROR, --rm-ps was enabled, but ps2pdf is not in your path, so postscripts are the only output option for structure diagrams and --rm-ps is invalid.\n"); exit(1); }
+	}
+
+	
     }
 
-    $$aln_file_ref      = $aln_file;
-    $$cmbuild_ref       = $cmbuild;
-    $$cm_file_ref       = $cm_file;
-    $$alimanip_ref      = $alimanip;
-    $$ssdraw_ref        = $ssdraw;
-    $$template_file_ref = $template_file;
-    $$log_file_ref      = $log_file;
+    $$aln_file_ref       = $aln_file;
+    $$cmbuild_ref        = $cmbuild;
+    $$cm_file_ref        = $cm_file;
+    $$cm_name_ref        = $cm_name;
+    $$alimanip_ref       = $alimanip;
+    $$ssdraw_ref         = $ssdraw;
+    $$template_file_ref  = $template_file;
+    $$ps2pdf_ref         = $ps2pdf;
+    $$ps_file_ref        = $ps_file;
+    $$pdf_file_ref       = $pdf_file;
+    $$num_aln_file_ref   = $num_aln_file;
+    $$trunc_aln_file_ref = $trunc_aln_file;
+    $$log_file_ref       = $log_file;
     
     return;
 }
@@ -436,6 +494,7 @@ sub validate_setup {
 #   $cmbuild:          path and name of cmbuild/ssu-cmbuild executable
 #   $aln_file:         path and name of alignment file to build CM from
 #   $cm_file:          path and name of CM file to create/write to
+#   $cm_name:          name for CM (set in validate_and_setup(), if "" let cmbuild automatically name it)
 #   $gapthresh:        gap threshold to use when building the model
 #   $opt_HR:           reference to the hash of command-line options
 #   $log2printAR:      reference to log2print array with log file text
@@ -444,9 +503,9 @@ sub validate_setup {
 # 
 ####################################################################
 sub run_cmbuild {
-    my $narg_expected = 6;
+    my $narg_expected = 7;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, run_cmbuild() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($cmbuild, $aln_file, $cm_file, $gapthresh, $opt_HR, $log2printAR) = @_;
+    my ($cmbuild, $aln_file, $cm_file, $cm_name, $gapthresh, $opt_HR, $log2printAR) = @_;
 
     my $extra_opts = "";
 
@@ -457,6 +516,8 @@ sub run_cmbuild {
     if($opt_HR->{"--eent"})  { $extra_opts .= " --eent"; }
     else                  { $extra_opts .= " --enone"; }
     if($opt_HR->{"--ere"})   { $extra_opts .= " --ere " . $opt_HR->{"--ere"}; }
+
+    if($cm_name ne "") { $extra_opts .= " -n $cm_name"; }
     
     push(@{$log2printAR}, sprintf("#\n# Building CM(s)...\n"));
     printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
@@ -536,7 +597,8 @@ sub run_cmbuild {
 #
 # Arguments:  
 #   $alimanip:         path and name of esl-alimanip/ssu-esl-alimanip executable
-#   $aln_file:         path and name of alignment file to build CM from
+#   $aln_file:         path and name of alignment file we want to number
+#   $num_aln_file:     path and name of the numbered alignment file we'll create here
 #   $gapthresh:        gap threshold to use when building the model
 #   $opt_HR:           reference to the hash of command-line options
 #   $log2printAR:      reference to log2print array with log file text
@@ -545,16 +607,9 @@ sub run_cmbuild {
 # 
 ####################################################################
 sub run_alimanip_to_number{
-    my $narg_expected = 5;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, run_alimanip() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($alimanip, $aln_file, $gapthresh, $opt_HR, $log2printAR) = @_;
-
-    my $root = $aln_file; 
-    $root =~ s/.+\///;  #remove directory path
-    if($root =~ s/\.stk$//)    { ; }
-    elsif($root =~ s/\.sto$//) { ; }
-    # otherwise we'll just append '.cm' to the full name of the alignment file
-    my $num_aln_file = $root . $key_out . ".num.stk";
+    my $narg_expected = 6;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, run_alimanip_to_number() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($alimanip, $aln_file, $num_aln_file, $gapthresh, $opt_HR, $log2printAR) = @_;
 
     my $extra_opts = "";
     if(!($opt_HR->{"--rf"})) { # if --rf enabled, we don't redefine consensus columns
@@ -576,7 +631,7 @@ sub run_alimanip_to_number{
     
     my $command = "$alimanip $extra_opts -o $num_aln_file $aln_file 2>&1";
     my $tmp = `$command`;
-    printf("$command\n");
+    #printf("$command\n");
     if(($? >> 8) != 0) { 
 	printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); 
     }
@@ -606,44 +661,29 @@ sub run_alimanip_to_number{
 #             <x> and <y> (with -t <s>, where <s> = "<x>-<y>").
 #
 # Arguments:  
-#   $alimanip:         path and name of esl-alimanip/ssu-esl-alimanip executable
-#   $aln_file:         path and name of alignment file to build CM from
-#   $gapthresh:        gap threshold to use when building the model
-#   $opt_HR:           reference to the hash of command-line options
-#   $log2printAR:      reference to log2print array with log file text
+#   $alimanip:           path and name of esl-alimanip/ssu-esl-alimanip executable
+#   $aln_file:           path and name of alignment file to build CM from
+#   $trunc_aln_file:     path and name of truncated alignment file we'll create
+#   $gapthresh:          gap threshold to use when building the model
+#   $opt_HR:             reference to the hash of command-line options
+#   $log2printAR:        reference to log2print array with log file text
 # 
 # Returns:  Nothing, if it returns, everything is valid.
 # 
 ####################################################################
 sub run_alimanip_to_truncate{
-    my $narg_expected = 5;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, run_alimanip() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($alimanip, $aln_file, $opt_HR, $log2printAR) = @_;
+    my $narg_expected = 6;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, run_alimanip_to_truncate() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($alimanip, $aln_file, $trunc_aln_file, $gapthresh, $opt_HR, $log2printAR) = @_;
 
     # sanity check
-    if($opt_H{"-t"} eq "") { printf STDERR ("ERROR, run_alimanip_to_truncate() entered, but -t option argument is the empty string.\n"); exit(1); }
-
-    my ($start, $end);
-    my $root = $aln_file; 
-    $root =~ s/.+\///;  #remove directory path
-    if($root =~ s/\.stk$//)    { ; }
-    elsif($root =~ s/\.sto$//) { ; }
-    # otherwise we'll just append '.stk' to the full name of the alignment file name
-    my $trunc_aln_file = $root . $key_out;
+    if($opt_H{"-t"} eq "") { printf STDERR ("ERROR, run_alimanip_to_truncate() entered, but -t option argument is the empty string. This shouldn't happen.\n"); exit(1); }
 
     #determine start and end positions:
-    if($opt_HR->{"-t"} =~ /(\d+)\-(\d+)/) { 
-	$start = $1;
-	$end   = $2;
-    }
-    elsif($opt_HR->{"-t"} =~ /(\d+)\:(\d+)/) { 
-	$start = $1;
-	$end   = $2;
-    }
-    elsif($opt_HR->{"-t"} =~ /(\d+)\.+(\d+)/) { 
-	$start = $1;
-	$end   = $2;
-    }
+    my ($start, $end);
+    if   ($opt_HR->{"-t"} =~ /(\d+)\-(\d+)/)  { $start = $1; $end   = $2; }
+    elsif($opt_HR->{"-t"} =~ /(\d+)\:(\d+)/)  { $start = $1; $end   = $2; }
+    elsif($opt_HR->{"-t"} =~ /(\d+)\.+(\d+)/) { $start = $1; $end   = $2; }
     else { 
 	printf STDERR ("\nERROR, formatting of the -t argument " . $opt_H{"-t"} . " is invalid.\nIt must include two integers separated by a \"-\"; such as \"-t 822-930\"\n");
 	exit(1);
@@ -665,7 +705,7 @@ sub run_alimanip_to_truncate{
     
     my $command = "$alimanip $extra_opts --start-rf $start --end-rf $end -o $trunc_aln_file $aln_file 2>&1";
     my $tmp = `$command`;
-    printf("$command\n");
+    #printf("$command\n");
     if(($? >> 8) != 0) { 
 	printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); 
     }
@@ -695,34 +735,48 @@ sub run_alimanip_to_truncate{
 # Arguments:
 #   $ssdraw:              path and name of esl-alimanip/ssu-esl-alimanip executable
 #   $template_file:       name of template file to use
-#   $ssdraw_opts:         string defining options for esl-ssdraw call
 #   $aln_file:            alignment file to draw
-#   $root:                root for naming output files (with dir)
-#   $root2print:          root for naming output files (without dir unless -a, then with dir)
-#   $key_out:             optional extra key for output files
-#   $draw_key:            another optional extra key for output files
-#   $max_width:           width of output string for printing output file names
+#   $ps_file:             output name for ps file
+#   $pdf_file:            output name for pdf file
+#   $ps2pdf:              if not "", use it to convert the ps to a pdf
 #   $opt_HR:              REFERENCE to hash of command-line options
-#   $n0:                  number of 0s in the mask (passed in)
-#   $n1:                  number of 1s in the mask (passed in)
-#   $do_column_breakdown: TRUE to print number of columns included vs excluded in output
 #   $log2printAR:         reference to log2print array with log file text
 #
 # Returns:    '1' if esl-ssdraw worked (exited cleanly (returned 0)), 
 #             '0' if it did not work (returned non-0 value)
+#             '-1' if we didn't even try to run it (if $ssdraw or $template_file were "" (not found by validate_and_setup()))
 # 
 ####################################################################
 sub run_ssdraw { 
-    my $narg_expected = 14;
+    my $narg_expected = 8;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, run_ssdraw() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($ssdraw, $template_file, $ssdraw_opts, $aln_file, $root, $root2print, $key_out, 
-	$draw_key, $max_width, $opt_HR, $n0, $n1, $do_column_breakdown, $log2printAR) = @_;
+    my ($ssdraw, $template_file, $aln_file, $ps_file, $pdf_file, $ps2pdf, $opt_HR, $log2printAR) = @_;
 
-    my($draw_ps, $draw_pdf, $draw_ps2print, $draw_pdf2print);
-    $draw_ps         = $root . $key_out . $draw_key . ".ps";
-    $draw_pdf        = $root . $key_out . $draw_key . ".pdf";
-    $draw_ps2print   = $root2print . $key_out . $draw_key . ".ps";
-    $draw_pdf2print  = $root2print . $key_out . $draw_key . ".pdf";
+    # contract check
+    if($opt_H{"-t"} eq "") { printf STDERR ("ERROR, run_ssdraw() entered, but -t option argument is the empty string. This shouldn't happen.\n"); exit(1); }
+    if(! $opt_H{"-d"})     { printf STDERR ("ERROR, run_ssdraw() entered, but -d option argument not enabled. This shouldn't happen.\n"); exit(1); }
+    if($ps_file eq "")     { printf STDERR ("ERROR, run_ssdraw() entered, but ps file is the empty string. This shouldn't happen.\n"); exit(1); }
+    if($pdf_file eq "")    { printf STDERR ("ERROR, run_ssdraw() entered, but pdf file is the empty string. This shouldn't happen.\n"); exit(1); }
+
+    if($ssdraw eq "")        { return -1; }
+    if($template_file eq "") { return -1; }
+
+    my($start, $end)
+    if   ($opt_HR->{"-t"} =~ /(\d+)\-(\d+)/)  { $start = $1; $end   = $2; }
+    elsif($opt_HR->{"-t"} =~ /(\d+)\:(\d+)/)  { $start = $1; $end   = $2; }
+    elsif($opt_HR->{"-t"} =~ /(\d+)\.+(\d+)/) { $start = $1; $end   = $2; }
+
+    # to determine consensus length, grep for the RF lines of the alignment, and overwrite them with 0s and 1s.
+
+
+
+    #create the mask (a temporary file)
+    $mask_file = $ps_file . ".mask";
+    open(MASK, ">" . $mask_file);
+    for($i = 0; $i < ($start-1); $i++) { printf MASK ("0") };
+    for($i = $start; $i <= $end; $i++) { printf MASK ("1") };
+    for($i = $end+1; $i <= $end; $i++) { printf MASK ("1") };
+
 
     my $command = "$ssdraw $ssdraw_opts $aln_file $template_file $draw_ps 2>&1";
     #printf("run_ssdraw command: $command\n");
