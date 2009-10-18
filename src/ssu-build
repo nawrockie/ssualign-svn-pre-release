@@ -20,6 +20,7 @@ use Getopt::Long;
 use Cwd 'abs_path';
 use strict;
 
+my $df_gapthresh = 0.80;
 my $total_time = -1 * time();
 my $usage =  "Usage: ssu-build [options] <Stockholm alignment file to build CM from>\n";
    $usage .= "Usage: ssu-build [options] -d <name of default ssu-align-0.1 seed alignment>\n";
@@ -135,9 +136,9 @@ if($opt_H{"-t"} ne "") {
 # In build mode, if we're truncating we may also want to try to draw a secondary structure diagram
 # of the truncation, but only if -d and --gapthresh not enabled (or set to default)
 my $do_draw = 0;
-if(($opt_HR->{"-t"} ne "") && 
-   ($opt_HR->{"-d"})       && 
-   (($opt_HR->{"--gapthresh"} eq "") || ($opt_HR->{"--gapthresh"} == $df_gapthresh))) 
+if(($opt_H{"-t"} ne "") && 
+   ($opt_H{"-d"})       && 
+   (($opt_H{"--gapthresh"} eq "") || ($opt_H{"--gapthresh"} == $df_gapthresh))) 
 { 
     $do_draw = 1; 
 }
@@ -192,18 +193,22 @@ validate_and_setup($aln_file_or_model_name, $key_out, \%opt_H, $do_build_mode, $
 my $ssdraw_failed_at_least_once = 0;
 my $ssdraw_worked_at_least_once = 0;
 my $gapthresh = $opt_H{"--gapthresh"};
-my $df_gapthresh = 0.80;
+my $build_aln_file;
 if($gapthresh eq "")  { $gapthresh = $df_gapthresh; }
 
 if($do_build_mode) 
 { 
     if($opt_H{"-t"} ne "") { 
 	run_alimanip_to_truncate($alimanip, $aln_file, $trunc_aln_file, $gapthresh, \%opt_H, \@log2printA);
-	$aln_file = $trunc_aln_file;
+	$build_aln_file = $trunc_aln_file
     }	
-    run_cmbuild($cmbuild, $aln_file, $cm_file, $cm_name, $gapthresh, \%opt_H, \@log2printA);
+    else { 
+	$build_aln_file = $aln_file;
+    }
+    run_cmbuild($cmbuild, $build_aln_file, $cm_file, $cm_name, $gapthresh, \%opt_H, \@log2printA);
+
     if($do_draw) { 
-	run_ssdraw($ssdraw, $template_file, $aln_file, $ps_file, $pdf_file, $ps2pdf, \%opt_H, \@log2printA);
+	my $ret_val = run_ssdraw($ssdraw, $template_file, $aln_file, $ps_file, $pdf_file, $ps2pdf, \%opt_H, \@log2printA);
     }
 }    
 
@@ -336,10 +341,10 @@ sub print_banner {
 #
 ####################################################################
 sub validate_and_setup { 
-    my $narg_expected = 15;
+    my $narg_expected = 19;
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, validate_and_setup() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my($aln_file_or_model_name, $key_out, $opt_HR, $do_build_mode, $do_number_mode, $do_draw, $aln_file_ref, $cmbuild_ref, 
-       $cm_file_ref, $cm_name_ref, $alimanip_ref, $ssdraw_ref, $template_file_ref, $num_aln_file_ref, $trunc_aln_file_ref, $log_file_ref) = @_;
+       $cm_file_ref, $cm_name_ref, $alimanip_ref, $ssdraw_ref, $template_file_ref, $ps2pdf_ref, $ps_file_ref, $pdf_file_ref, $num_aln_file_ref, $trunc_aln_file_ref, $log_file_ref) = @_;
 
     my ($aln_file, $root);
     #Validate that the alignment file exists, unless -d.
@@ -422,7 +427,7 @@ sub validate_and_setup {
     }
 
     my $alimanip = "";
-    my $ssdraw_file = "";
+    my $ssdraw = "";
     my $template_file = "";
     my $ps2pdf = "";
     my $ps_file = "";
@@ -446,7 +451,6 @@ sub validate_and_setup {
 	$template_file = $ssualigndir . "/ssu-align-0p1.ps";
 	if(!(-e $template_file)) { $template_file = ""; }
 
-	my $ssdraw = "";
 	if($template_file ne "") { 
 	    $ssdraw = "ssu-esl-ssdraw";
 	    $trash = `$ssdraw -h`;
@@ -463,8 +467,6 @@ sub validate_and_setup {
 	    $ps2pdf = ""; 
 	    if($opt_HR->{"--rm-ps"}) { printf STDERR ("\nERROR, --rm-ps was enabled, but ps2pdf is not in your path, so postscripts are the only output option for structure diagrams and --rm-ps is invalid.\n"); exit(1); }
 	}
-
-	
     }
 
     $$aln_file_ref       = $aln_file;
@@ -480,7 +482,7 @@ sub validate_and_setup {
     $$num_aln_file_ref   = $num_aln_file;
     $$trunc_aln_file_ref = $trunc_aln_file;
     $$log_file_ref       = $log_file;
-    
+
     return;
 }
 
@@ -692,12 +694,12 @@ sub run_alimanip_to_truncate{
     my $extra_opts = "";
     if($opt_HR->{"--rf"}) { 
 	# extra_opts remain empty (we checked for incompatible option combo of --rf and --gapthresh already)
-	push(@{$log2printAR}, sprintf("#\n# Truncating alignment; saving only columns between predefined consensus columns $start and $end...\n"));
+	push(@{$log2printAR}, sprintf("#\n# Truncating alignment; saving only columns between predefined consensus\n\# columns $start and $end...\n"));
 	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
     }
     else { 
 	$extra_opts = "-g --gapthresh $gapthresh";
-	push(@{$log2printAR}, sprintf("#\n# Truncating alignment; defining consensus columns and saving those between consensus columns $start and $end...\n"));
+	push(@{$log2printAR}, sprintf("#\n# Truncating alignment; defining consensus columns and saving those\n\# between consensus columns $start and $end...\n"));
 	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
     }
     push(@{$log2printAR}, sprintf("#\n"));
@@ -761,58 +763,94 @@ sub run_ssdraw {
     if($ssdraw eq "")        { return -1; }
     if($template_file eq "") { return -1; }
 
-    my($start, $end)
+    my($start, $end);
     if   ($opt_HR->{"-t"} =~ /(\d+)\-(\d+)/)  { $start = $1; $end   = $2; }
     elsif($opt_HR->{"-t"} =~ /(\d+)\:(\d+)/)  { $start = $1; $end   = $2; }
     elsif($opt_HR->{"-t"} =~ /(\d+)\.+(\d+)/) { $start = $1; $end   = $2; }
 
-    # to determine consensus length, grep for the RF lines of the alignment, and overwrite them with 0s and 1s.
-
-
+    #to determine consensus length, grep for the RF lines of the alignment, and overwrite them with 0s and 1s.
+    my $command = "grep '^#=GC RF[[:space:]]' $aln_file";
+    my $tmp = `$command`;
+    if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
+    $tmp =~ s/\#=GC RF\s+//g;
+    $tmp =~ s/\n//g;
+    $tmp =~ s/[\.\-\~]//g; #remove gaps ('.', '-', or '~')
+    my $clen = length($tmp);
 
     #create the mask (a temporary file)
-    $mask_file = $ps_file . ".mask";
+    my $mask_file = $ps_file . ".mask";
+    my $i;
     open(MASK, ">" . $mask_file);
-    for($i = 0; $i < ($start-1); $i++) { printf MASK ("0") };
-    for($i = $start; $i <= $end; $i++) { printf MASK ("1") };
-    for($i = $end+1; $i <= $end; $i++) { printf MASK ("1") };
+    for($i = 1;      $i < $start; $i++) { printf MASK ("0") };
+    for($i = $start; $i <= $end;  $i++) { printf MASK ("1") };
+    for($i = $end+1; $i <= $clen; $i++) { printf MASK ("0") };
+    close(MASK);
 
-
-    my $command = "$ssdraw $ssdraw_opts $aln_file $template_file $draw_ps 2>&1";
+    my $command = "$ssdraw --mask-col --mask $mask_file $aln_file $template_file $ps_file 2>&1";
     #printf("run_ssdraw command: $command\n");
     my $tmp = `$command`;
     if(($? >> 8) != 0) { # it didn't work, don't exit just alert caller by returning 0
+	# remove mask file
+	$command = "rm $mask_file 2>&1";
+	$tmp = `$command`;
 	return 0; 
     } 
-    
-    if($opt_HR->{"--ps2pdf"}) { 
-	$command = "ps2pdf $draw_ps $draw_pdf";
+    $command = "rm $mask_file 2>&1";
+    $tmp = `$command`;
+    if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
+
+    push(@{$log2printAR}, sprintf("#\n"));
+    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+
+    # convert to pdf (if ps2pdf is in path) and print output file names 
+    my ($max_width, $i, $dashes);
+    if($ps2pdf ne "") { # convert to pdf
+	$command = "ps2pdf $ps_file $pdf_file";
 	$tmp = `$command`;
 	if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
-	if($do_column_breakdown) { 
-	    push(@{$log2printAR}, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $draw_pdf2print, "output", "pdf", ($n0+$n1), $n1, $n0));
+
+	$max_width = length($pdf_file);
+	if($opt_HR->{"--rm-ps"}) { 
+	    if($max_width < length("pdf structure diagram file")) { $max_width = length("pdf structure diagram file"); }
 	}
 	else { 
-	    push(@{$log2printAR}, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $draw_pdf2print, "output", "pdf", ($n0+$n1), "-", "-"));
+	    if($max_width < length("pdf/postscript structure diagram file")) { $max_width = length("pdf/postscript structure diagram file"); }
 	}
-	printf($log2printAR->[(scalar(@log2printA)-1)]);
-
-	if(!($opt_HR->{"--ps-keep"})) { 
-	    $command = "rm $draw_ps";
+	$dashes = ""; for($i = 0; $i < $max_width; $i++) { $dashes .= "-"; }
+	if($opt_HR->{"--rm-ps"}) { 
+	    push(@{$log2printAR}, sprintf("# %-*s\n", $max_width, "pdf structure diagram file"));
+	    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+	}
+	else { 
+	    push(@{$log2printAR}, sprintf("# %-*s\n", $max_width, "pdf/postscript structure diagram file"));
+	    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+	}
+	push(@{$log2printAR}, sprintf("# %-*s\n", $max_width, $dashes));
+	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+	push(@{$log2printAR}, sprintf("  %-*s\n", $max_width, $pdf_file));
+	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+	if(!($opt_HR->{"--rm-ps"})) { 
+	    push(@{$log2printAR}, sprintf("  %-*s\n", $max_width, $ps_file));
+	    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+	}
+	else { 
+	    $command = "rm $ps_file 2>&1";
 	    $tmp = `$command`;
 	    if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
 	}
     }
-    # if we didn't do ps2pdf, or if --ps-keep is enabled
-    if(!($opt_HR->{"--ps2pdf"}) || ($opt_HR->{"--ps-keep"})) {
-	if($do_column_breakdown) { 
-	    push(@{$log2printAR}, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $draw_ps2print, "output", "ps", ($n0+$n1), $n1, $n0));
-	}
-	else { 
-	    push(@{$log2printAR}, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $draw_ps2print, "output", "ps", ($n0+$n1), "-", "-"));
-	}
+    else { #ps2pdf is not in their path, print info on postscript
+	$max_width = length($ps_file);
+	if($max_width < length("postscript structure diagram file")) { $max_width = length("postscript structure diagram file"); }
+	$dashes = ""; for($i = 0; $i < $max_width; $i++) { $dashes .= "-"; }
+	push(@{$log2printAR}, sprintf("# %-*s\n", $max_width, "postscript structure diagram file"));
+	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+	push(@{$log2printAR}, sprintf("# %-*s\n", $max_width, $dashes));
+	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+	push(@{$log2printAR}, sprintf("  %-*s\n", $max_width, $ps_file));
 	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
     }
+
     return 1; #if ssdraw failed we returned 0 above
 }
 
