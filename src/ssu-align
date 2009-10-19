@@ -13,7 +13,7 @@
 # Given a CM file with >=1 SSU CMs and a target sequence file with putative
 # SSU sequences: 
 # Step 1. define likely start/ends (seq boundaries) to align using cmsearch 
-#         in viterbi HMM mode (or forward HMM mode if -F).
+#         in viterbi HMM mode (or forward HMM mode if --forward).
 # Step 2. extract those subsequences into a new target fasta file.
 # Step 3. sequences in new fasta file from step 2 are aligned to the CM.
 #
@@ -24,134 +24,165 @@
 # eukaryotic CMs, and step 1 will 'classify' each seq as arc, bac, or euk, 
 # and then in Step 3 the appropriate CM is used to align each sequence. 
 #
-# Options from :
-#    -M <x> : use CM file <x> instead of the default CM file
-#    -F     : allow file clobbering
-#    -b <x> : minimum cmsearch hit bit score to allow for a surviving subsequence (default: 100)
-#    -l <n> : minimum cmsearch hit length    to allow for a surviving subsequence (default: 1)
-#    -n <n> : run in 'prep' mode, split target seq file into multiple files with <n> seqs each
-#    -c <n> : run in 'prep' mode, split target seq file into <n> files with equal number of seqs
-#    -s     : only search target sequence file for hits, skip alignment step
-#    -a     : only align  target sequence file, skip initial search step 
-#    -u     : do not truncate seqs to HMM predicted start/end, align full seqs
-#    -i <x> : w/-n or -c, filter alns based on seq identity, allow no 2 seqs > <x> identical
-#    -t     : only search the top strand of targets [default: search both strands]
-#    -w     : use the HMM forward algorithm for searching, not HMM viterbi
-#    -g     : search with globally configured HMM [default: local]
-#    -d     : DO NOT append posterior probabilities to alignments
-#    -k     : DO NOT erase local copies of individual CM files after running
-#    -x <x> : increase mx size for cmalign to <x> Mb (default: 4096)
+# See definition of $options_usage for options, below.
 #
-use Getopt::Std;
+use Getopt::Long;
 use Cwd 'abs_path';
 use strict;
 
 my $total_time = -1 * time();
-my $usage = "Usage: ssu-align [-options] <sequence file> <output root>\n";
+my $usage = "Usage: ssu-align [-options] <sequence file> <output dir and file name root>\n";
 my $options_usage  = "where general options are:\n";
+#                           1         2         3         4         5         6         7         8
+#                  12345678901234567890123456789012345678901234567890123456789012345678901234567890
 $options_usage .= "  -h     : show brief help on version and usage\n";
-$options_usage .= "  -M <f> : use CM file <f> instead of the default CM file\n";
-$options_usage .= "  -F     : allow file clobbering\n";
-$options_usage .= "  -b <x> : minimum cmsearch hit bit score to allow for a surviving subsequence (default: 100)\n";
-$options_usage .= "  -l <n> : minimum cmsearch hit length    to allow for a surviving subsequence (default: 1)\n";
-$options_usage .= "  -n <n> : run in 'prep' mode, split target seq file into multiple files with <n> seqs each\n";
-$options_usage .= "  -c <n> : run in 'prep' mode, split target seq file into <n> files with equal number of seqs\n";
-$options_usage .= "  -s     : only search target sequence file for hits, skip alignment step\n";
-$options_usage .= "  -a     : only align  target sequence file, skip initial search step\n"; 
-$options_usage .= "  -u     : do not truncate seqs to HMM predicted start/end, align full seqs\n";
-$options_usage .= "  -i <x> : filter aln based on seq identity, allow no 2 seqs > <x> identical\n";
-$options_usage .= "  -t     : only search the top strand [default: search both strands]\n";
-$options_usage .= "  -w     : use the HMM forward algorithm for searching, not HMM viterbi\n";
-$options_usage .= "  -g     : search with globally configured HMM [default: local]\n";
-$options_usage .= "  -d     : DO NOT append posterior probabilities to alignments\n";
-$options_usage .= "  -k     : DO NOT erase local copies of individual CM files after running\n\n";
-$options_usage .= "  -x <x> : increase mx size for cmalign to <x> Mb (default: 4096)\n";
+$options_usage .= "  -1     : output alignments in non-interleaved, 1 line/seq format\n";
+$options_usage .= "  -m <s> : use CM file <f> instead of the default CM file\n";
+$options_usage .= "  -F     : force; if <output dir> already exists - empty it and fill it\n" ,
+$options_usage .= "  -b <f> : set minimum bit score of a surviving subsequence as <x> (default: 100)\n";
+$options_usage .= "  -l <n> : set minimum length    of a surviving subsequence as <n> (default: 1)\n";
+
+$options_usage .= "\noptions for running ssu-align in 'prep' mode to split up a large job:\n";
+$options_usage .= "  --prep-n <n> : split target seq file into multiple files with <n> seqs each\n";
+$options_usage .= "  --prep-c <n> : split target seq file into <n> files with equal number of seqs\n";
+
+$options_usage .= "\noptions for skipping either the 1st (search) stage or 2nd (alignment) stage)\n";
+$options_usage .= "  --no-align  : only search target sequence file for hits, skip alignment step\n";
+$options_usage .= "  --no-search : only align  target sequence file, skip initial search step\n"; 
+
+$options_usage .= "\nexpert options for tuning the initial search stage:\n";
+$options_usage .= "  --no-trunc : do not truncate seqs to HMM predicted start/end, align full seqs\n";
+$options_usage .= "  --toponly  : only search the top strand [default: search both strands]\n";
+$options_usage .= "  --forward  : use the HMM forward algorithm for searching, not HMM viterbi\n";
+$options_usage .= "  --global   : search with globally configured HMM [default: local]\n";
+
+$options_usage .= "\nexpert options for tuning the alignment stage:\n";
+$options_usage .= "  --filter <f> : filter aln based on seq identity, allow no 2 seqs > <x> identical\n";
+$options_usage .= "  --no-prob    : DO NOT append posterior probabilities to alignments\n";
+$options_usage .= "  --keep       : DO NOT erase local copies of individual CM files after running\n\n";
+$options_usage .= "  --mxsize <f> : increase mx size for cmalign to <x> Mb (default: 4096)\n";
 
 ###################
 # Process options #
 ###################
-our ($opt_h, $opt_M, $opt_F, $opt_b, $opt_l, $opt_n, $opt_c, $opt_s, $opt_a, $opt_u, $opt_i, $opt_t, $opt_w, $opt_g, $opt_d, $opt_k, $opt_x);
-getopts('hM:Fb:l:n:c:saui:twgdkx:');
-my $do_altcmfile = 0;
-my $do_clobber = 0;
-my $do_toponly = 0;
-my $do_viterbi = 1;
-my $do_forward = 0;
-my $do_local = 1;
-my $do_glocal = 0;
-my $min_bit = 100;
-my $min_len = 1;
-my $do_prep = 0;
-my $do_prep_nseq_set = 0;
-my $do_prep_nproc_set = 0;
-my $prep_nseq = 0;
-my $prep_nproc = 0;
-my $do_truncate = 1;
-my $do_align = 1;
-my $do_search = 1;
-my $do_filteraln = 0;
-my $filter_id = 0.;
-my $mxsize = 4096;
-my $cmalign_extra_options = " -p";
-my $cmsearch_T = -1;
-my $do_remove_local_cms = 1;
+my %opt_H = ();              # key: option (example "-h"); value: option argument (example ("0" or "1") if option takes no arg, actual argument if option takes arg)
+my %opt_takes_arg_H  = ();   # key: option; value: "1" if option takes argument, "0" if not
+my @opt_order_A  = ();       # order of options for printing in banner
+my %opt_is_prep_H = ();      # key: option; value: "1" if option will get passed to child ssu-align calls in prep mode, "0" if not
 
-my $prep_enabled_options = " -k";
-my $enabled_options = "";
-if (defined $opt_h) { print $usage . "\n"; print $options_usage; exit(1); } 
-if (defined $opt_M) { $do_altcmfile = 1;                      $enabled_options .= " -M $opt_M"; $prep_enabled_options .= " -M $opt_M"; }
-if (defined $opt_F) { $do_clobber = 1;                        $enabled_options .= " -F"; } 
-if (defined $opt_b) { $min_bit =  $opt_b;                     $enabled_options .= " -b $opt_b"; $prep_enabled_options .= " -b $opt_b"; 
-		      if($cmsearch_T > $min_bit) { $cmsearch_T = $min_bit;} } 
-if (defined $opt_l) { $min_len = $opt_l;                      $enabled_options .= " -l $opt_l"; $prep_enabled_options .= " -l $opt_l"; 
-		      if($min_len <= 0) { printf STDERR ("ERROR, with -l <n>, <n> must be >= 1."); exit(1); } }
-if (defined $opt_n) { $do_prep = 1; $do_prep_nseq_set = 1;    $enabled_options .= " -n $opt_n"; $prep_nseq  = $opt_n; }
-if (defined $opt_c) { $do_prep = 1; $do_prep_nproc_set = 1;   $enabled_options .= " -c $opt_c"; $prep_nproc = $opt_c; }
-if (defined $opt_s) { $do_align = 0;                          $enabled_options .= " -s";        $prep_enabled_options .= " -s"; } 
-if (defined $opt_a) { $do_search = 0;                         $enabled_options .= " -a";        $prep_enabled_options .= " -a"; } 
-if (defined $opt_u) { $do_truncate = 0;                       $enabled_options .= " -u";        $prep_enabled_options .= " -u"; }
-if (defined $opt_i) { $do_filteraln = 1; $filter_id = $opt_i; $enabled_options .= " -i $opt_i"; $prep_enabled_options .= " -i $opt_i"; 
-		      if (($opt_i < 0.) || ($opt_i > 1.)) { printf STDERR("ERROR, with -i <x>, valid range is 0. <= <x> <= 1.0.\n"); exit(1); } }
-if (defined $opt_t) { $do_toponly = 1;                        $enabled_options .= " -t";        $prep_enabled_options .= " -t"; }
-if (defined $opt_w) { $do_forward = 1; $do_viterbi = 0;       $enabled_options .= " -w";        $prep_enabled_options .= " -w"; }
-if (defined $opt_g) { $do_glocal = 1; $do_local = 0;          $enabled_options .= " -g";        $prep_enabled_options .= " -g"; }
-if (defined $opt_d) { $cmalign_extra_options = "";            $enabled_options .= " -d";        $prep_enabled_options .= " -d "; }
-if (defined $opt_k) { $do_remove_local_cms = 0;               $enabled_options .= " -k"; }
-if (defined $opt_x) { $mxsize = $opt_x;                       $enabled_options .= " -x $opt_x"; $prep_enabled_options .= " -x $opt_x"; 
-		      if($opt_x <= 0.) { printf STDERR("ERROR, with -x <x>, valid range is 0. < <x>.\n"); exit(1); } }
+$opt_takes_arg_H{"-h"}          = 0;  push(@opt_order_A, "-h");           $opt_is_prep_H{"-h"}          = 0;
+$opt_takes_arg_H{"-1"}          = 0;  push(@opt_order_A, "-1");           $opt_is_prep_H{"-1"}          = 1;
+$opt_takes_arg_H{"-m"}          = 1;  push(@opt_order_A, "-m");           $opt_is_prep_H{"-m"}          = 1;
+$opt_takes_arg_H{"-F"}          = 0;  push(@opt_order_A, "-F");           $opt_is_prep_H{"-F"}          = 0;
+$opt_takes_arg_H{"-b"}          = 1;  push(@opt_order_A, "-b");           $opt_is_prep_H{"-b"}          = 1;
+$opt_takes_arg_H{"-l"}          = 1;  push(@opt_order_A, "-l");           $opt_is_prep_H{"-l"}          = 1;
+$opt_takes_arg_H{"--prep-n"}    = 1;  push(@opt_order_A, "--prep-n");     $opt_is_prep_H{"--prep-n"}    = 1;
+$opt_takes_arg_H{"--prep-c"}    = 1;  push(@opt_order_A, "--prep-c");     $opt_is_prep_H{"--prep-c"}    = 1;
+$opt_takes_arg_H{"--no-align"}  = 0;  push(@opt_order_A, "--no-align");   $opt_is_prep_H{"--no-align"}  = 1;
+$opt_takes_arg_H{"--no-search"} = 0;  push(@opt_order_A, "--no-search");  $opt_is_prep_H{"--no-search"} = 1;
+$opt_takes_arg_H{"--no-trunc"}  = 0;  push(@opt_order_A, "--no-trunc");   $opt_is_prep_H{"--no-trunc"}  = 1;
+$opt_takes_arg_H{"--toponly"}   = 0;  push(@opt_order_A, "--toponly");    $opt_is_prep_H{"--toponly"}   = 1;
+$opt_takes_arg_H{"--forward"}   = 0;  push(@opt_order_A, "--forward");    $opt_is_prep_H{"--forward"}   = 1;
+$opt_takes_arg_H{"--global"}    = 0;  push(@opt_order_A, "--global");     $opt_is_prep_H{"--global"}    = 1;
+$opt_takes_arg_H{"--filter"}    = 1;  push(@opt_order_A, "--filter");     $opt_is_prep_H{"--filter"}    = 1;
+$opt_takes_arg_H{"--no-prob"}   = 0;  push(@opt_order_A, "--no-prob");    $opt_is_prep_H{"--no-prob"}   = 1;
+$opt_takes_arg_H{"--keep"}      = 0;  push(@opt_order_A, "--keep");       $opt_is_prep_H{"--keep"}      = 1;
+$opt_takes_arg_H{"--mxsize"}    = 1;  push(@opt_order_A, "--mxsize");     $opt_is_prep_H{"--mxsize"}    = 1;
 
-##############
-# Print banner
-##############
+#set default options
+foreach $opt (%opt_takes_arg_H) { 
+    if($opt_takes_arg_H{$opt}) { $opt_H{$opt} = ""; }
+    else                       { $opt_H{$opt} = 0; }
+}
+
+my $df_min_bit = 100;
+my $df_min_len = 1;
+my $df_mxsize = 4096;
+my $df_cmsearch_T = -1;
+
+Getopt::Long::Configure ("bundling");
+my $opt_return = GetOptions
+    ('h'         => \$opt_H{"-h"}, 
+     '1'         => \$opt_H{"-1"},
+     'm=s'       => \$opt_H{"-m"},
+     'F'         => \$opt_H{"-F"},
+     'b=f'       => \$opt_H{"-b"},
+     'l=n'       => \$opt_H{"-l"},
+     'prep-n=n'  => \$opt_H{"--prep-n"},
+     'prep-c=n'  => \$opt_H{"--prep-c"},
+     'no-align'  => \$opt_H{"--no-align"},
+     'no-search' => \$opt_H{"--no-search"},
+     'no-trunc'  => \$opt_H{"--no-trunc"},
+     'toponly'   => \$opt_H{"--toponly"},
+     'forward'   => \$opt_H{"--forward"},
+     'global'    => \$opt_H{"--global"},
+     'filter=f'  => \$opt_H{"--filter"},
+     'no-prob'   => \$opt_H{"--no-prob"},
+     'keep'      => \$opt_H{"--keep"},
+     'mxsize'    => \$opt_H{"--mxsize"});
+
+if($opt_return != 1) { exit(1); }
+
+if ($opt_H{"-h"}) { print $usage . "\n"; print $options_usage; exit(1); } 
+
+# Check for incompatible option combinations.
+if(($opt_H{"--no-align"}) && 
+   (($opt_H{"--filter"} ne '') ||
+    ($opt_H{"-1"})             ||
+    ($opt_H{"--no-prob"})      ||
+    ($opt_H{"--keep"})         ||
+    ($opt_H{"--mxsize"}))) { 
+    printf STDERR ("\nERROR, --no-align is incompatible with alignment-specific options: -1,--filter,--no-prob,--keep, and --mxsize.\n"); exit(1); 
+}
+
+if(($opt_H{"--no-search"}) && 
+   (($opt_H{"-b"} ne '') ||
+    ($opt_H{"-l"})      ||
+    ($opt_H{"--toponly"})  ||
+    ($opt_H{"--no-trunc"})  ||
+    ($opt_H{"--forward"})  ||
+    ($opt_H{"--global"})) P
+    printf STDERR ("\nERROR, --no-search is incompatible with search-specific options: -b,-l,--toponly,--no-trunc,--forward, and --global.\n"); exit(1); 
+}
+
+if(($opt_H{"--prep-n"} ne "") && ($opt_H{"--prep-c"} ne "")) { 
+    printf STDERR ("\nERROR, --prep-n and --prep-c are incompatible, choose one or the other.\n"); exit(1);
+}    
+# Check for incompatible option ranges
+if(($opt_H{"-l"} ne "")       && ($opt_H{"-l"} <= 0))       { printf STDERR ("\nERROR, with -l <n>, <n> must be greater than 0.\n"); exit(1); }
+if(($opt_H{"--prep-n"} ne "") && ($opt_H{"--prep-n"} <= 0)) { printf STDERR ("\nERROR, with --prep-n <n>, <n> must be greater than 0.\n"); exit(1); }
+if(($opt_H{"--prep-c"} ne "") && ($opt_H{"--prep-c"} <= 0)) { printf STDERR ("\nERROR, with --prep-c <n>, <n> must be greater than 0.\n"); exit(1); }
+if(($opt_H{"--mxsize"} ne "") && ($opt_H{"--mxsize"} <= 0.)) { printf STDERR ("\nERROR, with --mxsize <f>, <f> must be greater than 0.\n"); exit(1); }
+if(($opt_H{"--filter"} ne "") && (($opt_H{"--filter"} < 0.) || ($opt_H{"--filter"} > 1.))) { printf STDERR ("\nERROR, with --filter <f>, <f> must be between 0. and 1.\n"); exit(1); }
+
+################
+# Print banner #
+################
 my @log2printA = ();
-print_banner($0, $enabled_options, \@ARGV, \@log2printA);
+print_banner($0, \%opt_H, \@ARGV, \@log2printA);
 
-# Check for incompatible option combinations and non-sensical option parameters
-if($do_prep_nseq_set  && $do_prep_nproc_set) { printf STDERR ("ERROR, -n and -c are exclusive options, pick one or the other.\n"); exit(1); }
-if($do_prep_nseq_set  && $prep_nseq < 1)     { printf STDERR ("ERROR, with -n <n>, <n> must be at least 1.\n"); exit(1); }
-if($do_prep_nproc_set && $prep_nproc <= 1)   { printf STDERR ("ERROR, with -c <n>, <n> must be at least 2.\n"); exit(1); }
-if(scalar(@ARGV) != 2) {   
+if(scalar(@ARGV) != 1) {   
     print "Incorrect number of command line arguments.\n";
     print $usage;
-    print "\nTo see more help on available options, do ssu-align -h\n\n";
+    print "\nTo see more help on available options, do ssu-draw -h\n\n";
     exit(1);
 }
 my ($target_file, $out_root) = @ARGV;
 
-#####################
-# Preliminary stuff #
-#####################
-my ($ssualign, $cmsearch, $cmalign, $esl_sfetch, $esl_weight, $cm_file);
-validate_setup($target_file, $do_altcmfile, $opt_M, \$ssualign, \$cmsearch, \$cmalign, \$esl_sfetch, \$esl_weight, \$cm_file, $do_filteraln);
 
+##################################################################
+# Validate that everything is go and determine output file names #
+##################################################################
+my ($ssualign, $cmsearch, $cmalign, $sfetch, $weight, $cm_file);
+validate_and_setup($target_file, \$opt_H, \$ssualign, \$cmsearch, \$cmalign, \$sfetch, \$weight, \$cm_file);
+
+# determine number of sequences in the target sequence file
 my $nseq_target_file = determine_num_seqs($target_file);
 
+# create the output directory we'll populate with our output files
 my $out_dir      = $out_root;
 my $out_dir_root = $out_dir . "/" . $out_root;
-create_output_dir($do_clobber, $out_dir, $cm_file); 
-my $cm_file_without_dir = $cm_file;
-$cm_file_without_dir =~ s/^.+\///;
-my $my_cm_file_copy = $out_dir . "/" . $cm_file_without_dir;
+create_output_dir($out_dir, \$opt_H, $cm_file); 
 
 my (@indi_cm_name_A, @indi_cm_file_name_A, @indi_cm_clen_A, @indi_cm_nbif_A);
 process_cm_file($do_prep, $my_cm_file_copy, $out_root, \@indi_cm_name_A, \@indi_cm_file_name_A, \@indi_cm_clen_A, \@indi_cm_nbif_A);
@@ -274,26 +305,106 @@ if(($? >> 8) != 0) { printf STDERR ("ERROR, system\(\"rm -f $ssi_file\"\) unexpe
 exit(0); 
 
 ###############
-# subroutines #
+# SUBROUTINES #
 ###############
 
 #####################################################################
-# subroutine: validate_setup()
-# incept:     EPN, Mon Nov  3 15:05:56 2008
+# Subroutine: print_banner()
+# Incept:     EPN, Tue Jun 16 07:26:13 2009
 # 
-# purpose:    Validate that the required executable programs exist.
+# Purpose:    Print the ssu-align banner and determine prep options
+#             that will be passed to subsequent ssu-align calls if
+#             we're in prep mode.
+#
+# Arguments: 
+#    $script_call:      call used to invoke this (ssu-align) script
+#    $opt_HR:           REFERENCE to hash of command-line options
+#    $opt_takes_arg_HR: REFERENCE to hash telling if each option takes an argument (1) or not (0)
+#    $opt_order_AR:     REFERENCE to array specifying order of options
+#    $opt_is_prep_HR:   REFERENCE to hash telling if each option gets passed on to child processes in prep mode
+#    $argv_ref:         REFERENCE to @ARGV, command-line arguments
+#    $prep_options_ref: REFERENCE to prep options, filled here
+#    $log2printAR:      REFERENCE to log2print array with flog file text
+#
+# Returns:    Nothing, if it returns, everything is valid.
 # 
-# returns:    Nothing, if it returns, everything is valid.
+####################################################################
+sub print_banner { 
+    my $narg_expected = 8;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_banner() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($script_call, $opt_HR, $opt_takes_arg_HR, $opt_order_AR, $opt_is_prep_HR, $argv_ref, $prep_options_ref, $log2printAR) = @_;
+
+    my ($i, $script_name, $start_log_line);
+    $script_call =~ s/^\.+\///;
+    $script_name = $script_call;
+    $script_name =~ s/.+\///;
+
+    my $enabled_options = "";
+    my $prep_enabled_options = "";
+    foreach $opt (@{$opt_order_AR}) { 
+	if($opt_takes_arg_HR->{$opt}) { if($opt_HR{$opt} ne "") { $enabled_options .= " " . $opt . " " . $opt_HR->{$opt}; } }
+	else                  	      { if($opt_HR{$opt})       { $enabled_options .= " " . $opt; } }
+	if($opt_is_prep_HR->{$opt}) { 
+	    if($opt_takes_arg_HR->{$opt}) { if($opt_HR{$opt} ne "") { $prep_enabled_options .= " " . $opt . " " . $opt_HR->{$opt}; } }
+	    else                  	  { if($opt_HR{$opt})       { $prep_enabled_options .= " " . $opt; } }
+	}
+    }
+
+    $start_log_line = scalar(@{$log2printAR});
+
+    push(@{$log2printAR}, sprintf("\# $script_name :: define and align SSU rRNA sequences\n"));
+    push(@{$log2printAR}, sprintf("\# SSU-ALIGN 0.1 (October 2009)\n"));
+    push(@{$log2printAR}, sprintf("\# Copyright (C) 2009 HHMI Janelia Farm Research Campus\n"));
+    push(@{$log2printAR}, sprintf("\# Freely distributed under the GNU General Public License (GPLv3)\n"));
+    push(@{$log2printAR}, sprintf("\# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n"));
+    push(@{$log2printAR}, sprintf("%-10s %s ", "# command:", $script_call . $enabled_options));
+    for($i = 0; $i < scalar(@{$argv_ref}) - 1; $i++) { 
+	push(@{$log2printAR}, sprintf("$argv_ref->[$i] "));
+    }
+    push(@{$log2printAR}, sprintf("$argv_ref->[$i]\n"));
+    push(@{$log2printAR}, sprintf("%-10s ", "# date:"));
+    push(@{$log2printAR}, sprintf(scalar localtime()));
+    push(@{$log2printAR}, sprintf("\n"));
+
+    for($i = $start_log_line; $i < scalar(@{$log2printAR}); $i++) { 
+	printf($log2printAR->[$i]);
+    }
+	
+    #Return: prep_options we defined in this subroutine
+    $$prep_options_ref = $prep_enabled_options;
+    return;
+}
+
+#####################################################################
+# Subroutine: validate_and_setup()
+# Incept:     EPN, Mon Nov  3 15:05:56 2008
 # 
-# exits:      If a required program does not exist, the program 
+# Purpose:    Validation and setup:
+#             - validate that the sequence file exists
+#             - validate that the required executable programs exist
+#             - validate that the CM file exists
+#
+# Arguments: 
+# $target_file:      the target sequence file 
+# $opt_HR:           reference to the hash of command-line options
+# $ssualign_ref:     RETURN; ssu-align executable command
+# $cmsearch_ref:     RETURN; cmsearch executable command
+# $cmalign_ref:      RETURN; cmalign executable command
+# $sfetch_ref:       RETURN; esl-sfetch executable command
+# $weight_ref:       RETURN; esl-weight executable command
+# $cm_file_ref:      RETURN; the path to the CM file, either default CM file or <s> from -m <s>
+# 
+# Returns:    Nothing, if it returns, everything is valid.
+# 
+# Exits:      If a required program does not exist, the program 
 #             prints a message to STDERR explaining why it's
 #             exiting early and then exits with non-zero status.
 #
 ####################################################################
-sub validate_setup { 
-    my $narg_expected = 10;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, validate_setup() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($target_file, $do_altcmfile, $opt_M, $ssualign_ref, $cmsearch_ref, $cmalign_ref, $esl_sfetch_ref, $esl_weight_ref, $cm_file_ref, $do_filteraln) = @_;
+sub validate_and_setup { 
+    my $narg_expected = 8;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, validate_and_setup() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my($target_file, $opt_HR, $ssualign_ref, $cmsearch_ref, $cmalign_ref, $sfetch_ref, $weight_ref, $cm_file_ref) = @_;
 
     #Make sure the SSUALIGNDIR environmental variable is set.
     my $ssualigndir = $ENV{'SSUALIGNDIR'};
@@ -316,42 +427,54 @@ sub validate_setup {
     #Make sure the target file exists
     if(!(-e $target_file))   { printf STDERR ("ERROR, target sequence file $target_file does not exist.\n"); exit(1); }
 
+    my $trash;
     my $cmsearch   = "ssu-cmsearch";
     my $cmalign    = "ssu-cmalign";
     my $esl_sfetch = "ssu-esl-sfetch";
     my $esl_weight = "ssu-esl-weight";
     my $ssualign   = "ssu-align";
-
-    # check that the programs are in the PATH
-    my $trash = `$cmsearch -h`;
-    if($? == -1) { printf STDERR ("\nERROR, the required executable $cmsearch is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
-    my $trash = `$cmalign -h`;
-    if($? == -1) { printf STDERR ("\nERROR, the required executable $cmalign is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
-    my $trash = `$esl_sfetch -h`;
-    if($? == -1) { printf STDERR ("\nERROR, the required executable $esl_sfetch is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
-    if($do_filteraln) { 
+    # check that the required programs are in the PATH
+    if(!($opt_HR->{"--no-search"})) { 
+	$trash = `$cmsearch -h`;
+	if($? == -1) { printf STDERR ("\nERROR, the required executable $cmsearch is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
+	my $trash = `$esl_sfetch -h`;
+	if($? == -1) { printf STDERR ("\nERROR, the required executable $esl_sfetch is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
+    }
+    if(!($opt_HR->{"--no-align"})) { 
+	$trash = `$cmalign -h`;
+	if($? == -1) { printf STDERR ("\nERROR, the required executable $cmalign is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
+    }
+    if($opt_HR->{"--filter"} ne "") { 
 	my $trash = `$esl_weight -h`;
 	if($? == -1) { printf STDERR ("\nERROR, the required executable $esl_weight is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
     }
+    if(($opt_HR->{"--prep-n"} ne "") || ($opt_HR->{"--prep-c"})) { 
+	my $trash = `$ssualign -h`;
+	if($? == -1) { printf STDERR ("\nERROR, the required executable $ssualign is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
+    }
 
-    $$ssualign_ref = $ssualign;
-    $$cmsearch_ref = $cmsearch;
-    $$cmalign_ref  = $cmalign;
-    $$esl_sfetch_ref   = $esl_sfetch;
-    $$esl_weight_ref   = $esl_weight;
-    $$cm_file_ref      = $cm_file;
+    $$ssualign_ref    = $ssualign;
+    $$cmsearch_ref    = $cmsearch;
+    $$cmalign_ref     = $cmalign;
+    $$esl_sfetch_ref  = $esl_sfetch;
+    $$esl_weight_ref  = $esl_weight;
+    $$cm_file_ref     = $cm_file;
 
     return;
 }
 
 #####################################################################
-# subroutine: determine_num_seqs()
-# incept:     EPN, Mon Nov  3 15:18:52 2008
+# Subroutine: determine_num_seqs()
+# Incept:     EPN, Mon Nov  3 15:18:52 2008
 # 
-# purpose:    Count the number of sequences in the fasta file 
+# Purpose:    Count the number of sequences in the fasta file 
 #             <$target_file>.
+#
+# Arguments: 
+# $target_file: the target sequence file 
+#
 # 
-# returns:    <$nseq_target_file> number of sequences in 
+# Returns:    <$nseq_target_file>: number of sequences in 
 #             <$target_file>.
 # 
 ####################################################################
@@ -365,51 +488,58 @@ sub determine_num_seqs {
     chomp $output;
     $output =~ s/^\s+//;
     $output =~ s/\s+.*$//;
-    my $nseq = $output;
-    return $nseq;
+    return $output;
 }
 
 #####################################################################
-# subroutine: create_output_dir()
-# incept:     EPN, Mon Nov  3 15:22:26 2008
+# Subroutine: create_output_dir()
+# Incept:     EPN, Mon Nov  3 15:22:26 2008
 # 
-# purpose:    Create a new directory <$outdir> for the output files. 
+# Purpose:    Create a new directory <$outdir> for the output files. 
 #             If the directory already exists and <$do_clobber>, 
 #             delete all of the files within it.
 # 
-# returns:    Nothing.
+# Arguments:  
+# $out_dir:   directory to create
+# $opt_HR:    reference to the hash of command-line options
 #
-# exits:      If the directory already exists and <$do_clobber> is
+# Returns:    Nothing.
+#
+# Exits:      If the directory already exists and <$do_clobber> is
 #             FALSE. If a system call unexpectedly fails and returns 
 #             a non-zero status code. 
 # 
 ####################################################################
 sub create_output_dir { 
-    my $narg_expected = 3;
+    my $narg_expected = 2;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, create_output_dir() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($do_clobber, $out_dir, $cm_file) = @_;
+    my($do_clobber, $out_dir) = @_;
 
+    my ($command, $tmp);
     # create output directory
     if(-d $out_dir) { 
-	if(!($do_clobber)) { 
+	if(!($opt_HR->{"-F"})) { 
 	    printf STDERR ("ERROR, output directory $out_dir already exists. Delete it or use -F to overwrite it.\n"); exit(1); 
 	}
 	else { # dir exists, but -F enabled, so we remove it
 	    if($out_dir eq "") { printf STDERR ("ERROR, trying to create directory named \"\"\n"); exit(1); }
-	    system("rm -rf $out_dir/*");
-	    if(($? >> 8) != 0) { printf STDERR ("ERROR, system\(\"rm -rf $out_dir/*\"\) unexpectedly returned non-zero exit status %d\n", ($? >> 8)); exit($? >> 8); } 
-	    system("rm -f $out_dir/\.\#*");
-	    if(($? >> 8) != 0) { printf STDERR ("ERROR, system\(\"rm -f $out_dir/\.\#*\) unexpectedly returned non-zero exit status %d\n", ($? >> 8)); exit($? >> 8); } 
-	    system("rmdir $out_dir");
-	    if(($? >> 8) != 0) { printf STDERR ("ERROR, system\(\"rmdir $out_dir\"\) unexpectedly returned non-zero exit status %d\n", ($? >> 8)); exit($? >> 8); } 
-	    if(-d $out_dir) { printf STDERR ("ERROR, output directory $out_dir still exists after a system\(\"rmdir $out_dir\"\) call.\n"); exit(1); }
+	    $command = "rm -rf $out_dir/*";
+	    $tmp = `$command`;
+	    if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); }
+	    $command = "rm -f $out_dir/\.\#*";
+	    $tmp = `$command`;
+	    if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); }
+	    $command = "rmdir $out_dir";
+	    $tmp = `$command`;
+	    if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); }
+	    if(-d $out_dir) { printf STDERR ("ERROR, output directory $out_dir still exists after the command $command.\n"); exit(1); }
 	}
     }
     # if we get here, either $out_dir does not yet exist, or it does but -F was set on command line
-    system("mkdir $out_dir");
-    if(($? >> 8) != 0) { printf STDERR ("ERROR, system\(\"mkdir $out_dir\"\) unexpectedly returned non-zero exit status %d\n", ($? >> 8)); exit($? >> 8); } 
-    system("cp $cm_file $out_dir\/");
-    if(($? >> 8) != 0) { printf STDERR ("ERROR, unable to copy $cm_file to $out_dir.\n"); }
+    $command = "mkdir $out_dir";
+    $tmp = `$command`;
+    if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); }
+
     return;
 }
 
@@ -688,37 +818,44 @@ sub prepare_only {
 }
 
 #####################################################################
-# subroutine: process_cm_file()
-# incept:     EPN, Tue Nov  4 08:20:47 2008
+# Subroutine: process_cm_file()
+# Incept:     EPN, Tue Nov  4 08:20:47 2008
 # 
-# purpose:    Validate and process the CM file. A CM file 
+# Purpose:    Validate and process the CM file. A CM file 
 #             <$my_cm_file_copy> is valid if each of the <x> CM 
 #             within it is has a unique name. Process the CM file 
 #             by splitting it into <x> new files. 
 #
-# returns:    <@{$indi_cm_name_AR}> filled with names of CMs
-#             <@{$indi_cm_file_name_AR}> filled with names of 
-#                         newly created individual CM file names.
-#             <@{$indi_cm_clen_AR}> filled with clens of CMs
-#             <@{$indi_cm_nbif_AR}> filled with # bifs of CMs
+# Arguments:  
+# $out_root:             command-line argument, the root for output files
+# $cm_file:              the CM file we'll use
+# $opt_HR:               reference to the hash of command-line options
+# $indi_cm_name_AR:      RETURN; array of individual CM names 
+# $indi_cm_file_name_AR: RETURN; array of individual CM *file* names 
+# $indi_cm_clen_AR:      RETURN; array of consensus lengths for each CM
+# $indi_cm_nbif_AR:      RETURN; array of number of bifurcations for each CM
+# 
+# Returns:    Fills RETURN arguments as listed above.
 #
-# exits:      If two CMs in <$cm_file> have the same name we exit,
-#             or we can't open <$my_cm_file_copy>.
+# Exits:      If two CMs in <$cm_file> have the same name we exit,
+#             or we can't open <$cm_file>. In both cases, program
+#             exits with non-zero return status.
 # 
 ####################################################################
 sub process_cm_file { 
     my $narg_expected = 7;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, process_cm_file() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($do_prep, $my_cm_file_copy, $out_root, $indi_cm_name_AR, $indi_cm_file_name_AR, $indi_cm_clen_AR, $indi_cm_nbif_AR) = @_;
+    my($out_root, $cm_file, $opt_HR, $indi_cm_name_AR, $indi_cm_file_name_AR, $indi_cm_clen_AR, $indi_cm_nbif_AR) = @_;
     
-    my($cmi, $line, $inf_line, $cm_name, $indi_file, $my_cm_file_root);
+    my($cmi, $line, $inf_line, $cm_name, $indi_cm_file, $indi_cm_file_root);
     my %cm_name_exists_H = ();
 
-    if($my_cm_file_copy !~ m/\.cm$/) { printf STDERR ("ERROR, CM file name must end with \".cm\", $my_cm_file_copy does not.\n"); exit(1); }
-    $my_cm_file_root = $my_cm_file_copy;
-    $my_cm_file_root =~ s/\.cm$//;
+    $indi_cm_file_root = $cm_file;
+    $indi_cm_file_root =~ s/.+\///; #remove directory path
 
-    if(open(CM, $my_cm_file_copy) == 0) { printf STDERR ("ERROR, could not open $my_cm_file_copy for reading.\n"); exit(1); }
+    HERE HERE HERE HERE 
+
+    if(open(CM, $cm_file) == 0) { printf STDERR ("ERROR, could not open $cm_file for reading.\n"); exit(1); }
     $cmi = 0;
     while($line = <CM>) {
 	if($line =~ /^INFERNAL/) { 
@@ -727,9 +864,9 @@ sub process_cm_file {
 	}
 	elsif($line =~ /^NAME\s+(\S+)/) { 
 	    $cm_name = $1;
-	    $indi_file = $my_cm_file_root . "." . $cm_name . ".m" . $cmi . ".cm";
+	    $indi_cm_file = $indi_cm_file_root . "." . $cm_name . ".m" . $cmi . ".cm";
 	    if(!$do_prep) { 
-		if(open(OUT, ">" . $indi_file) == 0) { printf STDERR ("ERROR, could not open $indi_file for writing.\n"); exit(1); }
+		if(open(OUT, ">" . $indi_cm_file) == 0) { printf STDERR ("ERROR, could not open $indi_cm_file for writing.\n"); exit(1); }
 		print OUT $inf_line;
 		print OUT $line;
 	    }
@@ -1183,45 +1320,6 @@ sub max_length_scalar_in_array {
 	if(length($arr_ref->[$i]) > $max) { $max = length($arr_ref->[$i]); }
     }
     return $max;
-}
-
-#####################################################################
-# subroutine: print_banner()
-# incept:     EPN, Tue Jun 16 07:26:13 2009
-# 
-# purpose:    Print the ssu-align banner.
-#
-# returns:    Nothing, if it returns, everything is valid.
-# 
-####################################################################
-sub print_banner { 
-    my $narg_expected = 4;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_banner() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($script_call, $enabled_options, $argv_ref, $log2printAR) = @_;
-    my ($i, $script_name, $start_log_line);
-    $script_call =~ s/^\.+\///;
-    $script_name = $script_call;
-    $script_name =~ s/.+\///;
-
-    $start_log_line = scalar(@{$log2printAR});
-
-    push(@{$log2printAR}, sprintf("\# $script_name :: define and align SSU rRNA sequences\n"));
-    push(@{$log2printAR}, sprintf("\# SSU-ALIGN 0.1 (October 2009)\n"));
-    push(@{$log2printAR}, sprintf("\# Copyright (C) 2009 HHMI Janelia Farm Research Campus\n"));
-    push(@{$log2printAR}, sprintf("\# Freely distributed under the GNU General Public License (GPLv3)\n"));
-    push(@{$log2printAR}, sprintf("\# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n"));
-    push(@{$log2printAR}, sprintf("%-10s %s ", "# command:", $script_call . $enabled_options));
-    for($i = 0; $i < scalar(@{$argv_ref}) - 1; $i++) { 
-	push(@{$log2printAR}, sprintf("$argv_ref->[$i] "));
-    }
-    push(@{$log2printAR}, sprintf("$argv_ref->[$i]\n"));
-    push(@{$log2printAR}, sprintf("%-10s ", "# date:"));
-    push(@{$log2printAR}, sprintf(scalar localtime()));
-    push(@{$log2printAR}, sprintf("\n"));
-
-    for($i = $start_log_line; $i < scalar(@{$log2printAR}); $i++) { 
-	printf($log2printAR->[$i]);
-    }
 }
 
 #####################################################################

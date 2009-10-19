@@ -37,7 +37,7 @@ $options_usage .= "  -1            : output alignment(s) in non-interleaved, 1 l
 $options_usage .= "  --append <s>  : append this model to CM file <s>\n";
 $options_usage .= "  --key-out <s> : add <s> to all output file names, before the suffix\n";
 $options_usage .= "\noptions for building a model from a truncated version of the alignment:\n";
-$options_usage .= "  -t <s> : only include consensus columns from <x> to <y> (where <s> =\"<x>-<y>\")\n";
+$options_usage .= "  --trunc <s> : only include consensus columns from <x> to <y> (where <s> =\"<x>-<y>\")\n";
 $options_usage .= "\noptions for numbering alignment consensus columns (no model will be built):\n";
 $options_usage .= "  --num <n> : output alignment with consensus columns numbered\n";
 $options_usage .= "\nexpert options for model construction:\n";
@@ -60,7 +60,7 @@ $opt_H{"-n"}          = "";
 $opt_H{"-1"}          = 0;
 $opt_H{"--append"}    = "";
 $opt_H{"--key-out"}   = "";
-$opt_H{"-t"}          = "";
+$opt_H{"--trunc"}     = "";
 $opt_H{"--num"}       = "";
 $opt_H{"--gapthresh"} = "";
 $opt_H{"--rf"}        = 0;
@@ -79,7 +79,7 @@ my $opt_return = GetOptions
      '1'           => \$opt_H{"-1"},
      'append=s'    => \$opt_H{"--append"},
      'key-out=s'   => \$opt_H{"--key-out"},
-     't=s'         => \$opt_H{"-t"},
+     't=s'         => \$opt_H{"--trunc"},
      'num'         => \$opt_H{"--num"},
      'gapthresh=f' => \$opt_H{"--gapthresh"},
      'rf'          => \$opt_H{"--rf"},
@@ -107,28 +107,28 @@ if($opt_H{"--num"}) {
 }
 
 # In build mode, we may also optionally truncate the alignment
-if($opt_H{"-t"} ne "") { 
+if($opt_H{"--trunc"} ne "") { 
     #check if the -t argument is valid
-    if($opt_H{"-t"} =~ /(\d+)\-(\d+)/) { 
+    if($opt_H{"--trunc"} =~ /(\d+)\-(\d+)/) { 
 	if($1 > $2) { 
-	    printf STDERR ("\nERROR, formatting of the -t argument " . $opt_H{"-t"} . " is invalid.\nFirst number must be less than the second; such as \"-t 822-930\"\n"); 
+	    printf STDERR ("\nERROR, formatting of the -t argument " . $opt_H{"--trunc"} . " is invalid.\nFirst number must be less than the second; such as \"-t 822-930\"\n"); 
 	    exit(1);
 	}
     }
-    elsif($opt_H{"-t"} =~ /(\d+)\:(\d+)/) { 
+    elsif($opt_H{"--trunc"} =~ /(\d+)\:(\d+)/) { 
 	if($1 > $2) { 
-	    printf STDERR ("\nERROR, formatting of the -t argument " . $opt_H{"-t"} . " is invalid.\nFirst number must be less than the second; such as \"-t 822:930\"\n");
+	    printf STDERR ("\nERROR, formatting of the -t argument " . $opt_H{"--trunc"} . " is invalid.\nFirst number must be less than the second; such as \"-t 822:930\"\n");
 	    exit(1);
 	}
     }
-    elsif($opt_H{"-t"} =~ /(\d+)\.+(\d+)/) { 
+    elsif($opt_H{"--trunc"} =~ /(\d+)\.+(\d+)/) { 
 	if($1 > $2) { 
-	    printf STDERR ("\nERROR, formatting of the -t argument " . $opt_H{"-t"} . " is invalid.\nFirst number must be less than the second; such as \"-t 822..930\"\n");
+	    printf STDERR ("\nERROR, formatting of the -t argument " . $opt_H{"--trunc"} . " is invalid.\nFirst number must be less than the second; such as \"-t 822..930\"\n");
 	    exit(1);
 	}
     }
     else { 
-	printf STDERR ("\nERROR, formatting of the -t argument " . $opt_H{"-t"} . " is invalid.\nIt must include two integers separated by a \"-\"; such as \"-t 822-930\"\n");
+	printf STDERR ("\nERROR, formatting of the -t argument " . $opt_H{"--trunc"} . " is invalid.\nIt must include two integers separated by a \"-\"; such as \"-t 822-930\"\n");
 	exit(1);
     }
 }
@@ -136,8 +136,8 @@ if($opt_H{"-t"} ne "") {
 # In build mode, if we're truncating we may also want to try to draw a secondary structure diagram
 # of the truncation, but only if -d and --gapthresh not enabled (or set to default)
 my $do_draw = 0;
-if(($opt_H{"-t"} ne "") && 
-   ($opt_H{"-d"})       && 
+if(($opt_H{"--trunc"} ne "") && 
+   ($opt_H{"-d"})            && 
    (($opt_H{"--gapthresh"} eq "") || ($opt_H{"--gapthresh"} == $df_gapthresh))) 
 { 
     $do_draw = 1; 
@@ -149,7 +149,7 @@ if($opt_H{"--num"}) {
        ($opt_H{"-o"}          ne "") ||
        ($opt_H{"-n"}          ne "") ||
        ($opt_H{"--append"}    ne "") ||
-       ($opt_H{"-t"}          ne "") ||
+       ($opt_H{"--trunc"}     ne "") ||
        ($opt_H{"--eent"})            ||
        ($opt_H{"--ere"}       ne "") ||
        ($opt_H{"--ps2pdf"})          ||
@@ -198,7 +198,7 @@ if($gapthresh eq "")  { $gapthresh = $df_gapthresh; }
 
 if($do_build_mode) 
 { 
-    if($opt_H{"-t"} ne "") { 
+    if($opt_H{"--trunc"} ne "") { 
 	run_alimanip_to_truncate($alimanip, $aln_file, $trunc_aln_file, $gapthresh, \%opt_H, \@log2printA);
 	$build_aln_file = $trunc_aln_file
     }	
@@ -261,7 +261,7 @@ sub print_banner {
     if($opt_HR->{"-o"}          ne "") { $enabled_options .= " -o " .          $opt_HR->{"-o"}; }
     if($opt_HR->{"--append"}    ne "") { $enabled_options .= " --append" .     $opt_HR->{"--append"}; }
     if($opt_HR->{"--key-out"}   ne "") { $enabled_options .= " --key-out " .   $opt_HR->{"--key-out"}; }   
-    if($opt_HR->{"-t"}          ne "") { $enabled_options .= " -t " .          $opt_HR->{"-t"}; }
+    if($opt_HR->{"--trunc"}     ne "") { $enabled_options .= " -t " .          $opt_HR->{"--trunc"}; }
     if($opt_HR->{"--num"})             { $enabled_options .= " --num"; }  
     if($opt_HR->{"--gapthresh"} ne "") { $enabled_options .= " --gapthresh " . $opt_HR->{"--gapthresh"}; } 
     if($opt_HR->{"--rf"})              { $enabled_options .= " --rf"; }  
@@ -302,7 +302,7 @@ sub print_banner {
 # Incept:     EPN, Mon Nov  3 15:05:56 2008
 # 
 # Purpose:    Validation and setup:
-#             - validate that the alignment file exists and ends in '.stk' or '.sto'
+#             - validate that the alignment file exists
 #             - validate that the required executable programs exist.
 #             - validate that the CM file we're building does not exist (unless -F or -A)
 #             - determine name for output '.log' file
@@ -375,13 +375,13 @@ sub validate_and_setup {
 
     #determine truncated aln file name (we may or may not create this alignment
     my $trunc_aln_file = "";
-    if($opt_HR->{"-t"} ne "") { 
+    if($opt_HR->{"--trunc"} ne "") { 
 	my ($start, $end);
-	if   ($opt_HR->{"-t"} =~ /(\d+)\-(\d+)/)  { $start = $1; $end   = $2; }
-	elsif($opt_HR->{"-t"} =~ /(\d+)\:(\d+)/)  { $start = $1; $end   = $2; }
-	elsif($opt_HR->{"-t"} =~ /(\d+)\.+(\d+)/) { $start = $1; $end   = $2; }
+	if   ($opt_HR->{"--trunc"} =~ /(\d+)\-(\d+)/)  { $start = $1; $end   = $2; }
+	elsif($opt_HR->{"--trunc"} =~ /(\d+)\:(\d+)/)  { $start = $1; $end   = $2; }
+	elsif($opt_HR->{"--trunc"} =~ /(\d+)\.+(\d+)/) { $start = $1; $end   = $2; }
 	else { 
-	    printf STDERR ("\nERROR, formatting of the -t argument " . $opt_H{"-t"} . " is invalid.\nIt must include two integers separated by a \"-\"; such as \"-t 822-930\"\n");
+	    printf STDERR ("\nERROR, formatting of the -t argument " . $opt_H{"--trunc"} . " is invalid.\nIt must include two integers separated by a \"-\"; such as \"-t 822-930\"\n");
 	    exit(1);
 	}
 	$root .= "." . $start . "-" . $end;
@@ -391,7 +391,7 @@ sub validate_and_setup {
     # otherwise, let cmbuild name it (by leaving it as "").
     my $cm_name = "";
     if($opt_HR->{"-n"} ne "")                           { $cm_name = $opt_HR->{"-n"}; }
-    elsif(($opt_HR->{"-d"}) || ($opt_HR->{"-t"} ne "")) { $cm_name = $root; }
+    elsif(($opt_HR->{"-d"}) || ($opt_HR->{"--trunc"} ne "")) { $cm_name = $root; }
     
     my $log_file = $root . $key_out . ".ssu-build.log";
 
@@ -433,7 +433,7 @@ sub validate_and_setup {
     my $ps_file = "";
     my $pdf_file = "";
 
-    if(($opt_HR->{"-t"}) || $do_number_mode) { 
+    if(($opt_HR->{"--trunc"}) || $do_number_mode) { 
 	# verify that we can run esl-alimanip
 	$alimanip = "ssu-esl-alimanip";
 	$trash = `$alimanip -h`;
@@ -679,15 +679,15 @@ sub run_alimanip_to_truncate{
     my ($alimanip, $aln_file, $trunc_aln_file, $gapthresh, $opt_HR, $log2printAR) = @_;
 
     # sanity check
-    if($opt_H{"-t"} eq "") { printf STDERR ("ERROR, run_alimanip_to_truncate() entered, but -t option argument is the empty string. This shouldn't happen.\n"); exit(1); }
+    if($opt_H{"--trunc"} eq "") { printf STDERR ("ERROR, run_alimanip_to_truncate() entered, but -t option argument is the empty string. This shouldn't happen.\n"); exit(1); }
 
     #determine start and end positions:
     my ($start, $end);
-    if   ($opt_HR->{"-t"} =~ /(\d+)\-(\d+)/)  { $start = $1; $end   = $2; }
-    elsif($opt_HR->{"-t"} =~ /(\d+)\:(\d+)/)  { $start = $1; $end   = $2; }
-    elsif($opt_HR->{"-t"} =~ /(\d+)\.+(\d+)/) { $start = $1; $end   = $2; }
+    if   ($opt_HR->{"--trunc"} =~ /(\d+)\-(\d+)/)  { $start = $1; $end   = $2; }
+    elsif($opt_HR->{"--trunc"} =~ /(\d+)\:(\d+)/)  { $start = $1; $end   = $2; }
+    elsif($opt_HR->{"--trunc"} =~ /(\d+)\.+(\d+)/) { $start = $1; $end   = $2; }
     else { 
-	printf STDERR ("\nERROR, formatting of the -t argument " . $opt_H{"-t"} . " is invalid.\nIt must include two integers separated by a \"-\"; such as \"-t 822-930\"\n");
+	printf STDERR ("\nERROR, formatting of the -t argument " . $opt_H{"--trunc"} . " is invalid.\nIt must include two integers separated by a \"-\"; such as \"-t 822-930\"\n");
 	exit(1);
     }
 
@@ -755,18 +755,18 @@ sub run_ssdraw {
     my ($ssdraw, $template_file, $aln_file, $ps_file, $pdf_file, $ps2pdf, $opt_HR, $log2printAR) = @_;
 
     # contract check
-    if($opt_H{"-t"} eq "") { printf STDERR ("ERROR, run_ssdraw() entered, but -t option argument is the empty string. This shouldn't happen.\n"); exit(1); }
-    if(! $opt_H{"-d"})     { printf STDERR ("ERROR, run_ssdraw() entered, but -d option argument not enabled. This shouldn't happen.\n"); exit(1); }
-    if($ps_file eq "")     { printf STDERR ("ERROR, run_ssdraw() entered, but ps file is the empty string. This shouldn't happen.\n"); exit(1); }
-    if($pdf_file eq "")    { printf STDERR ("ERROR, run_ssdraw() entered, but pdf file is the empty string. This shouldn't happen.\n"); exit(1); }
+    if($opt_H{"--trunc"} eq "") { printf STDERR ("ERROR, run_ssdraw() entered, but -t option argument is the empty string. This shouldn't happen.\n"); exit(1); }
+    if(! $opt_H{"-d"})          { printf STDERR ("ERROR, run_ssdraw() entered, but -d option argument not enabled. This shouldn't happen.\n"); exit(1); }
+    if($ps_file eq "")          { printf STDERR ("ERROR, run_ssdraw() entered, but ps file is the empty string. This shouldn't happen.\n"); exit(1); }
+    if($pdf_file eq "")         { printf STDERR ("ERROR, run_ssdraw() entered, but pdf file is the empty string. This shouldn't happen.\n"); exit(1); }
 
     if($ssdraw eq "")        { return -1; }
     if($template_file eq "") { return -1; }
 
     my($start, $end);
-    if   ($opt_HR->{"-t"} =~ /(\d+)\-(\d+)/)  { $start = $1; $end   = $2; }
-    elsif($opt_HR->{"-t"} =~ /(\d+)\:(\d+)/)  { $start = $1; $end   = $2; }
-    elsif($opt_HR->{"-t"} =~ /(\d+)\.+(\d+)/) { $start = $1; $end   = $2; }
+    if   ($opt_HR->{"--trunc"} =~ /(\d+)\-(\d+)/)  { $start = $1; $end   = $2; }
+    elsif($opt_HR->{"--trunc"} =~ /(\d+)\:(\d+)/)  { $start = $1; $end   = $2; }
+    elsif($opt_HR->{"--trunc"} =~ /(\d+)\.+(\d+)/) { $start = $1; $end   = $2; }
 
     #to determine consensus length, grep for the RF lines of the alignment, and overwrite them with 0s and 1s.
     my $command = "grep '^#=GC RF[[:space:]]' $aln_file";

@@ -48,7 +48,6 @@ $options_usage .= "  --no-leg  : do not draw legends\n";
 $options_usage .= "  --no-head : do not draw headers\n";
 $options_usage .= "  --no-foot : do not draw footers\n";
 
-
 ###################
 # Process options #
 ###################
@@ -110,7 +109,6 @@ if($opt_return != 1) { exit(1); }
 
 if ($opt_H{"-h"}) { print $usage . "\n"; print $options_usage; exit(1); } 
 
-
 my $key_in;
 if($opt_H{"--key-in"}  ne '') { $key_in   = "." . opt_H{"--key-in"};  }
 my $key_out;
@@ -149,7 +147,7 @@ $dir =~ s/\/$//;
 my @stk_list_A = ();
 my @mask_list_A = ();
 my ($cm_file, $template_file, $ssdraw);
-validate_setup($dir, $key_in, \%opt_H, \$cm_file, \$template_file, \$ssdraw, \@stk_list_A, \@mask_list_A);
+validate_and_setup($dir, $key_in, \%opt_H, \$cm_file, \$template_file, \$ssdraw, \@stk_list_A, \@mask_list_A);
 my $naln = scalar(@stk_list_A);
 my $aln_file;
 
@@ -235,11 +233,84 @@ print_log($log_file, \@log2printA);
 exit(0);
 
 ###############
-# subroutines #
+# SUBROUTINES #
 ###############
 
 #####################################################################
-# Subroutine: validate_setup()
+# Subroutine: print_banner()
+# Incept:     EPN, Thu Sep 24 14:40:39 2009
+# 
+# Purpose:    Print the ssu-draw banner.
+#
+# Arguments: 
+#    $script_call:     call used to invoke this (ssu-draw) script
+#    $opt_HR:          REFERENCE to hash of command-line options
+#    $argv_ref:        reference to @ARGV, command-line arguments
+#    $log2printAR:     reference to log2print array with flog file text
+#
+# Returns:    Nothing, if it returns, everything is valid.
+# 
+####################################################################
+sub print_banner { 
+    my $narg_expected = 4;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_banner() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($script_call, $opt_HR, $argv_ref, $log2printAR) = @_;
+    my ($i, $script_name, $start_log_line);
+
+    my $enabled_options;
+    if($opt_H{"-m"} ne "")        { $enabled_options .= " -m " . $opt_H{"-m"}; }
+    if($opt_H{"-t"} ne "")        { $enabled_options .= " -t " . $opt_H{"-t"}; }
+    if($opt_H{"--key-in"} ne "")  { $enabled_options .= " --key-in " . $opt_H{"--key_in"}; }
+    if($opt_H{"--key-out"} ne "") { $enabled_options .= " --key-out " . $opt_H{"--key_out"}; }
+    if($opt_H{"--in-mask"} ne "") { $enabled_options .= " --in-mask " . $opt_H{"--in-mask"}; }
+
+    if($opt_H{"-h"})          { $enabled_options .= " -h"; }
+    if($opt_H{"-a"})          { $enabled_options .= " -a"; }
+    if($opt_H{"--use-masks"}) { $enabled_options .= " --use-masks"; }
+    if($opt_H{"--ps2pdf"})    { $enabled_options .= " --ps2pdf"; }
+    if($opt_H{"--ps-keep"})   { $enabled_options .= " --ps-keep"; }
+    if($opt_H{"--no-aln"})    { $enabled_options .= " --no-aln"; }
+    if($opt_H{"--prob"})      { $enabled_options .= " --prob"; }
+    if($opt_H{"--ins"})       { $enabled_options .= " --ins"; }
+    if($opt_H{"--dall"})      { $enabled_options .= " --dall"; }
+    if($opt_H{"--dint"})      { $enabled_options .= " --dint"; }
+    if($opt_H{"--info"})      { $enabled_options .= " --info"; }
+    if($opt_H{"--struct"})    { $enabled_options .= " --struct"; }
+    if($opt_H{"--indi"})      { $enabled_options .= " --indi"; }
+    if($opt_H{"--no-prob"})   { $enabled_options .= " --no-prob"; }
+    if($opt_H{"--cons"})      { $enabled_options .= " --cons"; }
+    if($opt_H{"--no-leg"})    { $enabled_options .= " --no-leg"; }
+    if($opt_H{"--no-head"})   { $enabled_options .= " --no-head"; }
+    if($opt_H{"--no-foot"})   { $enabled_options .= " --no-foot"; }
+
+    $script_call =~ s/^\.+\///;
+    $script_name = $script_call;
+    $script_name =~ s/.+\///;
+
+    $start_log_line = scalar(@{$log2printAR});
+
+    push(@{$log2printAR}, sprintf("\# $script_name :: draw SSU rRNA secondary structure diagrams\n"));
+    push(@{$log2printAR}, sprintf("\# SSU-ALIGN 0.1 (October 2009)\n"));
+    push(@{$log2printAR}, sprintf("\# Copyright (C) 2009 HHMI Janelia Farm Research Campus\n"));
+    push(@{$log2printAR}, sprintf("\# Freely distributed under the GNU General Public License (GPLv3)\n"));
+    push(@{$log2printAR}, sprintf("\# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n"));
+    push(@{$log2printAR}, sprintf("%-10s %s ", "# command:", $script_call . $enabled_options));
+    for($i = 0; $i < scalar(@{$argv_ref}) - 1; $i++) { 
+	push(@{$log2printAR}, sprintf("$argv_ref->[$i] "));
+    }
+    push(@{$log2printAR}, sprintf("$argv_ref->[$i]\n"));
+    push(@{$log2printAR}, sprintf("%-10s ", "# date:"));
+    push(@{$log2printAR}, sprintf(scalar localtime()));
+    push(@{$log2printAR}, sprintf("\n"));
+
+    for($i = $start_log_line; $i < scalar(@{$log2printAR}); $i++) { 
+	printf($log2printAR->[$i]);
+    }
+    return;
+}
+
+#####################################################################
+# Subroutine: validate_and_setup()
 # Incept:     EPN, Mon Nov  3 15:05:56 2008
 # 
 # Purpose:    Validate that: 
@@ -267,9 +338,9 @@ exit(0);
 #             exiting early and then exit with non-zero status.
 #
 ####################################################################
-sub validate_setup { 
+sub validate_and_setup { 
     my $narg_expected = 8;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, validate_setup() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, validate_and_setup() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my($dir, $key_in, $opt_HR, $cm_file_ref, $template_file_ref, $ssdraw_ref, $stk_list_arr_ref, $mask_list_arr_ref) = @_;
 
     #Validate that we can read the CM file
@@ -388,81 +459,6 @@ sub validate_setup {
     $$template_file_ref  = $template_file;
     $$ssdraw_ref  = $ssdraw;
     
-    return;
-}
-
-
-
-#####################################################################
-# Subroutine: print_banner()
-# Incept:     EPN, Thu Sep 24 14:40:39 2009
-# 
-# Purpose:    Print the ssu-draw banner.
-#
-# Arguments: 
-#    $script_call:     call used to invoke this (ssu-draw) script
-#    $opt_HR:          REFERENCE to hash of command-line options
-#    $argv_ref:        reference to @ARGV, command-line arguments
-#    $log2printAR:     reference to log2print array with flog file text
-#
-# Returns:    Nothing, if it returns, everything is valid.
-# 
-####################################################################
-sub print_banner { 
-    my $narg_expected = 4;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_banner() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($script_call, $opt_HR, $argv_ref, $log2printAR) = @_;
-    my ($i, $script_name, $start_log_line);
-
-    my $enabled_options;
-    if($opt_H{"-m"} ne '')        { $enabled_options .= " -m " . $opt_H{"alt_cm_file"}; }
-    if($opt_H{"-t"} ne '')        { $enabled_options .= " -t " . $opt_H{"alt_template_file"}; }
-    if($opt_H{"--key-in"} ne '')  { $enabled_options .= " --key-in " . $opt_H{"key_in"}; }
-    if($opt_H{"--key-out"} ne '') { $enabled_options .= " --key-out " . $opt_H{"key_out"}; }
-    if($opt_H{"--in-mask"} ne '') { $enabled_options .= " --in-mask " . $opt_H{"inmaskefile"}; }
-
-    if($opt_H{"-h"})          { $enabled_options .= " -h"; }
-    if($opt_H{"-a"})          { $enabled_options .= " -a "; }
-    if($opt_H{"--use-masks"}) { $enabled_options .= " --use-masks"; }
-    if($opt_H{"--ps2pdf"})    { $enabled_options .= " --ps2pdf"; }
-    if($opt_H{"--ps-keep"})   { $enabled_options .= " --ps-keep"; }
-    if($opt_H{"--no-aln"})    { $enabled_options .= " --no-aln"; }
-    if($opt_H{"--prob"})      { $enabled_options .= " --prob"; }
-    if($opt_H{"--ins"})       { $enabled_options .= " --ins"; }
-    if($opt_H{"--dall"})      { $enabled_options .= " --dall"; }
-    if($opt_H{"--dint"})      { $enabled_options .= " --dint"; }
-    if($opt_H{"--info"})      { $enabled_options .= " --info"; }
-    if($opt_H{"--struct"})    { $enabled_options .= " --struct"; }
-    if($opt_H{"--indi"})      { $enabled_options .= " --indi"; }
-    if($opt_H{"--no-prob"})   { $enabled_options .= " --no-prob"; }
-    if($opt_H{"--cons"})      { $enabled_options .= " --cons"; }
-    if($opt_H{"--no-leg"})    { $enabled_options .= " --no-leg"; }
-    if($opt_H{"--no-head"})   { $enabled_options .= " --no-head"; }
-    if($opt_H{"--no-foot"})   { $enabled_options .= " --no-foot"; }
-
-    $script_call =~ s/^\.+\///;
-    $script_name = $script_call;
-    $script_name =~ s/.+\///;
-
-    $start_log_line = scalar(@{$log2printAR});
-
-    push(@{$log2printAR}, sprintf("\# $script_name :: draw SSU rRNA secondary structure diagrams\n"));
-    push(@{$log2printAR}, sprintf("\# SSU-ALIGN 0.1 (October 2009)\n"));
-    push(@{$log2printAR}, sprintf("\# Copyright (C) 2009 HHMI Janelia Farm Research Campus\n"));
-    push(@{$log2printAR}, sprintf("\# Freely distributed under the GNU General Public License (GPLv3)\n"));
-    push(@{$log2printAR}, sprintf("\# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n"));
-    push(@{$log2printAR}, sprintf("%-10s %s ", "# command:", $script_call . $enabled_options));
-    for($i = 0; $i < scalar(@{$argv_ref}) - 1; $i++) { 
-	push(@{$log2printAR}, sprintf("$argv_ref->[$i] "));
-    }
-    push(@{$log2printAR}, sprintf("$argv_ref->[$i]\n"));
-    push(@{$log2printAR}, sprintf("%-10s ", "# date:"));
-    push(@{$log2printAR}, sprintf(scalar localtime()));
-    push(@{$log2printAR}, sprintf("\n"));
-
-    for($i = $start_log_line; $i < scalar(@{$log2printAR}); $i++) { 
-	printf($log2printAR->[$i]);
-    }
     return;
 }
 
