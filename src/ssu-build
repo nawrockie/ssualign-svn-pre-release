@@ -787,7 +787,7 @@ sub run_ssdraw {
     close(MASK);
 
     my $command = "$ssdraw --mask-col --mask $mask_file $aln_file $template_file $ps_file 2>&1";
-    #printf("run_ssdraw command: $command\n");
+    printf("run_ssdraw command: $command\n");
     my $tmp = `$command`;
     if(($? >> 8) != 0) { # it didn't work, don't exit just alert caller by returning 0
 	# remove mask file
@@ -796,8 +796,8 @@ sub run_ssdraw {
 	return 0; 
     } 
     $command = "rm $mask_file 2>&1";
-    $tmp = `$command`;
-    if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
+    #$tmp = `$command`;
+    #if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
 
     push(@{$log2printAR}, sprintf("#\n"));
     printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
