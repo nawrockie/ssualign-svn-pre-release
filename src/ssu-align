@@ -322,14 +322,14 @@ exit(0);
 #             we're in prep mode.
 #
 # Arguments: 
-#    $script_call:      call used to invoke this (ssu-align) script
-#    $opt_HR:           REFERENCE to hash of command-line options
-#    $opt_takes_arg_HR: REFERENCE to hash telling if each option takes an argument (1) or not (0)
-#    $opt_order_AR:     REFERENCE to array specifying order of options
-#    $opt_is_prep_HR:   REFERENCE to hash telling if each option gets passed on to child processes in prep mode
-#    $argv_R:           REFERENCE to @ARGV, command-line arguments
-#    $prep_enabled_options_R:   REFERENCE to prep options, filled here
-#    $log2print_AR:      REFERENCE to log2print array with flog file text
+#    $script_call:            call used to invoke this (ssu-align) script
+#    $opt_HR:                 REFERENCE to hash of command-line options
+#    $opt_takes_arg_HR:       REFERENCE to hash telling if each option takes an argument (1) or not (0)
+#    $opt_order_AR:           REFERENCE to array specifying order of options
+#    $opt_is_prep_HR:         REFERENCE to hash telling if each option gets passed on to child processes in prep mode
+#    $argv_R:                 REFERENCE to @ARGV, command-line arguments
+#    $prep_enabled_options_R: REFERENCE to prep options, filled here
+#    $log2print_AR:           REFERENCE to log2print array with log file text
 #
 # Returns:    Nothing, if it returns, everything is valid.
 # 
@@ -1313,7 +1313,9 @@ sub align_subseqs {
 	    
 	    my $mxsize = $df_mxsize;
 	    if($opt_HR->{"--mxsize"} ne "") { $mxsize = $opt_HR->{"--mxsize"}; }
-	    $command = "$cmalign --mxsize $mxsize --sub -o $cmalign_stk $cm_file_name $hits_file > $cmalign_out 2>&1"; 
+	    my $prob_opt = "-p";
+	    if($opt_HR->{"--no-prob"}) { $prob_opt = ""; }
+	    $command = "$cmalign $prob_opt --mxsize $mxsize --sub -o $cmalign_stk $cm_file_name $hits_file > $cmalign_out 2>&1"; 
 	    $tmp = `$command`;
 	    if(($? >> 8) != 0) { 
 		printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); 

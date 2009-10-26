@@ -20,7 +20,6 @@ use Getopt::Long;
 use Cwd 'abs_path';
 use strict;
 
-my $df_gapthresh = 0.80;
 my $total_time = -1 * time();
 my $usage =  "Usage: ssu-build [options] <Stockholm alignment file to build CM from>\n";
    $usage .= "Usage: ssu-build [options] -d <name of default ssu-align-0.1 seed alignment>\n";
@@ -36,38 +35,58 @@ $options_usage .= "  -n <s>        : name the CM <s>\n";
 $options_usage .= "  -1            : output alignment(s) in non-interleaved, 1 line/seq format\n";
 $options_usage .= "  --append <s>  : append this model to CM file <s>\n";
 $options_usage .= "  --key-out <s> : add <s> to all output file names, before the suffix\n";
+
 $options_usage .= "\noptions for building a model from a truncated version of the alignment:\n";
 $options_usage .= "  --trunc <s> : only include consensus columns from <x> to <y> (where <s> =\"<x>-<y>\")\n";
+
 $options_usage .= "\noptions for numbering alignment consensus columns (no model will be built):\n";
 $options_usage .= "  --num <n> : output alignment with consensus columns numbered\n";
+
 $options_usage .= "\nexpert options for model construction:\n";
 $options_usage .= "  --gapthresh <x> : set fraction of gaps to allow in a consensus column to <x> (default: 0.8)\n";
 $options_usage .= "  --rf            : use consensus column (#=GC RF) annotation in alignment\n";
 $options_usage .= "  --eent          : use 'entropy weighting' method to achieve target relative entropy\n";
 $options_usage .= "  --ere <x>       : with --eent, set target relative entropy as <x>\n";
+
 $options_usage .= "\noptions for output of secondary structure diagram, only relevant with -d and -t:\n";
 $options_usage .= "  --rm-ps : if ps2pdf is in your path, convert ps to pdf and delete postscripts\n";
+
 
 ###################
 # Process options #
 ###################
-my %opt_H = ();
-$opt_H{"-h"}          = 0;
-$opt_H{"-d"}          = 0;
-$opt_H{"-F"}          = 0;
-$opt_H{"-o"}          = "";
-$opt_H{"-n"}          = "";
-$opt_H{"-1"}          = 0;
-$opt_H{"--append"}    = "";
-$opt_H{"--key-out"}   = "";
-$opt_H{"--trunc"}     = "";
-$opt_H{"--num"}       = "";
-$opt_H{"--gapthresh"} = "";
-$opt_H{"--rf"}        = 0;
-$opt_H{"--eent"}      = 0;
-$opt_H{"--ere"}       = "";
-$opt_H{"--ps2pdf"}    = 0;
-$opt_H{"--ps-keep"}   = 0;
+
+my %opt_H = ();              # key: option (example "-h"); value: option argument (example ("0" or "1") if option takes no arg, actual argument if option takes arg)
+my %opt_takes_arg_H  = ();   # key: option; value: "1" if option takes argument, "0" if not
+my @opt_order_A  = ();       # order of options for printing in banner
+my %opt_is_prep_H = ();      # key: option; value: "1" if option will get passed to child ssu-align calls in prep mode, "0" if not
+my $opt;
+
+$opt_takes_arg_H{"-h"}          = 0;  push(@opt_order_A, "-h");           
+$opt_takes_arg_H{"-d"}          = 0;  push(@opt_order_A, "-d");           
+$opt_takes_arg_H{"-F"}          = 0;  push(@opt_order_A, "-F");           
+$opt_takes_arg_H{"-o"}          = 1;  push(@opt_order_A, "-o");           
+$opt_takes_arg_H{"-n"}          = 1;  push(@opt_order_A, "-n");           
+$opt_takes_arg_H{"-1"}          = 0;  push(@opt_order_A, "-1");           
+$opt_takes_arg_H{"--append"}    = 1;  push(@opt_order_A, "--append");
+$opt_takes_arg_H{"--key-out"}   = 1;  push(@opt_order_A, "--key-out");    
+$opt_takes_arg_H{"--trunc"}     = 1;  push(@opt_order_A, "--trunc");
+$opt_takes_arg_H{"--num"}       = 1;  push(@opt_order_A, "--num");
+$opt_takes_arg_H{"--gapthresh"} = 1;  push(@opt_order_A, "--gapthresh");
+$opt_takes_arg_H{"--rf"}        = 0;  push(@opt_order_A, "--rf");
+$opt_takes_arg_H{"--eent"}      = 0;  push(@opt_order_A, "--eent");
+$opt_takes_arg_H{"--ere"}       = 1;  push(@opt_order_A, "--ere");
+$opt_takes_arg_H{"--pdf"}       = 1;  push(@opt_order_A, "--pdf");
+$opt_takes_arg_H{"--rm-ps"}     = 0;  push(@opt_order_A, "--rm-ps");      
+
+#set default options
+foreach $opt (keys %opt_takes_arg_H) { 
+    if($opt_takes_arg_H{$opt}) { $opt_H{$opt} = ""; }
+    else                       { $opt_H{$opt} = 0; }
+}
+
+# the only global variables: default values
+my $df_gapthresh = 0.80;
 
 Getopt::Long::Configure ("bundling");
 my $opt_return = GetOptions
@@ -79,25 +98,27 @@ my $opt_return = GetOptions
      '1'           => \$opt_H{"-1"},
      'append=s'    => \$opt_H{"--append"},
      'key-out=s'   => \$opt_H{"--key-out"},
-     't=s'         => \$opt_H{"--trunc"},
+     'trunc=s'     => \$opt_H{"--trunc"},
      'num'         => \$opt_H{"--num"},
      'gapthresh=f' => \$opt_H{"--gapthresh"},
      'rf'          => \$opt_H{"--rf"},
      'eent'        => \$opt_H{"--eent"},
      'ere=f'       => \$opt_H{"--ere"},
-     'ps2pdf'      => \$opt_H{"--ps2pdf"},
-     'ps-keep'     => \$opt_H{"--ps-keep"});
+     'pdf=s'       => \$opt_H{"--pdf"},
+     'rm-ps'       => \$opt_H{"--rm-ps"});
  
 if($opt_return != 1) { exit(1); }
 
 if ($opt_H{"-h"}) { print $usage . "\n"; print $options_usage; exit(1); } 
 
-my $key_out;
-if($opt_H{"--key-out"}  ne "") { $key_out   = "." . opt_H{"--key-out"};  }
+my $key_out = "";
+if($opt_H{"--key-out"}  ne "") { $key_out   = "." . $opt_H{"--key-out"};  }
+
 
 ##############################################################################
 # Determine the "mode" to run and check for incompatible option combinations.#
 ##############################################################################
+
 # There are only 2 possible modes, they are exclusive.
 my $do_build_mode  = 1; # default mode, build a CM
 my $do_number_mode = 0; # number alignment columns and exit
@@ -134,7 +155,7 @@ if($opt_H{"--trunc"} ne "") {
 }
 
 # In build mode, if we're truncating we may also want to try to draw a secondary structure diagram
-# of the truncation, but only if -d and --gapthresh not enabled (or set to default)
+# of the truncation, but only if -d enabled and --gapthresh not enabled (or set to default)
 my $do_draw = 0;
 if(($opt_H{"--trunc"} ne "") && 
    ($opt_H{"-d"})            && 
@@ -167,11 +188,13 @@ if(($opt_H{"--rf"}) && (($opt_H{"--gapthresh"}) ne "")) {
     printf STDERR ("\nERROR, --rf is incompatible with --gapthresh.\n"); exit(1); 
 }
 
+
 ################
 # Print banner #
 ################
-my @log2printA = ();
-print_banner($0, \%opt_H, \@ARGV, \@log2printA);
+
+my @log2print_A = ();
+print_banner($0, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, \@log2print_A);
 
 if(scalar(@ARGV) != 1) {   
     print "Incorrect number of command line arguments.\n";
@@ -181,15 +204,20 @@ if(scalar(@ARGV) != 1) {
 }
 my ($aln_file_or_model_name) = $ARGV[0];
 
+
 ##################################################################
 # Validate that everything is go and determine output file names #
 ##################################################################
+
 my ($aln_file, $cmbuild, $cm_file, $cm_name, $alimanip, $ssdraw, $template_file, $num_aln_file, $trunc_aln_file, $log_file, $ps2pdf, $ps_file, $pdf_file);
 validate_and_setup($aln_file_or_model_name, $key_out, \%opt_H, $do_build_mode, $do_number_mode, $do_draw, 
 		   \$aln_file, \$cmbuild, \$cm_file, \$cm_name, \$alimanip, \$ssdraw, \$template_file, \$ps2pdf, \$ps_file, \$pdf_file, \$num_aln_file, \$trunc_aln_file, \$log_file);
-#####################
-# Handle Build mode #
-#####################
+
+
+###########################
+# Build mode: Do the work #
+###########################
+
 my $ssdraw_failed_at_least_once = 0;
 my $ssdraw_worked_at_least_once = 0;
 my $gapthresh = $opt_H{"--gapthresh"};
@@ -199,39 +227,42 @@ if($gapthresh eq "")  { $gapthresh = $df_gapthresh; }
 if($do_build_mode) 
 { 
     if($opt_H{"--trunc"} ne "") { 
-	run_alimanip_to_truncate($alimanip, $aln_file, $trunc_aln_file, $gapthresh, \%opt_H, \@log2printA);
+	run_alimanip_to_truncate($alimanip, $aln_file, $trunc_aln_file, $gapthresh, \%opt_H, \@log2print_A);
 	$build_aln_file = $trunc_aln_file
     }	
     else { 
 	$build_aln_file = $aln_file;
     }
-    run_cmbuild($cmbuild, $build_aln_file, $cm_file, $cm_name, $gapthresh, \%opt_H, \@log2printA);
+    run_cmbuild($cmbuild, $build_aln_file, $cm_file, $cm_name, $gapthresh, \%opt_H, \@log2print_A);
 
     if($do_draw) { 
-	my $ret_val = run_ssdraw($ssdraw, $template_file, $aln_file, $ps_file, $pdf_file, $ps2pdf, \%opt_H, \@log2printA);
+	my $ret_val = run_ssdraw($ssdraw, $template_file, $aln_file, $ps_file, $pdf_file, $ps2pdf, \%opt_H, \@log2print_A);
     }
 }    
 
-######################
-# Handle Number mode #
-######################
+
+############################
+# Number mode: do the work #
+############################
+
 if($do_number_mode) 
 { 
-    run_alimanip_to_number($alimanip, $aln_file, $num_aln_file, $gapthresh, \%opt_H, \@log2printA);
+    run_alimanip_to_number($alimanip, $aln_file, $num_aln_file, $gapthresh, \%opt_H, \@log2print_A);
 }
 
-push(@log2printA, sprintf("#\n"));
-printf($log2printA[(scalar(@log2printA)-1)]);
-push(@log2printA, sprintf("# This output saved to log file: $log_file.\n"));
-printf($log2printA[(scalar(@log2printA)-1)]);
-print_log($log_file, \@log2printA);
+push(@log2print_A, sprintf("#\n"));
+printf($log2print_A[(scalar(@log2print_A)-1)]);
+push(@log2print_A, sprintf("# This output saved to log file: $log_file.\n"));
+printf($log2print_A[(scalar(@log2print_A)-1)]);
+print_log($log_file, \@log2print_A);
 
 exit(0);
 
 
 ###############
-# subroutines #
+# Subroutines #
 ###############
+
 
 #####################################################################
 # Subroutine: print_banner()
@@ -240,58 +271,53 @@ exit(0);
 # Purpose:    Print the ssu-build banner.
 #
 # Arguments: 
-#    $script_call:     call used to invoke this (ssu-build) script
-#    $opt_HR:          REFERENCE to hash of command-line options
-#    $argv_ref:        reference to @ARGV, command-line arguments
-#    $log2printAR:     reference to log2print array with flog file text
+#    $script_call:      call used to invoke this (ssu-draw) script
+#    $opt_HR:           REFERENCE to hash of command-line options
+#    $opt_takes_arg_HR: REFERENCE to hash telling if each option takes an argument (1) or not (0)
+#    $opt_order_AR:     REFERENCE to array specifying order of options
+#    $argv_ref:         REFERENCE to @ARGV, command-line arguments
+#    $log2print_AR:     REFERENCE to log2print array with log file text
 #
 # Returns:    Nothing, if it returns, everything is valid.
 # 
 ####################################################################
 sub print_banner { 
-    my $narg_expected = 4;
+    my $narg_expected = 6;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_banner() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($script_call, $opt_HR, $argv_ref, $log2printAR) = @_;
-    my ($i, $script_name, $start_log_line);
+    my ($script_call, $opt_HR, $opt_takes_arg_HR, $opt_order_AR, $argv_ref, $log2print_AR) = @_;
 
-    my $enabled_options;
-    if($opt_HR->{"-h"})                { $enabled_options .= " -h"; }
-    if($opt_HR->{"-d"})                { $enabled_options .= " -d"; }
-    if($opt_HR->{"-F"})                { $enabled_options .= " -F"; }
-    if($opt_HR->{"-o"}          ne "") { $enabled_options .= " -o " .          $opt_HR->{"-o"}; }
-    if($opt_HR->{"--append"}    ne "") { $enabled_options .= " --append" .     $opt_HR->{"--append"}; }
-    if($opt_HR->{"--key-out"}   ne "") { $enabled_options .= " --key-out " .   $opt_HR->{"--key-out"}; }   
-    if($opt_HR->{"--trunc"}     ne "") { $enabled_options .= " -t " .          $opt_HR->{"--trunc"}; }
-    if($opt_HR->{"--num"})             { $enabled_options .= " --num"; }  
-    if($opt_HR->{"--gapthresh"} ne "") { $enabled_options .= " --gapthresh " . $opt_HR->{"--gapthresh"}; } 
-    if($opt_HR->{"--rf"})              { $enabled_options .= " --rf"; }  
-    if($opt_HR->{"--eent"})            { $enabled_options .= " --eent"; }
-    if($opt_HR->{"--ere"}       ne "") { $enabled_options .= " --ere " .       $opt_HR->{"--ere"}; }
-    if($opt_HR->{"--ps2pdf"})          { $enabled_options .= " --ps2pdf"; }  
-    if($opt_HR->{"--ps-keep"})         { $enabled_options .= " --ps-keep"; }  
+    my ($i, $script_name, $start_log_line);
+    $script_call =~ s/^\.+\///;
+    $script_name = $script_call;
+    $script_name =~ s/.+\///;
+    my $enabled_options = "";
+    foreach $opt (@{$opt_order_AR}) { 
+	if($opt_takes_arg_HR->{$opt}) { if($opt_HR->{$opt} ne "") { $enabled_options .= " " . $opt . " " . $opt_HR->{$opt}; } }
+	else                  	      { if($opt_HR->{$opt})       { $enabled_options .= " " . $opt; } }
+    }
 
     $script_call =~ s/^\.+\///;
     $script_name = $script_call;
     $script_name =~ s/.+\///;
 
-    $start_log_line = scalar(@{$log2printAR});
+    $start_log_line = scalar(@{$log2print_AR});
 
-    push(@{$log2printAR}, sprintf("\# $script_name :: build SSU rRNA covariance models\n"));
-    push(@{$log2printAR}, sprintf("\# SSU-ALIGN 0.1 (October 2009)\n"));
-    push(@{$log2printAR}, sprintf("\# Copyright (C) 2009 HHMI Janelia Farm Research Campus\n"));
-    push(@{$log2printAR}, sprintf("\# Freely distributed under the GNU General Public License (GPLv3)\n"));
-    push(@{$log2printAR}, sprintf("\# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n"));
-    push(@{$log2printAR}, sprintf("%-10s %s ", "# command:", $script_call . $enabled_options));
+    push(@{$log2print_AR}, sprintf("\# $script_name :: build SSU rRNA covariance models\n"));
+    push(@{$log2print_AR}, sprintf("\# SSU-ALIGN 0.1 (October 2009)\n"));
+    push(@{$log2print_AR}, sprintf("\# Copyright (C) 2009 HHMI Janelia Farm Research Campus\n"));
+    push(@{$log2print_AR}, sprintf("\# Freely distributed under the GNU General Public License (GPLv3)\n"));
+    push(@{$log2print_AR}, sprintf("\# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n"));
+    push(@{$log2print_AR}, sprintf("%-10s %s ", "# command:", $script_call . $enabled_options));
     for($i = 0; $i < scalar(@{$argv_ref}) - 1; $i++) { 
-	push(@{$log2printAR}, sprintf("$argv_ref->[$i] "));
+	push(@{$log2print_AR}, sprintf("$argv_ref->[$i] "));
     }
-    push(@{$log2printAR}, sprintf("$argv_ref->[$i]\n"));
-    push(@{$log2printAR}, sprintf("%-10s ", "# date:"));
-    push(@{$log2printAR}, sprintf(scalar localtime()));
-    push(@{$log2printAR}, sprintf("\n"));
+    push(@{$log2print_AR}, sprintf("$argv_ref->[$i]\n"));
+    push(@{$log2print_AR}, sprintf("%-10s ", "# date:"));
+    push(@{$log2print_AR}, sprintf(scalar localtime()));
+    push(@{$log2print_AR}, sprintf("\n"));
 
-    for($i = $start_log_line; $i < scalar(@{$log2printAR}); $i++) { 
-	printf($log2printAR->[$i]);
+    for($i = $start_log_line; $i < scalar(@{$log2print_AR}); $i++) { 
+	printf($log2print_AR->[$i]);
     }
     return;
 }
@@ -442,6 +468,7 @@ sub validate_and_setup {
 
     # if $do_draw (passed in), we'll try to draw a secondary structure diagram showing the part of the model included/excluded by the truncation,
     # if we can find the template file and esl-ssdraw, also we determine if we can find ps2pdf here.
+    my $ps2pdf = "";
     if($do_draw) { 
 	my $ssualigndir = $ENV{'SSUALIGNDIR'};
 	if(! exists($ENV{'SSUALIGNDIR'})) { 
@@ -460,12 +487,22 @@ sub validate_and_setup {
 	$ps_file = $root . $key_out . ".ps";
 	$pdf_file = $root . $key_out . ".pdf";
 
-	# is ps2pdf executable?
+	#determine if 'ps2pdf' exists, or that <s> from --pdf <s> exists if that was enabled
+	if($opt_HR->{"--pdf"} ne "") { $ps2pdf = $opt_HR->{"--pdf"}; }
 	$ps2pdf = "ps2pdf";
 	$trash = `$ps2pdf 2>&1`;
-	if($? == -1) { 
-	    $ps2pdf = ""; 
-	    if($opt_HR->{"--rm-ps"}) { printf STDERR ("\nERROR, --rm-ps was enabled, but ps2pdf is not in your path, so postscripts are the only output option for structure diagrams and --rm-ps is invalid.\n"); exit(1); }
+	if($? == -1) { #$ps2pdf did not work
+	    if($opt_HR->{"--pdf"} ne "") { 	#if --pdf <s> enabled but <s> is not a valid program name, we die
+		printf STDERR ("\nERROR, --pdf " . $opt_HR->{"--pdf"} . " was enabled, but $ps2pdf is not in your PATH environment variable.\n"); 
+		exit(1);
+	    }
+	    else { #if --pdf not enabled and ps2pdf does not exist, we can deal with this, unless --rm-ps enabled
+		if($opt_HR->{"--rm-ps"}) { 
+		    printf STDERR ("\nERROR, ps2pdf is not in your path, you can't use --rm-ps to remove postscripts in this case.\nIf you have another program that converts ps to pdf supply it as <s> with --pdf <s>.\n");
+		    exit(1);
+		}
+		$ps2pdf = ""; # default if ps2pdf does not exist
+	    }
 	}
     }
 
@@ -486,6 +523,7 @@ sub validate_and_setup {
     return;
 }
 
+
 #####################################################################
 # subroutine: run_cmbuild()
 # incept:     EPN, Wed Oct 14 14:29:00 2009
@@ -499,7 +537,7 @@ sub validate_and_setup {
 #   $cm_name:          name for CM (set in validate_and_setup(), if "" let cmbuild automatically name it)
 #   $gapthresh:        gap threshold to use when building the model
 #   $opt_HR:           reference to the hash of command-line options
-#   $log2printAR:      reference to log2print array with log file text
+#   $log2print_AR:      reference to log2print array with log file text
 # 
 # Returns:  Nothing, if it returns, everything is valid.
 # 
@@ -507,7 +545,7 @@ sub validate_and_setup {
 sub run_cmbuild {
     my $narg_expected = 7;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, run_cmbuild() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($cmbuild, $aln_file, $cm_file, $cm_name, $gapthresh, $opt_HR, $log2printAR) = @_;
+    my ($cmbuild, $aln_file, $cm_file, $cm_name, $gapthresh, $opt_HR, $log2print_AR) = @_;
 
     my $extra_opts = "";
 
@@ -521,10 +559,10 @@ sub run_cmbuild {
 
     if($cm_name ne "") { $extra_opts .= " -n $cm_name"; }
     
-    push(@{$log2printAR}, sprintf("#\n# Building CM(s)...\n"));
-    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
-    push(@{$log2printAR}, sprintf("#\n"));
-    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+    push(@{$log2print_AR}, sprintf("#\n# Building CM(s)...\n"));
+    printf($log2print_AR->[(scalar(@{$log2print_AR})-1)]);
+    push(@{$log2print_AR}, sprintf("#\n"));
+    printf($log2print_AR->[(scalar(@{$log2print_AR})-1)]);
     
     my $command = "$cmbuild $extra_opts --gapthresh $gapthresh $cm_file $aln_file 2>&1";
     my $tmp = `$command`;
@@ -573,16 +611,16 @@ sub run_cmbuild {
     my $dashes_file = ""; for($i = 0; $i < $max_width_file; $i++) { $dashes_file .= "-"; }
     my $dashes_name = ""; for($i = 0; $i < $max_width_name; $i++) { $dashes_name .= "-"; }
     if($ncm > 0) { 
-	push(@{$log2printAR}, sprintf("# %-*s  %-*s  %6s  %9s  %9s  %4s\n", $max_width_file, "", $max_width_name, "", "num", "alignment", "consensus", "num"));
-	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
-	push(@{$log2printAR}, sprintf("# %-*s  %-*s  %6s  %9s  %9s  %4s\n", $max_width_file, "CM file name", $max_width_name, "CM name", "seqs", "length", "length", "bps"));
-	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
-	push(@{$log2printAR}, sprintf("# %-*s  %-*s  %6s  %9s  %9s  %4s\n", $max_width_file, $dashes_file, $max_width_name, $dashes_name, "------", "---------", "---------", "----"));
-	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+	push(@{$log2print_AR}, sprintf("# %-*s  %-*s  %6s  %9s  %9s  %4s\n", $max_width_file, "", $max_width_name, "", "num", "alignment", "consensus", "num"));
+	printf($log2print_AR->[(scalar(@{$log2print_AR})-1)]);
+	push(@{$log2print_AR}, sprintf("# %-*s  %-*s  %6s  %9s  %9s  %4s\n", $max_width_file, "CM file name", $max_width_name, "CM name", "seqs", "length", "length", "bps"));
+	printf($log2print_AR->[(scalar(@{$log2print_AR})-1)]);
+	push(@{$log2print_AR}, sprintf("# %-*s  %-*s  %6s  %9s  %9s  %4s\n", $max_width_file, $dashes_file, $max_width_name, $dashes_name, "------", "---------", "---------", "----"));
+	printf($log2print_AR->[(scalar(@{$log2print_AR})-1)]);
 
 	for($i = 0; $i < $ncm; $i++) { 
-	    push(@{$log2printAR}, sprintf("  %-*s  %-*s  %6s  %9s  %9s  %4s\n", $max_width_file, $cm_file, $max_width_name, $cm_nameA[$i], $nseqA[$i], $alenA[$i], $clenA[$i], $bpsA[$i]));
-	    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+	    push(@{$log2print_AR}, sprintf("  %-*s  %-*s  %6s  %9s  %9s  %4s\n", $max_width_file, $cm_file, $max_width_name, $cm_nameA[$i], $nseqA[$i], $alenA[$i], $clenA[$i], $bpsA[$i]));
+	    printf($log2print_AR->[(scalar(@{$log2print_AR})-1)]);
 	}
     }
     return;
@@ -603,7 +641,7 @@ sub run_cmbuild {
 #   $num_aln_file:     path and name of the numbered alignment file we'll create here
 #   $gapthresh:        gap threshold to use when building the model
 #   $opt_HR:           reference to the hash of command-line options
-#   $log2printAR:      reference to log2print array with log file text
+#   $log2print_AR:      reference to log2print array with log file text
 # 
 # Returns:  Nothing, if it returns, everything is valid.
 # 
@@ -611,7 +649,7 @@ sub run_cmbuild {
 sub run_alimanip_to_number{
     my $narg_expected = 6;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, run_alimanip_to_number() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($alimanip, $aln_file, $num_aln_file, $gapthresh, $opt_HR, $log2printAR) = @_;
+    my ($alimanip, $aln_file, $num_aln_file, $gapthresh, $opt_HR, $log2print_AR) = @_;
 
     my $extra_opts = "";
     if(!($opt_HR->{"--rf"})) { # if --rf enabled, we don't redefine consensus columns
@@ -620,16 +658,16 @@ sub run_alimanip_to_number{
 
     if($opt_HR->{"--num"} && (! $opt_HR->{"--rf"})) { 
 	$extra_opts .= " --num-rf"; 
-	push(@{$log2printAR}, sprintf("#\n# Defining and numbering consensus columns and all columns in alignment file...\n"));
-	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+	push(@{$log2print_AR}, sprintf("#\n# Defining and numbering consensus columns and all columns in alignment file...\n"));
+	printf($log2print_AR->[(scalar(@{$log2print_AR})-1)]);
     }
     if($opt_HR->{"--num"} && ($opt_HR->{"--rf"})) { 
 	$extra_opts .= " --num-rf"; 
-	push(@{$log2printAR}, sprintf("#\n# Numbering consensus columns and all columns in alignment file...\n"));
-	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+	push(@{$log2print_AR}, sprintf("#\n# Numbering consensus columns and all columns in alignment file...\n"));
+	printf($log2print_AR->[(scalar(@{$log2print_AR})-1)]);
     }
-    push(@{$log2printAR}, sprintf("#\n"));
-    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+    push(@{$log2print_AR}, sprintf("#\n"));
+    printf($log2print_AR->[(scalar(@{$log2print_AR})-1)]);
     
     my $command = "$alimanip $extra_opts -o $num_aln_file $aln_file 2>&1";
     my $tmp = `$command`;
@@ -643,15 +681,16 @@ sub run_alimanip_to_number{
     my $i;
     my $dashes = ""; for($i = 0; $i < $max_width; $i++) { $dashes .= "-"; }
 
-    push(@{$log2printAR}, sprintf("# %-*s\n", $max_width, "output aln file"));
-    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
-    push(@{$log2printAR}, sprintf("# %-*s\n", $max_width, $dashes));
-    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
-    push(@{$log2printAR}, sprintf("  %-*s\n", $max_width, $num_aln_file));
-    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+    push(@{$log2print_AR}, sprintf("# %-*s\n", $max_width, "output aln file"));
+    printf($log2print_AR->[(scalar(@{$log2print_AR})-1)]);
+    push(@{$log2print_AR}, sprintf("# %-*s\n", $max_width, $dashes));
+    printf($log2print_AR->[(scalar(@{$log2print_AR})-1)]);
+    push(@{$log2print_AR}, sprintf("  %-*s\n", $max_width, $num_aln_file));
+    printf($log2print_AR->[(scalar(@{$log2print_AR})-1)]);
 
     return;
 }
+
 
 #####################################################################
 # subroutine: run_alimanip_to_truncate()
@@ -668,7 +707,7 @@ sub run_alimanip_to_number{
 #   $trunc_aln_file:     path and name of truncated alignment file we'll create
 #   $gapthresh:          gap threshold to use when building the model
 #   $opt_HR:             reference to the hash of command-line options
-#   $log2printAR:        reference to log2print array with log file text
+#   $log2print_AR:        reference to log2print array with log file text
 # 
 # Returns:  Nothing, if it returns, everything is valid.
 # 
@@ -676,7 +715,7 @@ sub run_alimanip_to_number{
 sub run_alimanip_to_truncate{
     my $narg_expected = 6;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, run_alimanip_to_truncate() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($alimanip, $aln_file, $trunc_aln_file, $gapthresh, $opt_HR, $log2printAR) = @_;
+    my ($alimanip, $aln_file, $trunc_aln_file, $gapthresh, $opt_HR, $log2print_AR) = @_;
 
     # sanity check
     if($opt_H{"--trunc"} eq "") { printf STDERR ("ERROR, run_alimanip_to_truncate() entered, but -t option argument is the empty string. This shouldn't happen.\n"); exit(1); }
@@ -694,16 +733,16 @@ sub run_alimanip_to_truncate{
     my $extra_opts = "";
     if($opt_HR->{"--rf"}) { 
 	# extra_opts remain empty (we checked for incompatible option combo of --rf and --gapthresh already)
-	push(@{$log2printAR}, sprintf("#\n# Truncating alignment; saving only columns between predefined consensus\n\# columns $start and $end...\n"));
-	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+	push(@{$log2print_AR}, sprintf("#\n# Truncating alignment; saving only columns between predefined consensus\n\# columns $start and $end...\n"));
+	printf($log2print_AR->[(scalar(@{$log2print_AR})-1)]);
     }
     else { 
 	$extra_opts = "-g --gapthresh $gapthresh";
-	push(@{$log2printAR}, sprintf("#\n# Truncating alignment; defining consensus columns and saving those\n\# between consensus columns $start and $end...\n"));
-	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+	push(@{$log2print_AR}, sprintf("#\n# Truncating alignment; defining consensus columns and saving those\n\# between consensus columns $start and $end...\n"));
+	printf($log2print_AR->[(scalar(@{$log2print_AR})-1)]);
     }
-    push(@{$log2printAR}, sprintf("#\n"));
-    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+    push(@{$log2print_AR}, sprintf("#\n"));
+    printf($log2print_AR->[(scalar(@{$log2print_AR})-1)]);
     
     my $command = "$alimanip $extra_opts --start-rf $start --end-rf $end -o $trunc_aln_file $aln_file 2>&1";
     my $tmp = `$command`;
@@ -717,15 +756,16 @@ sub run_alimanip_to_truncate{
     my $i;
     my $dashes = ""; for($i = 0; $i < $max_width; $i++) { $dashes .= "-"; }
 
-    push(@{$log2printAR}, sprintf("# %-*s\n", $max_width, "output aln file"));
-    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
-    push(@{$log2printAR}, sprintf("# %-*s\n", $max_width, $dashes));
-    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
-    push(@{$log2printAR}, sprintf("  %-*s\n", $max_width, $trunc_aln_file));
-    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+    push(@{$log2print_AR}, sprintf("# %-*s\n", $max_width, "output aln file"));
+    printf($log2print_AR->[(scalar(@{$log2print_AR})-1)]);
+    push(@{$log2print_AR}, sprintf("# %-*s\n", $max_width, $dashes));
+    printf($log2print_AR->[(scalar(@{$log2print_AR})-1)]);
+    push(@{$log2print_AR}, sprintf("  %-*s\n", $max_width, $trunc_aln_file));
+    printf($log2print_AR->[(scalar(@{$log2print_AR})-1)]);
 
     return;
 }
+
 
 #####################################################################
 # Subroutine: run_ssdraw
@@ -742,7 +782,7 @@ sub run_alimanip_to_truncate{
 #   $pdf_file:            output name for pdf file
 #   $ps2pdf:              if not "", use it to convert the ps to a pdf
 #   $opt_HR:              REFERENCE to hash of command-line options
-#   $log2printAR:         reference to log2print array with log file text
+#   $log2print_AR:         reference to log2print array with log file text
 #
 # Returns:    '1' if esl-ssdraw worked (exited cleanly (returned 0)), 
 #             '0' if it did not work (returned non-0 value)
@@ -752,7 +792,7 @@ sub run_alimanip_to_truncate{
 sub run_ssdraw { 
     my $narg_expected = 8;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, run_ssdraw() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($ssdraw, $template_file, $aln_file, $ps_file, $pdf_file, $ps2pdf, $opt_HR, $log2printAR) = @_;
+    my ($ssdraw, $template_file, $aln_file, $ps_file, $pdf_file, $ps2pdf, $opt_HR, $log2print_AR) = @_;
 
     # contract check
     if($opt_H{"--trunc"} eq "") { printf STDERR ("ERROR, run_ssdraw() entered, but -t option argument is the empty string. This shouldn't happen.\n"); exit(1); }
@@ -787,7 +827,7 @@ sub run_ssdraw {
     close(MASK);
 
     my $command = "$ssdraw --mask-col --mask $mask_file $aln_file $template_file $ps_file 2>&1";
-    printf("run_ssdraw command: $command\n");
+    #printf("run_ssdraw command: $command\n");
     my $tmp = `$command`;
     if(($? >> 8) != 0) { # it didn't work, don't exit just alert caller by returning 0
 	# remove mask file
@@ -799,8 +839,8 @@ sub run_ssdraw {
     #$tmp = `$command`;
     #if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
 
-    push(@{$log2printAR}, sprintf("#\n"));
-    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+    push(@{$log2print_AR}, sprintf("#\n"));
+    printf($log2print_AR->[(scalar(@{$log2print_AR})-1)]);
 
     # convert to pdf (if ps2pdf is in path) and print output file names 
     my ($max_width, $i, $dashes);
@@ -818,20 +858,20 @@ sub run_ssdraw {
 	}
 	$dashes = ""; for($i = 0; $i < $max_width; $i++) { $dashes .= "-"; }
 	if($opt_HR->{"--rm-ps"}) { 
-	    push(@{$log2printAR}, sprintf("# %-*s\n", $max_width, "pdf structure diagram file"));
-	    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+	    push(@{$log2print_AR}, sprintf("# %-*s\n", $max_width, "pdf structure diagram file"));
+	    printf($log2print_AR->[(scalar(@{$log2print_AR})-1)]);
 	}
 	else { 
-	    push(@{$log2printAR}, sprintf("# %-*s\n", $max_width, "pdf/postscript structure diagram file"));
-	    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+	    push(@{$log2print_AR}, sprintf("# %-*s\n", $max_width, "pdf/postscript structure diagram file"));
+	    printf($log2print_AR->[(scalar(@{$log2print_AR})-1)]);
 	}
-	push(@{$log2printAR}, sprintf("# %-*s\n", $max_width, $dashes));
-	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
-	push(@{$log2printAR}, sprintf("  %-*s\n", $max_width, $pdf_file));
-	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+	push(@{$log2print_AR}, sprintf("# %-*s\n", $max_width, $dashes));
+	printf($log2print_AR->[(scalar(@{$log2print_AR})-1)]);
+	push(@{$log2print_AR}, sprintf("  %-*s\n", $max_width, $pdf_file));
+	printf($log2print_AR->[(scalar(@{$log2print_AR})-1)]);
 	if(!($opt_HR->{"--rm-ps"})) { 
-	    push(@{$log2printAR}, sprintf("  %-*s\n", $max_width, $ps_file));
-	    printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+	    push(@{$log2print_AR}, sprintf("  %-*s\n", $max_width, $ps_file));
+	    printf($log2print_AR->[(scalar(@{$log2print_AR})-1)]);
 	}
 	else { 
 	    $command = "rm $ps_file 2>&1";
@@ -843,12 +883,12 @@ sub run_ssdraw {
 	$max_width = length($ps_file);
 	if($max_width < length("postscript structure diagram file")) { $max_width = length("postscript structure diagram file"); }
 	$dashes = ""; for($i = 0; $i < $max_width; $i++) { $dashes .= "-"; }
-	push(@{$log2printAR}, sprintf("# %-*s\n", $max_width, "postscript structure diagram file"));
-	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
-	push(@{$log2printAR}, sprintf("# %-*s\n", $max_width, $dashes));
-	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
-	push(@{$log2printAR}, sprintf("  %-*s\n", $max_width, $ps_file));
-	printf($log2printAR->[(scalar(@{$log2printAR})-1)]);
+	push(@{$log2print_AR}, sprintf("# %-*s\n", $max_width, "postscript structure diagram file"));
+	printf($log2print_AR->[(scalar(@{$log2print_AR})-1)]);
+	push(@{$log2print_AR}, sprintf("# %-*s\n", $max_width, $dashes));
+	printf($log2print_AR->[(scalar(@{$log2print_AR})-1)]);
+	push(@{$log2print_AR}, sprintf("  %-*s\n", $max_width, $ps_file));
+	printf($log2print_AR->[(scalar(@{$log2print_AR})-1)]);
     }
 
     return 1; #if ssdraw failed we returned 0 above
@@ -863,7 +903,7 @@ sub run_ssdraw {
 #
 # Arguments:
 #   $log_file:    file to print log to.
-#   $log2printAR: reference to array, each element is line of text in log.
+#   $log2print_AR: reference to array, each element is line of text in log.
 #
 # Returns:    Nothing, if it returns, everything is valid.
 # 
@@ -871,11 +911,11 @@ sub run_ssdraw {
 sub print_log { 
     my $narg_expected = 2;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_log() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($log_file, $log2printAR) = @_;
+    my ($log_file, $log2print_AR) = @_;
     my ($start_log_line, $line);
 
     if(open(LOG,  ">" . $log_file) == 0) { printf STDERR ("ERROR, could not open $log_file for writing.\n"); exit(1); }
-    foreach $line (@{$log2printAR}) { print LOG $line; }
+    foreach $line (@{$log2print_AR}) { print LOG $line; }
     close(LOG);
 
     return;
