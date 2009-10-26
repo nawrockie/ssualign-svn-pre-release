@@ -39,7 +39,7 @@ $options_usage .= "  -h     : show brief help on version and usage\n";
 $options_usage .= "  -1     : output alignments in non-interleaved, 1 line/seq format\n";
 $options_usage .= "  -m <s> : use CM file <f> instead of the default CM file\n";
 $options_usage .= "  -F     : force; if <output dir> already exists - empty it and fill it\n" ,
-$options_usage .= "  -b <f> : set minimum bit score of a surviving subsequence as <x> (default: 100)\n";
+$options_usage .= "  -b <f> : set minimum bit score of a surviving subsequence as <f> (default: 100)\n";
 $options_usage .= "  -l <n> : set minimum length    of a surviving subsequence as <n> (default: 1)\n";
 
 $options_usage .= "\noptions for running ssu-align in 'prep' mode to split up a large job:\n";
@@ -57,10 +57,10 @@ $options_usage .= "  --forward  : use the HMM forward algorithm for searching, n
 $options_usage .= "  --global   : search with globally configured HMM [default: local]\n";
 
 $options_usage .= "\nexpert options for tuning the alignment stage:\n";
-$options_usage .= "  --filter <f> : filter aln based on seq identity, allow no 2 seqs > <x> identical\n";
+$options_usage .= "  --filter <f> : filter aln based on seq identity, allow no 2 seqs > <f> identical\n";
 $options_usage .= "  --no-prob    : DO NOT append posterior probabilities to alignments\n";
 $options_usage .= "  --keep       : DO NOT erase local copies of individual CM files after running\n\n";
-$options_usage .= "  --mxsize <f> : increase mx size for cmalign to <x> Mb (default: 4096)\n";
+$options_usage .= "  --mxsize <f> : increase mx size for cmalign to <f> Mb (default: 4096)\n";
 
 ###################
 # Process options #
@@ -165,7 +165,7 @@ my @log2print_A = ();
 my $prep_enabled_options;
 print_banner($0, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \%opt_is_prep_H, \@ARGV, \$prep_enabled_options, \@log2print_A);
 
-if(scalar(@ARGV) != 1) {   
+if(scalar(@ARGV) != 2) {   
     print "Incorrect number of command line arguments.\n";
     print $usage;
     print "\nTo see more help on available options, do ssu-draw -h\n\n";
@@ -186,7 +186,7 @@ my $nseq_target_file = determine_num_seqs($target_file);
 # create the output directory we'll populate with our output files
 my $out_dir      = $out_root;
 my $out_dir_root = $out_dir . "/" . $out_root;
-create_output_dir($out_dir, \%opt_H, $cm_file); 
+create_output_dir($out_dir, \%opt_H); 
 
 my (@indi_cm_name_A, @indi_cm_file_name_A);
 process_cm_file($out_root, $cm_file, \%opt_H, \@indi_cm_name_A, \@indi_cm_file_name_A);
@@ -223,8 +223,8 @@ if($opt_H{"--prep-n"} || $opt_H{"--prep-p"}) {
 ############################################################################
 if(! $opt_H{"--no-search"}) { 
     $search_time = -1 * time();
-    search_sequences_with_each_model($cmsearch, $cm_file, $target_file, $out_dir_root, $nseq_target_file, 
-				     \@indi_cm_name_A, \$tab_file, \$max_file_name_width, \$description_width);
+    search_sequences_with_each_model(\%opt_H, $cmsearch, $cm_file, $target_file, $out_dir_root, $nseq_target_file, 
+				     \@indi_cm_name_A, \@indi_cm_name_A, \$tab_file, \$max_file_name_width, \$description_width, \@log2print_A);
     $search_time += time();
 }
 
@@ -237,7 +237,7 @@ my %hmmscores2print_H = ();
 my $max_seq_name_width;
 
 if(! $opt_H{"--no-search"}) { 
-    classify_and_extract_subseqs($tab_file, $target_file, $out_dir_root, $sfetch, $max_file_name_width, \@indi_cm_name_A, %bestmatch_cm_H, \%new_target_file_per_cm_name_H, \%hmmscores2print_H, \$max_seq_name_width, \@log2print_A);
+    classify_and_extract_subseqs(\%opt_H, $tab_file, $target_file, $out_dir_root, $sfetch, $max_file_name_width, \@indi_cm_name_A, \%bestmatch_cm_H, \%new_target_file_per_cm_name_H, \%hmmscores2print_H, \$max_seq_name_width, \@log2print_A);
 }
 else { 
     # No initial search stage; align all the sequences in the full target sequence file to the only CM (we've checked there's only 1 CM)
@@ -251,7 +251,7 @@ my ($align_time);
 my %cmscores2print_H = ();
 if(! $opt_H{"--no-align"}) {
     $align_time = -1 * time();
-    align_subseqs($out_dir_root, $cmalign, $max_file_name_width, $description_width, $weight, \@indi_cm_name_A, \@indi_cm_file_name_A, \%new_target_file_per_cm_name_H, \%cmscores2print_H, \@log2print_A); 
+    align_subseqs(\%opt_H, $out_dir_root, $cmalign, $max_file_name_width, $description_width, $weight, \@indi_cm_name_A, \@indi_cm_file_name_A, \%new_target_file_per_cm_name_H, \%cmscores2print_H, \@log2print_A); 
     $align_time += time();
 }
 
@@ -261,7 +261,7 @@ if(! $opt_H{"--no-align"}) {
 my $scores_file       = $out_dir_root . ".scores";
 my $scores_file2print = $out_root     . ".scores";
 if(! $opt_H{"--no-search"}) { 
-    print_scores_file($target_file, $ncm, $scores_file, $scores_file2print, $max_seq_name_width, \%bestmatch_cm_H, \%cmscores2print_H, \%hmmscores2print_H, \@log2print_A);
+    print_scores_file($target_file, $ncm, $scores_file, $scores_file2print, $max_seq_name_width, \@indi_cm_name_A, \%bestmatch_cm_H, \%cmscores2print_H, \%hmmscores2print_H, \@log2print_A);
     push(@log2print_A, sprintf("  %-*s  list of CM/HMM scores for each sequence\n", $max_file_name_width, $scores_file2print));
     printf($log2print_A[(scalar(@log2print_A)-1)]);
 }
@@ -435,8 +435,8 @@ sub validate_and_setup {
     my $trash;
     my $cmsearch   = "ssu-cmsearch";
     my $cmalign    = "ssu-cmalign";
-    my $sfetch = "ssu-esl-sfetch";
-    my $weight = "ssu-esl-weight";
+    my $sfetch     = "ssu-esl-sfetch";
+    my $weight     = "ssu-esl-weight";
     my $ssualign   = "ssu-align";
     # check that the required programs are in the PATH
     if(!($opt_HR->{"--no-search"})) { 
@@ -523,7 +523,7 @@ sub create_output_dir {
     my ($command, $tmp);
     # create output directory
     if(-d $out_dir) { 
-	if($opt_HR->{"-F"}) { 
+	if(! $opt_HR->{"-F"}) { 
 	    printf STDERR ("ERROR, output directory $out_dir already exists. Delete it or use -F to overwrite it.\n"); exit(1); 
 	}
 	else { # dir exists, but -F enabled, so we remove it
@@ -1039,7 +1039,7 @@ sub search_sequences_with_each_model() {
 # 
 ####################################################################
 sub classify_and_extract_subseqs { 
-    my $narg_expected = 13;
+    my $narg_expected = 12;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, classify_and_extract_subseqs() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my ($opt_HR, $tab_file, $target_file, $out_dir_root, $sfetch, $max_file_name_width, $indi_cm_name_AR, $bestmatch_cm_HR, $new_target_file_per_cm_name_HR,
 	$hmmscores2print_HR, $max_seq_name_width_R, $log2print_AR) = @_;
@@ -1084,8 +1084,8 @@ sub classify_and_extract_subseqs {
 	elsif($line !~ m/^\#/) { 
 	    $line =~ s/^\s+//;
 	    @tmp_A = split(/\s+/, $line);
-	    if(scalar(@tmp_A) != 8) { 
-		printf STDERR ("ERROR, unable to read following line of $tab_file, it should have 8 tokens.\n"); printf("$line\n"); exit(1); 
+	    if(scalar(@tmp_A) != 9) { 
+		printf STDERR ("ERROR, unable to read following line of $tab_file, it should have 9 tokens.\n"); printf("$line\n"); exit(1); 
 	    }
 	    ($model_name, $seq_name, $tstart, $tend, $qstart, $qend, $bit, $E, $gc) = @tmp_A;
 	    if($tend > $tstart) { $tlen = $tend - $tstart + 1; }
@@ -1450,7 +1450,7 @@ sub print_log {
 ####################################################################
 sub print_scores_file { 
     my $narg_expected = 10;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_scores_file_multi_model() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_scores_file() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my ($target_file, $ncm, $scores_file, $scores_file2print, $max_seq_name_width, $indi_cm_name_AR, $bestmatch_cm_HR, $cmscores2print_HR, $hmmscores2print_HR, $log2print_AR) = @_;
 
     my ($seq_name, $cmscore2print);

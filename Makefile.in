@@ -77,7 +77,10 @@ ESLPROGS = ssu-esl-alimanip\
 SEEDLIBFILES = ssu-align-0p1.cm\
 	       archaea-0p1.cm\
 	       bacteria-0p1.cm\
-	       eukarya-0p1.cm
+	       eukarya-0p1.cm\
+	       archaea-0p1.stk\
+	       bacteria-0p1.stk\
+	       eukarya-0p1.stk
 
 PSLIBFILES = ssu-align-0p1.ps\
              archaea-0p1.ps\

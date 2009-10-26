@@ -1,4 +1,4 @@
-INFERNAL-1 [1.0rc3]
+INFERNAL-1 [0.1]
 NAME     arc-1
 STATES   4693
 NODES    1168
@@ -8,8 +8,8 @@ WBETA    1e-07
 NSEQ     21
 EFFNSEQ  21.000
 CLEN     1513
-BCOM     ../infernal-1.0/src//cmbuild --wnone -F --rf --enone arc.cm arc.stk
-BDATE    Wed Nov 12 06:19:35 2008
+BCOM     ../infernal/src//ssu-cmbuild --wnone -F --rf --enone arc.cm arc.stk
+BDATE    Wed Oct  7 11:30:05 2009
 NULL     0.000  0.000  0.000  0.000 
 MODEL:
 				[ ROOT    0 ]

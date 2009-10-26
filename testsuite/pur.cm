@@ -1,4 +1,4 @@
-INFERNAL-1 [1.0rc3]
+INFERNAL-1 [0.1]
 NAME     Purine
 GA       31.00
 TC       31.47
@@ -11,8 +11,8 @@ WBETA    1e-07
 NSEQ     133
 EFFNSEQ  3.007
 CLEN     102
-BCOM     ../infernal-1.0/src//cmbuild -F pur.cm RF00167.stk
-BDATE    Wed Nov 12 06:19:32 2008
+BCOM     ../infernal/src//ssu-cmbuild -F pur.cm RF00167.stk
+BDATE    Wed Oct  7 11:29:21 2009
 NULL     0.000  0.000  0.000  0.000 
 MODEL:
 				[ ROOT    0 ]

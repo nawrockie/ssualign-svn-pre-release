@@ -5,16 +5,16 @@
 # Exercises of ssu-align.
 #
 # Purine riboswitch tests
-1  prep      model/pur            @cmbuild@ -F pur.cm RF00167.stk
-1  prep      emit/pur             @cmemit@ -s 367 -n 10 pur.cm pur.fa
-1  exercise  pur/1df              @ssu-align@ -B 0 -F pur.cm pur.fa pur ../wd.params > /dev/null
-1  exercise  pur/2S               @ssu-align@ -B 0 -F -S pur.cm pur.fa pur ../wd.params > /dev/null
-1  exercise  pur/3A               @ssu-align@ -B 0 -F -A pur.cm pur.fa pur ../wd.params > /dev/null
-1  exercise  pur/4U               @ssu-align@ -B 0 -F -U pur.cm pur.fa pur ../wd.params > /dev/null
-1  exercise  pur/5W               @ssu-align@ -B 0 -F -W pur.cm pur.fa pur ../wd.params > /dev/null
-1  exercise  pur/6N               @ssu-align@ -B 0 -F -N 3 pur.cm pur.fa pur ../wd.params > /dev/null
-1  exercise  pur/7P               @ssu-align@ -B 0 -F -P 4 pur.cm pur.fa pur ../wd.params > /dev/null
+1  exercise  ssu-align:arc/1      @ssu-align@ -F arc.10.fa root > tmp
 
-2  prep      model/arc            @cmbuild@ --wnone -F --rf --enone arc.cm arc.stk
-2  exercise  ssu-align:arc/1      @ssu-align@ -F arc.cm arc.10.fa root ../wd.params > tmp
+3  prep      model/pur            @ssu-cmbuild@ -F pur.cm RF00167.stk
+3  prep      emit/pur             @ssu-cmemit@ -s 367 -n 10 pur.cm pur.fa
+3  exercise  pur/1df              @ssu-align@ -B 0 -F pur.cm pur.fa pur ../wd.params > /dev/null
+3  exercise  pur/2S               @ssu-align@ -B 0 -F -S pur.cm pur.fa pur ../wd.params > /dev/null
+3  exercise  pur/3A               @ssu-align@ -B 0 -F -A pur.cm pur.fa pur ../wd.params > /dev/null
+3  exercise  pur/4U               @ssu-align@ -B 0 -F -U pur.cm pur.fa pur ../wd.params > /dev/null
+3  exercise  pur/5W               @ssu-align@ -B 0 -F -W pur.cm pur.fa pur ../wd.params > /dev/null
+3  exercise  pur/6N               @ssu-align@ -B 0 -F -N 3 pur.cm pur.fa pur ../wd.params > /dev/null
+3  exercise  pur/7P               @ssu-align@ -B 0 -F -P 4 pur.cm pur.fa pur ../wd.params > /dev/null
+
 
