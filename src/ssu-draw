@@ -381,7 +381,7 @@ sub validate_and_setup {
 
     #Validate that esl-ssdraw exist
     my $ssdraw = "ssu-esl-ssdraw";
-    my $trash = `$ssdraw -h`;
+    my $trash = `$ssdraw -h 2>&1`;
     if($? == -1) { printf STDERR ("\nERROR, the required executable $ssdraw is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
 
     #determine if 'ps2pdf' exists, or that <s> from --pdf <s> exists if that was enabled
@@ -442,7 +442,7 @@ sub validate_and_setup {
 	    }
 	}
 	my ($name);
-	my $names = `grep NAME $cm_file`;
+	my $names = `grep NAME $cm_file 2>&1`;
 	$names =~ s/NAME\s+//g;
 	my @names_A = split(/\n/, $names);
 	foreach $name (@names_A) { 
@@ -672,7 +672,7 @@ sub run_ssdraw {
     
 
     if($ps2pdf ne "") { # this means we have ps2pdf (or <s> from --pdf <s>) on the system, use it
-	$command = "$ps2pdf $draw_ps $draw_pdf";
+	$command = "$ps2pdf $draw_ps $draw_pdf 2>&1";
 	$tmp = `$command`;
 	if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
 	push(@{$log2print_AR}, sprintf("  %-*s  %-*s\n", $max_width_aln, $aln_file2print, $max_width_draw, $draw_pdf2print));
@@ -680,7 +680,7 @@ sub run_ssdraw {
 	
 	# if we --rm-ps is enabled, remove the ps 
 	if($opt_HR->{"--rm-ps"}) { 
-	    $command = "rm $draw_ps";
+	    $command = "rm $draw_ps 2>&1";
 	    $tmp = `$command`;
 	    if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
 	}

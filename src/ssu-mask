@@ -548,11 +548,11 @@ if($do_list_mode)
 	$list_file2print  = $aln_root2print . $key_out . ".list";
 
 	if($opt_H{"-a"}) { $list_file2print = $list_file; } #print full path with -a is invoked
-	$command = "$alimanip --list $list_file $aln_file 2>&1";
+	$command = "$alimanip --list $list_file $aln_file 2>&1"; 
 	$tmp = `$command`;
 	if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
 
-	$command = "nl $list_file | tail -1";
+	$command = "nl $list_file | tail -1 2>&1";
 	$tmp = `$command`;
 	if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
 	$tmp =~ s/^\s+//;
@@ -857,13 +857,13 @@ sub validate_and_setup {
 
     #Validate that esl-alimanip and esl-ssdraw (if we need it) exist
     my $alimanip = "ssu-esl-alimanip";
-    my $trash = `$alimanip -h`;
+    my $trash = `$alimanip -h 2>&1`;
     if($? == -1) { printf STDERR ("\nERROR, the required executable $alimanip is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
 
     my $ssdraw = "";
     if($template_file ne "") { 
 	$ssdraw = "ssu-esl-ssdraw";
-	$trash = `$ssdraw -h`;
+	$trash = `$ssdraw -h 2>&1`;
 	if($? == -1) { printf STDERR ("\nERROR, the required executable $ssdraw is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
     }
 
@@ -890,10 +890,10 @@ sub validate_and_setup {
     my $seqstat = "";
     if($opt_HR->{"--filter"} ne "") { 
 	$weight = "ssu-esl-weight";
-	$trash = `$weight -h`;
+	$trash = `$weight -h 2>&1`;
 	if($? == -1) { printf STDERR ("\nERROR, the required executable $weight (required b/c --filter enabled) is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
 	$seqstat = "ssu-esl-seqstat";
-	$trash = `$seqstat -h`;
+	$trash = `$seqstat -h 2>&1`;
 	if($? == -1) { printf STDERR ("\nERROR, the required executable $seqstat (required b/c --filter enabled) is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
     }
 
@@ -922,7 +922,7 @@ sub validate_and_setup {
 	    }
 	}
 	my ($name);
-	my $names = `grep NAME $cm_file`;
+	my $names = `grep NAME $cm_file 2>&1`;
 	$names =~ s/NAME\s+//g;
 	my @names_A = split(/\n/, $names);
 	foreach $name (@names_A) { 
@@ -1376,7 +1376,7 @@ sub run_ssdraw {
 
     
     if($ps2pdf ne "") { 
-	$command = "$ps2pdf $draw_ps $draw_pdf";
+	$command = "$ps2pdf $draw_ps $draw_pdf 2>&1";
 	$tmp = `$command`;
 	if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
 	if($do_column_breakdown) { 
@@ -1389,7 +1389,7 @@ sub run_ssdraw {
 
 	# if we --rm-ps is enabled, remove the ps 
 	if($opt_HR->{"--rm-ps"}) { 
-	    $command = "rm $draw_ps";
+	    $command = "rm $draw_ps 2>&1";
 	    $tmp = `$command`;
 	    if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
 	}

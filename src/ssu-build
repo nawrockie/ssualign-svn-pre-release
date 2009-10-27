@@ -448,7 +448,7 @@ sub validate_and_setup {
 
 	#Validate that ssu-cmbuild exists and is in path
 	$cmbuild = "ssu-cmbuild";
-	$trash = `$cmbuild -h`;
+	$trash = `$cmbuild -h 2>&1`;
 	if($? == -1) { printf STDERR ("\nERROR, the required executable $cmbuild is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
     }
 
@@ -462,7 +462,7 @@ sub validate_and_setup {
     if(($opt_HR->{"--trunc"}) || $do_number_mode) { 
 	# verify that we can run esl-alimanip
 	$alimanip = "ssu-esl-alimanip";
-	$trash = `$alimanip -h`;
+	$trash = `$alimanip -h 2>&1`;
 	if($? == -1) { printf STDERR ("\nERROR, the required executable $alimanip is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
     }
 
@@ -480,7 +480,7 @@ sub validate_and_setup {
 
 	if($template_file ne "") { 
 	    $ssdraw = "ssu-esl-ssdraw";
-	    $trash = `$ssdraw -h`;
+	    $trash = `$ssdraw -h 2>&1`;
 	    if($? == -1) { $ssdraw = ""; }
 	}
 	
@@ -809,7 +809,7 @@ sub run_ssdraw {
     elsif($opt_HR->{"--trunc"} =~ /(\d+)\.+(\d+)/) { $start = $1; $end   = $2; }
 
     #to determine consensus length, grep for the RF lines of the alignment, and overwrite them with 0s and 1s.
-    my $command = "grep '^#=GC RF[[:space:]]' $aln_file";
+    my $command = "grep '^#=GC RF[[:space:]]' $aln_file 2>&1";
     my $tmp = `$command`;
     if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
     $tmp =~ s/\#=GC RF\s+//g;
@@ -845,7 +845,7 @@ sub run_ssdraw {
     # convert to pdf (if ps2pdf is in path) and print output file names 
     my ($max_width, $i, $dashes);
     if($ps2pdf ne "") { # convert to pdf
-	$command = "ps2pdf $ps_file $pdf_file";
+	$command = "ps2pdf $ps_file $pdf_file 2>&1";
 	$tmp = `$command`;
 	if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
 
