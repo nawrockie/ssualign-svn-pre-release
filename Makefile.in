@@ -1,5 +1,5 @@
 #################################################################
-# SSU-align
+# SSU-ALIGN
 # top level Makefile: installation, documentation
 # CVS $Id: Makefile.in 2581 2008-09-18 13:37:59Z eddys $
 #################################################################
@@ -59,6 +59,7 @@ REPOSITORY  = https://svn.janelia.org/eddylab/eddys/src/
 
 
 PROGS = ssu-align\
+	ssu-build\
 	ssu-draw\
 	ssu-mask
 
@@ -192,14 +193,14 @@ dist:
 # runs a lot). 
 #
 check:
-	(cd testsuite; ./sqc -p ../easel/miniapps 4 exercises.sqc . ../src)
+	(cd testsuite; ./sqc 4 exercises.sqc . ../src)
 
 # "make devcheck" runs an additional set of development sqc exercises 
 # in the test suite, at level 4. This will take a long time.
 #
 devcheck:
 	(cd testsuite;\
-	 ./sqc -p ../src/           4 esl-alimanip.sqc . ../easel/miniapps/;\
+	 ./sqc -p ../src/           4 ssu-align.sqc . ../easel/miniapps/;\
 	 ./sqc -p ../easel/miniapps 4 cmalign.sqc      . ../src;\
 	 ./sqc -p ../easel/miniapps 4 cmbuild.sqc      . ../src;\
 	 ./sqc -p ../easel/miniapps 4 cmcalibrate.sqc  . ../src;\

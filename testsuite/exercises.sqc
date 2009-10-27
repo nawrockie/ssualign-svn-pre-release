@@ -1,20 +1,17 @@
 # ssu-align's crash exercises, in sqc command format.
 # EPN, Tue Nov 11 15:45:00 2008
 #
+6  exercise  seed-6:ssu-align  @ssu-align@ -F seed-6.fa seed-6
+6  exercise  seed-6:ssu-mask   @ssu-mask@ seed-6 
+6  exercise  seed-6:ssu-draw   @ssu-draw@ seed-6 
 
-# Exercises of ssu-align.
-#
-# Purine riboswitch tests
-1  exercise  ssu-align:arc/1      @ssu-align@ -F arc.10.fa root > tmp
+6  exercise  ecoli:ssu-build   @ssu-build@ -F bacteria-0p1.ecoli.stk
+6  exercise  ecoli:ssu-align   @ssu-align@ -F -m bacteria-0p1.ecoli.cm seed-6.fa ecoli
+6  exercise  ecoli:ssu-mask    @ssu-mask@ -m bacteria-0p1.ecoli.cm ecoli
 
-3  prep      model/pur            @ssu-cmbuild@ -F pur.cm RF00167.stk
-3  prep      emit/pur             @ssu-cmemit@ -s 367 -n 10 pur.cm pur.fa
-3  exercise  pur/1df              @ssu-align@ -B 0 -F pur.cm pur.fa pur ../wd.params > /dev/null
-3  exercise  pur/2S               @ssu-align@ -B 0 -F -S pur.cm pur.fa pur ../wd.params > /dev/null
-3  exercise  pur/3A               @ssu-align@ -B 0 -F -A pur.cm pur.fa pur ../wd.params > /dev/null
-3  exercise  pur/4U               @ssu-align@ -B 0 -F -U pur.cm pur.fa pur ../wd.params > /dev/null
-3  exercise  pur/5W               @ssu-align@ -B 0 -F -W pur.cm pur.fa pur ../wd.params > /dev/null
-3  exercise  pur/6N               @ssu-align@ -B 0 -F -N 3 pur.cm pur.fa pur ../wd.params > /dev/null
-3  exercise  pur/7P               @ssu-align@ -B 0 -F -P 4 pur.cm pur.fa pur ../wd.params > /dev/null
+1  exercise  ecoli:ssu-align-2 @ssu-align@ -F -b 800 -m bacteria-0p1.ecoli.cm seed-6.fa ecoli-b800
+6  exercise  ecoli:ssu-mask-2  @ssu-mask@ -m bacteria-0p1.ecoli.cm ecoli
+
+1  exercise  ecoli:ssu-align-3 @ssu-align@ -F -l 1500 -m bacteria-0p1.ecoli.cm seed-6.fa ecoli-l1500
 
 

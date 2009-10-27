@@ -1068,7 +1068,7 @@ sub classify_and_extract_subseqs {
     my ($min_len, $min_bit);
     if($opt_HR->{"-l"} ne "") { $min_len = $opt_HR->{"-l"}; }
     else                      { $min_len = $df_min_len;     }
-    if($opt_HR->{"-b"} ne "") { $min_bit = $opt_HR->{"-l"}; }
+    if($opt_HR->{"-b"} ne "") { $min_bit = $opt_HR->{"-b"}; }
     else                      { $min_bit = $df_min_len;     }
     my $do_truncate;
     if($opt_HR->{"--no-trunc"}) { $do_truncate = 0; }
