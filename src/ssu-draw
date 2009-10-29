@@ -347,6 +347,8 @@ sub validate_and_setup {
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, validate_and_setup() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my($dir, $key_in, $opt_HR, $cm_file_ref, $template_file_ref, $ssdraw_ref, $ps2pdf_ref, $stk_list_arr_ref, $mask_list_arr_ref) = @_;
 
+    #Validate that $dir exists
+    if(!(-d $dir)) { printf STDERR ("\nERROR, directory $dir does not exist.\n"); exit(1); }
     #Validate that we can read the CM file
     my $ssualigndir;
     my $cm_file = "";

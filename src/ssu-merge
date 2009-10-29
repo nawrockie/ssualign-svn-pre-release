@@ -1,0 +1,617 @@
+#!/usr/bin/perl
+#
+# ssu-merge
+# Eric Nawrocki
+# EPN, Tue Oct 27 14:07:30 2009
+#
+# Usage: ssu-merge [options] <directory created by ssu-align --prep-n or --prep-p call>
+#             
+# Synopsis:
+# Merges alignments created by ssu-align. When ssu-align is run with the 
+# --prep-n or --prep-p 'prepare-mode' options it generates a script that
+# performs multiple ssu-align jobs. When these are finished running, 
+# ssu-merge is used to merge the alignments from the multiple jobs 
+# together into a single alignment for each CM used by ssu-align.
+#
+# Step 1. Verify that all ssu-align jobs are complete.
+# Step 2. Merge alignments from multiple ssu-align jobs. 
+# Step 3. Concatenate other relevant files from multiple ssu-align jobs.
+#
+# See definition of $options_usage for options, below.
+#
+use Getopt::Long;
+use Cwd 'abs_path';
+use strict;
+
+my $total_time = -1 * time();
+my $usage = "Usage: ssu-merge [-options] <directory created by ssu-align --prep-n or --prep-p call>";
+my $options_usage  = "where general options are:\n";
+#                           1         2         3         4         5         6         7         8
+#                  12345678901234567890123456789012345678901234567890123456789012345678901234567890
+$options_usage .= "  -h     : show brief help on version and usage\n";
+$options_usage .= "  -1     : output alignments in non-interleaved, 1 line/seq format\n";
+$options_usage .= "  -m <s> : use CM file <f> instead of the default CM file\n";
+$options_usage .= "  -F     : force; allow file clobbering\n" ,
+
+###################
+# Process options #
+###################
+my %opt_H = ();              # key: option (example "-h"); value: option argument (example ("0" or "1") if option takes no arg, actual argument if option takes arg)
+my %opt_takes_arg_H  = ();   # key: option; value: "1" if option takes argument, "0" if not
+my @opt_order_A  = ();       # order of options for printing in banner
+my $opt;
+
+$opt_takes_arg_H{"-h"}          = 0;  push(@opt_order_A, "-h");
+$opt_takes_arg_H{"-1"}          = 0;  push(@opt_order_A, "-1");
+$opt_takes_arg_H{"-m"}          = 1;  push(@opt_order_A, "-m");
+$opt_takes_arg_H{"-F"}          = 0;  push(@opt_order_A, "-F");
+
+#set default options
+foreach $opt (keys %opt_takes_arg_H) { 
+    if($opt_takes_arg_H{$opt}) { $opt_H{$opt} = ""; }
+    else                       { $opt_H{$opt} = 0; }
+}
+
+# the only global variables, defaults and special strings
+our $df_none_name = "<NONE>";
+
+Getopt::Long::Configure ("bundling");
+my $opt_return = GetOptions
+    ('h'         => \$opt_H{"-h"}, 
+     '1'         => \$opt_H{"-1"},
+     'm=s'       => \$opt_H{"-m"},
+     'F'         => \$opt_H{"-F"});
+
+if($opt_return != 1) { exit(1); }
+
+if ($opt_H{"-h"}) { print $usage . "\n"; print $options_usage; exit(1); } 
+
+################
+# Print banner #
+################
+my @log2print_A = ();
+print_banner($0, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, \@log2print_A);
+
+if(scalar(@ARGV) != 1) {   
+    print "Incorrect number of command line arguments.\n";
+    print $usage;
+    print "\nTo see more help on available options, do ssu-draw -h\n\n";
+    exit(1);
+}
+my ($dir) = @ARGV;
+
+
+##################################
+# Validate that everything is go #
+##################################
+my ($cmalign, $cm_file);
+my @subdir_A = ();
+my @score_to_merge_A = ();
+my @log_to_merge_A = ();
+my @tab_to_merge_A = ();
+my @cmalign_to_merge_AA = ();
+my @hits_fa_to_merge_AA = ();
+my @hits_list_to_merge_AA = ();
+my @stk_to_merge_AA = ();
+my @cm_names_A = ();
+validate_and_setup(\%opt_H, $dir, \@subdir_A, \@score_to_merge_A, \@log_to_merge_A, \@tab_to_merge_A, \@cmalign_to_merge_AA, \@hits_fa_to_merge_AA, \@hits_list_to_merge_AA, \@stk_to_merge_AA, \@cm_names_A, \$cmalign, \$cm_file);
+
+
+####################################
+# Merge files including alignments #
+####################################
+
+my ($i, $cm_idx, $nhitsfa, $nhitslist, $ncmalign, $nstk);
+my ($scores_file, $log_file, $tab_file, $cmalign_file, $hitsfa_file, $hitslist_file, $merged_stk_file);
+my ($scores_file2print, $log_file2print, $tab_file2print, $cmalign_file2print, $hitsfa_file2print, $hitslist_file2print, $merged_stk_file2print);
+my ($max_file_name_width, $max_cm_name_width, $file_dashes, $cm_dashes);
+
+if(scalar(@score_to_merge_A) == 0) { printf STDERR ("ERROR, no *.scores files found.\n"); exit(1); }
+if(scalar(@log_to_merge_A)   == 0) { printf STDERR ("ERROR, no *.log files found.\n"); exit(1); }
+if(scalar(@tab_to_merge_A)   == 0) { printf STDERR ("ERROR, no *.tab files found.\n"); exit(1); }
+
+
+$max_cm_name_width = max_length_scalar_in_array(\@cm_names_A);
+if($max_cm_name_width < length("CM name")) { $max_cm_name_width = length("CM name"); }
+$cm_dashes = ""; for($i = 0; $i < $max_cm_name_width; $i++) { $cm_dashes .= "-"; } 
+
+$max_file_name_width  = max_length_scalar_in_array(\@cm_names_A) + 1;
+if($max_file_name_width < length("scores")) { $max_file_name_width = length("scores"); }
+$max_file_name_width += length("hits.list");
+$max_file_name_width += length($dir) + 1;
+$file_dashes = ""; for($i = 0; $i < $max_file_name_width; $i++) { $file_dashes .= "-"; } 
+    
+push(@log2print_A, sprintf("#\n# Merging files from %d ssu-align runs...\n", scalar(@score_to_merge_A))); 
+printf($log2print_A[(scalar(@log2print_A)-1)]);
+push(@log2print_A, sprintf("#\n"));
+printf($log2print_A[(scalar(@log2print_A)-1)]);
+push(@log2print_A, sprintf("# %-*s  %-*s  %7s\n", $max_file_name_width, "",                 $max_cm_name_width, "",         "\# files"));
+printf($log2print_A[(scalar(@log2print_A)-1)]);
+push(@log2print_A, sprintf("# %-*s  %-*s  %7s\n", $max_file_name_width, "merged file name", $max_cm_name_width, "CM name",  "merged"));
+printf($log2print_A[(scalar(@log2print_A)-1)]);
+push(@log2print_A, sprintf("# %-*s  %-*s  %7s\n", $max_file_name_width, $file_dashes,       $max_cm_name_width, $cm_dashes, "-------"));
+printf($log2print_A[(scalar(@log2print_A)-1)]);
+
+$scores_file       = $dir . "/" . $dir . ".scores";
+$log_file          = $dir . "/" . $dir . ".log";
+$tab_file          = $dir . "/" . $dir . ".tab";
+$scores_file2print = $dir . ".scores";
+$log_file2print    = $dir . ".log";
+$tab_file2print    = $dir . ".tab";
+
+concatenate_a_list_of_files(\%opt_H, $scores_file, \@score_to_merge_A);
+push(@log2print_A, sprintf("# %-*s  %-*s  %7d\n", $max_file_name_width, $scores_file2print, $max_cm_name_width, "-", scalar(@score_to_merge_A)));
+printf($log2print_A[(scalar(@log2print_A)-1)]);
+
+concatenate_a_list_of_files(\%opt_H, $log_file, \@log_to_merge_A);
+push(@log2print_A, sprintf("# %-*s  %-*s  %7d\n", $max_file_name_width, $log_file2print, $max_cm_name_width, "-", scalar(@log_to_merge_A)));
+printf($log2print_A[(scalar(@log2print_A)-1)]);
+
+concatenate_a_list_of_files(\%opt_H, $tab_file, \@tab_to_merge_A);
+push(@log2print_A, sprintf("# %-*s  %-*s  %7d\n", $max_file_name_width, $tab_file2print, $max_cm_name_width, "-", scalar(@tab_to_merge_A)));
+printf($log2print_A[(scalar(@log2print_A)-1)]);
+
+for($i = 0; $i < scalar(@cm_names_A); $i++) { 
+    $nhitsfa   = scalar(@{$hits_fa_to_merge_AA[$i]});
+    $nhitslist = scalar(@{$hits_list_to_merge_AA[$i]});
+    $ncmalign  = scalar(@{$cmalign_to_merge_AA[$i]});
+    $nstk      = scalar(@{$stk_to_merge_AA[$i]});
+    $cm_idx    = $i+1;
+    if($nhitsfa != $nhitslist)  { printf STDERR ("ERROR, for cm $cm_names_A[$i], %d *.hits.fa files but %d *.hits.list files.\n", $nhitsfa, $nhitslist); exit(1); }
+    if($nhitsfa != $ncmalign)   { printf STDERR ("ERROR, for cm $cm_names_A[$i], %d *.hits.fa files but %d *.cmalign files.\n", $nhitsfa, $ncmalign); exit(1); }
+    if($nhitsfa != $nstk)       { printf STDERR ("ERROR, for cm $cm_names_A[$i], %d *.hits.fa files but %d *.stk files.\n", $nhitsfa, $nstk); exit(1); }
+    if($nhitsfa > 0) { 
+	$cmalign_file          = $dir . "/" . $dir . "." . $cm_names_A[$i] . ".cmalign";
+	$hitsfa_file           = $dir . "/" . $dir . "." . $cm_names_A[$i] . ".hits.fa";
+	$hitslist_file         = $dir . "/" . $dir . "." . $cm_names_A[$i] . ".hits.list";
+	$merged_stk_file       = $dir . "/" . $dir . "." . $cm_names_A[$i] . ".stk";
+	$cmalign_file2print    = $dir . "." . $cm_names_A[$i] . ".cmalign";
+	$hitsfa_file2print     = $dir . "." . $cm_names_A[$i] . ".hits.fa";
+	$hitslist_file2print   = $dir . "." . $cm_names_A[$i] . ".hits.list";
+	$merged_stk_file2print = $dir . "." . $cm_names_A[$i] . ".stk";
+
+	concatenate_a_list_of_files(\%opt_H, $cmalign_file,  \@{$cmalign_to_merge_AA[$i]});
+	push(@log2print_A, sprintf("  %-*s  %-*s  %7d\n", $max_file_name_width, $cmalign_file2print, $max_cm_name_width, $cm_names_A[$i], $ncmalign));
+	printf($log2print_A[(scalar(@log2print_A)-1)]);
+
+	concatenate_a_list_of_files(\%opt_H, $hitsfa_file,   \@{$hits_fa_to_merge_AA[$i]});
+	push(@log2print_A, sprintf("  %-*s  %-*s  %7d\n", $max_file_name_width, $hitsfa_file2print, $max_cm_name_width, $cm_names_A[$i], $nhitsfa));
+	printf($log2print_A[(scalar(@log2print_A)-1)]);
+
+	concatenate_a_list_of_files(\%opt_H, $hitslist_file, \@{$hits_list_to_merge_AA[$i]});
+	push(@log2print_A, sprintf("  %-*s  %-*s  %7d\n", $max_file_name_width, $hitslist_file2print, $max_cm_name_width, $cm_names_A[$i], $nhitslist));
+	printf($log2print_A[(scalar(@log2print_A)-1)]);
+
+	merge_alignments_for_a_cm(\%opt_H, $merged_stk_file, $dir, $cm_file, $cm_idx, $cm_names_A[$i], \@{$stk_to_merge_AA[$i]});
+	push(@log2print_A, sprintf("  %-*s  %-*s  %7d\n", $max_file_name_width, $merged_stk_file2print, $max_cm_name_width, $cm_names_A[$i], $nstk));
+	printf($log2print_A[(scalar(@log2print_A)-1)]);
+    }
+}
+exit(0);
+
+
+###############
+# Subroutines #
+###############
+
+#####################################################################
+# Subroutine: print_banner()
+# Incept:     EPN, Tue Jun 16 07:26:13 2009
+# 
+# Purpose:    Print the ssu-align banner and determine prep options
+#             that will be passed to subsequent ssu-align calls if
+#             we're in prep mode.
+#
+# Arguments: 
+#    $script_call:            call used to invoke this (ssu-align) script
+#    $opt_HR:                 REFERENCE to hash of command-line options
+#    $opt_takes_arg_HR:       REFERENCE to hash telling if each option takes an argument (1) or not (0)
+#    $opt_order_AR:           REFERENCE to array specifying order of options
+#    $argv_R:                 REFERENCE to @ARGV, command-line arguments
+#    $log2print_AR:           REFERENCE to log2print array with log file text
+#
+# Returns:    Nothing, if it returns, everything is valid.
+# 
+####################################################################
+sub print_banner { 
+    my $narg_expected = 6;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_banner() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($script_call, $opt_HR, $opt_takes_arg_HR, $opt_order_AR, $argv_R, $log2print_AR) = @_;
+
+    my ($i, $script_name, $start_log_line);
+    $script_call =~ s/^\.+\///;
+    $script_name = $script_call;
+    $script_name =~ s/.+\///;
+
+    my $enabled_options = "";
+    foreach $opt (@{$opt_order_AR}) { 
+	if($opt_takes_arg_HR->{$opt}) { if($opt_HR->{$opt} ne "") { $enabled_options .= " " . $opt . " " . $opt_HR->{$opt}; } }
+	else                  	      { if($opt_HR->{$opt})       { $enabled_options .= " " . $opt; } }
+    }
+
+    $start_log_line = scalar(@{$log2print_AR});
+
+    push(@{$log2print_AR}, sprintf("\# $script_name :: merge SSU rRNA alignments\n"));
+    push(@{$log2print_AR}, sprintf("\# SSU-ALIGN 0.1 (October 2009)\n"));
+    push(@{$log2print_AR}, sprintf("\# Copyright (C) 2009 HHMI Janelia Farm Research Campus\n"));
+    push(@{$log2print_AR}, sprintf("\# Freely distributed under the GNU General Public License (GPLv3)\n"));
+    push(@{$log2print_AR}, sprintf("\# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n"));
+    push(@{$log2print_AR}, sprintf("%-10s %s ", "# command:", $script_call . $enabled_options));
+    for($i = 0; $i < scalar(@{$argv_R}) - 1; $i++) { 
+	push(@{$log2print_AR}, sprintf("$argv_R->[$i] "));
+    }
+    push(@{$log2print_AR}, sprintf("$argv_R->[$i]\n"));
+    push(@{$log2print_AR}, sprintf("%-10s ", "# date:"));
+    push(@{$log2print_AR}, sprintf(scalar localtime()));
+    push(@{$log2print_AR}, sprintf("\n"));
+
+    for($i = $start_log_line; $i < scalar(@{$log2print_AR}); $i++) { 
+	printf($log2print_AR->[$i]);
+    }
+    return;
+}
+
+
+#####################################################################
+# Subroutine: validate_and_setup()
+# Incept:     EPN, Tue Oct 27 14:26:48 2009
+# 
+# Purpose:    Validation and setup:
+#             - validate that the required executable programs exist
+#             - determine which directories have alignments we will
+#               merge together, and that they look as if they were
+#               created with a ssu-align --prep-p or --prep-n call.
+#             - verify that all ssu-align runs are done
+#
+# Arguments: 
+# $opt_HR:                 reference to hash of command line options
+# $dir:                    main directory created by ssu-align --prep-* that 
+#                          includes subdirectories with alignments
+# $subdir_AR:              reference to the array of subdirectories created by ssu-align, filled here
+# $score_to_merge_AR:      reference to array of ssu-align .scores files to merge (concatenate)
+# $log_to_merge_AR:        reference to array of ssu-align .log files to merge (concatenate)
+# $tab_to_merge_AR:        reference to array of ssu-align .tab files to merge (concatenate)
+# $cmalign_to_merge_AAR:   reference to 2D array of ssu-align .cmalign output files to merge,
+#                          first dimension is the corresponding CM's index in the cm file
+# $hits_fa_to_merge_AAR:   reference to 2D array of ssu-align .hits.fa output file to merges,
+#                          first dimension is the corresponding CM's index in the cm file
+# $hits_list_to_merge_AAR: reference to 2D array of ssu-align .hits.list output files to merge,
+#                          first dimension is the corresponding CM's index in the cm file
+# $stk_to_merge_AAR:       reference to 2D array of ssu-align .stk alignment files to merge
+#                          first dimension is the corresponding CM's index in the cm file
+# $cm_names_AR:            reference to a hash of arrays of alignments to merge, hash key is CM name, 
+# $cmalign_R:              RETURN; cmalign executable command
+# $cm_file_R:              RETURN; the path to the CM file, either default CM file or <s> from -m <s>
+# 
+# Returns:    Nothing, if it returns, everything is valid.
+# 
+# Exits:      If a required program does not exist, a directory
+#             that we think should be there does not exist, or
+#             an ssu-align job appears to not have finished, we
+#             print a message to STDERR and exit with non-zero status.
+#
+####################################################################
+sub validate_and_setup { 
+    my $narg_expected = 13;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, validate_and_setup() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my($opt_HR, $dir, $subdir_AR, $score_to_merge_AR, $log_to_merge_AR, $tab_to_merge_AR, $cmalign_to_merge_AAR, $hits_fa_to_merge_AAR, $hits_list_to_merge_AAR, $stk_to_merge_AAR, $cm_names_AR, $cmalign_R, $cm_file_R) = @_;
+
+    #Make sure $dir exists
+    if(!(-d $dir)) { printf STDERR ("\nERROR, directory $dir does not exist.\n"); exit(1); }
+
+    #Make sure the SSUALIGNDIR environmental variable is set.
+    my $ssualigndir = $ENV{'SSUALIGNDIR'};
+    if(! exists($ENV{'SSUALIGNDIR'})) { 
+	printf STDERR ("ERROR, the environment variable SSUALIGNDIR is not set, please set it to the directory where you installed SSU-ALIGN.\n"); 
+	exit(1); 
+    }
+
+    #Make sure the CM file exists
+    my $cm_file = "";
+    if($opt_HR->{"-m"} ne "") { 
+	$cm_file = $opt_HR->{"-m"}; 
+	if(!(-e $cm_file))   { printf STDERR ("ERROR, CM file $cm_file, specified with -M does not exist.\n"); exit(1); }
+    }
+    else { 
+	$cm_file = $ssualigndir . "/ssu-align-0p1.cm";
+	if(!(-e $cm_file))   { printf STDERR ("ERROR, the default CM file $cm_file does not exist.\n"); exit(1); }
+    }
+
+    # determine CM names
+    my %cm_name_idx_H = ();
+    my ($cm_name, $line);
+    my $ncm = 0;
+    if(open(CM, $cm_file) == 0) { printf STDERR ("ERROR, could not open $cm_file for reading.\n"); exit(1); }
+    while($line = <CM>) {
+	# the lines we're interested in look like this:
+	#NAME     archaea
+	if($line =~ /^NAME\s+(\S+)/) { 
+	    $cm_name = $1;
+	    push(@{$cm_names_AR}, $cm_name);
+	    if(exists($cm_name_idx_H{$cm_name})) { printf STDERR ("ERROR, two CMs in CM file $cm_file have the name $cm_name. Each CM must have a unique name.\n"); exit(1); }
+	    # initialize arrays for this cm:
+	    @{$cmalign_to_merge_AAR->[$ncm]} = ();
+	    @{$hits_fa_to_merge_AAR->[$ncm]} = ();
+	    @{$hits_list_to_merge_AAR->[$ncm]} = ();
+	    $cm_name_idx_H{$cm_name} = $ncm++;
+
+	    if($cm_name eq $df_none_name) { printf STDERR ("ERROR, you can't use a CM with the name $df_none_name, that's reserved for indicating which sequences are not the best-match to any models.\n"); exit(1); }
+	}
+    }
+    close(CM);
+
+    # check that cmalign is in the PATH
+    my @dirs_and_files_A = ();
+    my ($tmp, $command);
+    my $cmalign    = "ssu-cmalign";
+    $tmp = `$cmalign -h 2>&1`;
+    if($? == -1) { printf STDERR ("\nERROR, the required executable $cmalign is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
+
+    # determine which subdirectories were created by ssu-align
+    $command = "ls $dir 2>&1";
+    $tmp = `$command`;
+    if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); }
+    my ($subdir, $num, $file, $cm);
+    my $max_num = 0;
+    my @dirs_and_files_A = split(/\n/, $tmp);
+    my %subdir_H = ();
+    foreach $subdir (@dirs_and_files_A) { 
+	if(-d $dir . "/" . $subdir) {
+	    if($subdir =~ /^$dir\.(\d+)$/) { 
+		$num = $1;
+		if($num > 0) { #don't bother with '0' or negative numbers, they were'nt created by ssu-align 
+		    if($num > $max_num) { $max_num = $num; }
+		    $subdir_H{$subdir} = 1;
+		}
+	    }
+	}
+    }
+
+    # verify we have a contiguous set of ssu-align created subdirectories, each
+    # of which contains a finished log file that indicates ssu-align is done running there.
+    my @cpu_A = ();
+    my ($log_file);
+    if($max_num == 0) { printf STDERR ("\nERROR, couldn't find any subdirectories created by ssu-align in $dir.\nDid you run the shell script created by your initial ssu-align --prep-* call?\n"); exit(1); }
+    # Make sure we have all directories from <dir>.1 to <dir>.$max_num, and they all
+    # contain ssu-align log files in them that are finished running.
+    for($i = 1; $i <= $max_num; $i++) { 
+	$subdir = "$dir." . $i;
+	if(! (exists $subdir_H{($subdir)})) { 
+	    printf STDERR ("\nERROR, ssu-align created subdirectory " . $dir . "." . $i . " does not exist in $dir (but " . $dir . "." . $max_num . " does).\n"); exit(1); 
+	}
+	$log_file = $dir . "/" . $subdir . "/" . $subdir . ".ssu-align.log";
+	if(! (-e $log_file)) { 
+	    printf STDERR ("\nERROR, ssu-align created subdirectory $subdir does not have a ssu-align log file in it.\nThis suggests the ssu-align job for that directory has not completed executing yet.\nPlease execute it, or if it is currently executing, wait until it is finished.\nThen run ssu-merge again.\n"); exit(1);  
+	}
+	$command = "grep \"^\# CPU time \(\" $log_file 2>&1";
+	$tmp = `$command`;
+	if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); }
+	@cpu_A = split(/\n/, $tmp); 
+	if(scalar(@cpu_A) != 3) { 
+	    printf STDERR ("\nERROR, ssu-align created subdirectory $subdir has an incomplete ssu-align log file in it.\nThis suggests the ssu-align job for that directory did not successfully finish running yet.\nPlease rerun it or wait until it is finished.\nThen run ssu-merge again.\n"); exit(1);  
+	}
+	push(@{$subdir_AR}, $subdir);
+    }
+
+    # make a list of alignments to merge, by checking each subdirectory for each possible alignment (one per CM)
+    foreach $subdir (@{$subdir_AR}) { 
+	$command = "ls " . $dir . "/" . $subdir . " 2>&1";
+	$tmp = `$command`;
+	if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); }
+	@dirs_and_files_A = split(/\n/, $tmp);
+	# each directory should have:
+	# $subdir.scores
+	# $subdir.ssu-align.log
+	# $subdir.tab
+	#
+	# and potentially for each CM $cm:
+	# $subdir.$cm.cmalign
+	# $subdir.$cm.hits.fa
+	# $subdir.$cm.hits.list
+	# $subdir.$cm.stk
+	# 
+	foreach $file (@dirs_and_files_A) { 
+	    if($file =~ /$subdir\.scores/) { 
+		push(@{$score_to_merge_AR}, ($dir . "/" . $subdir . "/" . $file));
+	    }
+	    if($file =~ /$subdir\.ssu-align.log/) { 
+		push(@{$log_to_merge_AR}, ($dir . "/" . $subdir . "/" . $file));
+	    }
+	    if($file =~ /$subdir\.tab/) { 
+		push(@{$tab_to_merge_AR}, ($dir . "/" . $subdir . "/" . $file));
+	    }
+	    if($file =~ /$subdir\.(\S+)\.cmalign/) { 
+		$cm = $1;
+		if(! (exists($cm_name_idx_H{$cm}))) { printf STDERR ("\nERROR, found ssu-align output file $file in subdirectory $subdir/ created for a CM named $cm\nNo such CM exists in $cm_file.\nDid you use -m <s> when you ran ssu-align? If so pass -m <s> to ssu-merge as well.\n"); exit(1); }
+		push(@{$cmalign_to_merge_AAR->[$cm_name_idx_H{$cm}]}, ($dir . "/" . $subdir . "/" . $file));
+	    }
+	    if($file =~ /$subdir\.(\S+)\.hits.fa/) { 
+		$cm = $1;
+		if(! (exists($cm_name_idx_H{$cm}))) { printf STDERR ("\nERROR, found ssu-align output file $file in subdirectory $subdir/ created for a CM named $cm\nNo such CM exists in $cm_file.\nDid you use -m <s> when you ran ssu-align? If so pass -m <s> to ssu-merge as well.\n"); exit(1); }
+		push(@{$hits_fa_to_merge_AAR->[$cm_name_idx_H{$cm}]}, ($dir . "/" . $subdir . "/" . $file));
+	    }
+	    if($file =~ /$subdir\.(\S+)\.hits.list/) { 
+		$cm = $1;
+		if(! (exists($cm_name_idx_H{$cm}))) { printf STDERR ("\nERROR, found ssu-align output file $file in subdirectory $subdir/ created for a CM named $cm\nNo such CM exists in $cm_file.\nDid you use -m <s> when you ran ssu-align? If so pass -m <s> to ssu-merge as well.\n"); exit(1); }
+		push(@{$hits_list_to_merge_AAR->[$cm_name_idx_H{$cm}]}, ($dir . "/" . $subdir . "/" . $file));
+	    }
+	    if($file =~ /$subdir\.(\S+)\.stk/) { 
+		$cm = $1;
+		if(! (exists($cm_name_idx_H{$cm}))) { printf STDERR ("\nERROR, found ssu-align output file $file in subdirectory $subdir/ created for a CM named $cm\nNo such CM exists in $cm_file.\nDid you use -m <s> when you ran ssu-align? If so pass -m <s> to ssu-merge as well.\n"); exit(1); }
+		push(@{$stk_to_merge_AAR->[$cm_name_idx_H{$cm}]}, ($dir . "/" . $subdir . "/" . $file));
+	    }
+	}
+    }	
+
+    $$cmalign_R     = $cmalign;
+    $$cm_file_R     = $cm_file;
+
+    return;
+}
+
+
+#####################################################################
+# Subroutine: merge_alignments_for_a_cm()
+# Incept:     EPN, Tue Oct 27 18:05:43 2009
+# 
+# Purpose:    Given a list of alignments created by the same CM to merge, 
+#             merge them with a single call to cmalign --list-merge.
+#
+# Arguments: 
+# $opt_HR:           reference to hash of command line options
+# $stk_name:         name for merged alignment file
+# $dir:              main directory created by ssu-align --prep-* that 
+#                    includes subdirectories with alignments
+# $cm_file:          the CM file
+# $cm_idx:           index of the relevant CM in the CM file
+# $cm_name:          name of the relevant CM in the CM file
+# $stk_to_merge_AR:  reference to the array of alignments to merge
+# 
+# Returns:    Nothing, if it returns, everything is valid.
+# 
+# Exits:      If something goes wrong, this subroutine prints an
+#             error and exits.
+#
+####################################################################
+sub merge_alignments_for_a_cm { 
+    my $narg_expected = 7;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, merge_alignments_for_a_cm() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my($opt_HR, $stk_name, $dir, $cm_file, $cm_idx, $cm_name, $stk_to_merge_AR) = @_;
+
+    my ($output, $stk, $command, $output);
+
+    # create a temporary file with the stk list:
+    my $list_file = $dir . "/" . $cm_name . ".merge.list";
+    if(! (open(LIST, ">" . $list_file))) { printf STDERR ("ERROR, couldn't open list file $list_file for merging alignments with CM: $cm_name\n"); }
+    foreach $stk (@{$stk_to_merge_AR})   { printf LIST ("$stk\n"); }
+    close(LIST);
+
+    if(-e $stk_name) { 
+	if(! ($opt_HR->{"-F"})) { 
+	    printf STDERR ("ERROR, alignment file $stk_name already exists. Delete it or use -F to overwrite it.\n"); exit(1); 
+	}
+	else {
+	    $command = "rm -f $stk_name 2>&1";
+	    $output = `$command`;
+	    if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$output\n", ($? >> 8)); exit($? >> 8); }
+	}
+    }
+
+    my $extra_opts = "";
+    if($opt_HR->{"-1"}) { $extra_opts = " -1"; }
+
+    $command = "$cmalign $extra_opts --cm-idx $cm_idx --list-merge -o $stk_name $cm_file $list_file 2>&1";
+    $output = `$command`;
+    if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$output\n", ($? >> 8)); exit($? >> 8); }
+
+    return;
+}
+
+
+#####################################################################
+# Subroutine: concatenate_a_list_of_files()
+# Incept:     EPN, Wed Oct 28 17:12:05 2009
+# 
+# Purpose:    Given a list of files to concatenate, do it.
+#
+# Arguments: 
+# $opt_HR:              reference to hash of command line options
+# $concat_file:         the name for the file we want to concatenate
+# $files_to_concat_AR:  reference to the array of files to concatenate
+# 
+# Returns:    Nothing, if it returns, everything is valid.
+# 
+# Exits:      If something goes wrong, this subroutine prints an
+#             error and exits.
+#
+####################################################################
+sub concatenate_a_list_of_files { 
+    my $narg_expected = 3;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, concatenate_a_list_of_files() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my($opt_HR, $concat_file, $files_to_concat_AR) = @_;
+
+    if(scalar(@{$files_to_concat_AR}) == 0) { return; } #if array is empty, just leave
+
+    my ($file, $command, $output, $i);
+
+    # ensure all the files exist
+    foreach $file (@{$files_to_concat_AR}) { 
+	if(! (-e $file)) { printf STDERR ("ERROR, file $file does not exist, (it was to be cat'ed to $concat_file.\n"); exit(1); }
+    }
+
+    # check if concat file already exists
+    if(-e $concat_file) { 
+	if(! ($opt_HR->{"-F"})) { 
+	    printf STDERR ("ERROR, file $concat_file already exists. Delete it or use -F to overwrite it.\n"); exit(1); 
+	}
+	else {
+	    $command = "rm -f $concat_file 2>&1";
+	    $output = `$command`;
+	    if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$output\n", ($? >> 8)); exit($? >> 8); }
+	}
+    }
+
+    # create concat file
+    $command = "cat $files_to_concat_AR->[0] > $concat_file 2>&1";
+    $output = `$command`;
+    if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$output\n", ($? >> 8)); exit($? >> 8); }
+
+    # add to concat file
+    for($i = 1; $i < scalar(@{$files_to_concat_AR}); $i++) { 
+	$command = "cat $files_to_concat_AR->[0] >> $concat_file 2>&1";
+	$output = `$command`;
+	if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$output\n", ($? >> 8)); exit($? >> 8); }
+    }
+
+    return;
+}
+
+#####################################################################
+# Subroutine: print_log()
+# Incept:     EPN, Tue Jun 16 09:23:55 2009
+# 
+# Purpose:    Print the log.
+#
+# Arguments:
+# $log_file:     name of the log file to print
+# $log2print_AR: reference to the array that is the log
+#
+# Returns:    Nothing, if it returns, everything is valid.
+# 
+####################################################################
+sub print_log { 
+    my $narg_expected = 2;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_log() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($log_file, $log2print_AR) = @_;
+    my ($start_log_line, $line);
+
+    if(open(LOG,  ">" . $log_file) == 0) { printf STDERR ("ERROR, could not open $log_file for writing.\n"); exit(1); }
+    foreach $line (@{$log2print_AR}) { print LOG $line; }
+    close(LOG);
+
+    return;
+}
+
+
+#################################################################
+# Subroutine : max_length_scalar_in_arr()
+# Incept:      EPN, Tue Nov  4 15:19:44 2008
+# 
+# Purpose:     Return the maximum length of a scalar in an array
+#
+# Arguments: 
+# $arr_R: reference to the array
+# 
+################################################################# 
+sub max_length_scalar_in_array {
+    my $narg_expected = 1;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, max_length_scalar_in_arr() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($arr_R) = $_[0];
+
+    my ($max, $i);
+    $max = length($arr_R->[0]);
+    for($i = 1; $i < scalar(@{$arr_R}); $i++) { 
+	if(length($arr_R->[$i]) > $max) { $max = length($arr_R->[$i]); }
+    }
+    return $max;
+}

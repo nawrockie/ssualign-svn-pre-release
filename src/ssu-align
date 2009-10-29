@@ -1,23 +1,25 @@
 #!/usr/bin/perl
 #
-# ssu-align.pl
+# ssu-align
 # Eric Nawrocki
 # EPN, Wed Oct 29 10:12:05 2008
 #
-# Usage: perl ssu-align [options]
-#             <target database sequence file name>
-#             <output root for output files>
+# Usage: ssu-align [options] <target database sequence file name> <output root for output files>
 #             
 # Synopsis:
+#
 # Aligns SSU sequences to SSU CMs.
 # Given a CM file with >=1 SSU CMs and a target sequence file with putative
 # SSU sequences: 
-# Step 1. define likely start/ends (seq boundaries) to align using cmsearch 
-#         in viterbi HMM mode (or forward HMM mode if --forward).
-# Step 2. extract those subsequences into a new target fasta file.
-# Step 3. sequences in new fasta file from step 2 are aligned to the CM.
 #
-# If more than x>1 CMs exist in the CM file, then x new subsequence files 
+# Step 1. Define likely start/ends (seq boundaries) to align using cmsearch 
+#         in viterbi HMM mode (or forward HMM mode if --forward).
+# Step 2. Extract those subsequences into a new target fasta file using
+#         esl-sfetch.
+# Step 3. Align sequences in new fasta file from step 2 to the corresponding CM
+#         using cmalign.
+#
+# If x CMs exist, with x > 1, in the CM file, then x new subsequence files 
 # are created in Step 2, one for each CM and containing the sequences that
 # score highest to that CM. Then in Step 3, each CM is used to align its 
 # target file. For example the CM file may contain archael, bacterial, and 
