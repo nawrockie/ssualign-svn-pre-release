@@ -113,7 +113,11 @@ my $opt_return = GetOptions
 
 if($opt_return != 1) { exit(1); }
 
-if ($opt_H{"-h"}) { print $usage . "\n"; print $options_usage; exit(1); } 
+if ($opt_H{"-h"}) { 
+    print_banner($0, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, "");
+    print $usage . "\n"; 
+    print $options_usage; exit(1); 
+} 
 
 my $key_in = "";
 if($opt_H{"--key-in"}  ne '') { $key_in   = "." . opt_H{"--key-in"};  }
@@ -132,20 +136,31 @@ if(($opt_H{"--no-prob"}) && (!($opt_H{"--indi"}))) {
 }    
 
 
-################
-# Print banner #
-################
-my @log2print_A = ();
-print_banner($0, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, \@log2print_A);
-
+###################################################
+# Process command-line arguments and print banner #
+###################################################
 if(scalar(@ARGV) != 1) {   
     print "Incorrect number of command line arguments.\n";
     print $usage;
     print "\nTo see more help on available options, do ssu-draw -h\n\n";
     exit(1);
 }
+
 my ($dir) = $ARGV[0];
 $dir =~ s/\/$//;
+
+my ($sum_file, $sum_file2print);
+if(!($opt_H{"-a"})) { 
+    $sum_file       = $dir . "/" . $dir . $key_out . ".ssu-draw.out";
+    $sum_file2print = $dir . $key_out . ".ssu-draw.out";
+}
+else { 
+    $sum_file        = $dir;
+    $sum_file       =~ s/\.stk$//;
+    $sum_file       = $dir . $key_out . ".ssu-draw.out";
+    $sum_file2print = $sum_file;
+}
+print_banner($0, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, $sum_file);
 
 
 ##################################
@@ -192,15 +207,10 @@ if($max_width_draw < length("structure diagram file")) { $max_width_draw = lengt
 my $dashes_aln = "";  for($i = 0; $i < $max_width_aln; $i++)  { $dashes_aln .= "-"; }
 my $dashes_draw = ""; for($i = 0; $i < $max_width_draw; $i++) { $dashes_draw .= "-"; }
 
-push  (@log2print_A, sprintf("#\n# Drawing secondary structures...\n"));
-printf($log2print_A[(scalar(@log2print_A)-1)]);
-push  (@log2print_A, sprintf("#\n"));
-printf($log2print_A[(scalar(@log2print_A)-1)]);
-
-push  (@log2print_A, sprintf("# %-*s  %-*s\n", $max_width_aln, "alignment file name", $max_width_draw, "structure diagram file"));
-printf($log2print_A[(scalar(@log2print_A)-1)]);
-push  (@log2print_A, sprintf("# %-*s  %-*s\n", $max_width_aln, $dashes_aln, $max_width_draw, $dashes_draw));
-printf($log2print_A[(scalar(@log2print_A)-1)]);
+print_string_to_file($sum_file, 1, sprintf("#\n# Drawing secondary structures...\n"));
+print_string_to_file($sum_file, 1, sprintf("#\n"));
+print_string_to_file($sum_file, 1, sprintf("# %-*s  %-*s\n", $max_width_aln, "alignment file name", $max_width_draw, "structure diagram file"));
+print_string_to_file($sum_file, 1, sprintf("# %-*s  %-*s\n", $max_width_aln, $dashes_aln, $max_width_draw, $dashes_draw));
 
 
 #######################
@@ -219,33 +229,22 @@ for($i = 0; $i < $naln; $i++) {
     }
 
     draw_alignment($ssdraw, $ps2pdf, $template_file, $aln_file, $aln_file2print, $mask_file,
-		   $max_width_aln, $max_width_draw, $key_out, \%opt_H, \@log2print_A);
+		   $max_width_aln, $max_width_draw, $key_out, \%opt_H, $sum_file);
 }
+print_string_to_file($sum_file, 1, sprintf("#\n"));
 
-my ($log_file, $log_file2print);
-push(@log2print_A, sprintf("#\n"));
-printf($log2print_A[(scalar(@log2print_A)-1)]);
-
+$total_time += time();
 if(!($opt_H{"-a"})) { 
-    $log_file       = $dir . "/" . $dir . $key_out . ".ssu-draw.log";
-    $log_file2print = $dir . $key_out . ".ssu-draw.log";
-    push  (@log2print_A, sprintf("# This output saved to log file: $log_file2print.\n"));
-    printf($log2print_A[(scalar(@log2print_A)-1)]);
-    push  (@log2print_A, sprintf("# \n"));
-    printf($log2print_A[(scalar(@log2print_A)-1)]);
-    push  (@log2print_A, sprintf("# All files saved in directory: \.\/$dir\/\n"));
-    printf($log2print_A[(scalar(@log2print_A)-1)]);
+    print_string_to_file($sum_file, 1, sprintf("# This output saved to summary file: $sum_file2print.\n"));
+    print_string_to_file($sum_file, 1, sprintf("# \n"));
+    print_string_to_file($sum_file, 1, sprintf("# All files saved in directory: \.\/$dir\/\n"));
 }
 else { 
-    $dir =~ s/\.stk$//;
-    $log_file       = $dir . $key_out . ".ssu-draw.log";
-    $log_file2print = $log_file;
-    push  (@log2print_A, sprintf("# This output saved to log file:\n#  $log_file2print.\n"));
-    printf($log2print_A[(scalar(@log2print_A)-1)]);
+    print_string_to_file($sum_file, 1, sprintf("# This output saved to summary file:\n#  $sum_file2print.\n"));
 }
-push  (@log2print_A, sprintf("# \n"));
-printf($log2print_A[(scalar(@log2print_A)-1)]);
-print_log($log_file, \@log2print_A);
+print_string_to_file($sum_file, 1, sprintf("# \n"));
+print_timing("# CPU time: ", $total_time, $sum_file); 
+print_string_to_file($sum_file, 1, sprintf("# \n"));
 
 exit(0);
 
@@ -266,7 +265,7 @@ exit(0);
 #    $opt_takes_arg_HR: REFERENCE to hash telling if each option takes an argument (1) or not (0)
 #    $opt_order_AR:     REFERENCE to array specifying order of options
 #    $argv_ref:         REFERENCE to @ARGV, command-line arguments
-#    $log2print_AR:     REFERENCE to log2print array with log file text
+#    $sum_file:         file to print output file notices to
 #
 # Returns:    Nothing, if it returns, everything is valid.
 # 
@@ -274,7 +273,7 @@ exit(0);
 sub print_banner { 
     my $narg_expected = 6;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_banner() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($script_call, $opt_HR, $opt_takes_arg_HR, $opt_order_AR, $argv_ref, $log2print_AR) = @_;
+    my ($script_call, $opt_HR, $opt_takes_arg_HR, $opt_order_AR, $argv_ref, $sum_file) = @_;
 
     my ($i, $script_name, $start_log_line);
     $script_call =~ s/^\.+\///;
@@ -290,25 +289,20 @@ sub print_banner {
     $script_name = $script_call;
     $script_name =~ s/.+\///;
 
-    $start_log_line = scalar(@{$log2print_AR});
-
-    push(@{$log2print_AR}, sprintf("\# $script_name :: draw SSU rRNA secondary structure diagrams\n"));
-    push(@{$log2print_AR}, sprintf("\# SSU-ALIGN 0.1 (October 2009)\n"));
-    push(@{$log2print_AR}, sprintf("\# Copyright (C) 2009 HHMI Janelia Farm Research Campus\n"));
-    push(@{$log2print_AR}, sprintf("\# Freely distributed under the GNU General Public License (GPLv3)\n"));
-    push(@{$log2print_AR}, sprintf("\# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n"));
-    push(@{$log2print_AR}, sprintf("%-10s %s ", "# command:", $script_call . $enabled_options));
+    print_string_to_file($sum_file, 1, sprintf("\# $script_name :: draw SSU rRNA secondary structure diagrams\n"));
+    print_string_to_file($sum_file, 1, sprintf("\# SSU-ALIGN 0.1 (October 2009)\n"));
+    print_string_to_file($sum_file, 1, sprintf("\# Copyright (C) 2009 HHMI Janelia Farm Research Campus\n"));
+    print_string_to_file($sum_file, 1, sprintf("\# Freely distributed under the GNU General Public License (GPLv3)\n"));
+    print_string_to_file($sum_file, 1, sprintf("\# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n"));
+    print_string_to_file($sum_file, 1, sprintf("%-10s %s ", "# command:", $script_call . $enabled_options));
     for($i = 0; $i < scalar(@{$argv_ref}) - 1; $i++) { 
-	push(@{$log2print_AR}, sprintf("$argv_ref->[$i] "));
+	print_string_to_file($sum_file, 1, sprintf("$argv_ref->[$i] "));
     }
-    push(@{$log2print_AR}, sprintf("$argv_ref->[$i]\n"));
-    push(@{$log2print_AR}, sprintf("%-10s ", "# date:"));
-    push(@{$log2print_AR}, sprintf(scalar localtime()));
-    push(@{$log2print_AR}, sprintf("\n"));
+    print_string_to_file($sum_file, 1, sprintf("$argv_ref->[$i]\n"));
+    print_string_to_file($sum_file, 1, sprintf("%-10s ", "# date:"));
+    print_string_to_file($sum_file, 1, sprintf(scalar localtime()));
+    print_string_to_file($sum_file, 1, sprintf("\n"));
 
-    for($i = $start_log_line; $i < scalar(@{$log2print_AR}); $i++) { 
-	printf($log2print_AR->[$i]);
-    }
     return;
 }
 
@@ -490,7 +484,7 @@ sub validate_and_setup {
 # Arguments: 
 #   $prefix:      string that will precede timing output
 #   $inseconds:   number of seconds the script required
-#   $log2print_AR: reference to log2print array with log file text
+#   $sum_file:    file to print output file notices to
 #
 # Returns:    Nothing, if it returns, everything is valid.
 # 
@@ -498,10 +492,8 @@ sub validate_and_setup {
 sub print_timing { 
     my $narg_expected = 3;
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, print_timing() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($prefix, $inseconds, $log2print_AR) = @_;
+    my ($prefix, $inseconds, $sum_file) = @_;
     my ($hours, $minutes, $seconds, $thours, $tminutes, $tseconds, $start_log_line, $i);
-
-    $start_log_line = scalar(@{$log2print_AR});
 
     $hours = int($inseconds / 3600);
     $inseconds -= ($hours * 3600);
@@ -516,11 +508,7 @@ sub print_timing {
     if($minutes< 10)  { $tminutes = "0" . $tminutes; }
     if($seconds< 10)  { $tseconds = "0" . $tseconds; }
 
-    push(@{$log2print_AR}, sprintf("%s %2s:%2s:%2s\n", $prefix, $thours, $tminutes, $tseconds));
-
-    for($i = $start_log_line; $i < scalar(@{$log2print_AR}); $i++) { 
-	printf($log2print_AR->[$i]);
-    }
+    print_string_to_file($sum_file, 1, sprintf("%s %2s:%2s:%2s\n", $prefix, $thours, $tminutes, $tseconds));
 }
 
 
@@ -541,7 +529,7 @@ sub print_timing {
 #   $max_width_draw:    width of output string for printing draw file names
 #   $key_out:           <s> from --key-out ("" if --key-out not enabled)
 #   $opt_HR:            REFERENCE to hash of command-line options
-#   $log2print_AR:       reference to log2print array with log file text
+#   $sum_file:          file to print output file notices to
 # 
 # Returns:  Nothing, if it returns, everything is valid.
 # 
@@ -549,10 +537,10 @@ sub print_timing {
 sub draw_alignment { 
     my $narg_expected = 11;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, draw_alignment() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($ssdraw, $ps2pdf, $template_file, $aln_file, $aln_file2print, $mask_file2use, $max_width_aln, $max_width_draw, $key_out, $opt_HR, $log2print_AR) = @_;
+    my($ssdraw, $ps2pdf, $template_file, $aln_file, $aln_file2print, $mask_file2use, $max_width_aln, $max_width_draw, $key_out, $opt_HR, $sum_file) = @_;
 
     my ($all_aln_opts, $mask_opts, $draw_opts, $draw_key);
-    if($mask_file2use ne '')  { $mask_opts = "--mask $mask_file2use"; }
+    if($mask_file2use ne '')  { $mask_opts = " --mask $mask_file2use"; }
     else                      { $mask_opts = ""; }
 
     # Default multi-page align call, or not if --no-aln enabled
@@ -560,43 +548,43 @@ sub draw_alignment {
 	$draw_opts = "--prob --ins --dall --dint --struct"; 
 	$draw_key = $key_out; #this will be "" unless --key-out was enabled
 	run_ssdraw($ssdraw, $ps2pdf, ($draw_opts . $mask_opts), $aln_file, $aln_file2print, $template_file, 
-		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $log2print_AR);
+		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $sum_file);
     }
     if($opt_HR->{"--prob"}) { 
 	$draw_opts = "-q --prob"; 
 	$draw_key = $key_out . "prob.";
 	run_ssdraw($ssdraw, $ps2pdf, ($draw_opts . $mask_opts), $aln_file, $aln_file2print, $template_file, 
-		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $log2print_AR);
+		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $sum_file);
     }
     if($opt_HR->{"--ins"}) { 
 	$draw_opts = "-q --ins"; 
 	$draw_key = $key_out . "ins.";
 	run_ssdraw($ssdraw, $ps2pdf, ($draw_opts . $mask_opts), $aln_file, $aln_file2print, $template_file, 
-		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $log2print_AR);
+		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $sum_file);
     }
     if($opt_HR->{"--dall"}) { 
 	$draw_opts = "-q --dall"; 
 	$draw_key = $key_out . "dall.";
 	run_ssdraw($ssdraw, $ps2pdf, ($draw_opts . $mask_opts), $aln_file, $aln_file2print, $template_file, 
-		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $log2print_AR);
+		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $sum_file);
     }
     if($opt_HR->{"--dint"}) { 
 	$draw_opts = "-q --dint"; 
 	$draw_key = $key_out . "dint.";
 	run_ssdraw($ssdraw, $ps2pdf, ($draw_opts . $mask_opts), $aln_file, $aln_file2print, $template_file, 
-		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $log2print_AR);
+		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $sum_file);
     }
     if($opt_HR->{"--info"}) { 
 	$draw_opts = ""; 
 	$draw_key = $key_out . "info.";
 	run_ssdraw($ssdraw, $ps2pdf, ($draw_opts . $mask_opts), $aln_file, $aln_file2print, $template_file, 
-		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $log2print_AR);
+		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $sum_file);
     }
     if($opt_HR->{"--struct"}) { 
 	$draw_opts = "--struct"; 
 	$draw_key = $key_out . "struct.";
 	run_ssdraw($ssdraw, $ps2pdf, ($draw_opts . $mask_opts), $aln_file, $aln_file2print, $template_file, 
-		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $log2print_AR);
+		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $sum_file);
     }
     if($opt_HR->{"--indi"}) { 
 	if($opt_HR->{"--no-prob"}) { 
@@ -607,13 +595,13 @@ sub draw_alignment {
 	}
 	$draw_key = $key_out . "indi.";
 	run_ssdraw($ssdraw, $ps2pdf, ($draw_opts . $mask_opts), $aln_file, $aln_file2print, $template_file, 
-		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $log2print_AR);
+		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $sum_file);
     }
     if($opt_HR->{"--cons"}) { 
 	$draw_opts = "--indi"; 
 	$draw_key = $key_out . "cons.";
 	run_ssdraw($ssdraw, $ps2pdf, ($draw_opts . $mask_opts), $aln_file, $aln_file2print, $template_file, 
-		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $log2print_AR);
+		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $sum_file);
     }
     return 1;
 }    
@@ -638,7 +626,7 @@ sub draw_alignment {
 #   $max_width_aln:     width of output string for printing align file names
 #   $max_width_draw:    width of output string for printing draw file names
 #   $opt_HR:            REFERENCE to hash of command-line options
-#   $log2print_AR:       reference to log2print array with log file text
+#   $sum_file:       reference to log2print array with log file text
 #
 # Returns:    Nothing, if it returns, everything is valid.
 # 
@@ -647,7 +635,7 @@ sub run_ssdraw {
     my $narg_expected = 11;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, run_ssdraw() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my ($ssdraw, $ps2pdf, $ssdraw_opts, $aln_file, $aln_file2print, $template_file, $draw_key, $max_width_aln,
-	$max_width_draw, $opt_HR, $log2print_AR) = @_;
+	$max_width_draw, $opt_HR, $sum_file) = @_;
 
     my($draw_ps, $draw_pdf, $draw_ps2print, $draw_pdf2print);
 
@@ -677,8 +665,7 @@ sub run_ssdraw {
 	$command = "$ps2pdf $draw_ps $draw_pdf 2>&1";
 	$tmp = `$command`;
 	if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
-	push(@{$log2print_AR}, sprintf("  %-*s  %-*s\n", $max_width_aln, $aln_file2print, $max_width_draw, $draw_pdf2print));
-	printf($log2print_AR->[(scalar(@{$log2print_AR})-1)]);
+	print_string_to_file($sum_file, 1, sprintf("  %-*s  %-*s\n", $max_width_aln, $aln_file2print, $max_width_draw, $draw_pdf2print));
 	
 	# if we --rm-ps is enabled, remove the ps 
 	if($opt_HR->{"--rm-ps"}) { 
@@ -688,35 +675,77 @@ sub run_ssdraw {
 	}
     }
     if(($ps2pdf eq "") || (! $opt_HR->{"--rm-ps"})) { 
-	push(@{$log2print_AR}, sprintf("  %-*s  %-*s\n", $max_width_aln, $aln_file2print, $max_width_draw, $draw_ps2print));
-	printf($log2print_AR->[(scalar(@{$log2print_AR})-1)]);
+	print_string_to_file($sum_file, 1, sprintf("  %-*s  %-*s\n", $max_width_aln, $aln_file2print, $max_width_draw, $draw_ps2print));
     }
 }
 
 
 #####################################################################
-# Subroutine: print_log()
-# Incept:     EPN, Tue Jun 16 09:23:55 2009
+# Subroutine: print_timing()
+# Incept:     EPN, Tue Jun 16 08:52:08 2009
 # 
-# Purpose:    Print the log.
-#
+# Purpose:    Print a timing in hhhh:mm:ss format to 1 second precision.
+# 
 # Arguments:
-#   $log_file:    file to print log to.
-#   $log2print_AR: reference to array, each element is line of text in log.
+# $prefix:       string to print before the hhhh:mm:ss time info.
+# $inseconds:    number of seconds
+# $sum_file:     file to print output file notices to
 #
 # Returns:    Nothing, if it returns, everything is valid.
 # 
 ####################################################################
-sub print_log { 
-    my $narg_expected = 2;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_log() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($log_file, $log2print_AR) = @_;
-    my ($start_log_line, $line);
+sub print_timing { 
+    my $narg_expected = 3;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_timing() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($prefix, $inseconds, $sum_file) = @_;
+    my ($i, $hours, $minutes, $seconds, $thours, $tminutes, $tseconds);
 
-    if(open(LOG,  ">" . $log_file) == 0) { printf STDERR ("ERROR, could not open $log_file for writing.\n"); exit(1); }
-    foreach $line (@{$log2print_AR}) { print LOG $line; }
-    close(LOG);
+    $hours = int($inseconds / 3600);
+    $inseconds -= ($hours * 3600);
+    $minutes = int($inseconds / 60);
+    $inseconds -= ($minutes * 60);
+    $seconds = $inseconds;
+    $thours   = $hours;
+    $tminutes = $minutes;
+    $tseconds = $seconds;
 
+    if($hours < 10)   { $thours   = "0" . $thours; }
+    if($minutes< 10)  { $tminutes = "0" . $tminutes; }
+    if($seconds< 10)  { $tseconds = "0" . $tseconds; }
+
+    print_string_to_file($sum_file, 1, sprintf("%s %2s:%2s:%2s\n", $prefix, $thours, $tminutes, $tseconds));
+}
+
+
+###########################################################
+# Subroutine: print_string_to_file()
+# Incept: EPN, Thu Oct 29 10:47:25 2009
+#
+# Purpose: Given a string and a file name, append the 
+#          string to the file, and potentially to stdout
+#          as well. If $filename is the empty string,
+#          don't print to a file. 
+#
+# Returns: Nothing. If the file can't be written to 
+#          an error message is printed and the program
+#          exits.
+#
+###########################################################
+sub print_string_to_file {
+    my $narg_expected = 3;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_string_to_file() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($filename, $print_to_stdout, $string) = @_;
+
+    if($filename ne "") { 
+	open(OUT, ">>" . $filename) || die "ERROR, couldn't open $filename for appending.\n";
+	printf OUT $string;
+	close(OUT);
+    }
+
+    if($print_to_stdout) { 
+	printf($string);
+    }
     return;
 }
+
 

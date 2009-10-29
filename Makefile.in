@@ -61,6 +61,7 @@ REPOSITORY  = https://svn.janelia.org/eddylab/eddys/src/
 PROGS = ssu-align\
 	ssu-build\
 	ssu-draw\
+	ssu-merge\
 	ssu-mask
 
 INFPROGS = ssu-cmalign\

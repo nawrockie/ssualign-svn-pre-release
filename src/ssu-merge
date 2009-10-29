@@ -64,14 +64,16 @@ my $opt_return = GetOptions
 
 if($opt_return != 1) { exit(1); }
 
-if ($opt_H{"-h"}) { print $usage . "\n"; print $options_usage; exit(1); } 
+if ($opt_H{"-h"}) { 
+    print_banner($0, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, "");
+    print $usage . "\n"; 
+    print $options_usage; 
+    exit(1); 
+} 
 
 ################
 # Print banner #
 ################
-my @log2print_A = ();
-print_banner($0, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, \@log2print_A);
-
 if(scalar(@ARGV) != 1) {   
     print "Incorrect number of command line arguments.\n";
     print $usage;
@@ -80,6 +82,10 @@ if(scalar(@ARGV) != 1) {
 }
 my ($dir) = @ARGV;
 
+my $sum_file = $dir . "/" . $dir . ".ssu-merge.sum";
+my $sum_file2print = $dir . ".ssu-merge.sum";
+print_banner($0, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, $sum_file);
+
 
 ##################################
 # Validate that everything is go #
@@ -87,29 +93,28 @@ my ($dir) = @ARGV;
 my ($cmalign, $cm_file);
 my @subdir_A = ();
 my @score_to_merge_A = ();
-my @log_to_merge_A = ();
+my @sum_to_merge_A = ();
 my @tab_to_merge_A = ();
 my @cmalign_to_merge_AA = ();
 my @hits_fa_to_merge_AA = ();
 my @hits_list_to_merge_AA = ();
 my @stk_to_merge_AA = ();
 my @cm_names_A = ();
-validate_and_setup(\%opt_H, $dir, \@subdir_A, \@score_to_merge_A, \@log_to_merge_A, \@tab_to_merge_A, \@cmalign_to_merge_AA, \@hits_fa_to_merge_AA, \@hits_list_to_merge_AA, \@stk_to_merge_AA, \@cm_names_A, \$cmalign, \$cm_file);
+validate_and_setup(\%opt_H, $dir, \@subdir_A, \@score_to_merge_A, \@sum_to_merge_A, \@tab_to_merge_A, \@cmalign_to_merge_AA, \@hits_fa_to_merge_AA, \@hits_list_to_merge_AA, \@stk_to_merge_AA, \@cm_names_A, \$cmalign, \$cm_file);
 
 
 ####################################
 # Merge files including alignments #
 ####################################
 
-my ($i, $cm_idx, $nhitsfa, $nhitslist, $ncmalign, $nstk);
-my ($scores_file, $log_file, $tab_file, $cmalign_file, $hitsfa_file, $hitslist_file, $merged_stk_file);
-my ($scores_file2print, $log_file2print, $tab_file2print, $cmalign_file2print, $hitsfa_file2print, $hitslist_file2print, $merged_stk_file2print);
-my ($max_file_name_width, $max_cm_name_width, $file_dashes, $cm_dashes);
+my ($i, $j, $cm_idx, $nhitsfa, $nhitslist, $ncmalign, $nstk);
+my ($scores_file, $sum_file, $tab_file, $cmalign_file, $hitsfa_file, $hitslist_file, $merged_stk_file);
+my ($scores_file2print, $sum_file2print, $tab_file2print, $cmalign_file2print, $hitsfa_file2print, $hitslist_file2print, $merged_stk_file2print);
+my ($max_file_name_width, $max_cm_name_width, $file_dashes, $cm_dashes, $nseq_merged);
 
 if(scalar(@score_to_merge_A) == 0) { printf STDERR ("ERROR, no *.scores files found.\n"); exit(1); }
-if(scalar(@log_to_merge_A)   == 0) { printf STDERR ("ERROR, no *.log files found.\n"); exit(1); }
+if(scalar(@sum_to_merge_A)   == 0) { printf STDERR ("ERROR, no *.sum files found.\n"); exit(1); }
 if(scalar(@tab_to_merge_A)   == 0) { printf STDERR ("ERROR, no *.tab files found.\n"); exit(1); }
-
 
 $max_cm_name_width = max_length_scalar_in_array(\@cm_names_A);
 if($max_cm_name_width < length("CM name")) { $max_cm_name_width = length("CM name"); }
@@ -121,35 +126,29 @@ $max_file_name_width += length("hits.list");
 $max_file_name_width += length($dir) + 1;
 $file_dashes = ""; for($i = 0; $i < $max_file_name_width; $i++) { $file_dashes .= "-"; } 
     
-push(@log2print_A, sprintf("#\n# Merging files from %d ssu-align runs...\n", scalar(@score_to_merge_A))); 
-printf($log2print_A[(scalar(@log2print_A)-1)]);
-push(@log2print_A, sprintf("#\n"));
-printf($log2print_A[(scalar(@log2print_A)-1)]);
-push(@log2print_A, sprintf("# %-*s  %-*s  %7s\n", $max_file_name_width, "",                 $max_cm_name_width, "",         "\# files"));
-printf($log2print_A[(scalar(@log2print_A)-1)]);
-push(@log2print_A, sprintf("# %-*s  %-*s  %7s\n", $max_file_name_width, "merged file name", $max_cm_name_width, "CM name",  "merged"));
-printf($log2print_A[(scalar(@log2print_A)-1)]);
-push(@log2print_A, sprintf("# %-*s  %-*s  %7s\n", $max_file_name_width, $file_dashes,       $max_cm_name_width, $cm_dashes, "-------"));
-printf($log2print_A[(scalar(@log2print_A)-1)]);
+print_string_to_file($sum_file, 1, sprintf("#\n# Merging files from %d ssu-align runs...\n", scalar(@score_to_merge_A))); 
+print_string_to_file($sum_file, 1, sprintf("#\n"));
+print_string_to_file($sum_file, 1, sprintf("# %-*s  %-*s  %7s  %9s\n", $max_file_name_width, "",                 $max_cm_name_width, "",         "\# files", "\# seqs"));
+print_string_to_file($sum_file, 1, sprintf("# %-*s  %-*s  %7s  %9s\n", $max_file_name_width, "merged file name", $max_cm_name_width, "CM name",  "merged", "merged"));
+print_string_to_file($sum_file, 1, sprintf("# %-*s  %-*s  %7s  %9s\n", $max_file_name_width, $file_dashes,       $max_cm_name_width, $cm_dashes, "-------", "---------"));
 
 $scores_file       = $dir . "/" . $dir . ".scores";
-$log_file          = $dir . "/" . $dir . ".log";
+$sum_file          = $dir . "/" . $dir . ".ssu-align.sum";
 $tab_file          = $dir . "/" . $dir . ".tab";
 $scores_file2print = $dir . ".scores";
-$log_file2print    = $dir . ".log";
+$sum_file2print    = $dir . ".ssu-align.sum";
 $tab_file2print    = $dir . ".tab";
 
 concatenate_a_list_of_files(\%opt_H, $scores_file, \@score_to_merge_A);
-push(@log2print_A, sprintf("# %-*s  %-*s  %7d\n", $max_file_name_width, $scores_file2print, $max_cm_name_width, "-", scalar(@score_to_merge_A)));
-printf($log2print_A[(scalar(@log2print_A)-1)]);
+print_string_to_file($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9s\n", $max_file_name_width, $scores_file2print, $max_cm_name_width, "-", scalar(@score_to_merge_A), "-"));
 
-concatenate_a_list_of_files(\%opt_H, $log_file, \@log_to_merge_A);
-push(@log2print_A, sprintf("# %-*s  %-*s  %7d\n", $max_file_name_width, $log_file2print, $max_cm_name_width, "-", scalar(@log_to_merge_A)));
-printf($log2print_A[(scalar(@log2print_A)-1)]);
+concatenate_a_list_of_files(\%opt_H, $sum_file, \@sum_to_merge_A);
+print_string_to_file($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9s\n", $max_file_name_width, $sum_file2print, $max_cm_name_width, "-", scalar(@sum_to_merge_A), "-"));
 
 concatenate_a_list_of_files(\%opt_H, $tab_file, \@tab_to_merge_A);
-push(@log2print_A, sprintf("# %-*s  %-*s  %7d\n", $max_file_name_width, $tab_file2print, $max_cm_name_width, "-", scalar(@tab_to_merge_A)));
-printf($log2print_A[(scalar(@log2print_A)-1)]);
+print_string_to_file($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9s\n", $max_file_name_width, $tab_file2print, $max_cm_name_width, "-", scalar(@tab_to_merge_A), "-"));
+
+print_string_to_file($sum_file, 1, sprintf("#\n"));
 
 for($i = 0; $i < scalar(@cm_names_A); $i++) { 
     $nhitsfa   = scalar(@{$hits_fa_to_merge_AA[$i]});
@@ -170,24 +169,45 @@ for($i = 0; $i < scalar(@cm_names_A); $i++) {
 	$hitslist_file2print   = $dir . "." . $cm_names_A[$i] . ".hits.list";
 	$merged_stk_file2print = $dir . "." . $cm_names_A[$i] . ".stk";
 
-	concatenate_a_list_of_files(\%opt_H, $cmalign_file,  \@{$cmalign_to_merge_AA[$i]});
-	push(@log2print_A, sprintf("  %-*s  %-*s  %7d\n", $max_file_name_width, $cmalign_file2print, $max_cm_name_width, $cm_names_A[$i], $ncmalign));
-	printf($log2print_A[(scalar(@log2print_A)-1)]);
-
-	concatenate_a_list_of_files(\%opt_H, $hitsfa_file,   \@{$hits_fa_to_merge_AA[$i]});
-	push(@log2print_A, sprintf("  %-*s  %-*s  %7d\n", $max_file_name_width, $hitsfa_file2print, $max_cm_name_width, $cm_names_A[$i], $nhitsfa));
-	printf($log2print_A[(scalar(@log2print_A)-1)]);
+	concatenate_a_list_of_files(\%opt_H, $hitsfa_file, \@{$hits_fa_to_merge_AA[$i]});
+	#determine total number of sequences in all the hits fasta files we just merged
+	$nseq_merged = 0;
+	for($j = 0; $j < scalar(@{$hits_fa_to_merge_AA[$i]}); $j++) { 
+	    $nseq_merged += determine_num_seqs($hits_fa_to_merge_AA[$i][$j]);
+	}
+	print_string_to_file($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9d\n", $max_file_name_width, $hitsfa_file2print, $max_cm_name_width, $cm_names_A[$i], $nhitsfa, $nseq_merged));
 
 	concatenate_a_list_of_files(\%opt_H, $hitslist_file, \@{$hits_list_to_merge_AA[$i]});
-	push(@log2print_A, sprintf("  %-*s  %-*s  %7d\n", $max_file_name_width, $hitslist_file2print, $max_cm_name_width, $cm_names_A[$i], $nhitslist));
-	printf($log2print_A[(scalar(@log2print_A)-1)]);
+	print_string_to_file($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9d\n", $max_file_name_width, $hitslist_file2print, $max_cm_name_width, $cm_names_A[$i], $nhitslist, $nseq_merged));
+
+	concatenate_a_list_of_files(\%opt_H, $cmalign_file,  \@{$cmalign_to_merge_AA[$i]});
+	print_string_to_file($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9d\n", $max_file_name_width, $cmalign_file2print, $max_cm_name_width, $cm_names_A[$i], $ncmalign, $nseq_merged));
 
 	merge_alignments_for_a_cm(\%opt_H, $merged_stk_file, $dir, $cm_file, $cm_idx, $cm_names_A[$i], \@{$stk_to_merge_AA[$i]});
-	push(@log2print_A, sprintf("  %-*s  %-*s  %7d\n", $max_file_name_width, $merged_stk_file2print, $max_cm_name_width, $cm_names_A[$i], $nstk));
-	printf($log2print_A[(scalar(@log2print_A)-1)]);
+	print_string_to_file($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9d\n", $max_file_name_width, $merged_stk_file2print, $max_cm_name_width, $cm_names_A[$i], $nstk, $nseq_merged));
+
+	print_string_to_file($sum_file, 1, sprintf("#\n"));
     }
 }
-exit(0);
+
+
+#################
+# Print timings #
+#################
+$total_time += time();
+
+my $ssu_merge_sum_file = $dir . "/" . $dir . ".ssu-merge.sum";
+my $ssu_merge_sum_file2print = $dir . ".ssu-merge.sum";
+print_string_to_file($sum_file, 1, sprintf("# Summary file (*this* text printed to stdout) saved to %.\n", $ssu_merge_sum_file2print));
+
+print_string_to_file($sum_file, 1, sprintf("#\n# All output files created in directory \.\/%s\/\n", $dir));
+print_string_to_file($sum_file, 1, sprintf("#\n"));
+
+print_timing("# CPU time: ", $total_time, $sum_file);
+print_string_to_file($sum_file, 1, sprintf("\/\/\n"));
+
+# success, exit normally
+exit(0); 
 
 
 ###############
@@ -208,7 +228,7 @@ exit(0);
 #    $opt_takes_arg_HR:       REFERENCE to hash telling if each option takes an argument (1) or not (0)
 #    $opt_order_AR:           REFERENCE to array specifying order of options
 #    $argv_R:                 REFERENCE to @ARGV, command-line arguments
-#    $log2print_AR:           REFERENCE to log2print array with log file text
+#    $sum_file:               summary file to print to 
 #
 # Returns:    Nothing, if it returns, everything is valid.
 # 
@@ -216,11 +236,10 @@ exit(0);
 sub print_banner { 
     my $narg_expected = 6;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_banner() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($script_call, $opt_HR, $opt_takes_arg_HR, $opt_order_AR, $argv_R, $log2print_AR) = @_;
+    my ($script_call, $opt_HR, $opt_takes_arg_HR, $opt_order_AR, $argv_R, $sum2print_AR) = @_;
 
-    my ($i, $script_name, $start_log_line);
     $script_call =~ s/^\.+\///;
-    $script_name = $script_call;
+    my $script_name = $script_call;
     $script_name =~ s/.+\///;
 
     my $enabled_options = "";
@@ -229,25 +248,20 @@ sub print_banner {
 	else                  	      { if($opt_HR->{$opt})       { $enabled_options .= " " . $opt; } }
     }
 
-    $start_log_line = scalar(@{$log2print_AR});
-
-    push(@{$log2print_AR}, sprintf("\# $script_name :: merge SSU rRNA alignments\n"));
-    push(@{$log2print_AR}, sprintf("\# SSU-ALIGN 0.1 (October 2009)\n"));
-    push(@{$log2print_AR}, sprintf("\# Copyright (C) 2009 HHMI Janelia Farm Research Campus\n"));
-    push(@{$log2print_AR}, sprintf("\# Freely distributed under the GNU General Public License (GPLv3)\n"));
-    push(@{$log2print_AR}, sprintf("\# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n"));
-    push(@{$log2print_AR}, sprintf("%-10s %s ", "# command:", $script_call . $enabled_options));
+    print_string_to_file($sum_file, 1, sprintf("\# $script_name :: merge SSU rRNA alignments\n"));
+    print_string_to_file($sum_file, 1, sprintf("\# SSU-ALIGN 0.1 (October 2009)\n"));
+    print_string_to_file($sum_file, 1, sprintf("\# Copyright (C) 2009 HHMI Janelia Farm Research Campus\n"));
+    print_string_to_file($sum_file, 1, sprintf("\# Freely distributed under the GNU General Public License (GPLv3)\n"));
+    print_string_to_file($sum_file, 1, sprintf("\# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n"));
+    print_string_to_file($sum_file, 1, sprintf("%-10s %s ", "# command:", $script_call . $enabled_options));
     for($i = 0; $i < scalar(@{$argv_R}) - 1; $i++) { 
-	push(@{$log2print_AR}, sprintf("$argv_R->[$i] "));
+	print_string_to_file($sum_file, 1, sprintf("$argv_R->[$i] "));
     }
-    push(@{$log2print_AR}, sprintf("$argv_R->[$i]\n"));
-    push(@{$log2print_AR}, sprintf("%-10s ", "# date:"));
-    push(@{$log2print_AR}, sprintf(scalar localtime()));
-    push(@{$log2print_AR}, sprintf("\n"));
+    print_string_to_file($sum_file, 1, sprintf("$argv_R->[$i]\n"));
+    print_string_to_file($sum_file, 1, sprintf("%-10s ", "# date:"));
+    print_string_to_file($sum_file, 1, sprintf(scalar localtime()));
+    print_string_to_file($sum_file, 1, sprintf("\n"));
 
-    for($i = $start_log_line; $i < scalar(@{$log2print_AR}); $i++) { 
-	printf($log2print_AR->[$i]);
-    }
     return;
 }
 
@@ -269,7 +283,7 @@ sub print_banner {
 #                          includes subdirectories with alignments
 # $subdir_AR:              reference to the array of subdirectories created by ssu-align, filled here
 # $score_to_merge_AR:      reference to array of ssu-align .scores files to merge (concatenate)
-# $log_to_merge_AR:        reference to array of ssu-align .log files to merge (concatenate)
+# $sum_to_merge_AR:        reference to array of ssu-align .sum files to merge (concatenate)
 # $tab_to_merge_AR:        reference to array of ssu-align .tab files to merge (concatenate)
 # $cmalign_to_merge_AAR:   reference to 2D array of ssu-align .cmalign output files to merge,
 #                          first dimension is the corresponding CM's index in the cm file
@@ -294,7 +308,7 @@ sub print_banner {
 sub validate_and_setup { 
     my $narg_expected = 13;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, validate_and_setup() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($opt_HR, $dir, $subdir_AR, $score_to_merge_AR, $log_to_merge_AR, $tab_to_merge_AR, $cmalign_to_merge_AAR, $hits_fa_to_merge_AAR, $hits_list_to_merge_AAR, $stk_to_merge_AAR, $cm_names_AR, $cmalign_R, $cm_file_R) = @_;
+    my($opt_HR, $dir, $subdir_AR, $score_to_merge_AR, $sum_to_merge_AR, $tab_to_merge_AR, $cmalign_to_merge_AAR, $hits_fa_to_merge_AAR, $hits_list_to_merge_AAR, $stk_to_merge_AAR, $cm_names_AR, $cmalign_R, $cm_file_R) = @_;
 
     #Make sure $dir exists
     if(!(-d $dir)) { printf STDERR ("\nERROR, directory $dir does not exist.\n"); exit(1); }
@@ -368,27 +382,27 @@ sub validate_and_setup {
     }
 
     # verify we have a contiguous set of ssu-align created subdirectories, each
-    # of which contains a finished log file that indicates ssu-align is done running there.
+    # of which contains a finished sum file that indicates ssu-align is done running there.
     my @cpu_A = ();
-    my ($log_file);
+    my ($sum_file);
     if($max_num == 0) { printf STDERR ("\nERROR, couldn't find any subdirectories created by ssu-align in $dir.\nDid you run the shell script created by your initial ssu-align --prep-* call?\n"); exit(1); }
     # Make sure we have all directories from <dir>.1 to <dir>.$max_num, and they all
-    # contain ssu-align log files in them that are finished running.
+    # contain ssu-align sum files in them that are finished running.
     for($i = 1; $i <= $max_num; $i++) { 
 	$subdir = "$dir." . $i;
 	if(! (exists $subdir_H{($subdir)})) { 
 	    printf STDERR ("\nERROR, ssu-align created subdirectory " . $dir . "." . $i . " does not exist in $dir (but " . $dir . "." . $max_num . " does).\n"); exit(1); 
 	}
-	$log_file = $dir . "/" . $subdir . "/" . $subdir . ".ssu-align.log";
-	if(! (-e $log_file)) { 
-	    printf STDERR ("\nERROR, ssu-align created subdirectory $subdir does not have a ssu-align log file in it.\nThis suggests the ssu-align job for that directory has not completed executing yet.\nPlease execute it, or if it is currently executing, wait until it is finished.\nThen run ssu-merge again.\n"); exit(1);  
+	$sum_file = $dir . "/" . $subdir . "/" . $subdir . ".ssu-align.sum";
+	if(! (-e $sum_file)) { 
+	    printf STDERR ("\nERROR, ssu-align created subdirectory " . $dir . "/$subdir does not have a ssu-align summary (.sum) file in it.\nThis suggests the ssu-align job for that directory has not completed executing yet.\nPlease execute it, or if it is currently executing, wait until it is finished.\nThen run ssu-merge again.\n"); exit(1);  
 	}
-	$command = "grep \"^\# CPU time \(\" $log_file 2>&1";
+	$command = "grep \"^\# CPU time \(\" $sum_file 2>&1";
 	$tmp = `$command`;
 	if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); }
 	@cpu_A = split(/\n/, $tmp); 
 	if(scalar(@cpu_A) != 3) { 
-	    printf STDERR ("\nERROR, ssu-align created subdirectory $subdir has an incomplete ssu-align log file in it.\nThis suggests the ssu-align job for that directory did not successfully finish running yet.\nPlease rerun it or wait until it is finished.\nThen run ssu-merge again.\n"); exit(1);  
+	    printf STDERR ("\nERROR, ssu-align created subdirectory " . $dir . "/$subdir has an incomplete ssu-align summary (.sum) file in it.\nThis suggests the ssu-align job for that directory did not successfully finish running yet.\nPlease rerun it or wait until it is finished.\nThen run ssu-merge again.\n"); exit(1);  
 	}
 	push(@{$subdir_AR}, $subdir);
     }
@@ -401,7 +415,7 @@ sub validate_and_setup {
 	@dirs_and_files_A = split(/\n/, $tmp);
 	# each directory should have:
 	# $subdir.scores
-	# $subdir.ssu-align.log
+	# $subdir.ssu-align.sum
 	# $subdir.tab
 	#
 	# and potentially for each CM $cm:
@@ -414,8 +428,8 @@ sub validate_and_setup {
 	    if($file =~ /$subdir\.scores/) { 
 		push(@{$score_to_merge_AR}, ($dir . "/" . $subdir . "/" . $file));
 	    }
-	    if($file =~ /$subdir\.ssu-align.log/) { 
-		push(@{$log_to_merge_AR}, ($dir . "/" . $subdir . "/" . $file));
+	    if($file =~ /$subdir\.ssu-align.sum/) { 
+		push(@{$sum_to_merge_AR}, ($dir . "/" . $subdir . "/" . $file));
 	    }
 	    if($file =~ /$subdir\.tab/) { 
 		push(@{$tab_to_merge_AR}, ($dir . "/" . $subdir . "/" . $file));
@@ -566,30 +580,35 @@ sub concatenate_a_list_of_files {
     return;
 }
 
+
 #####################################################################
-# Subroutine: print_log()
-# Incept:     EPN, Tue Jun 16 09:23:55 2009
+# Subroutine: determine_num_seqs()
+# Incept:     EPN, Mon Nov  3 15:18:52 2008
 # 
-# Purpose:    Print the log.
+# Purpose:    Count the number of sequences in the fasta file 
+#             <$target_file>.
 #
-# Arguments:
-# $log_file:     name of the log file to print
-# $log2print_AR: reference to the array that is the log
+# Arguments: 
+# $target_file: the target sequence file 
 #
-# Returns:    Nothing, if it returns, everything is valid.
+# 
+# Returns:    <$nseq_target_file>: number of sequences in 
+#             <$target_file>.
 # 
 ####################################################################
-sub print_log { 
-    my $narg_expected = 2;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_log() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($log_file, $log2print_AR) = @_;
-    my ($start_log_line, $line);
+sub determine_num_seqs { 
+    my $narg_expected = 1;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, determine_num_seqs() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($file) = $_[0];
 
-    if(open(LOG,  ">" . $log_file) == 0) { printf STDERR ("ERROR, could not open $log_file for writing.\n"); exit(1); }
-    foreach $line (@{$log2print_AR}) { print LOG $line; }
-    close(LOG);
-
-    return;
+    if(!(-e $file)) { printf STDERR ("ERROR, determine_num_seqs(), file $file does not exist.\n"); exit(1); }
+    my $command = "grep \"\^\>\" $file | nl | tail -1 2>&1";
+    my $output = `$command`;
+    if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$output\n", ($? >> 8)); exit($? >> 8); }
+    chomp $output;
+    $output =~ s/^\s+//;
+    $output =~ s/\s+.*$//;
+    return $output;
 }
 
 
@@ -615,3 +634,74 @@ sub max_length_scalar_in_array {
     }
     return $max;
 }
+
+
+#####################################################################
+# Subroutine: print_timing()
+# Incept:     EPN, Tue Jun 16 08:52:08 2009
+# 
+# Purpose:    Print a timing in hhhh:mm:ss format to 1 second precision.
+# 
+# Arguments:
+# $prefix:       string to print before the hhhh:mm:ss time info.
+# $inseconds:    number of seconds
+# $sum_file:     file to print output file notices to
+#
+# Returns:    Nothing, if it returns, everything is valid.
+# 
+####################################################################
+sub print_timing { 
+    my $narg_expected = 3;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_timing() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($prefix, $inseconds, $sum_file) = @_;
+    my ($i, $hours, $minutes, $seconds, $thours, $tminutes, $tseconds);
+
+    $hours = int($inseconds / 3600);
+    $inseconds -= ($hours * 3600);
+    $minutes = int($inseconds / 60);
+    $inseconds -= ($minutes * 60);
+    $seconds = $inseconds;
+    $thours   = $hours;
+    $tminutes = $minutes;
+    $tseconds = $seconds;
+
+    if($hours < 10)   { $thours   = "0" . $thours; }
+    if($minutes< 10)  { $tminutes = "0" . $tminutes; }
+    if($seconds< 10)  { $tseconds = "0" . $tseconds; }
+
+    print_string_to_file($sum_file, 1, sprintf("%s %2s:%2s:%2s\n", $prefix, $thours, $tminutes, $tseconds));
+}
+
+
+###########################################################
+# Subroutine: print_string_to_file()
+# Incept: EPN, Thu Oct 29 10:47:25 2009
+#
+# Purpose: Given a string and a file name, append the 
+#          string to the file, and potentially to stdout
+#          as well. If $filename is the empty string,
+#          don't print to a file. 
+#
+# Returns: Nothing. If the file can't be written to 
+#          an error message is printed and the program
+#          exits.
+#
+###########################################################
+sub print_string_to_file {
+    my $narg_expected = 3;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_string_to_file() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($filename, $print_to_stdout, $string) = @_;
+
+    if($filename ne "") { 
+	open(OUT, ">>" . $filename) || die "ERROR, couldn't open $filename for appending.\n";
+	printf OUT $string;
+	close(OUT);
+    }
+
+    if($print_to_stdout) { 
+	printf($string);
+    }
+    return;
+}
+
+
