@@ -127,7 +127,7 @@ if($opt_return != 1) { exit(1); }
 
 my $prep_enabled_options;
 if ($opt_H{"-h"}) { 
-    print_banner($0, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \%opt_is_prep_H, \@ARGV, \$prep_enabled_options, ""); 
+    print_banner($0, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \%opt_is_prep_H, \@ARGV, \$prep_enabled_options, 1, ""); 
     # passing "" as last arg tells print_banner not to print banner to a file (usually it does, to the ssu-align output file)
     print $usage . "\n"; 
     print $options_usage; 
@@ -179,31 +179,36 @@ my ($target_file, $out_root) = @ARGV;
 my $out_dir      = $out_root;
 my $out_dir_root = $out_dir . "/" . $out_root;
 my ($sum_file, $sum_file2print);
+my ($log_file, $log_file2print);
 if($opt_H{"--prep-n"} || $opt_H{"--prep-p"}) { 
     $sum_file       = $out_dir_root . ".ssu-align.prep.sum";
     $sum_file2print = $out_root . ".ssu-align.prep.sum";
+    $log_file       = $out_dir_root . ".ssu-align.prep.log";
+    $log_file2print = $out_root . ".ssu-align.prep.log";
 }
 else {
     $sum_file       = $out_dir_root . ".ssu-align.sum";
     $sum_file2print = $out_root . ".ssu-align.sum";
+    $log_file       = $out_dir_root . ".ssu-align.sum";
+    $log_file2print = $out_root . ".ssu-align.sum";
 }
 open(OUT, ">" . $sum_file) || die "ERROR, creating file $sum_file.";
 close(OUT);
 
-print_banner($0, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \%opt_is_prep_H, \@ARGV, \$prep_enabled_options, $sum_file);
-
+print_banner($0, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \%opt_is_prep_H, \@ARGV, \$prep_enabled_options, 1, $sum_file);
+print_banner($0, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \%opt_is_prep_H, \@ARGV, \$prep_enabled_options, 0, $log_file);
 
 ##################################################################
 # Validate that everything is go and determine output file names #
 ##################################################################
 my ($ssualign, $cmsearch, $cmalign, $sfetch, $weight, $cm_file);
-validate_and_setup($target_file, \%opt_H, \$ssualign, \$cmsearch, \$cmalign, \$sfetch, \$weight, \$cm_file);
+validate_and_setup($target_file, \%opt_H, \$ssualign, \$cmsearch, \$cmalign, \$sfetch, \$weight, \$cm_file, $log_file);
 
 # determine number of sequences in the target sequence file
 my $nseq_target_file = determine_num_seqs($target_file);
 
 # create the output directory we'll populate with our output files
-create_output_dir($out_dir, \%opt_H); 
+create_output_dir($out_dir, \%opt_H, $log_file); 
 
 my (@indi_cm_name_A);
 process_cm_file($out_root, $cm_file, \%opt_H, \@indi_cm_name_A);
@@ -216,7 +221,7 @@ my $abs_orig_cm_file = abs_path($cm_file);
 
 my ($cluster_prefix, $cluster_suffix);
 if($opt_H{"--prep-n"} || $opt_H{"--prep-p"}) { 
-    prepare_only($target_file, $out_dir, $out_root, \%opt_H, $ssualign, $weight, $cm_file, $prep_enabled_options, $nseq_target_file, \@indi_cm_name_A, \$max_file_name_width, $sum_file);
+    prepare_only($target_file, $out_dir, $out_root, \%opt_H, $ssualign, $weight, $cm_file, $prep_enabled_options, $nseq_target_file, \@indi_cm_name_A, \$max_file_name_width, $sum_file, $log_file);
     print_string_to_file($sum_file, 1, (sprintf("  %-*s  ssu-align output file (*this* text printed to stdout)\n", $max_file_name_width, $sum_file2print)));
     print_string_to_file($sum_file, 1, sprintf("#\n# All output files created in directory \.\/%s\/\n", $out_dir));
     print_string_to_file($sum_file, 1, sprintf("#\n", $out_dir));
@@ -324,15 +329,16 @@ exit(0);
 #    $opt_is_prep_HR:         REFERENCE to hash telling if each option gets passed on to child processes in prep mode
 #    $argv_R:                 REFERENCE to @ARGV, command-line arguments
 #    $prep_enabled_options_R: REFERENCE to prep options, filled here
-#    $sum_file:               file to print to 
+#    $print_to_stdout:        '1' to print to stdout, '0' not to
+#    $out_file:               file to print to 
 #
 # Returns:    Nothing, if it returns, everything is valid.
 # 
 ####################################################################
 sub print_banner { 
-    my $narg_expected = 8;
+    my $narg_expected = 9;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_banner() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($script_call, $opt_HR, $opt_takes_arg_HR, $opt_order_AR, $opt_is_prep_HR, $argv_R, $prep_enabled_options_R, $sum_file) = @_;
+    my ($script_call, $opt_HR, $opt_takes_arg_HR, $opt_order_AR, $opt_is_prep_HR, $argv_R, $prep_enabled_options_R, $print_to_std_out, $sum_file) = @_;
 
     my ($i, $script_name);
     $script_call =~ s/^\.+\///;
@@ -350,19 +356,19 @@ sub print_banner {
 	}
     }
 
-    print_string_to_file($sum_file, 1, "\# $script_name :: define and align SSU rRNA sequences\n");
-    print_string_to_file($sum_file, 1, "\# SSU-ALIGN 0.1 (October 2009)\n");
-    print_string_to_file($sum_file, 1, "\# Copyright (C) 2009 HHMI Janelia Farm Research Campus\n");
-    print_string_to_file($sum_file, 1, "\# Freely distributed under the GNU General Public License (GPLv3)\n");
-    print_string_to_file($sum_file, 1, "\# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n");
-    print_string_to_file($sum_file, 1, sprintf("%-10s %s ", "# command:", $script_call . $enabled_options));
+    print_string_to_file($out_file, $print_to_stdout, "\# $script_name :: define and align SSU rRNA sequences\n");
+    print_string_to_file($out_file, $print_to_stdout, "\# SSU-ALIGN 0.1 (October 2009)\n");
+    print_string_to_file($out_file, $print_to_stdout, "\# Copyright (C) 2009 HHMI Janelia Farm Research Campus\n");
+    print_string_to_file($out_file, $print_to_stdout, "\# Freely distributed under the GNU General Public License (GPLv3)\n");
+    print_string_to_file($out_file, $print_to_stdout, "\# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n");
+    print_string_to_file($out_file, $print_to_stdout, sprintf("%-10s %s ", "# command:", $script_call . $enabled_options));
     for($i = 0; $i < scalar(@{$argv_R}) - 1; $i++) { 
-	print_string_to_file($sum_file, 1, sprintf("$argv_R->[$i] "));
+	print_string_to_file($out_file, $print_to_stdout, sprintf("$argv_R->[$i] "));
     }
-    print_string_to_file($sum_file, 1, sprintf("$argv_R->[$i]\n"));
-    print_string_to_file($sum_file, 1, sprintf("%-10s ", "# date:"));
-    print_string_to_file($sum_file, 1, sprintf(scalar localtime()));
-    print_string_to_file($sum_file, 1, sprintf("\n"));
+    print_string_to_file($out_file, $print_to_stdout, sprintf("$argv_R->[$i]\n"));
+    print_string_to_file($out_file, $print_to_stdout, sprintf("%-10s ", "# date:"));
+    print_string_to_file($out_file, $print_to_stdout, sprintf(scalar localtime()));
+    print_string_to_file($out_file, $print_to_stdout, sprintf("\n"));
 
     #Return: prep_options we defined in this subroutine
     $$prep_enabled_options_R = $prep_enabled_options;
@@ -388,6 +394,7 @@ sub print_banner {
 # $sfetch_R:       RETURN; esl-sfetch executable command
 # $weight_R:       RETURN; esl-weight executable command
 # $cm_file_R:      RETURN; the path to the CM file, either default CM file or <s> from -m <s>
+# $log_file:       file to print commands to 
 # 
 # Returns:    Nothing, if it returns, everything is valid.
 # 
@@ -399,7 +406,7 @@ sub print_banner {
 sub validate_and_setup { 
     my $narg_expected = 8;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, validate_and_setup() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($target_file, $opt_HR, $ssualign_R, $cmsearch_R, $cmalign_R, $sfetch_R, $weight_R, $cm_file_R) = @_;
+    my($target_file, $opt_HR, $ssualign_R, $cmsearch_R, $cmalign_R, $sfetch_R, $weight_R, $cm_file_R, $log_file) = @_;
 
     #Make sure the SSUALIGNDIR environmental variable is set.
     my $ssualigndir = $ENV{'SSUALIGNDIR'};
@@ -422,7 +429,7 @@ sub validate_and_setup {
     #Make sure the target file exists
     if(!(-e $target_file))   { printf STDERR ("ERROR, target sequence file $target_file does not exist.\n"); exit(1); }
 
-    my $trash;
+    my $tmp;
     my $cmsearch   = "ssu-cmsearch";
     my $cmalign    = "ssu-cmalign";
     my $sfetch     = "ssu-esl-sfetch";
@@ -430,21 +437,26 @@ sub validate_and_setup {
     my $ssualign   = "ssu-align";
     # check that the required programs are in the PATH
     if(!($opt_HR->{"--no-search"})) { 
-	$trash = `$cmsearch -h 2>&1`;
+	run_executable("$cmsearch -h", 1, $log_file, "\nERROR, the required executable $cmsearch is not in your PATH environment\nvariable. See the User's Guide Installation section.\n");
+	
+	$command = "$cmsearch -h 2>&1";
+	print_string_to_file($log_file, 0, ("Executing: \(" . $command . "\)\n"));
+	$tmp = `$command`;
 	if($? == -1) { printf STDERR ("\nERROR, the required executable $cmsearch is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
-	my $trash = `$sfetch -h 2>&1`;
+	print_string_to_file($log_file, 0, ("Output:\n\(" . $tmp . "\)\n\n"));
+	my $tmp = `$sfetch -h 2>&1`;
 	if($? == -1) { printf STDERR ("\nERROR, the required executable $sfetch is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
     }
     if(!($opt_HR->{"--no-align"})) { 
-	$trash = `$cmalign -h 2>&1`;
+	$tmp = `$cmalign -h 2>&1`;
 	if($? == -1) { printf STDERR ("\nERROR, the required executable $cmalign is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
     }
     if($opt_HR->{"--filter"} ne "") { 
-	my $trash = `$weight -h 2>&1`;
+	my $tmp = `$weight -h 2>&1`;
 	if($? == -1) { printf STDERR ("\nERROR, the required executable $weight is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
     }
     if(($opt_HR->{"--prep-n"} ne "") || ($opt_HR->{"--prep-p"})) { 
-	my $trash = `$ssualign -h 2>&1`;
+	my $tmp = `$ssualign -h 2>&1`;
 	if($? == -1) { printf STDERR ("\nERROR, the required executable $ssualign is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
     }
 
@@ -1540,4 +1552,44 @@ sub print_string_to_file {
     return;
 }
 
+###########################################################
+# Subroutine: run_executable
+# Incept: EPN, Fri Oct 30 06:05:37 2009
+#
+# Purpose: Run a command with backticks, capturing its standard
+#          output and standard error. Print command execution
+#          and its output to $log_file. If command returns 
+#          non-zero status, print error message $errmsg to 
+#          STDERR, and exit if $die_if_fails is TRUE, else 
+#          return '0' if the command fails. 
+#
+# Arguments:
+# $command:      command to execute
+# $die_if_fails: '1' to die if command returns non-zero status
+# $log_file:     file to print command and output to
+# $errmsg:       message to print if command returns non-0 exit status
+# 
+# Returns: '0' if command fails, '1' if it succeeds.
+#
+###########################################################
+sub run_executable {
+    my $narg_expected = 4;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_string_to_file() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($command, $die_if_fails, $log_file, $errmsg) = @_;
 
+    my $output = "";
+    my $retval = 1;
+
+    if ($command !~ m/2\>\&1$/) { $command .= "2>&1"; }
+
+    print_string_to_file($log_file, 0, ("Executing: \(" . $command . "\)\n"));
+    $output = `$command`;
+    print_string_to_file($log_file, 0, ("Output:\n\(" . $output . "\)\n\n"));
+
+    if($? == -1) { 
+	printf STDERR ("$errmsg");
+	if($die_if_fails) { exit(1); }
+	$retval = 0;
+    }
+    return $retval;
+}
