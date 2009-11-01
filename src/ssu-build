@@ -318,8 +318,14 @@ sub print_banner {
     print_string_to_file($out_file, $print_to_stdout, sprintf("\# Freely distributed under the GNU General Public License (GPLv3)\n"));
     print_string_to_file($out_file, $print_to_stdout, sprintf("\# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n"));
     print_string_to_file($out_file, $print_to_stdout, sprintf("%-10s %s ", "# command:", $script_call . $enabled_options));
-    for($i = 0; $i < (scalar(@{$argv_ref}) - 1); $i++) { 
-	print_string_to_file($out_file, $print_to_stdout, sprintf("$argv_ref->[$i] "));
+    for($i = 0; $i < (scalar(@{$argv_R}) - 1); $i++) { 
+	print_string_to_file($out_file, $print_to_stdout, sprintf("%s ", $argv_R->[$i]));
+    }
+    if(scalar(@{$argv_R}) > 0) { 
+	print_string_to_file($out_file, $print_to_stdout, sprintf("%s\n", $argv_R->[(scalar(@{$argv_R})-1)])); 
+    }
+    else { 
+	print_string_to_file($out_file, $print_to_stdout, sprintf("\n"));
     }
     print_string_to_file($out_file, $print_to_stdout, sprintf("$argv_ref->[$i]\n"));
     print_string_to_file($out_file, $print_to_stdout, sprintf("%-10s ", "# date:"));

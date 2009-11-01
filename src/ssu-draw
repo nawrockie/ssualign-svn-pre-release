@@ -114,7 +114,8 @@ my $opt_return = GetOptions
 if($opt_return != 1) { exit(1); }
 
 if ($opt_H{"-h"}) { 
-    print_banner($0, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, "");
+    print_banner($0, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, ""); 
+    # passing "" as last arg tells print_banner not to print banner to a file (usually it does, to the ssu-align output file)
     print $usage . "\n"; 
     print $options_usage; exit(1); 
 } 
@@ -149,19 +150,32 @@ if(scalar(@ARGV) != 1) {
 my ($dir) = $ARGV[0];
 $dir =~ s/\/$//;
 
-my ($sum_file, $sum_file2print);
+my ($sum_file, $sum_file2print, $log_file, $log_file2print);
 if(!($opt_H{"-a"})) { 
-    $sum_file       = $dir . "/" . $dir . $key_out . ".ssu-draw.out";
-    $sum_file2print = $dir . $key_out . ".ssu-draw.out";
+    $sum_file       = $dir . "/" . $dir . $key_out . ".ssu-draw.sum";
+    $sum_file2print = $dir . $key_out . ".ssu-draw.sum";
+    $log_file       = $dir . "/" . $dir . $key_out . ".ssu-draw.log";
+    $log_file2print = $dir . $key_out . ".ssu-draw.log";
 }
 else { 
-    $sum_file        = $dir;
-    $sum_file       =~ s/\.stk$//;
-    $sum_file       = $dir . $key_out . ".ssu-draw.out";
-    $sum_file2print = $sum_file;
+    my $file_root;
+    $file_root       = $dir;
+    $file_root       =~ s/\.stk$//;
+    $sum_file        = $file_root . $key_out . ".ssu-draw.sum";
+    $sum_file2print  = $sum_file;
+    $log_file        = $file_root . $key_out . ".ssu-draw.log";
+    $log_file2print  = $log_file;
 }
-print_banner($0, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, $sum_file);
+#Validate that $dir exists
+if(!(-d $dir)) { printf STDERR ("\nERROR, directory $dir does not exist.\n"); exit(1); }
+# open the summary and log files
+open(OUT, ">" . $sum_file) || die "ERROR, couldn't open file $sum_file for writing";
+close(OUT);
+open(OUT, ">" . $log_file) || die "ERROR, couldn't open file $log_file for writing";
+close(OUT);
 
+print_banner($0, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, $sum_file);
+print_banner($0, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 0, $log_file);
 
 ##################################
 # Validate that everything is go #
@@ -170,7 +184,7 @@ print_banner($0, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, $sum_file);
 my @stk_list_A = ();
 my @mask_list_A = ();
 my ($cm_file, $template_file, $ssdraw, $ps2pdf);
-validate_and_setup($dir, $key_in, \%opt_H, \$cm_file, \$template_file, \$ssdraw, \$ps2pdf, \@stk_list_A, \@mask_list_A);
+validate_and_setup($dir, $key_in, \%opt_H, \$cm_file, \$template_file, \$ssdraw, \$ps2pdf, \@stk_list_A, \@mask_list_A, $log_file);
 my $naln = scalar(@stk_list_A);
 my $aln_file;
 
@@ -235,6 +249,7 @@ print_string_to_file($sum_file, 1, sprintf("#\n"));
 
 $total_time += time();
 if(!($opt_H{"-a"})) { 
+    print_string_to_file($sum_file, 1, sprintf("# Commands executed by this script written to log file: $log_file2print.\n"));
     print_string_to_file($sum_file, 1, sprintf("# This output saved to summary file: $sum_file2print.\n"));
     print_string_to_file($sum_file, 1, sprintf("# \n"));
     print_string_to_file($sum_file, 1, sprintf("# All files saved in directory: \.\/$dir\/\n"));
@@ -264,16 +279,17 @@ exit(0);
 #    $opt_HR:           REFERENCE to hash of command-line options
 #    $opt_takes_arg_HR: REFERENCE to hash telling if each option takes an argument (1) or not (0)
 #    $opt_order_AR:     REFERENCE to array specifying order of options
-#    $argv_ref:         REFERENCE to @ARGV, command-line arguments
-#    $sum_file:         file to print output file notices to
+#    $argv_R:           REFERENCE to @ARGV, command-line arguments
+#    $print_to_stdout:  '1' to print to stdout, '0' not to
+#    $out_file:         file to print to
 #
 # Returns:    Nothing, if it returns, everything is valid.
 # 
 ####################################################################
 sub print_banner { 
-    my $narg_expected = 6;
+    my $narg_expected = 7;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_banner() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($script_call, $opt_HR, $opt_takes_arg_HR, $opt_order_AR, $argv_ref, $sum_file) = @_;
+    my ($script_call, $opt_HR, $opt_takes_arg_HR, $opt_order_AR, $argv_R, $print_to_stdout, $out_file) = @_;
 
     my ($i, $script_name, $start_log_line);
     $script_call =~ s/^\.+\///;
@@ -289,19 +305,24 @@ sub print_banner {
     $script_name = $script_call;
     $script_name =~ s/.+\///;
 
-    print_string_to_file($sum_file, 1, sprintf("\# $script_name :: draw SSU rRNA secondary structure diagrams\n"));
-    print_string_to_file($sum_file, 1, sprintf("\# SSU-ALIGN 0.1 (October 2009)\n"));
-    print_string_to_file($sum_file, 1, sprintf("\# Copyright (C) 2009 HHMI Janelia Farm Research Campus\n"));
-    print_string_to_file($sum_file, 1, sprintf("\# Freely distributed under the GNU General Public License (GPLv3)\n"));
-    print_string_to_file($sum_file, 1, sprintf("\# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n"));
-    print_string_to_file($sum_file, 1, sprintf("%-10s %s ", "# command:", $script_call . $enabled_options));
-    for($i = 0; $i < scalar(@{$argv_ref}) - 1; $i++) { 
-	print_string_to_file($sum_file, 1, sprintf("$argv_ref->[$i] "));
+    print_string_to_file($out_file, $print_to_stdout, sprintf("\# $script_name :: draw SSU rRNA secondary structure diagrams\n"));
+    print_string_to_file($out_file, $print_to_stdout, sprintf("\# SSU-ALIGN 0.1 (October 2009)\n"));
+    print_string_to_file($out_file, $print_to_stdout, sprintf("\# Copyright (C) 2009 HHMI Janelia Farm Research Campus\n"));
+    print_string_to_file($out_file, $print_to_stdout, sprintf("\# Freely distributed under the GNU General Public License (GPLv3)\n"));
+    print_string_to_file($out_file, $print_to_stdout, sprintf("\# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n"));
+    print_string_to_file($out_file, $print_to_stdout, sprintf("%-10s %s ", "# command:", $script_call . $enabled_options));
+    for($i = 0; $i < (scalar(@{$argv_R}) - 1); $i++) { 
+	print_string_to_file($out_file, $print_to_stdout, sprintf("%s ", $argv_R->[$i]));
     }
-    print_string_to_file($sum_file, 1, sprintf("$argv_ref->[$i]\n"));
-    print_string_to_file($sum_file, 1, sprintf("%-10s ", "# date:"));
-    print_string_to_file($sum_file, 1, sprintf(scalar localtime()));
-    print_string_to_file($sum_file, 1, sprintf("\n"));
+    if(scalar(@{$argv_R}) > 0) { 
+	print_string_to_file($out_file, $print_to_stdout, sprintf("%s\n", $argv_R->[(scalar(@{$argv_R})-1)])); 
+    }
+    else { 
+	print_string_to_file($out_file, $print_to_stdout, sprintf("\n"));
+    }
+    print_string_to_file($out_file, $print_to_stdout, sprintf("%-10s ", "# date:"));
+    print_string_to_file($out_file, $print_to_stdout, sprintf(scalar localtime()));
+    print_string_to_file($out_file, $print_to_stdout, sprintf("\n"));
 
     return;
 }
@@ -316,6 +337,7 @@ sub print_banner {
 #             - the required executable programs exist.
 #             - there is at least 1 alignment in $dir directory
 #               to operate on
+#             Also, create the summary and log files (by opening them)
 #
 # Arguments: 
 # $dir:               the directory we will create files in
@@ -328,6 +350,9 @@ sub print_banner {
 # $ps2pdf_ref:        RETURN; the ps2pdf command, or "" if system does not have ps2pdf and --pdf not enabled
 # $stk_list_arr_ref:  RETURN; ref to array of alignment files to operate on
 # $mask_list_arr_ref: RETURN; ref to array of alignment files to operate on
+# $mask_list_arr_ref: RETURN; ref to array of alignment files to operate on
+# $mask_list_arr_ref: RETURN; ref to array of alignment files to operate on
+# $log_file:          the log file
 #
 # Returns:    Nothing, if it returns, everything is valid.
 # 
@@ -337,12 +362,10 @@ sub print_banner {
 #
 ####################################################################
 sub validate_and_setup { 
-    my $narg_expected = 9;
+    my $narg_expected = 10;
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, validate_and_setup() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($dir, $key_in, $opt_HR, $cm_file_ref, $template_file_ref, $ssdraw_ref, $ps2pdf_ref, $stk_list_arr_ref, $mask_list_arr_ref) = @_;
+    my($dir, $key_in, $opt_HR, $cm_file_ref, $template_file_ref, $ssdraw_ref, $ps2pdf_ref, $stk_list_arr_ref, $mask_list_arr_ref, $log_file) = @_;
 
-    #Validate that $dir exists
-    if(!(-d $dir)) { printf STDERR ("\nERROR, directory $dir does not exist.\n"); exit(1); }
     #Validate that we can read the CM file
     my $ssualigndir;
     my $cm_file = "";
@@ -377,27 +400,26 @@ sub validate_and_setup {
 
     #Validate that esl-ssdraw exist
     my $ssdraw = "ssu-esl-ssdraw";
-    my $trash = `$ssdraw -h 2>&1`;
-    if($? == -1) { printf STDERR ("\nERROR, the required executable $ssdraw is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
+    my $command_worked;
+    run_executable("$ssdraw -h", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $ssdraw is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
 
     #determine if 'ps2pdf' exists, or that <s> from --pdf <s> exists if that was enabled
     my $ps2pdf = "ps2pdf";
-    if($opt_HR->{"--pdf"} ne "") { $ps2pdf = $opt_HR->{"--pdf"}; }
-    $trash = `$ps2pdf 2>&1`;
-    if($? == -1) { #$ps2pdf did not work
-	if($opt_HR->{"--pdf"} ne "") { 	#if --pdf <s> enabled but <s> is not a valid program name, we die
-	    printf STDERR ("\nERROR, --pdf " . $opt_HR->{"--pdf"} . " was enabled, but $ps2pdf is not in your PATH environment variable.\n"); 
-	    exit(1);
-	}
-	else { #if --pdf not enabled and ps2pdf does not exist, we can deal with this, unless --rm-ps enabled
-	    if($opt_HR->{"--rm-ps"}) { 
-		printf STDERR ("\nERROR, ps2pdf is not in your path, you can't use --rm-ps to remove postscripts in this case.\nIf you have another program that converts ps to pdf supply it as <s> with --pdf <s>.\n");
-		exit(1);
-	    }
-	    $ps2pdf = ""; # default if ps2pdf does not exist
-	}
+    my $die_if_fails = 0;
+    my $errmsg = "";
+    if($opt_HR->{"--pdf"} ne "") { 
+	$ps2pdf = $opt_HR->{"--pdf"}; 
+	$die_if_fails = 1; 
+	$errmsg = "ERROR, the required executable $ssdraw is not in your PATH environment\nvariable. See the User's Guide Installation section."
     }
-
+    elsif($opt_HR->{"--rm-ps"}) { 
+	$die_if_fails = 1; 
+	$errmsg = "ERROR, ps2pdf is not in your path, you can't use --rm-ps to remove postscripts in this case.\nIf you have another program that converts ps to pdf supply it as <s> with --pdf <s>.";
+    }
+    run_executable("$ps2pdf", $die_if_fails, 0, $log_file, \$command_worked, $errmsg);
+    if(! $command_worked) {
+	$ps2pdf = ""; # default if ps2pdf does not exist
+    }
     if($opt_HR->{"--in-mask"} ne "") { 
 	if(!(-e $opt_HR->{"--in-mask"})) { 
 	    printf STDERR ("\nERROR, the --in-mask file %s does not exist.\n", $opt_HR->{"--in-mask"}); exit(1); 
@@ -437,10 +459,15 @@ sub validate_and_setup {
 		printf STDERR ("\nERROR, the directory $dir with input alignment files does not exist.\n"); exit(1); 
 	    }
 	}
-	my ($name);
-	my $names = `grep NAME $cm_file 2>&1`;
-	$names =~ s/NAME\s+//g;
-	my @names_A = split(/\n/, $names);
+	my ($name, $line);
+	my @names_A = ();
+	open(CM, $cm_file) || die "\nERROR, could not open CM file $cm_file for reading.\n";
+	while($line = <CM>) { 
+	    if($line =~ s/NAME\s+//) { 
+		chomp $line;
+		push(@names_A, $line);
+	    }
+	}
 	foreach $name (@names_A) { 
 	    $aln_name = $dir . "/" . $dir . "." . $name . $key_in . ".stk";
 	    if(-e $aln_name) { 
@@ -637,7 +664,7 @@ sub run_ssdraw {
     my ($ssdraw, $ps2pdf, $ssdraw_opts, $aln_file, $aln_file2print, $template_file, $draw_key, $max_width_aln,
 	$max_width_draw, $opt_HR, $sum_file) = @_;
 
-    my($draw_ps, $draw_pdf, $draw_ps2print, $draw_pdf2print);
+    my($draw_ps, $draw_pdf, $draw_ps2print, $draw_pdf2print, $command_worked);
 
     $draw_ps  = $aln_file;
     $draw_ps  =~ s/\.stk$/\.$draw_key/; # we've ensured all alignments end with .stk in validate_input
@@ -653,25 +680,17 @@ sub run_ssdraw {
     $draw_pdf2print =~ s/\.stk$/\.$draw_key/;
     $draw_pdf2print.= "pdf";
 
-    my $command = "$ssdraw $ssdraw_opts $aln_file $template_file $draw_ps 2>&1";
-    #printf("command: $command\n");
-    my $tmp = `$command`;
-    if(($? >> 8) != 0) { 
-	printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); 
-    }
-    
+    my $command = "$ssdraw $ssdraw_opts $aln_file $template_file $draw_ps";
+    run_executable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
 
     if($ps2pdf ne "") { # this means we have ps2pdf (or <s> from --pdf <s>) on the system, use it
-	$command = "$ps2pdf $draw_ps $draw_pdf 2>&1";
-	$tmp = `$command`;
-	if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
+	$command = "$ps2pdf $draw_ps $draw_pdf";
+	run_executable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
 	print_string_to_file($sum_file, 1, sprintf("  %-*s  %-*s\n", $max_width_aln, $aln_file2print, $max_width_draw, $draw_pdf2print));
 	
 	# if we --rm-ps is enabled, remove the ps 
 	if($opt_HR->{"--rm-ps"}) { 
-	    $command = "rm $draw_ps 2>&1";
-	    $tmp = `$command`;
-	    if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
+	    unlink($draw_ps) || die "\nERROR, could not remove file $draw_ps\n"; 
 	}
     }
     if(($ps2pdf eq "") || (! $opt_HR->{"--rm-ps"})) { 
@@ -749,3 +768,54 @@ sub print_string_to_file {
 }
 
 
+###########################################################
+# Subroutine: run_executable
+# Incept: EPN, Fri Oct 30 06:05:37 2009
+#
+# Purpose: Run a command with backticks, capturing its standard
+#          output and standard error. Print command execution
+#          and its output to $log_file. If command returns 
+#          non-zero status, print error message $errmsg to 
+#          STDERR, and exit if $die_if_fails is TRUE. 
+#
+# Arguments:
+#   $command:                   command to execute
+#   $die_if_fails:              '1' to die if command returns non-zero status
+#   $print_output_upon_failure: '1' to print command output to STDERR if it fails
+#   $log_file:                  file to print command and output to
+#   $command_worked_ref:        set to '1' if command works (returns 0), else set to '0'         
+#   $errmsg:                    message to print if command returns non-0 exit status
+# 
+# Returns: Output (stdout and stderr) of the command.
+#
+###########################################################
+sub run_executable {
+    my $narg_expected = 6;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, run_executable() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($command, $die_if_fails, $print_output_upon_failure, $log_file, $command_worked_ref, $errmsg) = @_;
+
+    #contract check
+    if(($die_if_fails) && ($errmsg eq "")) { die "ERROR, misuse of run_executable: errmsg is the empty string and die_if_fails is TRUE."; }
+    my $output = "";
+    my $command_worked = 1;
+
+    if ($command !~ m/2\>\&1$/) { $command .= " 2>&1"; }
+
+    print_string_to_file($log_file, 0, ("Executing: \(" . $command . "\)\n"));
+    $output = `$command`;
+
+    if(($? == -1) && ($errmsg ne "")) { 
+	print_string_to_file($log_file, 0, ("Output:\n\(" . $output . "\)\n\n"));
+	printf STDERR ("\n$errmsg\n");
+	if($print_output_upon_failure) { printf STDERR ("Command output: $output\n"); }
+	print_string_to_file($log_file, 0, ("\n$errmsg\n"));
+	if($die_if_fails) { exit(1); }
+	$command_worked = 0;
+    }
+    else { 
+	print_string_to_file($log_file, 0, ("Output:\n\(" . $output . "\)\n\n"));
+    }
+
+    $$command_worked_ref = $command_worked;
+    return $output;
+}

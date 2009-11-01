@@ -31,18 +31,20 @@
 use Getopt::Long;
 use Cwd 'abs_path';
 use strict;
+use warnings;
 
 my $total_time = -1 * time();
-my $usage = "Usage: ssu-align [-options] <sequence file> <output dir and file name root>\n";
+my $usage = "Usage: ssu-align [-options] <sequence file> <output dir to create>\n";
 my $options_usage  = "where general options are:\n";
 #                           1         2         3         4         5         6         7         8
 #                  12345678901234567890123456789012345678901234567890123456789012345678901234567890
 $options_usage .= "  -h     : show brief help on version and usage\n";
 $options_usage .= "  -1     : output alignments in non-interleaved, 1 line/seq format\n";
 $options_usage .= "  -m <s> : use CM file <f> instead of the default CM file\n";
-$options_usage .= "  -F     : force; if <output dir> already exists - empty it and fill it\n" ,
 $options_usage .= "  -b <f> : set minimum bit score of a surviving subsequence as <f> (default: 100)\n";
 $options_usage .= "  -l <n> : set minimum length    of a surviving subsequence as <n> (default: 1)\n";
+$options_usage .= "  -f     : force; if <output dir> already exists - empty it and fill it\n" ,
+$options_usage .= "  --ff   : really force; remove <output dir> and all its subdirectories\n" ,
 
 $options_usage .= "\noptions for running ssu-align in 'prep' mode to split up a large job:\n";
 $options_usage .= "  --prep-n <n> : split target seq file into multiple files with <n> seqs each\n";
@@ -75,9 +77,10 @@ my $opt;
 $opt_takes_arg_H{"-h"}          = 0;  push(@opt_order_A, "-h");           $opt_is_prep_H{"-h"}          = 0;
 $opt_takes_arg_H{"-1"}          = 0;  push(@opt_order_A, "-1");           $opt_is_prep_H{"-1"}          = 1;
 $opt_takes_arg_H{"-m"}          = 1;  push(@opt_order_A, "-m");           $opt_is_prep_H{"-m"}          = 1;
-$opt_takes_arg_H{"-F"}          = 0;  push(@opt_order_A, "-F");           $opt_is_prep_H{"-F"}          = 0;
 $opt_takes_arg_H{"-b"}          = 1;  push(@opt_order_A, "-b");           $opt_is_prep_H{"-b"}          = 1;
 $opt_takes_arg_H{"-l"}          = 1;  push(@opt_order_A, "-l");           $opt_is_prep_H{"-l"}          = 1;
+$opt_takes_arg_H{"-f"}          = 0;  push(@opt_order_A, "-f");           $opt_is_prep_H{"-f"}          = 0;
+$opt_takes_arg_H{"--ff"}        = 0;  push(@opt_order_A, "--ff");         $opt_is_prep_H{"--ff"}        = 0;
 $opt_takes_arg_H{"--prep-n"}    = 1;  push(@opt_order_A, "--prep-n");     $opt_is_prep_H{"--prep-n"}    = 0;
 $opt_takes_arg_H{"--prep-p"}    = 1;  push(@opt_order_A, "--prep-p");     $opt_is_prep_H{"--prep-p"}    = 0;
 $opt_takes_arg_H{"--no-align"}  = 0;  push(@opt_order_A, "--no-align");   $opt_is_prep_H{"--no-align"}  = 1;
@@ -108,9 +111,10 @@ my $opt_return = GetOptions
     ('h'         => \$opt_H{"-h"}, 
      '1'         => \$opt_H{"-1"},
      'm=s'       => \$opt_H{"-m"},
-     'F'         => \$opt_H{"-F"},
      'b=f'       => \$opt_H{"-b"},
      'l=n'       => \$opt_H{"-l"},
+     'f'         => \$opt_H{"-f"},
+     'ff'        => \$opt_H{"--ff"},
      'prep-n=n'  => \$opt_H{"--prep-n"},
      'prep-p=n'  => \$opt_H{"--prep-p"},
      'no-align'  => \$opt_H{"--no-align"},
@@ -176,25 +180,27 @@ if(scalar(@ARGV) != 2) {
 }
 my ($target_file, $out_root) = @ARGV;
 
+#####################################################
+# Create the output directory and sum and log files #
+#####################################################
 my $out_dir      = $out_root;
 my $out_dir_root = $out_dir . "/" . $out_root;
 my ($sum_file, $sum_file2print);
 my ($log_file, $log_file2print);
 if($opt_H{"--prep-n"} || $opt_H{"--prep-p"}) { 
     $sum_file       = $out_dir_root . ".ssu-align.prep.sum";
-    $sum_file2print = $out_root . ".ssu-align.prep.sum";
+    $sum_file2print = $out_root     . ".ssu-align.prep.sum";
     $log_file       = $out_dir_root . ".ssu-align.prep.log";
-    $log_file2print = $out_root . ".ssu-align.prep.log";
+    $log_file2print = $out_root     . ".ssu-align.prep.log";
 }
 else {
     $sum_file       = $out_dir_root . ".ssu-align.sum";
-    $sum_file2print = $out_root . ".ssu-align.sum";
-    $log_file       = $out_dir_root . ".ssu-align.sum";
-    $log_file2print = $out_root . ".ssu-align.sum";
+    $sum_file2print = $out_root     . ".ssu-align.sum";
+    $log_file       = $out_dir_root . ".ssu-align.log";
+    $log_file2print = $out_root     . ".ssu-align.log";
 }
-open(OUT, ">" . $sum_file) || die "ERROR, creating file $sum_file.";
-close(OUT);
 
+create_output_dir($out_dir, \%opt_H, $sum_file, $log_file); 
 print_banner($0, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \%opt_is_prep_H, \@ARGV, \$prep_enabled_options, 1, $sum_file);
 print_banner($0, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \%opt_is_prep_H, \@ARGV, \$prep_enabled_options, 0, $log_file);
 
@@ -206,9 +212,6 @@ validate_and_setup($target_file, \%opt_H, \$ssualign, \$cmsearch, \$cmalign, \$s
 
 # determine number of sequences in the target sequence file
 my $nseq_target_file = determine_num_seqs($target_file);
-
-# create the output directory we'll populate with our output files
-create_output_dir($out_dir, \%opt_H, $log_file); 
 
 my (@indi_cm_name_A);
 process_cm_file($out_root, $cm_file, \%opt_H, \@indi_cm_name_A);
@@ -223,6 +226,7 @@ my ($cluster_prefix, $cluster_suffix);
 if($opt_H{"--prep-n"} || $opt_H{"--prep-p"}) { 
     prepare_only($target_file, $out_dir, $out_root, \%opt_H, $ssualign, $weight, $cm_file, $prep_enabled_options, $nseq_target_file, \@indi_cm_name_A, \$max_file_name_width, $sum_file, $log_file);
     print_string_to_file($sum_file, 1, (sprintf("  %-*s  ssu-align output file (*this* text printed to stdout)\n", $max_file_name_width, $sum_file2print)));
+    print_string_to_file($sum_file, 1, sprintf("  %-*s  log file with commands executed by this script\n", $max_file_name_width, $log_file2print));
     print_string_to_file($sum_file, 1, sprintf("#\n# All output files created in directory \.\/%s\/\n", $out_dir));
     print_string_to_file($sum_file, 1, sprintf("#\n", $out_dir));
 
@@ -287,6 +291,8 @@ if(! $opt_H{"--no-search"}) {
 $total_time += time();
 
 print_string_to_file($sum_file, 1, sprintf("  %-*s  summary file (*this* text printed to stdout)\n", $max_file_name_width, $sum_file2print));
+print_string_to_file($sum_file, 1, sprintf("  %-*s  log file with commands executed by this script\n", $max_file_name_width, $log_file2print));
+print_string_to_file($sum_file, 1, sprintf("#\n#  Commands executed by this script written to log file: $log_file2print.\n"));
 print_string_to_file($sum_file, 1, sprintf("#\n# All output files created in directory \.\/%s\/\n", $out_dir));
 print_string_to_file($sum_file, 1, sprintf("#\n", $out_dir));
 
@@ -297,13 +303,7 @@ print_string_to_file($sum_file, 1, sprintf("#\n", $out_dir));
 
 #remove esl-sfetch index file we created for the target file
 my $ssi_file = $target_file . ".ssi";
-if(-e $ssi_file) { 
-    my $command = "rm -f $ssi_file 2>&1";
-    my $tmp = `$command`;
-    if(($? >> 8) != 0) { 
-	printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); 
-    }
-}
+if(-e $ssi_file) { unlink($ssi_file); }
 
 # success, exit normally
 exit(0); 
@@ -338,7 +338,7 @@ exit(0);
 sub print_banner { 
     my $narg_expected = 9;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_banner() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($script_call, $opt_HR, $opt_takes_arg_HR, $opt_order_AR, $opt_is_prep_HR, $argv_R, $prep_enabled_options_R, $print_to_std_out, $sum_file) = @_;
+    my ($script_call, $opt_HR, $opt_takes_arg_HR, $opt_order_AR, $opt_is_prep_HR, $argv_R, $prep_enabled_options_R, $print_to_stdout, $out_file) = @_;
 
     my ($i, $script_name);
     $script_call =~ s/^\.+\///;
@@ -362,10 +362,15 @@ sub print_banner {
     print_string_to_file($out_file, $print_to_stdout, "\# Freely distributed under the GNU General Public License (GPLv3)\n");
     print_string_to_file($out_file, $print_to_stdout, "\# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n");
     print_string_to_file($out_file, $print_to_stdout, sprintf("%-10s %s ", "# command:", $script_call . $enabled_options));
-    for($i = 0; $i < scalar(@{$argv_R}) - 1; $i++) { 
-	print_string_to_file($out_file, $print_to_stdout, sprintf("$argv_R->[$i] "));
+    for($i = 0; $i < (scalar(@{$argv_R}) - 1); $i++) { 
+	print_string_to_file($out_file, $print_to_stdout, sprintf("%s ", $argv_R->[$i]));
     }
-    print_string_to_file($out_file, $print_to_stdout, sprintf("$argv_R->[$i]\n"));
+    if(scalar(@{$argv_R}) > 0) { 
+	print_string_to_file($out_file, $print_to_stdout, sprintf("%s\n", $argv_R->[(scalar(@{$argv_R})-1)])); 
+    }
+    else { 
+	print_string_to_file($out_file, $print_to_stdout, sprintf("\n"));
+    }
     print_string_to_file($out_file, $print_to_stdout, sprintf("%-10s ", "# date:"));
     print_string_to_file($out_file, $print_to_stdout, sprintf(scalar localtime()));
     print_string_to_file($out_file, $print_to_stdout, sprintf("\n"));
@@ -404,7 +409,7 @@ sub print_banner {
 #
 ####################################################################
 sub validate_and_setup { 
-    my $narg_expected = 8;
+    my $narg_expected = 9;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, validate_and_setup() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my($target_file, $opt_HR, $ssualign_R, $cmsearch_R, $cmalign_R, $sfetch_R, $weight_R, $cm_file_R, $log_file) = @_;
 
@@ -429,7 +434,7 @@ sub validate_and_setup {
     #Make sure the target file exists
     if(!(-e $target_file))   { printf STDERR ("ERROR, target sequence file $target_file does not exist.\n"); exit(1); }
 
-    my $tmp;
+    my ($tmp, $command_worked);
     my $cmsearch   = "ssu-cmsearch";
     my $cmalign    = "ssu-cmalign";
     my $sfetch     = "ssu-esl-sfetch";
@@ -437,27 +442,17 @@ sub validate_and_setup {
     my $ssualign   = "ssu-align";
     # check that the required programs are in the PATH
     if(!($opt_HR->{"--no-search"})) { 
-	run_executable("$cmsearch -h", 1, $log_file, "\nERROR, the required executable $cmsearch is not in your PATH environment\nvariable. See the User's Guide Installation section.\n");
-	
-	$command = "$cmsearch -h 2>&1";
-	print_string_to_file($log_file, 0, ("Executing: \(" . $command . "\)\n"));
-	$tmp = `$command`;
-	if($? == -1) { printf STDERR ("\nERROR, the required executable $cmsearch is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
-	print_string_to_file($log_file, 0, ("Output:\n\(" . $tmp . "\)\n\n"));
-	my $tmp = `$sfetch -h 2>&1`;
-	if($? == -1) { printf STDERR ("\nERROR, the required executable $sfetch is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
+	run_executable("$cmsearch -h", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $cmsearch is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
+	run_executable("$sfetch -h", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $sfetch is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
     }
     if(!($opt_HR->{"--no-align"})) { 
-	$tmp = `$cmalign -h 2>&1`;
-	if($? == -1) { printf STDERR ("\nERROR, the required executable $cmalign is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
+	run_executable("$cmalign -h", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $cmalign is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
     }
     if($opt_HR->{"--filter"} ne "") { 
-	my $tmp = `$weight -h 2>&1`;
-	if($? == -1) { printf STDERR ("\nERROR, the required executable $weight is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
+	run_executable("$weight -h", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $weight is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
     }
     if(($opt_HR->{"--prep-n"} ne "") || ($opt_HR->{"--prep-p"})) { 
-	my $tmp = `$ssualign -h 2>&1`;
-	if($? == -1) { printf STDERR ("\nERROR, the required executable $ssualign is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
+	run_executable("$ssualign -h", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $ssualign is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
     }
 
     $$ssualign_R    = $ssualign;
@@ -491,14 +486,15 @@ sub determine_num_seqs {
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, determine_num_seqs() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my ($file) = $_[0];
 
+    my $nseq = 0;
+    my $line;
     if(!(-e $file)) { printf STDERR ("ERROR, determine_num_seqs(), file $file does not exist.\n"); exit(1); }
-    my $command = "grep \"\^\>\" $file | nl | tail -1 2>&1";
-    my $output = `$command`;
-    if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$output\n", ($? >> 8)); exit($? >> 8); }
-    chomp $output;
-    $output =~ s/^\s+//;
-    $output =~ s/\s+.*$//;
-    return $output;
+    open(IN, $file) || die "ERROR, couldn't open file $file to determine the number of sequences within it.\n"; 
+    while($line = <IN>) { 
+	if($line =~ m/^\>/) { $nseq++; }
+    }
+    close(IN);
+    return $nseq;
 }
 
 #####################################################################
@@ -512,6 +508,8 @@ sub determine_num_seqs {
 # Arguments:  
 # $out_dir:   directory to create
 # $opt_HR:    reference to the hash of command-line options
+# $sum_file:  summary file, created (opened) here
+# $log_file:  log file, created (opened) here
 #
 # Returns:    Nothing.
 #
@@ -521,35 +519,66 @@ sub determine_num_seqs {
 # 
 ####################################################################
 sub create_output_dir { 
-    my $narg_expected = 2;
+    my $narg_expected = 4;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, create_output_dir() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($out_dir, $opt_HR) = @_;
+    my($out_dir, $opt_HR, $sum_file, $log_file) = @_;
 
-    my ($command, $tmp);
+    my ($command, $tmp, $command_worked, $maybe_dir, $has_subdir, $has_ssualign_subdir, $ran_command, $output);
+    $has_subdir = 0;
+    $has_ssualign_subdir = 0;
+    $ran_command = 0;
     # create output directory
     if(-d $out_dir) { 
-	if(! $opt_HR->{"-F"}) { 
-	    printf STDERR ("ERROR, output directory $out_dir already exists. Delete it or use -F to overwrite it.\n"); exit(1); 
+	if((! $opt_HR->{"-f"}) && (! $opt_HR->{"--ff"})) { 
+	    printf STDERR ("ERROR, output directory $out_dir already exists. Delete it or use -f to overwrite it.\n"); exit(1); 
 	}
-	else { # dir exists, but -F enabled, so we remove it
-	    if($out_dir eq "") { printf STDERR ("ERROR, trying to create directory named \"\"\n"); exit(1); }
-	    $command = "rm -rf $out_dir/* 2>&1";
-	    $tmp = `$command`;
-	    if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); }
-	    $command = "rm -f $out_dir/\.\#* 2>&1";
-	    $tmp = `$command`;
-	    if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); }
-	    $command = "rmdir $out_dir 2>&1";
-	    $tmp = `$command`;
-	    if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); }
-	    if(-d $out_dir) { printf STDERR ("ERROR, output directory $out_dir still exists after the command $command.\n"); exit(1); }
+	elsif(($opt_HR->{"-f"}) && (! $opt_HR->{"--ff"})) { 
+            # directory $out_dir exists, -f enabled  but --ff not enabled, check to see if there's any subdirectories in it:
+	    foreach $maybe_dir (glob("$out_dir/*")) { 
+		if(-d $maybe_dir) { # $maybe_dir is a dir
+		    $has_subdir = 1;
+		    if($maybe_dir !~ m/^$out_dir\.(\d+)/) { # subdirectory not created by ssu-align
+			printf STDERR ("Subdirectory $maybe_dir of $out_dir exists; it doesn't appear to have been created by ssu-align.\nEither delete it, or use --ff to remove all subdirectories of $out_dir.");
+		    }
+		    else { # subdirectory (probably) created by ssu-align
+			$has_ssualign_subdir = 1;
+		    }
+		}
+	    }
+	    if($has_ssualign_subdir) { 
+		printf STDERR ("Subdirectories of $out_dir exist that appear to have been created by ssu-alignsu-align.\nEither delete them, or use --ff to remove them all.");
+	    }
+	    if($has_subdir) { exit(1); }
 	}
+	# if we get here, $out_dir exists, but either it has no subdirectories, or --ff was enabled, or both
+	# remove the contents of the directory with rm -rf and remove the directory
+	$command = "rm -rf $out_dir 2>&1";
+	$output = `$command`; 
+        # Note: we can't use run_executable, b/c that requires a output file to write to, which will be put
+	# into $out_dir, and since that hasn't been created yet, we can't write to it. Instead if the command
+	# succeeds, we write it to the log file at the end of the function.
+	if($? == -1) { 
+	    printf STDERR ("\nERROR, the command \"rm -rf $out_dir did not successfully complete.\n"); 
+	    exit(1);
+	}
+	$ran_command = 1;
+	if(-d $out_dir) { printf STDERR ("ERROR, output directory $out_dir still exists after the command \"rmdir $out_dir\".\n"); exit(1); }
     }
-    # if we get here, either $out_dir does not yet exist, or it does but -F was set on command line
-    $command = "mkdir $out_dir 2>&1";
-    $tmp = `$command`;
-    if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); }
 
+    # make the directory 
+    mkdir($out_dir) || die "\nERROR, unable to make directory $out_dir.\n";
+
+    # open the sum and log files
+    open(OUT, ">" . $sum_file) || die "ERROR, creating file $sum_file.";
+    close(OUT);
+    open(OUT, ">" . $log_file) || die "ERROR, creating file $log_file.";
+    close(OUT);
+
+    #if we did a 'rm -rf' command, print that to the log file:
+    if($ran_command) { 
+	print_string_to_file($log_file, 0, ("Executing: \(" . $command . "\)\n"));
+	print_string_to_file($log_file, 0, ("Output:\n\(" . $output . "\)\n\n"));
+    }
     return;
 }
 
@@ -725,7 +754,7 @@ sub prepare_only {
 	    if(++$nseq_this_file == $prep_nseq) { 
 		close(SUB); 
 		print_string_to_file($sum_file, 1, sprintf("  %-*s  partition %*d fasta sequence file\n", $max_file_name_width, $target_subfile_root, $ndig, $n));
-		printf SH ("%s%s%s\n", $cluster_prefix, "$ssualign -F $prep_enabled_options $target_subfile_root $out_root." . $n, $cluster_suffix);
+		printf SH ("%s%s%s\n", $cluster_prefix, "$ssualign -f $prep_enabled_options $target_subfile_root $out_root." . $n, $cluster_suffix);
 		$target_subfile_root = $target_file . "." . (++$n);
 		$target_subfile_root =~ s/^.+\///;  # remove path 
 		$target_subfile      = $out_dir . "/" . $target_subfile_root;
@@ -904,12 +933,12 @@ sub prepare_only {
 #             to standard error if this occurs.
 # 
 ####################################################################
-sub search_sequences_with_each_model() { 
+sub search_sequences_with_each_model { 
     my $narg_expected = 11;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, search_sequences_with_each_model() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my($opt_HR, $cmsearch, $cm_file, $target_file, $out_dir_root, $nseq_target_file, $indi_cm_name_AR, $tab_file_R, $max_file_name_width_R, $description_width_R, $sum_file) = @_;
 
-    my ($i, $cmsearch_opts, $tab_file, $tab_file2print, $alg_flag, $max_file_name_width, $dashes1, $dashes2, $tmp, $command);
+    my ($i, $cmsearch_opts, $tab_file, $tab_file2print, $alg_flag, $max_file_name_width, $dashes1, $dashes2, $tmp, $command, $command_worked);
 
     $tab_file = $out_dir_root . ".tab";
     $tab_file2print = $out_root . ".tab";
@@ -937,11 +966,8 @@ sub search_sequences_with_each_model() {
     my $cmsearch_T = $df_cmsearch_T;
     if($opt_HR->{"--toponly"}) { $cmsearch_opts .= " --toponly"; }
 
-    $command = "$cmsearch $cmsearch_opts -T $cmsearch_T --tab $tab_file $alg_flag $cm_file $target_file 2>&1";
-    $tmp = `$command`;
-    if(($? >> 8) != 0) { 
-	printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); 
-    }
+    $command = "$cmsearch $cmsearch_opts -T $cmsearch_T --tab $tab_file $alg_flag $cm_file $target_file";
+    run_executable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
     print_string_to_file($sum_file, 1, sprintf("  %-*s  locations/scores of hits defined by HMM(s)\n", $max_file_name_width, $tab_file2print));
 
     $$tab_file_R            = $tab_file;
@@ -980,7 +1006,7 @@ sub search_sequences_with_each_model() {
 #
 # Returns:    Nothing, except values stored in RETURN arguments (see above)
 #
-# Exits:      If a `command` call doesn't finish with a non-zero status code, we exit. 
+# Exits:      If an executable call doesn't finish with a non-zero status code, we exit. 
 # 
 ####################################################################
 sub classify_and_extract_subseqs { 
@@ -1013,7 +1039,7 @@ sub classify_and_extract_subseqs {
     if($opt_HR->{"-l"} ne "") { $min_len = $opt_HR->{"-l"}; }
     else                      { $min_len = $df_min_len;     }
     if($opt_HR->{"-b"} ne "") { $min_bit = $opt_HR->{"-b"}; }
-    else                      { $min_bit = $df_min_len;     }
+    else                      { $min_bit = $df_min_bit;     }
     my $do_truncate;
     if($opt_HR->{"--no-trunc"}) { $do_truncate = 0; }
     else                        { $do_truncate = 1; }
@@ -1022,16 +1048,15 @@ sub classify_and_extract_subseqs {
     while($line = <TAB>) { 
 	chomp $line;
 	if($line =~ m/^\#\s+CM\:\s+(.+)$/) { 
-	    $cm_name = $1;
-	    push(@cm_name_from_tab_file_A, $cm_name);
+	    push(@cm_name_from_tab_file_A, $1);
 	}
-	elsif($line !~ m/^\#/) { 
+	if($line !~ m/^\#/) { 
 	    $line =~ s/^\s+//;
 	    @tmp_A = split(/\s+/, $line);
 	    if(scalar(@tmp_A) != 9) { 
 		printf STDERR ("ERROR, unable to read following line of $tab_file, it should have 9 tokens.\n"); printf("$line\n"); exit(1); 
 	    }
-	    ($model_name, $seq_name, $tstart, $tend, $qstart, $qend, $bit, $E, $gc) = @tmp_A;
+	    ($cm_name, $seq_name, $tstart, $tend, $qstart, $qend, $bit, $E, $gc) = @tmp_A;
 	    if($tend > $tstart) { $tlen = $tend - $tstart + 1; }
 	    else                { $tlen = $tstart - $tend + 1; }
 	    if((!(exists($bit_cm_seq_HH{$cm_name}{$seq_name}))) || ($bit > $bit_cm_seq_HH{$cm_name}{$seq_name})) { 
@@ -1059,56 +1084,63 @@ sub classify_and_extract_subseqs {
 
     # classify each seq: determine highest scoring model for each seq
     # also keep track of second best scoring model for each seq, so 
-    # we can print that to the .scores file
+    # we can print that to the .scores file, if only one model scored
+    # above threshold, store second best scoring model as best scoring 
+    # model, we'll sort this out when we print the scores file
     my @tmp_bit_A = ();
     my @tmp_cm_A = ();
     my %by_cm_name_HA = ();
     my %by_cm_bit_HA = ();
     my %by_cm_start_HA = ();
     my %by_cm_end_HA = ();
-    my ($cmsc, $cmstructsc, $dashes, $output, $command);
+    my ($dashes, $output, $command, $command_worked);
     my ($winner_idx, $winner_cm, $winner_bit);
     my ($second_idx, $second_cm, $second_bit);
-    foreach $seq_name (@seq_order_A) { 
+    foreach $seq_name (@seq_order_A) { # only sequences with at least 1 model that scored above threshold are in @seq_order_A
 	@tmp_bit_A = ();
 	@tmp_cm_A  = ();
 	foreach $cm_name (sort keys (%{$bit_seq_cm_HH{$seq_name}})) { 
-	    push(@tmp_bit_A,$bit_seq_cm_HH{$seq_name}{$cm_name});
+	    push(@tmp_bit_A, $bit_seq_cm_HH{$seq_name}{$cm_name});
 	    push(@tmp_cm_A, $cm_name);
 	}
 	$winner_idx = argmax_array(\@tmp_bit_A);
 	$winner_cm  = $tmp_cm_A[$winner_idx];
 	$winner_bit = $tmp_bit_A[$winner_idx];
 
-	delete($tmp_bit_A[$winner_idx]);
-	$second_idx = argmax_array(\@tmp_bit_A);
-	$second_cm  = $tmp_cm_A[$second_idx];
-	$second_bit = $tmp_bit_A[$second_idx];
+	# temporarily set second-best model as best, this will be overwritten if a second-best model exists
+	$second_idx = $winner_idx;
+	$second_cm  = $winner_cm;
+	$second_bit = $winner_bit;
+
+	splice(@tmp_bit_A, $winner_idx, 1);
+	splice(@tmp_cm_A,  $winner_idx, 1);
+	if(scalar(@tmp_bit_A) > 0) { 
+	    $second_idx = argmax_array(\@tmp_bit_A);
+	    $second_cm  = $tmp_cm_A[$second_idx];
+	    $second_bit = $tmp_bit_A[$second_idx];
+	}
 
 	push(@{$by_cm_name_HA{$winner_cm}},  $seq_name);
 	push(@{$by_cm_bit_HA{$winner_cm}},   $winner_bit);
 	push(@{$by_cm_start_HA{$winner_cm}}, $start_cm_seq_HH{$winner_cm}{$seq_name});
 	push(@{$by_cm_end_HA{$winner_cm}},   $end_cm_seq_HH{$winner_cm}{$seq_name});
 
-	$cmsc = -1.0;
-	$cmstructsc = -1.0;
-	$hmmscores2print_HR->{$seq_name} = sprintf("%d %d %.2f %s %.2f %.2f",
-						  $start_cm_seq_HH{$winner_cm}{$seq_name}, $end_cm_seq_HH{$winner_cm}{$seq_name}, 
-						   $winner_bit, $second_cm, $second_bit);
+	$hmmscores2print_HR->{$seq_name} = sprintf("%d %d %.2f %s %.2f",
+						   $start_cm_seq_HH{$winner_cm}{$seq_name}, $end_cm_seq_HH{$winner_cm}{$seq_name}, 
+						    $winner_bit, $second_cm, $second_bit);
 	$bestmatch_cm_HR->{$seq_name} = $winner_cm;
     }
 
     # For each CM c, list the target sequences that score highest to c in tabular format
     # and then fetch them with esl-sfetch
-    my ($index_file, $ncm_with_at_least_one_seq, $list_file, $list_file2print, $sfetch_in_file, $nwinners, $max_seq_name_width, $hits_file, $hits_file2print, $sfetch_options, $line);
+    my ($index_file, $ncm_with_at_least_one_seq, $list_file, $list_file2print, $sfetch_in_file, $nwinners, $hits_file, $hits_file2print, $sfetch_options);
     $ncm_with_at_least_one_seq = 0;
     $index_file = $target_file . ".ssi";
     
     #if index file exists, remove it and remake it (wasteful, but this is the only way to know for sure that the index was created for this specific file)
-    if(-e $index_file)    { system("rm -f $index_file"); } 
-    if(($? >> 8) != 0)    { printf STDERR ("ERROR, system(\"rm -f $index_file\" unexpectedly returned non-zero exit status %d.\n", ($? >> 8)); exit($? >> 8); }
-    system("$sfetch \-\-index $target_file > /dev/null"); 
-    if(($? >> 8) != 0)    { printf STDERR ("ERROR, system(\"$sfetch \-\-index $target_file > /dev/null\" unexpectedly returned non-zero exit status %d.\n", ($? >> 8)); exit($? >> 8); }
+    if(-e $index_file) { unlink($index_file) || die "\nERROR, unable to remove index file $index_file\n"; } 
+    $command = "$sfetch \-\-index $target_file"; 
+    run_executable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
 
     for($m = 0; $m < scalar(@{$indi_cm_name_AR}); $m++) { 
 	$cm_name = $indi_cm_name_AR->[$m];
@@ -1142,32 +1174,21 @@ sub classify_and_extract_subseqs {
 	    #print_string_to_file($sum_file, 1, sprintf("\n"));
 	    close(OUTLIST);
 	    close(SFETCHIN);
-	    #print_string_to_file($sum_file, 1, sprintf("Subsequences of %d seqs (<name> <start> <end> <bit score>) for CM $cm_name printed to file $listfile.\n", scalar(@{$by_cm_name_HA{$cm_name}})));
 	    print_string_to_file($sum_file, 1, sprintf("  %-*s  list of sequences to align with $cm_name CM\n", $max_file_name_width, $list_file2print));
 
 	    $hits_file = $out_dir_root . "." . $cm_name . ".hits.fa";
 	    $hits_file2print = $out_root . "." . $cm_name . ".hits.fa";
-	    if(-e ($hits_file)) { system("rm -f $hits_file"); }
+	    if(-e ($hits_file)) { unlink($hits_file) || die "\nERROR, unable to remove file $hits_file.\n"; }
 	    if($do_truncate) { $sfetch_options = "-Cf"; }
 	    else             { $sfetch_options = "-f";  }
-	    if($do_truncate) { system("$sfetch -o $hits_file $sfetch_options $target_file $sfetch_in_file > /dev/null"); }
-	    else             { system("$sfetch -o $hits_file $sfetch_options $target_file $sfetch_in_file > /dev/null"); }
-	    if(($? >> 8) != 0) { printf STDERR ("ERROR, system(\"$sfetch $sfetch_options $target_file $sfetch_in_file\" unexpectedly returned non-zero exit status %d.\n", ($? >> 8)); exit($? >> 8); }
-
+	    $command = "$sfetch -o $hits_file $sfetch_options $target_file $sfetch_in_file";
+	    run_executable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
 	    #print_string_to_file($sum_file, 1, sprintf("esl-sfetch -Cf $target_file $listfile > $hits_file\n"));
-	    $command = "head -1 $hits_file 2>&1";
-	    $output = `$command`;
-	    if($output =~ m/\W/) 
-	    { 
+	    if(-e $hits_file) { 
 		if($nwinners > 1) { print_string_to_file($sum_file, 1, sprintf("  %-*s  %7d sequences to align with $cm_name CM\n", $max_file_name_width, $hits_file2print, scalar(@{$by_cm_name_HA{$cm_name}}))); }
 		else              { print_string_to_file($sum_file, 1, sprintf("  %-*s  %7d sequence  to align with $cm_name CM\n", $max_file_name_width, $hits_file2print, scalar(@{$by_cm_name_HA{$cm_name}}))); }
 	    }
-	    else 
-	    { 
-		printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$output\n", ($? >> 8)); exit($? >> 8); 
-		exit(1); 
-	    }
-	    system("rm -f $sfetch_in_file");
+	    unlink($sfetch_in_file) || die "\nERROR, trying to remove file $sfetch_in_file\n";
 	    $new_target_file_per_cm_name_HR->{$cm_name} = $hits_file;
 	    if($cur_max_seq_name_width > $max_seq_name_width) { $max_seq_name_width = $cur_max_seq_name_width; };
 	}
@@ -1216,8 +1237,8 @@ sub align_subseqs {
 
     my($i, $ncm, $m, $cm_file_name, $cm_name, $hits_file, $align_psecs, $cmalign_out, $cmalign_stk);
     my($cmalign_out2print, $cmalign_stk2print, $fil_cmalign_stk, $fil_cmalign_stk2print, $dashes1, $dashes2);
-    my($line, $seq_name, $cmsc, $cmstructsc, $command, $tmp);
-    my @elA = ();
+    my($line, $seq_name, $cmsc, $cmstructsc, $command, $command_worked, $tmp);
+    my @el_A = ();
 
     $dashes1 = ""; for($i = 0; $i < $max_file_name_width; $i++) { $dashes1 .= "-"; } 
     $dashes2 = ""; for($i = 0; $i < $description_width;   $i++) { $dashes2 .= "-"; } 
@@ -1251,30 +1272,24 @@ sub align_subseqs {
 	    my $prob_opt = "-p";
 	    if($opt_HR->{"--no-prob"}) { $prob_opt = ""; }
 	    $command = "$cmalign --cm-idx $m $prob_opt --mxsize $mxsize --sub -o $cmalign_stk $cm_file $hits_file > $cmalign_out 2>&1"; 
-	    $tmp = `$command`;
-	    if(($? >> 8) != 0) { 
-		printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); 
-	    }
+	    run_executable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
 	    
 	    #open and parse the cmalign output
 	    if(open(CMALIGN, $cmalign_out) == 0) { printf STDERR ("ERROR, could not open $cmalign_out for reading.\n"); exit(1); }
 	    while($line = <CMALIGN>) { 
-		if($line =~ s/^\s+//) { 
-		    @elA = split(/\s+/, $line);
-		    $seq_name = $elA[1];
-		    $cmsc = $elA[3];
-		    $cmstructsc = $elA[4];
+		if($line =~ s/^\s+\d+\s+//) { 
+		    @el_A = split(/\s+/, $line);
+		    $seq_name   = $el_A[0];
+		    $cmsc       = $el_A[2];
+		    $cmstructsc = $el_A[3];
+		    $cmscores2print_HR->{$seq_name} = sprintf("%.2f %.2f", $cmsc, $cmstructsc);
 		}
-		$cmscores2print_HR->{$seq_name} = sprintf("%.2f %.2f", $cmsc, $cmstructsc);
 	    }
 	    close(CMALIGN);
 
 	    if($opt_HR->{"--filter"} ne "") { 
 		$command = "$weight -f --idf " . $opt_HR->{"--filter"} . " $cmalign_stk > $fil_cmalign_stk 2>&1";
-		$tmp = `$command`;
-		if(($? >> 8) != 0) { 
-		    printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); 
-		}
+		run_executable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
 		print_string_to_file($sum_file, 1, sprintf("  %-*s  complete %s alignment\n", $max_file_name_width, $cmalign_stk2print, $cm_name));
 		print_string_to_file($sum_file, 1, sprintf("  %-*s  filtered %s alignment\n", $max_file_name_width, $fil_cmalign_stk2print, $cm_name));
 	    }
@@ -1418,8 +1433,9 @@ sub print_scores_file {
 		($start, $end, $whmmsc, $secondhmm, $shmmsc) = split(/\s+/, $hmmscores2print_HR->{$seq_name});
 
 		printf SCORES ("  %7d  %-*s  %-*s  %4d  %4d  %7.2f  %7.2f  %7.2f", $idx, $max_seq_name_width, $seq_name, $max_cm_name_width, $bestmatch_cm, $start, $end, $cmsc, $cmstructsc, $whmmsc);
+		# if there was only 1 model that scored above threshold, we stored it as both the first and second model 
 		if($ncm > 1 && ($secondhmm ne $bestmatch_cm)) { printf SCORES ("  %-*s  %7.2f  %7.2f", $max_cm_name_width, $secondhmm, $shmmsc, ($whmmsc - $shmmsc)); }
-		elsif($ncm > 1)                             { printf SCORES ("  %-*s  %7s  %7s",    $max_cm_name_width, "-", "-", "-"); }
+		elsif($ncm > 1)                               { printf SCORES ("  %-*s  %7s  %7s",    $max_cm_name_width, "-", "-", "-"); }
 	    }
 	    else {
 		printf SCORES ("  %7d  %-*s  %-*s  %4s  %4s  %7s  %7s  %7s", $idx, $max_seq_name_width, $seq_name, $max_cm_name_width, $df_none_name, "-", "-", "-", "-", "-");
@@ -1435,7 +1451,7 @@ sub print_scores_file {
 
 
 #################################################################
-# Subroutine : argmax_arr()
+# Subroutine : argmax_array()
 # Incept:      EPN, Tue Nov  4 14:33:23 2008
 # 
 # Purpose : Return the index of the max value in an array.
@@ -1449,8 +1465,10 @@ sub argmax_array
     my $narg_expected = 1;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, argmax_arr() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my ($arr_R) = $_[0];
+    if(scalar(@{$arr_R}) == 0) { printf STDERR ("ERROR, argmax_arr() called with empty array."); exit(1); }
 
     my ($max, $i, $argmax);
+
     $max = $arr_R->[0];
     $argmax = 0;
     for($i = 1; $i < scalar(@{$arr_R}); $i++) { 
@@ -1552,6 +1570,7 @@ sub print_string_to_file {
     return;
 }
 
+
 ###########################################################
 # Subroutine: run_executable
 # Incept: EPN, Fri Oct 30 06:05:37 2009
@@ -1560,36 +1579,46 @@ sub print_string_to_file {
 #          output and standard error. Print command execution
 #          and its output to $log_file. If command returns 
 #          non-zero status, print error message $errmsg to 
-#          STDERR, and exit if $die_if_fails is TRUE, else 
-#          return '0' if the command fails. 
+#          STDERR, and exit if $die_if_fails is TRUE. 
 #
 # Arguments:
-# $command:      command to execute
-# $die_if_fails: '1' to die if command returns non-zero status
-# $log_file:     file to print command and output to
-# $errmsg:       message to print if command returns non-0 exit status
+#   $command:                   command to execute
+#   $die_if_fails:              '1' to die if command returns non-zero status
+#   $print_output_upon_failure: '1' to print command output to STDERR if it fails
+#   $log_file:                  file to print command and output to
+#   $command_worked_ref:        set to '1' if command works (returns 0), else set to '0'         
+#   $errmsg:                    message to print if command returns non-0 exit status
 # 
-# Returns: '0' if command fails, '1' if it succeeds.
+# Returns: Output (stdout and stderr) of the command.
 #
 ###########################################################
 sub run_executable {
-    my $narg_expected = 4;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_string_to_file() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($command, $die_if_fails, $log_file, $errmsg) = @_;
+    my $narg_expected = 6;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, run_executable() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($command, $die_if_fails, $print_output_upon_failure, $log_file, $command_worked_ref, $errmsg) = @_;
 
+    #contract check
+    if(($die_if_fails) && ($errmsg eq "")) { die "ERROR, misuse of run_executable: errmsg is the empty string and die_if_fails is TRUE."; }
     my $output = "";
-    my $retval = 1;
+    my $command_worked = 1;
 
-    if ($command !~ m/2\>\&1$/) { $command .= "2>&1"; }
+    if ($command !~ m/2\>\&1$/) { $command .= " 2>&1"; }
 
     print_string_to_file($log_file, 0, ("Executing: \(" . $command . "\)\n"));
     $output = `$command`;
-    print_string_to_file($log_file, 0, ("Output:\n\(" . $output . "\)\n\n"));
 
-    if($? == -1) { 
-	printf STDERR ("$errmsg");
+    if(($? == -1) && ($errmsg ne "")) { 
+	print_string_to_file($log_file, 0, ("Output:\n\(" . $output . "\)\n\n"));
+	printf STDERR ("\n$errmsg\n");
+	if($print_output_upon_failure) { printf STDERR ("Command output: $output\n"); }
+	print_string_to_file($log_file, 0, ("\n$errmsg\n"));
 	if($die_if_fails) { exit(1); }
-	$retval = 0;
+	$command_worked = 0;
     }
-    return $retval;
+    else { 
+	print_string_to_file($log_file, 0, ("Output:\n\(" . $output . "\)\n\n"));
+    }
+
+    $$command_worked_ref = $command_worked;
+    return $output;
 }
