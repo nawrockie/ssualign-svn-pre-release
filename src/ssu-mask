@@ -111,7 +111,7 @@ my $opt_return = GetOptions
 if($opt_return != 1) { exit(1); }
 
 if ($opt_H{"-h"}) { 
-    print_banner($0, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, "");
+    print_banner($0, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, "");
     print $usage . "\n"; 
     print $options_usage; 
     exit(1); 
@@ -201,19 +201,29 @@ if(scalar(@ARGV) != 1) {
 my ($dir) = $ARGV[0];
 $dir =~ s/\/$//;
 
-my $sum_file;
-my $sum_file2print;
-
+my ($sum_file, $sum_file2print, $log_file, $log_file2print);
 if(!($opt_H{"-a"})) { 
-    $sum_file       = $dir . "/" . $dir . $key_out . ".ssu-mask.out";
-    $sum_file2print = $dir . $key_out . ".ssu-mask.out";
+    #validate that $dir exists
+    if(!(-d $dir)) { printf STDERR ("\nERROR, directory $dir does not exist.\n"); exit(1); }
+    $sum_file       = $dir . "/" . $dir . $key_out . ".ssu-mask.sum";
+    $sum_file2print = $dir . $key_out . ".ssu-mask.sum";
+    $log_file       = $dir . "/" . $dir . $key_out . ".ssu-mask.log";
+    $log_file2print = $dir . $key_out . ".ssu-mask.log";
 }
 else { 
-    $sum_file       = $dir . $key_out . ".ssu-mask.out";
+    $sum_file       = $dir . $key_out . ".ssu-mask.sum";
     $sum_file2print = $sum_file;
+    $log_file       = $dir . $key_out . ".ssu-mask.log";
+    $log_file2print = $log_file;
 }
-print_banner($0, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, $sum_file);
+# open the summary and log files
+open(OUT, ">" . $sum_file) || die "ERROR, couldn't open file $sum_file for writing";
+close(OUT);
+open(OUT, ">" . $log_file) || die "ERROR, couldn't open file $log_file for writing";
+close(OUT);
 
+print_banner($0, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, $sum_file);
+print_banner($0, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 0, $log_file);
 
 ##################################
 # Validate that everything is go #
@@ -221,7 +231,7 @@ print_banner($0, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, $sum_file);
 
 my @stk_list_A = ();
 my ($cm_file, $template_file, $alimanip, $ssdraw, $weight, $seqstat, $ps2pdf);
-validate_and_setup($dir, $key_in, \%opt_H, \$cm_file, \$template_file, \$alimanip, \$ssdraw, \$weight, \$seqstat, \$ps2pdf, \@stk_list_A);
+validate_and_setup($dir, $key_in, \%opt_H, \$cm_file, \$template_file, \$alimanip, \$ssdraw, \$weight, \$seqstat, \$ps2pdf, \@stk_list_A, $log_file);
 my $naln = scalar(@stk_list_A);
 my $aln_file;
 
@@ -530,8 +540,8 @@ if($do_list_mode)
     print_string_to_file($sum_file, 1, sprintf("# %-*s  %-*s  %8s\n", $max_width_aln, "aln file name", $max_width_list, "list file name", "num seqs"));
     print_string_to_file($sum_file, 1, sprintf("# %-*s  %-*s  %8s\n", $max_width_aln, $dashes_aln, $max_width_list, $dashes_list, "--------"));
 
+    my ($list_file, $list_file2print, $aln_file2print, $nseq, $command_worked);
     for($i = 0; $i < $naln; $i++) { 
-	my ($list_file, $list_file2print, $aln_file2print, $nseq);
 	$aln_file         = $stk_list_A[$i];
 	($aln_file2print) = ($aln_file =~ /.+\/(.+)/);
 	($aln_root)       = ($aln_file =~ /(.+)\.stk/);
@@ -545,16 +555,10 @@ if($do_list_mode)
 	$list_file2print  = $aln_root2print . $key_out . ".list";
 
 	if($opt_H{"-a"}) { $list_file2print = $list_file; } #print full path with -a is invoked
-	$command = "$alimanip --list $list_file $aln_file 2>&1"; 
-	$tmp = `$command`;
-	if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
+	$command = "$alimanip --list $list_file $aln_file"; 
+	run_executable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
 
-	$command = "nl $list_file | tail -1 2>&1";
-	$tmp = `$command`;
-	if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
-	$tmp =~ s/^\s+//;
-	$tmp =~ s/\s+.*$//;
-	$nseq = $tmp;
+	my $nseq = get_num_lines_in_file($list_file);
 	
 	print_string_to_file($sum_file, 1, sprintf("  %-*s  %-*s  %8d\n", $max_width_aln, $aln_file2print, $max_width_list, $list_file2print, $nseq));
     }
@@ -574,6 +578,7 @@ if($do_remove_seqs_mode)
     $nec_width = length($aln_root) + length($key_out) + 9; #9 is for ".seq{r,k}.stk"
     if($max_width < $nec_width) { $max_width = $nec_width; }
     my $dashes = ""; for($i = 0; $i < $max_width; $i++) { $dashes.= "-"; }
+    my $command_worked;
 
     print_string_to_file($sum_file, 1, sprintf("#\n# Removing some sequences from an alignment.\n"));
     print_string_to_file($sum_file, 1, sprintf("#\n"));
@@ -588,28 +593,12 @@ if($do_remove_seqs_mode)
 	if(!(-e $opt_H{"--seq-r"})) { 
 	    printf STDERR ("\nERROR, the --seq-r file " . $opt_H{"--seq-r"} . " does not exist.\n"); exit(1); 
 	}
-	$command = "$alimanip -o $seqr_aln --seq-r " . $opt_H{"--seq-r"} . " $aln_file 2>&1";
-	$tmp = `$command`;
-	if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
-
+	$command = "$alimanip -o $seqr_aln --seq-r " . $opt_H{"--seq-r"} . " $aln_file";
+	run_executable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
+	
 	#determine number of sequences in the alignment
-	my $tmp_file = $seqr_aln;
-	$tmp_file =~ s/\.stk/\.list/;
-	$command = "$alimanip --list $tmp_file  $seqr_aln 2>&1";
-	$tmp = `$command`;
-	if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
-
-	$command = "nl $tmp_file | tail -1 2>&1";
-	$tmp = `$command`;
-	if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
-	$tmp =~ s/^\s+//;
-	$tmp =~ s/\s+.*$//;
-	my $nseq = $tmp;	
-
-	$command = "rm $tmp_file 2>&1";
-	$tmp = `$command`;
-	if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
-
+	my $nseq = 0;
+	seqstat_seqfile($seqstat, $seqr_aln, \$nseq, $log_file);
 	print_string_to_file($sum_file, 1, sprintf("  %-*s  %8d\n", $max_width, $seqr_aln, $nseq));
     }
     elsif($opt_H{"--seq-k"} ne "") { 
@@ -618,34 +607,21 @@ if($do_remove_seqs_mode)
 	    printf STDERR ("\nERROR, the --seq-k file " . $opt_H{"--seq-k"} . " does not exist.\n"); exit(1); 
 	}
 	$command = "$alimanip -o $seqk_aln --seq-k " . $opt_H{"--seq-k"} . " $aln_file 2>&1";
-	$tmp = `$command`;
-	if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
+	run_executable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
 
 	#determine number of sequences in alignment (just number of sequences in the --seq-klist file) 
-	$command = "nl " . $opt_H{"--seq-k"} . " | tail -1 2>&1";
-	$tmp = `$command`;
-	if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
-	$tmp =~ s/^\s+//;
-	$tmp =~ s/\s+.*$//;
-	my $nseq = $tmp;	
+	my $nseq = get_num_lines_in_file($opt_H{"--seq-k"});
 	print_string_to_file($sum_file, 1, sprintf("  %-*s  %8d\n", $max_width, $seqk_aln, $nseq));
     }
 }
 
 
-######################
-# Print the log file #
-######################
+##########################
+# Print the summary file #
+##########################
 
-my $log_file;
-my $log_file2print;
 
 if(!($opt_H{"-a"})) { 
-    $log_file       = $dir . "/" . $dir . $key_out . ".ssu-mask.log";
-    $log_file2print = $dir . $key_out . ".ssu-mask.log";
-
-    print_string_to_file($sum_file, 1, sprintf("#\n"));
-    print_string_to_file($sum_file, 1, sprintf("# All files saved in directory: \.\/$dir\/\n"));
     if($do_filter_mode) {
 	my $fil_key2print = $key_out . "." . "fil";
 	$fil_key2print =~ s/\.//;
@@ -682,8 +658,12 @@ if($do_mask_mode) {
     }
 }
 
+$total_time += time();
 print_string_to_file($sum_file, 1, sprintf("#\n"));
-print_string_to_file($sum_file, 1, sprintf("# This output saved to log file: $log_file2print.\n"));
+print_string_to_file($sum_file, 1, sprintf("# Commands executed by this script written to log file: $log_file2print.\n"));
+print_string_to_file($sum_file, 1, sprintf("# This output saved to summary file: $sum_file2print.\n"));
+print_string_to_file($sum_file, 1, sprintf("#\n"));
+print_string_to_file($sum_file, 1, sprintf("# All files saved in directory: \.\/$dir\/\n"));
 
 print_string_to_file($sum_file, 1, sprintf("# \n"));
 print_timing("# CPU time: ", $total_time, $sum_file); 
@@ -708,16 +688,17 @@ exit(0);
 #    $opt_HR:           REFERENCE to hash of command-line options
 #    $opt_takes_arg_HR: REFERENCE to hash telling if each option takes an argument (1) or not (0)
 #    $opt_order_AR:     REFERENCE to array specifying order of options
-#    $argv_ref:         REFERENCE to @ARGV, command-line arguments
-#    $sum_file:         file to print to
+#    $argv_R:           REFERENCE to @ARGV, command-line arguments
+#    $print_to_stdout:  '1' to print to stdout, '0' not to
+#    $out_file:         file to print to
 #
 # Returns:    Nothing, if it returns, everything is valid.
 # 
 ####################################################################
 sub print_banner { 
-    my $narg_expected = 6;
+    my $narg_expected = 7;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_banner() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($script_call, $opt_HR, $opt_takes_arg_HR, $opt_order_AR, $argv_ref, $sum_file) = @_;
+    my ($script_call, $opt_HR, $opt_takes_arg_HR, $opt_order_AR, $argv_R, $print_to_stdout, $out_file) = @_;
 
     my ($i, $script_name, $start_log_line);
     $script_call =~ s/^\.+\///;
@@ -733,19 +714,24 @@ sub print_banner {
     $script_name = $script_call;
     $script_name =~ s/.+\///;
 
-    print_string_to_file($sum_file, 1, sprintf("\# $script_name :: mask SSU rRNA alignments\n"));
-    print_string_to_file($sum_file, 1, sprintf("\# SSU-ALIGN 0.1 (October 2009)\n"));
-    print_string_to_file($sum_file, 1, sprintf("\# Copyright (C) 2009 HHMI Janelia Farm Research Campus\n"));
-    print_string_to_file($sum_file, 1, sprintf("\# Freely distributed under the GNU General Public License (GPLv3)\n"));
-    print_string_to_file($sum_file, 1, sprintf("\# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n"));
-    print_string_to_file($sum_file, 1, sprintf("%-10s %s ", "# command:", $script_call . $enabled_options));
-    for($i = 0; $i < scalar(@{$argv_ref}) - 1; $i++) { 
-	print_string_to_file($sum_file, 1, sprintf("$argv_ref->[$i] "));
+    print_string_to_file($out_file, $print_to_stdout, sprintf("\# $script_name :: mask SSU rRNA alignments\n"));
+    print_string_to_file($out_file, $print_to_stdout, sprintf("\# SSU-ALIGN 0.1 (October 2009)\n"));
+    print_string_to_file($out_file, $print_to_stdout, sprintf("\# Copyright (C) 2009 HHMI Janelia Farm Research Campus\n"));
+    print_string_to_file($out_file, $print_to_stdout, sprintf("\# Freely distributed under the GNU General Public License (GPLv3)\n"));
+    print_string_to_file($out_file, $print_to_stdout, sprintf("\# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n"));
+    print_string_to_file($out_file, $print_to_stdout, sprintf("%-10s %s ", "# command:", $script_call . $enabled_options));
+    for($i = 0; $i < (scalar(@{$argv_R}) - 1); $i++) { 
+	print_string_to_file($out_file, $print_to_stdout, sprintf("%s ", $argv_R->[$i]));
     }
-    print_string_to_file($sum_file, 1, sprintf("$argv_ref->[$i]\n"));
-    print_string_to_file($sum_file, 1, sprintf("%-10s ", "# date:"));
-    print_string_to_file($sum_file, 1, sprintf(scalar localtime()));
-    print_string_to_file($sum_file, 1, sprintf("\n"));
+    if(scalar(@{$argv_R}) > 0) { 
+	print_string_to_file($out_file, $print_to_stdout, sprintf("%s\n", $argv_R->[(scalar(@{$argv_R})-1)])); 
+    }
+    else { 
+	print_string_to_file($out_file, $print_to_stdout, sprintf("\n"));
+    }
+    print_string_to_file($out_file, $print_to_stdout, sprintf("%-10s ", "# date:"));
+    print_string_to_file($out_file, $print_to_stdout, sprintf(scalar localtime()));
+    print_string_to_file($out_file, $print_to_stdout, sprintf("\n"));
 
     return;
 }
@@ -773,6 +759,7 @@ sub print_banner {
 # $seqstat_ref:       RETURN; the esl-seqstat command, only relevant if --filter enabled
 # $ps2pdf_ref:        RETURN; the ps2pdf command, or "" if system does not have ps2pdf and --pdf not enabled
 # $stk_list_arr_ref:  RETURN: ref to array of alignment files to operate on
+# $log_file:          the log file
 #
 # Returns:    Nothing, if it returns, everything is valid.
 # 
@@ -782,7 +769,7 @@ sub print_banner {
 #
 ####################################################################
 sub validate_and_setup { 
-    my $narg_expected = 11;
+    my $narg_expected = 12;
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, validate_and_setup() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my($dir, $key_in, $opt_HR, $cm_file_ref, $template_file_ref, $alimanip_ref, $ssdraw_ref, $weight_ref, $seqstat_ref, $ps2pdf_ref, $stk_list_arr_ref) = @_;
 
@@ -833,35 +820,33 @@ sub validate_and_setup {
 	    }
 	}
     }
-
     #Validate that esl-alimanip and esl-ssdraw (if we need it) exist
     my $alimanip = "ssu-esl-alimanip";
-    my $trash = `$alimanip -h 2>&1`;
-    if($? == -1) { printf STDERR ("\nERROR, the required executable $alimanip is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
+    my $command_worked;
+    run_executable("$alimanip -h", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $alimanip is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
 
     my $ssdraw = "";
     if($template_file ne "") { 
 	$ssdraw = "ssu-esl-ssdraw";
-	$trash = `$ssdraw -h 2>&1`;
-	if($? == -1) { printf STDERR ("\nERROR, the required executable $ssdraw is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
+	run_executable("$ssdraw -h", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $ssdraw is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
     }
 
     #determine if 'ps2pdf' exists, or that <s> from --pdf <s> exists if that was enabled
     my $ps2pdf = "ps2pdf";
-    if($opt_HR->{"--pdf"} ne "") { $ps2pdf = $opt_HR->{"--pdf"}; }
-    $trash = `$ps2pdf 2>&1`;
-    if($? == -1) { #$ps2pdf did not work
-	if($opt_HR->{"--pdf"} ne "") { 	#if --pdf <s> enabled but <s> is not a valid program name, we die
-	    printf STDERR ("\nERROR, --pdf " . $opt_HR->{"--pdf"} . " was enabled, but $ps2pdf is not in your PATH environment variable.\n"); 
-	    exit(1);
-	}
-	else { #if --pdf not enabled and ps2pdf does not exist, we can deal with this, unless --rm-ps enabled
-	    if($opt_HR->{"--rm-ps"}) { 
-		printf STDERR ("\nERROR, ps2pdf is not in your path, you can't use --rm-ps to remove postscripts in this case.\nIf you have another program that converts ps to pdf supply it as <s> with --pdf <s>.\n");
-		exit(1);
-	    }
-	    $ps2pdf = ""; # default if ps2pdf does not exist
-	}
+    my $die_if_fails = 0;
+    my $errmsg = "";
+    if($opt_HR->{"--pdf"} ne "") { 
+	$ps2pdf = $opt_HR->{"--pdf"}; 
+	$die_if_fails = 1; 
+	$errmsg = "ERROR, --pdf " . $opt_HR->{"--pdf"} . " was enabled, but $ps2pdf is not in your PATH environment variable."; 
+    }
+    elsif($opt_HR->{"--rm-ps"}) { 
+	$die_if_fails = 1; 
+	$errmsg = "ERROR, ps2pdf is not in your path, you can't use --rm-ps to remove postscripts in this case.\nIf you have another program that converts ps to pdf supply it as <s> with --pdf <s>.";
+    }
+    run_executable("$ps2pdf", $die_if_fails, 0, $log_file, \$command_worked, $errmsg);
+    if(! $command_worked) {
+	$ps2pdf = ""; # default if ps2pdf does not exist
     }
 
     #Validate that 'esl-weight' and 'esl-seqstat' exist if --filter enabled.
@@ -869,12 +854,16 @@ sub validate_and_setup {
     my $seqstat = "";
     if($opt_HR->{"--filter"} ne "") { 
 	$weight = "ssu-esl-weight";
-	$trash = `$weight -h 2>&1`;
-	if($? == -1) { printf STDERR ("\nERROR, the required executable $weight (required b/c --filter enabled) is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
+	run_executable("$weight -h", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $weight (required b/c --filter enabled) is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
 	$seqstat = "ssu-esl-seqstat";
-	$trash = `$seqstat -h 2>&1`;
-	if($? == -1) { printf STDERR ("\nERROR, the required executable $seqstat (required b/c --filter enabled) is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
+	run_executable("$seqstat -h", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $seqstat (required b/c --filter enabled) is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
     }
+
+    #Validate that 'esl-seqstat' works if --seq-r or --seq-k
+    if(($opt_H{"--seq-r"} ne "") || ($opt_H{"--seq-k"})) { 
+	$seqstat = "ssu-esl-seqstat";
+	run_executable("$seqstat -h", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $seqstat (required b/c --seq-r or --seq-k enabled) is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
+    }	
 
     my $naln = 0;
     my ($aln_name);
@@ -900,10 +889,16 @@ sub validate_and_setup {
 		printf STDERR ("\nERROR, the directory $dir with input alignment files does not exist.\n"); exit(1); 
 	    }
 	}
-	my ($name);
-	my $names = `grep NAME $cm_file 2>&1`;
-	$names =~ s/NAME\s+//g;
-	my @names_A = split(/\n/, $names);
+	my ($name, $line);
+	my @names_A = ();
+	open(CM, $cm_file) || die "\nERROR, could not open CM file $cm_file for reading.\n";
+	while($line = <CM>) { 
+	    if($line =~ s/NAME\s+//) { 
+		chomp $line;
+		push(@names_A, $line);
+	    }
+	}
+	close(CM);
 	foreach $name (@names_A) { 
 	    $aln_name = $dir . "/" . $dir . "." . $name . $key_in . ".stk";
 	    if(-e $aln_name) { 
@@ -1084,7 +1079,7 @@ sub mask_alignment {
 
     my($masked_aln_file, $mask_file);
     my($masked_aln_file2print, $mask_file2print);
-    my($n0, $n1, $is_final, $extra_opts, $ssdraw_failed);
+    my($n0, $n1, $is_final, $extra_opts, $ssdraw_failed, $command_worked);
     if($mask_root eq "mask") { $is_final = 1; }
     else                     { $is_final = 0; }
 
@@ -1104,13 +1099,14 @@ sub mask_alignment {
     else                           { $extra_opts = "--kmask $mask_file"; }
     if($opt_HR->{"-1"})                      { $extra_opts .= " -1"; }
     $command = "$alimanip $mask_opts $extra_opts -o $masked_aln_file $aln_file2mask 2>&1";
-    $tmp = `$command`;
-    if(($? >> 8) != 0) { 
-	if($mask_ok_if_fails) { return 0; }
-	else { 
-	    printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); 
-	} 
+    my $errmsg = "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.";
+    my $die_if_fails = 1;
+    if($mask_ok_if_fails) { 
+	$errmsg = "";
+	$die_if_fails = 0;
     }
+    run_executable("$command", $die_if_fails, $die_if_fails, $log_file, \$command_worked, $errmsg);
+    if(! $command_worked) { return 0; } #if (! $mask_ok_if_fails), run_executable will cause death if (! $command_worked)
 
     summarize_mask($mask_file, \$n0, \$n1); 
 
@@ -1160,33 +1156,31 @@ sub mask_alignment {
 #   $max_width_fil:         width of output string for filtered alignment file names
 #   $filtered_aln_file_R:   RETURN; name of masked alignment file just created
 #   $sum_file:              file to print output notices to
+#   $log_file:              log file for printing commands
 # 
 # Returns:  Nothing, if it returns, everything is valid.
 #
 ####################################################################
 sub filter_alignment { 
-    my $narg_expected = 12;
+    my $narg_expected = 13;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, filter_alignment() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my ($weight, $seqstat, $opt_HR, $aln_root, $aln_root2print, $filter_root, $aln_file2filter, $aln_file2filter2print,
-	$max_width_in, $max_width_fil, $filtered_aln_file_R, $sum_file) = @_;
+	$max_width_in, $max_width_fil, $filtered_aln_file_R, $sum_file, $log_file) = @_;
 
-    my($filtered_aln_file, $nseq_input, $nseq_filtered, $filtered_aln_file2print); 
+    my($filtered_aln_file, $nseq_input, $nseq_filtered, $filtered_aln_file2print, $command_worked); 
 
     $filtered_aln_file       = $aln_root . $key_out . "." . $filter_root . ".stk";
     $filtered_aln_file2print = $aln_root2print . $key_out . "." . $filter_root . ".stk";
     
-    seqstat_seqfile($seqstat, $aln_file2filter, \$nseq_input);
+    seqstat_seqfile($seqstat, $aln_file2filter, \$nseq_input, $log_file);
 
     # esl-weight -f --idf 0.75 10.stk
     if($opt_HR->{"--filter"} < 0.) { printf STDERR ("\nERROR, with --filter <f>, <f> must be between 0.0 and 1.0, you entered %.4f.\n", $opt_HR->{"--filter"}); exit(1); }
     if($opt_HR->{"--filter"} > 1.) { printf STDERR ("\nERROR, with --filter <f>, <f> must be between 0.0 and 1.0, you entered %.4f.\n", $opt_HR->{"--filter"}); exit(1); }
     $command = "$weight -o $filtered_aln_file -f --idf " . $opt_HR->{"--filter"} . " $aln_file2filter 2>&1";
-    $tmp = `$command`;
-    if(($? >> 8) != 0) { 
-	printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); 
-    }
+    run_executable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
 
-    seqstat_seqfile($seqstat, $filtered_aln_file, \$nseq_filtered);
+    seqstat_seqfile($seqstat, $filtered_aln_file, \$nseq_filtered, $log_file);
     print_string_to_file($sum_file, 1, sprintf("  %-*s  %8d  %-*s  %8d\n", $max_width_in, $aln_file2filter2print, $nseq_input, $max_width_fil, $filtered_aln_file2print, $nseq_filtered));
 
     $$filtered_aln_file_R = $filtered_aln_file;
@@ -1205,6 +1199,7 @@ sub filter_alignment {
 #   $seqstat:   path and name of esl-weight/ssu-esl-seqstat executable
 #   $seqfile:   sequence file
 #   $nseq_ref:  RETURN: number of sequences in the file
+#   $log_file:  log file to print commands to
 # 
 # Returns:    Nothing, if it returns, everything is valid.
 # 
@@ -1214,18 +1209,16 @@ sub filter_alignment {
 #
 ####################################################################
 sub seqstat_seqfile {
-    my $narg_expected = 3;
+    my $narg_expected = 4;
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, seqstat_seqfile() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($seqstat, $seqfile, $nseq_ref) = @_;
+    my($seqstat, $seqfile, $nseq_ref, $log_file) = @_;
 
-    my ($nseq, $tmp, $command, $line);
+    my ($nseq, $tmp, $command, $line, $command_worked, $output);
     $command = "$seqstat $seqfile 2>&1";
-    $tmp = `$command`;
-    if(($? >> 8) != 0) { 
-	printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); 
-    }
-    my @tmpA = split("\n", $tmp);
-    foreach $line (@tmpA) { 
+    $output = run_executable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
+
+    my @tmp_A = split("\n", $output);
+    foreach $line (@tmp_A) { 
 	if($line =~ /Number of sequences\:\s+(\d+)/) { 
 	    $nseq = $1;
 	}
@@ -1268,24 +1261,26 @@ sub run_ssdraw {
     my ($ssdraw, $ps2pdf, $template_file, $ssdraw_opts, $aln_file, $root, $root2print, $key_out, 
 	$draw_key, $max_width, $opt_HR, $n0, $n1, $do_column_breakdown, $sum_file) = @_;
 
-    my($draw_ps, $draw_pdf, $draw_ps2print, $draw_pdf2print);
+    my($draw_ps, $draw_pdf, $draw_ps2print, $draw_pdf2print, $command_worked);
     $draw_ps         = $root . $key_out . $draw_key . ".ps";
     $draw_pdf        = $root . $key_out . $draw_key . ".pdf";
     $draw_ps2print   = $root2print . $key_out . $draw_key . ".ps";
     $draw_pdf2print  = $root2print . $key_out . $draw_key . ".pdf";
 
     my $command = "$ssdraw $ssdraw_opts $aln_file $template_file $draw_ps 2>&1";
-    #printf("run_ssdraw command: $command\n");
-    my $tmp = `$command`;
-    if(($? >> 8) != 0) { # it didn't work, don't exit just alert caller by returning 0
+    my $die_if_fails = 0;
+    my $print_output_upon_failure = 0;
+    run_executable("$command", $die_if_fails, $print_output_upon_failure, $log_file, \$command_worked, "");
+
+    if(! $command_worked) { # it didn't work, don't exit just alert caller by returning 0
 	return 0; 
     } 
-
     
     if($ps2pdf ne "") { 
 	$command = "$ps2pdf $draw_ps $draw_pdf 2>&1";
-	$tmp = `$command`;
-	if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
+	$die_if_fails = 1;
+	$print_output_upon_failure = 0;
+	run_executable("$command", $die_if_fails, $print_output_upon_failure, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
 	if($do_column_breakdown) { 
 	    print_string_to_file($sum_file, 1, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $draw_pdf2print, "output", "pdf", ($n0+$n1), $n1, $n0));
 	}
@@ -1295,9 +1290,7 @@ sub run_ssdraw {
 
 	# if we --rm-ps is enabled, remove the ps 
 	if($opt_HR->{"--rm-ps"}) { 
-	    $command = "rm $draw_ps 2>&1";
-	    $tmp = `$command`;
-	    if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); } 
+	    unlink($draw_ps) || die "\nERROR, unable to remove file $draw_ps.\n";
 	}
     }
     if(($ps2pdf eq "") || (! $opt_HR->{"--rm-ps"})) { 
@@ -1351,6 +1344,32 @@ sub print_timing {
 
 
 ###########################################################
+# Subroutine: get_num_lines_in_file
+# Incept: EPN, Mon Nov  2 10:12:08 2009
+#
+# Purpose: Determine the number of '\n' delimited lines
+#          in a file.
+#
+# Returns: Number of lines in the file. 
+#          If the file can't be opened we die.
+#
+###########################################################
+sub get_num_lines_in_file {
+    my $narg_expected = 1;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, get_num_lines_in_file() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($filename) = $_[0];
+
+    my $line;
+    my $nlines = 0;
+    open(IN, $filename) || die "\nERROR couldn't open file $filename.\n";
+    while($line = <IN>) { $nlines++; }
+    close(IN);
+
+    return $nlines;
+}
+
+
+###########################################################
 # Subroutine: print_string_to_file()
 # Incept: EPN, Thu Oct 29 10:47:25 2009
 #
@@ -1382,3 +1401,54 @@ sub print_string_to_file {
 }
 
 
+###########################################################
+# Subroutine: run_executable
+# Incept: EPN, Fri Oct 30 06:05:37 2009
+#
+# Purpose: Run a command with backticks, capturing its standard
+#          output and standard error. Print command execution
+#          and its output to $log_file. If command returns 
+#          non-zero status, print error message $errmsg to 
+#          STDERR, and exit if $die_if_fails is TRUE. 
+#
+# Arguments:
+#   $command:                   command to execute
+#   $die_if_fails:              '1' to die if command returns non-zero status
+#   $print_output_upon_failure: '1' to print command output to STDERR if it fails
+#   $log_file:                  file to print command and output to
+#   $command_worked_ref:        set to '1' if command works (returns 0), else set to '0'         
+#   $errmsg:                    message to print if command returns non-0 exit status
+# 
+# Returns: Output (stdout and stderr) of the command.
+#
+###########################################################
+sub run_executable {
+    my $narg_expected = 6;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, run_executable() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($command, $die_if_fails, $print_output_upon_failure, $log_file, $command_worked_ref, $errmsg) = @_;
+
+    #contract check
+    if(($die_if_fails) && ($errmsg eq "")) { die "ERROR, misuse of run_executable: errmsg is the empty string and die_if_fails is TRUE."; }
+    my $output = "";
+    my $command_worked = 1;
+
+    if ($command !~ m/2\>\&1$/) { $command .= " 2>&1"; }
+
+    print_string_to_file($log_file, 0, ("Executing: \(" . $command . "\)\n"));
+    $output = `$command`;
+
+    if(($? == -1) && ($errmsg ne "")) { 
+	print_string_to_file($log_file, 0, ("Output:\n\(" . $output . "\)\n\n"));
+	printf STDERR ("\n$errmsg\n");
+	if($print_output_upon_failure) { printf STDERR ("Command output: $output\n"); }
+	print_string_to_file($log_file, 0, ("\n$errmsg\n"));
+	if($die_if_fails) { exit(1); }
+	$command_worked = 0;
+    }
+    else { 
+	print_string_to_file($log_file, 0, ("Output:\n\(" . $output . "\)\n\n"));
+    }
+
+    $$command_worked_ref = $command_worked;
+    return $output;
+}

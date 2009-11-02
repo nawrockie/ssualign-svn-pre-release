@@ -355,30 +355,24 @@ sub validate_and_setup {
     close(CM);
 
     # check that cmalign is in the PATH
-    my @dirs_and_files_A = ();
     my ($tmp, $command);
     my $cmalign    = "ssu-cmalign";
-    $tmp = `$cmalign -h 2>&1`;
-    if($? == -1) { printf STDERR ("\nERROR, the required executable $cmalign is not in your PATH environment\nvariable. See the User's Guide Installation section.\n"); exit(1); } 
+    run_executable("$cmalign -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $cmalign is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
 
-    # determine which subdirectories were created by ssu-align
-    $command = "ls $dir 2>&1";
-    $tmp = `$command`;
-    if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); }
-    my ($subdir, $num, $file, $cm);
-    my $max_num = 0;
-    my @dirs_and_files_A = split(/\n/, $tmp);
+    # determine which subdirectories in $dir were created by ssu-align
     my %subdir_H = ();
-    foreach $subdir (@dirs_and_files_A) { 
-	if(-d $dir . "/" . $subdir) {
+    my $max_num = 0;
+    my ($subdir, $num, $file, $cm, $maybe_dir);
+    foreach $maybe_dir (glob("$dir/*")) { 
+	if(-d $maybe_dir) { # $maybe_dir is a dir
 	    if($subdir =~ /^$dir\.(\d+)$/) { 
 		$num = $1;
-		if($num > 0) { #don't bother with '0' or negative numbers, they were'nt created by ssu-align 
+		if($num > 0) { #don't bother with '0' or negative numbers, they weren't created by ssu-align 
 		    if($num > $max_num) { $max_num = $num; }
 		    $subdir_H{$subdir} = 1;
 		}
 	    }
-	}
+	}		
     }
 
     # verify we have a contiguous set of ssu-align created subdirectories, each
@@ -409,10 +403,6 @@ sub validate_and_setup {
 
     # make a list of alignments to merge, by checking each subdirectory for each possible alignment (one per CM)
     foreach $subdir (@{$subdir_AR}) { 
-	$command = "ls " . $dir . "/" . $subdir . " 2>&1";
-	$tmp = `$command`;
-	if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$tmp\n", ($? >> 8)); exit($? >> 8); }
-	@dirs_and_files_A = split(/\n/, $tmp);
 	# each directory should have:
 	# $subdir.scores
 	# $subdir.ssu-align.sum
@@ -424,7 +414,8 @@ sub validate_and_setup {
 	# $subdir.$cm.hits.list
 	# $subdir.$cm.stk
 	# 
-	foreach $file (@dirs_and_files_A) { 
+
+	foreach $file (glob("$dir/$subdir/")) { 
 	    if($file =~ /$subdir\.scores/) { 
 		push(@{$score_to_merge_AR}, ($dir . "/" . $subdir . "/" . $file));
 	    }
@@ -456,7 +447,6 @@ sub validate_and_setup {
 	    }
 	}
     }	
-
     $$cmalign_R     = $cmalign;
     $$cm_file_R     = $cm_file;
 
@@ -505,9 +495,7 @@ sub merge_alignments_for_a_cm {
 	    printf STDERR ("ERROR, alignment file $stk_name already exists. Delete it or use -F to overwrite it.\n"); exit(1); 
 	}
 	else {
-	    $command = "rm -f $stk_name 2>&1";
-	    $output = `$command`;
-	    if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$output\n", ($? >> 8)); exit($? >> 8); }
+	    unlink $stk_name || die "\nERROR, unable to remove file $stk_name.\n";
 	}
     }
 
@@ -515,8 +503,7 @@ sub merge_alignments_for_a_cm {
     if($opt_HR->{"-1"}) { $extra_opts = " -1"; }
 
     $command = "$cmalign $extra_opts --cm-idx $cm_idx --list-merge -o $stk_name $cm_file $list_file 2>&1";
-    $output = `$command`;
-    if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$output\n", ($? >> 8)); exit($? >> 8); }
+    run_executable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
 
     return;
 }
@@ -559,22 +546,17 @@ sub concatenate_a_list_of_files {
 	    printf STDERR ("ERROR, file $concat_file already exists. Delete it or use -F to overwrite it.\n"); exit(1); 
 	}
 	else {
-	    $command = "rm -f $concat_file 2>&1";
-	    $output = `$command`;
-	    if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$output\n", ($? >> 8)); exit($? >> 8); }
+	    unlink $concat_file || die "\nERROR, unable to remove $concat_file.\n";
 	}
     }
 
     # create concat file
-    $command = "cat $files_to_concat_AR->[0] > $concat_file 2>&1";
-    $output = `$command`;
-    if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$output\n", ($? >> 8)); exit($? >> 8); }
+    $command = "cat $files_to_concat_AR->[0] > $concat_file";
+    run_executable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
 
     # add to concat file
     for($i = 1; $i < scalar(@{$files_to_concat_AR}); $i++) { 
-	$command = "cat $files_to_concat_AR->[0] >> $concat_file 2>&1";
-	$output = `$command`;
-	if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$output\n", ($? >> 8)); exit($? >> 8); }
+	run_executable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
     }
 
     return;
@@ -705,3 +687,54 @@ sub print_string_to_file {
 }
 
 
+###########################################################
+# Subroutine: run_executable
+# Incept: EPN, Fri Oct 30 06:05:37 2009
+#
+# Purpose: Run a command with backticks, capturing its standard
+#          output and standard error. Print command execution
+#          and its output to $log_file. If command returns 
+#          non-zero status, print error message $errmsg to 
+#          STDERR, and exit if $die_if_fails is TRUE. 
+#
+# Arguments:
+#   $command:                   command to execute
+#   $die_if_fails:              '1' to die if command returns non-zero status
+#   $print_output_upon_failure: '1' to print command output to STDERR if it fails
+#   $log_file:                  file to print command and output to
+#   $command_worked_ref:        set to '1' if command works (returns 0), else set to '0'         
+#   $errmsg:                    message to print if command returns non-0 exit status
+# 
+# Returns: Output (stdout and stderr) of the command.
+#
+###########################################################
+sub run_executable {
+    my $narg_expected = 6;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, run_executable() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($command, $die_if_fails, $print_output_upon_failure, $log_file, $command_worked_ref, $errmsg) = @_;
+
+    #contract check
+    if(($die_if_fails) && ($errmsg eq "")) { die "ERROR, misuse of run_executable: errmsg is the empty string and die_if_fails is TRUE."; }
+    my $output = "";
+    my $command_worked = 1;
+
+    if ($command !~ m/2\>\&1$/) { $command .= " 2>&1"; }
+
+    print_string_to_file($log_file, 0, ("Executing: \(" . $command . "\)\n"));
+    $output = `$command`;
+
+    if(($? == -1) && ($errmsg ne "")) { 
+	print_string_to_file($log_file, 0, ("Output:\n\(" . $output . "\)\n\n"));
+	printf STDERR ("\n$errmsg\n");
+	if($print_output_upon_failure) { printf STDERR ("Command output: $output\n"); }
+	print_string_to_file($log_file, 0, ("\n$errmsg\n"));
+	if($die_if_fails) { exit(1); }
+	$command_worked = 0;
+    }
+    else { 
+	print_string_to_file($log_file, 0, ("Output:\n\(" . $output . "\)\n\n"));
+    }
+
+    $$command_worked_ref = $command_worked;
+    return $output;
+}
