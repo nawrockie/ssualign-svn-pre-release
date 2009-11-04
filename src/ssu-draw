@@ -805,7 +805,7 @@ sub run_executable {
     print_string_to_file($log_file, 0, ("Executing: \(" . $command . "\)\n"));
     $output = `$command`;
 
-    if(($? == -1) && ($errmsg ne "")) { 
+    if(($? != 0) && ($errmsg ne "")) { 
 	print_string_to_file($log_file, 0, ("Output:\n\(" . $output . "\)\n\n"));
 	printf STDERR ("\n$errmsg\n");
 	if($print_output_upon_failure) { printf STDERR ("Command output: $output\n"); }

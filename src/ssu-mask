@@ -17,6 +17,7 @@
 use Getopt::Long;
 use Cwd 'abs_path';
 use strict;
+use warnings;
 
 my $total_time = -1 * time();
 my $usage =  "Usage: ssu-mask [options] <directory created by ssu-align (includes >= 1 alignment file(s))>\n";
@@ -29,6 +30,8 @@ $options_usage .= "  -h            : show brief help on version and usage\n";
 $options_usage .= "  -1            : output alignment(s) in non-interleaved, 1 line/seq format\n";
 $options_usage .= "  -m <f>        : CM file <f> created the alignment(s) (with ssu-align -m <f>)\n";
 $options_usage .= "  -t <f>        : for structure diagrams, use template file <f>, not the default\n";
+$options_usage .= "  --afa         : output aligned FASTA (.afa) alignments as well as Stockholm ones\n";
+$options_usage .= "  --only-afa    : only output aligned FASTA (.afa) alignments, no Stockholm ones\n";
 $options_usage .= "  --key-in <s>  : assume <s> is part of input file names, before the suffix\n";
 $options_usage .= "  --key-out <s> : add <s> to all output file names, before the suffix\n";
 $options_usage .= "\noptions related to masking alignments\n";
@@ -44,7 +47,9 @@ $options_usage .= "\noption for filtering alignments based on sequence identity 
 $options_usage .= "  --filter <x> : remove seqs such that no 2 seqs > <x> identical (1st seq is always kept)\n";
 $options_usage .= "\noption for listing sequences in alignment(s) (no masking)\n";
 $options_usage .= "  --list : output list of sequence names in alignment(s)\n";    
-$options_usage .= "\n  Options for only removing sequences from an alignment, require -a (no masking):\n";
+$options_usage .= "\noptions for converting a Stockholm alignment to aligned fasta (no masking):\n";
+$options_usage .= "  --stk2afa : convert Stockholm alignment(s) to aligned FASTA and exit\n"; 
+$options_usage .= "\noptions for only removing sequences from an alignment, require -a (no masking):\n";
 $options_usage .= "  --seq-r <f> : with -a, remove sequences with names listed in file <f>\n"; 
 $options_usage .= "  --seq-k <f> : with -a, remove all sequences *except* those listed in file <f>\n"; 
 
@@ -61,6 +66,8 @@ $opt_takes_arg_H{"-h"}          = 0;  push(@opt_order_A, "-h");
 $opt_takes_arg_H{"-1"}          = 0;  push(@opt_order_A, "-1");           
 $opt_takes_arg_H{"-m"}          = 1;  push(@opt_order_A, "-m");           
 $opt_takes_arg_H{"-t"}          = 1;  push(@opt_order_A, "-t");           
+$opt_takes_arg_H{"--afa"}       = 0;  push(@opt_order_A, "--afa");      
+$opt_takes_arg_H{"--only-afa"}  = 0;  push(@opt_order_A, "--only-afa");      
 $opt_takes_arg_H{"--key-in"}    = 1;  push(@opt_order_A, "--key-in");     
 $opt_takes_arg_H{"--key-out"}   = 1;  push(@opt_order_A, "--key-out");    
 $opt_takes_arg_H{"--pf"}        = 1;  push(@opt_order_A, "--pf");      
@@ -73,6 +80,7 @@ $opt_takes_arg_H{"--pdf"}       = 1;  push(@opt_order_A, "--pdf");
 $opt_takes_arg_H{"--rm-ps"}     = 0;  push(@opt_order_A, "--rm-ps");      
 $opt_takes_arg_H{"--filter"}    = 1;  push(@opt_order_A, "--filter");      
 $opt_takes_arg_H{"--list"}      = 0;  push(@opt_order_A, "--list");
+$opt_takes_arg_H{"--stk2afa"}   = 0;  push(@opt_order_A, "--stk2afa");      
 $opt_takes_arg_H{"--seq-r"}     = 1;  push(@opt_order_A, "--seq-r");      
 $opt_takes_arg_H{"--seq-k"}     = 1;  push(@opt_order_A, "--seq-k");      
 
@@ -93,8 +101,10 @@ my $opt_return = GetOptions
      '1'           => \$opt_H{"-1"},
      'm=s'         => \$opt_H{"-m"},
      't=s'         => \$opt_H{"-t"},
-     'key-in=s'    => \$opt_H{"key-in"},
-     'key-out=s'   => \$opt_H{"key-out"},
+     'afa'         => \$opt_H{"--afa"},
+     'only-afa'    => \$opt_H{"--only-afa"},
+     'key-in=s'    => \$opt_H{"--key-in"},
+     'key-out=s'   => \$opt_H{"--key-out"},
      'pf'          => \$opt_H{"--pf"},
      'pt'          => \$opt_H{"--pt"},
      'no-prob'     => \$opt_H{"--no-prob"},
@@ -103,10 +113,11 @@ my $opt_return = GetOptions
      'keep'        => \$opt_H{"--keep"},
      'pdf'         => \$opt_H{"--pdf"},
      'rm-ps'       => \$opt_H{"--rm-ps"},
-     'filter'      => \$opt_H{"--filter"},
+     'filter=s'    => \$opt_H{"--filter"},
      'list'        => \$opt_H{"--list"},
      'seq-r=s'     => \$opt_H{"--seq-r"},
-     'seq-k=s'     => \$opt_H{"--seq-k"});
+     'seq-k=s'     => \$opt_H{"--seq-k"},
+     'stk2afa'     => \$opt_H{"--stk2afa"});
 
 if($opt_return != 1) { exit(1); }
 
@@ -118,20 +129,21 @@ if ($opt_H{"-h"}) {
 } 
 
 my $key_in = "";
-if($opt_H{"--key-in"}  ne "") { $key_in   = "." . opt_H{"--key-in"};  }
+if($opt_H{"--key-in"}  ne "") { $key_in   = "." . $opt_H{"--key-in"};  }
 my $key_out = "";
-if($opt_H{"--key-out"}  ne "") { $key_out   = "." . opt_H{"--key-out"};  }
+if($opt_H{"--key-out"}  ne "") { $key_out   = "." . $opt_H{"--key-out"};  }
 
 
 ##############################################################################
 # Determine the "mode" to run and check for incompatible option combinations.#
 ##############################################################################
 
-# There are 4 possible modes, each is exclusive.
+# There are 5 possible modes, each is exclusive.
 my $do_mask_mode        = 0; # default mode, mask the alignment
 my $do_remove_seqs_mode = 0; # remove some sequences from the alignment given a list file, no masking
 my $do_filter_mode      = 0; # filter alignment(s), no masking
 my $do_list_mode        = 0; # list sequences in the alignment, no masking
+my $do_stk2afa_mode     = 0; # convert a single alignment file to aligned fasta and exit
 
 # Mask mode options.
 if($opt_H{"--pf"} ne "")        { $do_mask_mode = 1; }
@@ -182,12 +194,32 @@ if($do_list_mode && $do_filter_mode) {
     printf STDERR ("\nERROR, --list is incompatible with --filter.\n"); exit(1); 
 }
 
-if(($do_remove_seqs_mode + $do_list_mode + $do_filter_mode) == 0) { $do_mask_mode = 1; }
+# stk2afa options
+if($opt_H{"--stk2afa"})  { $do_stk2afa_mode = 1; }
 
-if($opt_H{"--pdf"}   && (! $do_mask_mode)) { printf STDERR ("\nERROR, --pdf is incompatible with --filter, --list, --seq-r and --seq-k\n"); exit(1); }
-if($opt_H{"--rm-ps"} && (! $do_mask_mode)) { printf STDERR ("\nERROR, --rm-ps is incompatible with --filter, --list, --seq-r and --seq-k\n"); exit(1); }
-if($opt_H{"--keep"}  && (! $do_mask_mode)) { printf STDERR ("\nERROR, --keep is incompatible with --filter, --list, --seq-r and --seq-k\n"); exit(1); }
+if($do_stk2afa_mode && $do_mask_mode) { 
+    printf STDERR ("\nERROR, --pf, --pt, --gapthresh, --filter, --no-prob and --in-mask are incompatible with --stk2afa.\n"); exit(1); 
+}
+if($do_stk2afa_mode && $do_remove_seqs_mode) { 
+    printf STDERR ("\nERROR, --stk2afa is incompatible with --seq-k and --seq-r.\n"); exit(1); 
+}
+if($do_stk2afa_mode && $do_filter_mode) { 
+    printf STDERR ("\nERROR, --stk2afa is incompatible with --filter.\n"); exit(1); 
+}
+if($do_stk2afa_mode && $do_list_mode) { 
+    printf STDERR ("\nERROR, --stk2afa is incompatible with --list.\n"); exit(1); 
+}
 
+if(($do_remove_seqs_mode + $do_list_mode + $do_filter_mode + $do_stk2afa_mode) == 0) { $do_mask_mode = 1; }
+
+if($opt_H{"--pdf"}   && (! $do_mask_mode)) { printf STDERR ("\nERROR, --pdf is incompatible with --filter, --list, --stk2afa, --seq-r and --seq-k\n"); exit(1); }
+if($opt_H{"--rm-ps"} && (! $do_mask_mode)) { printf STDERR ("\nERROR, --rm-ps is incompatible with --filter, --list, --stk2afa, --seq-r and --seq-k\n"); exit(1); }
+if($opt_H{"--keep"}  && (! $do_mask_mode)) { printf STDERR ("\nERROR, --keep is incompatible with --filter, --list, --stk2afa, --seq-r and --seq-k\n"); exit(1); }
+
+if(($opt_H{"--afa"})  && ((! $do_mask_mode) && (! $do_filter_mode)))      { printf STDERR ("\nERROR, --afa is incompatible with --list, --stk2afa, --seq-r, and --seq-k\n"); exit(1); }
+if(($opt_H{"--only-afa"})  && ((! $do_mask_mode) && (! $do_filter_mode))) { printf STDERR ("\nERROR, --only-afa is incompatible with --list, --stk2afa, --seq-r, and --seq-k\n"); exit(1); }
+
+if($opt_H{"--afa"}  && ($opt_H{"--only-afa"})) { printf STDERR ("\nERROR, --afa is incompatible with only-afa\n"); exit(1); }
 
 ###################################################
 # Process command-line arguments and print banner #
@@ -230,8 +262,8 @@ print_banner($0, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 0, $log_file
 ##################################
 
 my @stk_list_A = ();
-my ($cm_file, $template_file, $alimanip, $ssdraw, $weight, $seqstat, $ps2pdf);
-validate_and_setup($dir, $key_in, \%opt_H, \$cm_file, \$template_file, \$alimanip, \$ssdraw, \$weight, \$seqstat, \$ps2pdf, \@stk_list_A, $log_file);
+my ($cm_file, $template_file, $alimanip, $ssdraw, $weight, $seqstat, $reformat, $ps2pdf);
+validate_and_setup($dir, $key_in, \%opt_H, \$cm_file, \$template_file, \$alimanip, \$ssdraw, \$weight, \$seqstat, \$reformat, \$ps2pdf, \@stk_list_A, $log_file);
 my $naln = scalar(@stk_list_A);
 my $aln_file;
 
@@ -339,7 +371,7 @@ if($do_mask_mode)
 		mask_alignment($alimanip, \%opt_H, $ssdraw, $aln_root, $aln_root2print, $mask_root, $aln_file, $keep_mask, $print_input_aln, 
 			       $mask_opts, "", $allmask2use, $do_draw, $max_width, $mask_ok_if_fails, $template_file, $ps2pdf, 
 			       \$n0, \$n1, \$inmask_masked_aln_file, \$mask_file, \$ssdraw_worked, $sum_file);
-		# mask_alignment will exit in error in masking does not work this time
+		# mask_alignment will exit in error if masking does not work this time
 	    }
 	    if   ($do_draw && $ssdraw_worked)    { $ssdraw_worked_at_least_once = 1; }
 	    elsif($do_draw && (!$ssdraw_worked)) { $ssdraw_failed_at_least_once = 1; }
@@ -505,7 +537,7 @@ if($do_filter_mode) {
 	    ($aln_root2print) = ($aln_file =~ /.+\/(.+)\.stk/);
 	}
 	filter_alignment($weight, $seqstat, \%opt_H, $aln_root, $aln_root2print, $filter_root, $aln_file, $aln_root2print . ".stk",
-			 $max_width_in, $max_width_fil, \$filtered_aln_file, $sum_file);
+			 $max_width_in, $max_width_fil, \$filtered_aln_file, $sum_file, $log_file);
     }
 }    
 
@@ -606,7 +638,7 @@ if($do_remove_seqs_mode)
 	if(!(-e $opt_H{"--seq-k"})) { 
 	    printf STDERR ("\nERROR, the --seq-k file " . $opt_H{"--seq-k"} . " does not exist.\n"); exit(1); 
 	}
-	$command = "$alimanip -o $seqk_aln --seq-k " . $opt_H{"--seq-k"} . " $aln_file 2>&1";
+	$command = "$alimanip -o $seqk_aln --seq-k " . $opt_H{"--seq-k"} . " $aln_file";
 	run_executable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
 
 	#determine number of sequences in alignment (just number of sequences in the --seq-klist file) 
@@ -615,6 +647,58 @@ if($do_remove_seqs_mode)
     }
 }
 
+
+#############################
+# stk2afa mode: Do the work #
+#############################
+
+if($do_stk2afa_mode) 
+{ 
+    # determine max file name width
+    my $max_width_afa = length("aligned FASTA file name");
+    for($i = 0; $i < $naln; $i++) { 
+	$aln_file         = $stk_list_A[$i];
+	($aln_root)       = ($aln_file =~ /(.+)\.stk/);
+	if($opt_H{"-a"}) { #print directory as well as aln name
+	    ($aln_root2print) = ($aln_file =~ /(.+)\.stk/);
+	}
+	else {
+	    ($aln_root2print) = ($aln_file =~ /.+\/(.+)\.stk/);
+	}
+	$nec_width = length($aln_root2print) + length($key_out) + 4; #4 is for ".afa"
+	if($max_width_afa < $nec_width) { $max_width_afa = $nec_width; }
+    }					     
+    my $dashes_afa = ""; for($i = 0; $i < $max_width_afa; $i++) { $dashes_afa.= "-"; }
+    my $max_width_aln = $max_width_afa - length($key_out); #max_width_aln is max length of a afa file ('.afa' is same # chars as '.stk')
+    if($max_width_aln < length("Stockholm aln file name")) { $max_width_aln = length("aln file name"); } 
+    my $dashes_aln = ""; for($i = 0; $i < $max_width_aln; $i++) { $dashes_aln .= "-"; }
+
+    print_string_to_file($sum_file, 1, sprintf("#\n# Converting alignments to aligned FASTA...\n"));
+    print_string_to_file($sum_file, 1, sprintf("#\n"));
+    print_string_to_file($sum_file, 1, sprintf("# %-*s  %-*s\n", $max_width_aln, "Stockholm aln file name", $max_width_afa, "aligned FASTA file name"));
+    print_string_to_file($sum_file, 1, sprintf("# %-*s  %-*s\n", $max_width_aln, $dashes_aln, $max_width_afa, $dashes_afa));
+
+    my ($afa_file, $afa_file2print, $aln_file2print, $nseq, $command_worked);
+    for($i = 0; $i < $naln; $i++) { 
+	$aln_file         = $stk_list_A[$i];
+	($aln_file2print) = ($aln_file =~ /.+\/(.+)/);
+	($aln_root)       = ($aln_file =~ /(.+)\.stk/);
+	if($opt_H{"-a"}) { #print directory as well as aln name
+	    ($aln_root2print) = ($aln_file =~ /(.+)\.stk/);
+	}
+	else {
+	    ($aln_root2print) = ($aln_file =~ /.+\/(.+)\.stk/);
+	}
+	$afa_file        = $aln_root . $key_out . ".afa";
+	$afa_file2print  = $aln_root2print . $key_out . ".afa";
+
+	if($opt_H{"-a"}) { $afa_file2print = $afa_file; } #print full path with -a is invoked
+	$command = "$reformat -o $afa_file --informat stockholm afa $aln_file"; 
+	run_executable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
+
+	print_string_to_file($sum_file, 1, sprintf("  %-*s  %-*s\n", $max_width_aln, $aln_file2print, $max_width_afa, $afa_file2print));
+    }
+}
 
 ##########################
 # Print the summary file #
@@ -625,7 +709,7 @@ if(!($opt_H{"-a"})) {
     if($do_filter_mode) {
 	my $fil_key2print = $key_out . "." . "fil";
 	$fil_key2print =~ s/\.//;
-	print_string_to_file($sum_file, 1, sprintf("# To mask these alignments run ssu-mask with the option \"--key-in $fil_key2print\"\n"));
+	print_string_to_file($sum_file, 1, sprintf("#\n# To mask these alignments run ssu-mask with the option \"--key-in $fil_key2print\"\n"));
     }
 }
 else { 
@@ -757,6 +841,7 @@ sub print_banner {
 # $ssdraw_ref:        RETURN; the esl-ssdraw command
 # $weight_ref:        RETURN; the esl-weight command, only relevant if --filter enabled
 # $seqstat_ref:       RETURN; the esl-seqstat command, only relevant if --filter enabled
+# $reformat_ref:      RETURN; the esl-reformat command, only relevant if --afa, --only-afa, or --stk2afa enabled
 # $ps2pdf_ref:        RETURN; the ps2pdf command, or "" if system does not have ps2pdf and --pdf not enabled
 # $stk_list_arr_ref:  RETURN: ref to array of alignment files to operate on
 # $log_file:          the log file
@@ -769,9 +854,9 @@ sub print_banner {
 #
 ####################################################################
 sub validate_and_setup { 
-    my $narg_expected = 12;
+    my $narg_expected = 13;
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, validate_and_setup() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($dir, $key_in, $opt_HR, $cm_file_ref, $template_file_ref, $alimanip_ref, $ssdraw_ref, $weight_ref, $seqstat_ref, $ps2pdf_ref, $stk_list_arr_ref) = @_;
+    my($dir, $key_in, $opt_HR, $cm_file_ref, $template_file_ref, $alimanip_ref, $ssdraw_ref, $weight_ref, $seqstat_ref, $reformat_ref, $ps2pdf_ref, $stk_list_arr_ref) = @_;
 
     #Validate that we can read the CM file
     my $ssualigndir;
@@ -865,6 +950,14 @@ sub validate_and_setup {
 	run_executable("$seqstat -h", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $seqstat (required b/c --seq-r or --seq-k enabled) is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
     }	
 
+
+    #Validate that 'esl-reformat' works if --afa, --only-afa, or --stk2afa
+    my $reformat = "";
+    if(($opt_H{"--afa"}) || ($opt_H{"--only-afa"}) || ($opt_H{"--stk2afa"})) { 
+	$reformat = "ssu-esl-reformat";
+	run_executable("$reformat -h", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $reformat (required b/c --afa, --only-afa or --stk2afa enabled) is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
+    }	
+
     my $naln = 0;
     my ($aln_name);
     if($opt_HR->{"-a"}) { # special mode, single command line argument is not a directory, it's an alignment
@@ -923,6 +1016,7 @@ sub validate_and_setup {
     $$ssdraw_ref        = $ssdraw;
     $$weight_ref        = $weight;
     $$seqstat_ref       = $seqstat;
+    $$reformat_ref      = $reformat;
     $$ps2pdf_ref        = $ps2pdf;
     
     return;
@@ -1038,7 +1132,7 @@ sub summarize_mask {
 #
 # Arguments:  
 #   $alimanip:          path and name of esl-alimanip/ssu-esl-alimanip executable
-#   $opt_HR:           reference to the hash of command-line options
+#   $opt_HR:            reference to the hash of command-line options
 #   $ssdraw:            path and name of esl-ssdraw/ssu-esl-ssdraw executable
 #   $aln_root:          root with dir for alignment and output file names, this is normally 
 #                       the <output root> supplied with original ssu-align call
@@ -1079,6 +1173,8 @@ sub mask_alignment {
 
     my($masked_aln_file, $mask_file);
     my($masked_aln_file2print, $mask_file2print);
+    my($masked_afa_file, $masked_afa_file2print);
+
     my($n0, $n1, $is_final, $extra_opts, $ssdraw_failed, $command_worked);
     if($mask_root eq "mask") { $is_final = 1; }
     else                     { $is_final = 0; }
@@ -1113,10 +1209,6 @@ sub mask_alignment {
     if($print_input_aln) { 
 	print_string_to_file($sum_file, 1, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $aln_root2print . ".stk", "input", "aln", ($n0+$n1), "-", "-"));
     }
-    if((($rfmask_file2use ne "") || ($allmask_file2use ne "")) 
-       || ($opt_HR->{"--keep"} || $keep_mask || $is_final)) { 
-	print_string_to_file($sum_file, 1, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $mask_file2print, "output", "mask", ($n0+$n1), $n1, $n0));
-    }
 
     my $ssdraw_worked = 0;
     if($do_draw) { 
@@ -1124,6 +1216,25 @@ sub mask_alignment {
 	my $do_column_breakdown = 1;
 	$ssdraw_worked = run_ssdraw($ssdraw, $ps2pdf, $template_file, "--mask-col --mask $mask_file", $aln_file2mask, $aln_root, $aln_root2print, 
 				    $key_out, "." . $mask_root, $max_width, $opt_HR, $n0, $n1, $do_column_breakdown, $sum_file);
+    }
+
+    if((($rfmask_file2use ne "") || ($allmask_file2use ne "")) 
+       || ($opt_HR->{"--keep"} || $keep_mask || $is_final)) { 
+	print_string_to_file($sum_file, 1, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $mask_file2print, "output", "mask", ($n0+$n1), $n1, $n0));
+	if(!($opt_HR->{"--only-afa"})) { 
+	    print_string_to_file($sum_file, 1, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $masked_aln_file2print, "output", "aln", $n1, "-", "-"));
+	}
+	#else { $files_to_unlink_HR->{$aln_file} = 1; }
+
+	if(($opt_HR->{"--afa"}) || ($opt_HR->{"--only-afa"})){ 
+	    $masked_afa_file = $masked_aln_file;
+	    $masked_afa_file2print = $masked_aln_file2print;
+	    $masked_afa_file =~ s/\.stk$/\.afa/;
+	    $masked_afa_file2print =~ s/\.stk$/\.afa/;
+	    $command = "$reformat -o $masked_afa_file --informat stockholm afa $masked_aln_file"; 
+	    run_executable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
+	    print_string_to_file($sum_file, 1, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $masked_afa_file2print, "output", "aln", $n1, "-", "-"));
+	}
     }
 
     $$n0_R = $n0;
@@ -1167,7 +1278,7 @@ sub filter_alignment {
     my ($weight, $seqstat, $opt_HR, $aln_root, $aln_root2print, $filter_root, $aln_file2filter, $aln_file2filter2print,
 	$max_width_in, $max_width_fil, $filtered_aln_file_R, $sum_file, $log_file) = @_;
 
-    my($filtered_aln_file, $nseq_input, $nseq_filtered, $filtered_aln_file2print, $command_worked); 
+    my($filtered_aln_file, $nseq_input, $nseq_filtered, $filtered_aln_file2print, $command_worked, $filtered_afa_file, $filtered_afa_file2print); 
 
     $filtered_aln_file       = $aln_root . $key_out . "." . $filter_root . ".stk";
     $filtered_aln_file2print = $aln_root2print . $key_out . "." . $filter_root . ".stk";
@@ -1179,9 +1290,24 @@ sub filter_alignment {
     if($opt_HR->{"--filter"} > 1.) { printf STDERR ("\nERROR, with --filter <f>, <f> must be between 0.0 and 1.0, you entered %.4f.\n", $opt_HR->{"--filter"}); exit(1); }
     $command = "$weight -o $filtered_aln_file -f --idf " . $opt_HR->{"--filter"} . " $aln_file2filter 2>&1";
     run_executable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
-
     seqstat_seqfile($seqstat, $filtered_aln_file, \$nseq_filtered, $log_file);
-    print_string_to_file($sum_file, 1, sprintf("  %-*s  %8d  %-*s  %8d\n", $max_width_in, $aln_file2filter2print, $nseq_input, $max_width_fil, $filtered_aln_file2print, $nseq_filtered));
+
+    if(!($opt_HR->{"--only-afa"})) { 
+	print_string_to_file($sum_file, 1, sprintf("  %-*s  %8d  %-*s  %8d\n", $max_width_in, $aln_file2filter2print, $nseq_input, $max_width_fil, $filtered_aln_file2print, $nseq_filtered));
+    }
+    # HERE HERE HERE else set files_to_unlink_H
+
+    if(($opt_HR->{"--afa"}) || ($opt_HR->{"--only-afa"})){ 
+	$filtered_afa_file = $filtered_aln_file;
+	$filtered_afa_file2print = $filtered_aln_file2print;
+	$filtered_afa_file =~ s/\.stk$/\.afa/;
+	$filtered_afa_file2print =~ s/\.stk$/\.afa/;
+	$command = "$reformat -o $filtered_afa_file --informat stockholm afa $filtered_aln_file"; 
+	run_executable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
+	print_string_to_file($sum_file, 1, sprintf("  %-*s  %8d  %-*s  %8d\n", $max_width_in, $aln_file2filter2print, $nseq_input, $max_width_fil, $filtered_afa_file2print, $nseq_filtered));
+    }
+
+
 
     $$filtered_aln_file_R = $filtered_aln_file;
     return 1;
@@ -1437,7 +1563,7 @@ sub run_executable {
     print_string_to_file($log_file, 0, ("Executing: \(" . $command . "\)\n"));
     $output = `$command`;
 
-    if(($? == -1) && ($errmsg ne "")) { 
+    if(($? != 0) && ($errmsg ne "")) { 
 	print_string_to_file($log_file, 0, ("Output:\n\(" . $output . "\)\n\n"));
 	printf STDERR ("\n$errmsg\n");
 	if($print_output_upon_failure) { printf STDERR ("Command output: $output\n"); }
