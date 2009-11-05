@@ -77,6 +77,8 @@ ESLPROGS = ssu-esl-alimanip\
 
 # List of the files to be copied to the lib/ directory.
 #
+PERLMODULEFILES = ssu-subs.pm
+
 SEEDLIBFILES = ssu-align-0p1.cm\
 	       archaea-0p1.cm\
 	       bacteria-0p1.cm\
@@ -232,6 +234,9 @@ actually-install:
 	done
 	for file in $(PSLIBFILES); do\
 		cp seeds/ss-diagrams/$$file ${datadir}/${BASENAME}-${RELEASE}/;\
+	done
+	for file in $(PERLMODULEFILES); do\
+		cp src/$$file ${datadir}/${BASENAME}-${RELEASE}/;\
 	done
 
 ssu-align:

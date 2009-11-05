@@ -22,9 +22,30 @@
 use Getopt::Long;
 use Cwd 'abs_path';
 use strict;
+use warnings;
 
-my $total_time = -1 * time();
-my $usage = "Usage: ssu-merge [-options] <directory created by ssu-align --prep-n or --prep-p call>";
+#Make sure the SSUALIGNDIR environmental variable is set and the directory exists
+my $ssualigndir = $ENV{'SSUALIGNDIR'};
+if(! exists($ENV{'SSUALIGNDIR'})) { 
+    printf STDERR ("ERROR, the environment variable SSUALIGNDIR is not set, please set it to the directory where you installed SSU-ALIGN.\n"); 
+    exit(1); 
+}
+if(! (-d $ssualigndir)) { 
+    printf STDERR ("ERROR, the ssu-align directory specified by your environment variable SSUALIGNDIR does not exist, see the User's Guide Installation section.\n"); 
+    exit(1); 
+}    
+#Make sure the SSUALIGNDIR directory includes ssu-subs.pm
+my $subs_file = $ssualigndir . "/ssu-subs.pm";
+if(! (-e $subs_file)) { 
+    printf STDERR ("ERROR, the required perl module ssu-subs.pm is not in the directory specified by your SSUALIGNDIR environment variable.\n"); 
+    exit(1); 
+}
+require $subs_file;
+
+my $total_time     = -1 * time();
+my $script_desc    = "merge SSU rRNA alignments";
+my $date           = scalar localtime();
+my $usage          = "Usage: ssu-merge [-options] <directory created by ssu-align --prep-n or --prep-p call>";
 my $options_usage  = "where general options are:\n";
 #                           1         2         3         4         5         6         7         8
 #                  12345678901234567890123456789012345678901234567890123456789012345678901234567890
@@ -65,7 +86,7 @@ my $opt_return = GetOptions
 if($opt_return != 1) { exit(1); }
 
 if ($opt_H{"-h"}) { 
-    print_banner($0, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, "");
+    PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, "");
     print $usage . "\n"; 
     print $options_usage; 
     exit(1); 
@@ -84,7 +105,7 @@ my ($dir) = @ARGV;
 
 my $sum_file = $dir . "/" . $dir . ".ssu-merge.sum";
 my $sum_file2print = $dir . ".ssu-merge.sum";
-print_banner($0, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, $sum_file);
+PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, $sum_file);
 
 
 ##################################
@@ -100,7 +121,7 @@ my @hits_fa_to_merge_AA = ();
 my @hits_list_to_merge_AA = ();
 my @stk_to_merge_AA = ();
 my @cm_names_A = ();
-validate_and_setup(\%opt_H, $dir, \@subdir_A, \@score_to_merge_A, \@sum_to_merge_A, \@tab_to_merge_A, \@cmalign_to_merge_AA, \@hits_fa_to_merge_AA, \@hits_list_to_merge_AA, \@stk_to_merge_AA, \@cm_names_A, \$cmalign, \$cm_file);
+validate_and_setup_ssu_merge($ssualigndir, a\%opt_H, $dir, \@subdir_A, \@score_to_merge_A, \@sum_to_merge_A, \@tab_to_merge_A, \@cmalign_to_merge_AA, \@hits_fa_to_merge_AA, \@hits_list_to_merge_AA, \@stk_to_merge_AA, \@cm_names_A, \$cmalign, \$cm_file);
 
 
 ####################################
@@ -116,21 +137,21 @@ if(scalar(@score_to_merge_A) == 0) { printf STDERR ("ERROR, no *.scores files fo
 if(scalar(@sum_to_merge_A)   == 0) { printf STDERR ("ERROR, no *.sum files found.\n"); exit(1); }
 if(scalar(@tab_to_merge_A)   == 0) { printf STDERR ("ERROR, no *.tab files found.\n"); exit(1); }
 
-$max_cm_name_width = max_length_scalar_in_array(\@cm_names_A);
+$max_cm_name_width = MaxLengthScalarInArray(\@cm_names_A);
 if($max_cm_name_width < length("CM name")) { $max_cm_name_width = length("CM name"); }
 $cm_dashes = ""; for($i = 0; $i < $max_cm_name_width; $i++) { $cm_dashes .= "-"; } 
 
-$max_file_name_width  = max_length_scalar_in_array(\@cm_names_A) + 1;
+$max_file_name_width  = MaxLengthScalarInArray(\@cm_names_A) + 1;
 if($max_file_name_width < length("scores")) { $max_file_name_width = length("scores"); }
 $max_file_name_width += length("hits.list");
 $max_file_name_width += length($dir) + 1;
 $file_dashes = ""; for($i = 0; $i < $max_file_name_width; $i++) { $file_dashes .= "-"; } 
     
-print_string_to_file($sum_file, 1, sprintf("#\n# Merging files from %d ssu-align runs...\n", scalar(@score_to_merge_A))); 
-print_string_to_file($sum_file, 1, sprintf("#\n"));
-print_string_to_file($sum_file, 1, sprintf("# %-*s  %-*s  %7s  %9s\n", $max_file_name_width, "",                 $max_cm_name_width, "",         "\# files", "\# seqs"));
-print_string_to_file($sum_file, 1, sprintf("# %-*s  %-*s  %7s  %9s\n", $max_file_name_width, "merged file name", $max_cm_name_width, "CM name",  "merged", "merged"));
-print_string_to_file($sum_file, 1, sprintf("# %-*s  %-*s  %7s  %9s\n", $max_file_name_width, $file_dashes,       $max_cm_name_width, $cm_dashes, "-------", "---------"));
+PrintStringToFile($sum_file, 1, sprintf("#\n# Merging files from %d ssu-align runs...\n", scalar(@score_to_merge_A))); 
+PrintStringToFile($sum_file, 1, sprintf("#\n"));
+PrintStringToFile($sum_file, 1, sprintf("# %-*s  %-*s  %7s  %9s\n", $max_file_name_width, "",                 $max_cm_name_width, "",         "\# files", "\# seqs"));
+PrintStringToFile($sum_file, 1, sprintf("# %-*s  %-*s  %7s  %9s\n", $max_file_name_width, "merged file name", $max_cm_name_width, "CM name",  "merged", "merged"));
+PrintStringToFile($sum_file, 1, sprintf("# %-*s  %-*s  %7s  %9s\n", $max_file_name_width, $file_dashes,       $max_cm_name_width, $cm_dashes, "-------", "---------"));
 
 $scores_file       = $dir . "/" . $dir . ".scores";
 $sum_file          = $dir . "/" . $dir . ".ssu-align.sum";
@@ -140,15 +161,15 @@ $sum_file2print    = $dir . ".ssu-align.sum";
 $tab_file2print    = $dir . ".tab";
 
 concatenate_a_list_of_files(\%opt_H, $scores_file, \@score_to_merge_A);
-print_string_to_file($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9s\n", $max_file_name_width, $scores_file2print, $max_cm_name_width, "-", scalar(@score_to_merge_A), "-"));
+PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9s\n", $max_file_name_width, $scores_file2print, $max_cm_name_width, "-", scalar(@score_to_merge_A), "-"));
 
 concatenate_a_list_of_files(\%opt_H, $sum_file, \@sum_to_merge_A);
-print_string_to_file($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9s\n", $max_file_name_width, $sum_file2print, $max_cm_name_width, "-", scalar(@sum_to_merge_A), "-"));
+PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9s\n", $max_file_name_width, $sum_file2print, $max_cm_name_width, "-", scalar(@sum_to_merge_A), "-"));
 
 concatenate_a_list_of_files(\%opt_H, $tab_file, \@tab_to_merge_A);
-print_string_to_file($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9s\n", $max_file_name_width, $tab_file2print, $max_cm_name_width, "-", scalar(@tab_to_merge_A), "-"));
+PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9s\n", $max_file_name_width, $tab_file2print, $max_cm_name_width, "-", scalar(@tab_to_merge_A), "-"));
 
-print_string_to_file($sum_file, 1, sprintf("#\n"));
+PrintStringToFile($sum_file, 1, sprintf("#\n"));
 
 for($i = 0; $i < scalar(@cm_names_A); $i++) { 
     $nhitsfa   = scalar(@{$hits_fa_to_merge_AA[$i]});
@@ -173,20 +194,23 @@ for($i = 0; $i < scalar(@cm_names_A); $i++) {
 	#determine total number of sequences in all the hits fasta files we just merged
 	$nseq_merged = 0;
 	for($j = 0; $j < scalar(@{$hits_fa_to_merge_AA[$i]}); $j++) { 
-	    $nseq_merged += determine_num_seqs($hits_fa_to_merge_AA[$i][$j]);
+	    $nseq_cur     = DetermineNumSeqsFasta($hits_fa_to_merge_AA[$i][$j]);
+	    if($nseq_cur == -1) { die "\nERROR, sequence file $hits_fa_to_merge_AA[$i][$j] should be FASTA formatted, but non-whitespace found before first \">\" (not valid FASTA).\n"; }
+	    if($nseq_cur == 0)  { die "\nERROR, sequence file $hits_fa_to_merge_AA[$i][$j] should be FASTA formatted, but no \">\" found.\n"; }
+	    $nseq_merged += $nseq_cur;
 	}
-	print_string_to_file($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9d\n", $max_file_name_width, $hitsfa_file2print, $max_cm_name_width, $cm_names_A[$i], $nhitsfa, $nseq_merged));
+	PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9d\n", $max_file_name_width, $hitsfa_file2print, $max_cm_name_width, $cm_names_A[$i], $nhitsfa, $nseq_merged));
 
 	concatenate_a_list_of_files(\%opt_H, $hitslist_file, \@{$hits_list_to_merge_AA[$i]});
-	print_string_to_file($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9d\n", $max_file_name_width, $hitslist_file2print, $max_cm_name_width, $cm_names_A[$i], $nhitslist, $nseq_merged));
+	PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9d\n", $max_file_name_width, $hitslist_file2print, $max_cm_name_width, $cm_names_A[$i], $nhitslist, $nseq_merged));
 
 	concatenate_a_list_of_files(\%opt_H, $cmalign_file,  \@{$cmalign_to_merge_AA[$i]});
-	print_string_to_file($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9d\n", $max_file_name_width, $cmalign_file2print, $max_cm_name_width, $cm_names_A[$i], $ncmalign, $nseq_merged));
+	PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9d\n", $max_file_name_width, $cmalign_file2print, $max_cm_name_width, $cm_names_A[$i], $ncmalign, $nseq_merged));
 
 	merge_alignments_for_a_cm(\%opt_H, $merged_stk_file, $dir, $cm_file, $cm_idx, $cm_names_A[$i], \@{$stk_to_merge_AA[$i]});
-	print_string_to_file($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9d\n", $max_file_name_width, $merged_stk_file2print, $max_cm_name_width, $cm_names_A[$i], $nstk, $nseq_merged));
+	PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9d\n", $max_file_name_width, $merged_stk_file2print, $max_cm_name_width, $cm_names_A[$i], $nstk, $nseq_merged));
 
-	print_string_to_file($sum_file, 1, sprintf("#\n"));
+	PrintStringToFile($sum_file, 1, sprintf("#\n"));
     }
 }
 
@@ -198,13 +222,13 @@ $total_time += time();
 
 my $ssu_merge_sum_file = $dir . "/" . $dir . ".ssu-merge.sum";
 my $ssu_merge_sum_file2print = $dir . ".ssu-merge.sum";
-print_string_to_file($sum_file, 1, sprintf("# Summary file (*this* text printed to stdout) saved to %.\n", $ssu_merge_sum_file2print));
+PrintStringToFile($sum_file, 1, sprintf("# Summary file (*this* text printed to stdout) saved to %.\n", $ssu_merge_sum_file2print));
 
-print_string_to_file($sum_file, 1, sprintf("#\n# All output files created in directory \.\/%s\/\n", $dir));
-print_string_to_file($sum_file, 1, sprintf("#\n"));
+PrintStringToFile($sum_file, 1, sprintf("#\n# All output files created in directory \.\/%s\/\n", $dir));
+PrintStringToFile($sum_file, 1, sprintf("#\n"));
 
 print_timing("# CPU time: ", $total_time, $sum_file);
-print_string_to_file($sum_file, 1, sprintf("\/\/\n"));
+PrintStringToFile($sum_file, 1, sprintf("\/\/\n"));
 
 # success, exit normally
 exit(0); 
@@ -214,60 +238,9 @@ exit(0);
 # Subroutines #
 ###############
 
-#####################################################################
-# Subroutine: print_banner()
-# Incept:     EPN, Tue Jun 16 07:26:13 2009
-# 
-# Purpose:    Print the ssu-align banner and determine prep options
-#             that will be passed to subsequent ssu-align calls if
-#             we're in prep mode.
-#
-# Arguments: 
-#    $script_call:            call used to invoke this (ssu-align) script
-#    $opt_HR:                 REFERENCE to hash of command-line options
-#    $opt_takes_arg_HR:       REFERENCE to hash telling if each option takes an argument (1) or not (0)
-#    $opt_order_AR:           REFERENCE to array specifying order of options
-#    $argv_R:                 REFERENCE to @ARGV, command-line arguments
-#    $sum_file:               summary file to print to 
-#
-# Returns:    Nothing, if it returns, everything is valid.
-# 
-####################################################################
-sub print_banner { 
-    my $narg_expected = 6;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_banner() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($script_call, $opt_HR, $opt_takes_arg_HR, $opt_order_AR, $argv_R, $sum2print_AR) = @_;
-
-    $script_call =~ s/^\.+\///;
-    my $script_name = $script_call;
-    $script_name =~ s/.+\///;
-
-    my $enabled_options = "";
-    foreach $opt (@{$opt_order_AR}) { 
-	if($opt_takes_arg_HR->{$opt}) { if($opt_HR->{$opt} ne "") { $enabled_options .= " " . $opt . " " . $opt_HR->{$opt}; } }
-	else                  	      { if($opt_HR->{$opt})       { $enabled_options .= " " . $opt; } }
-    }
-
-    print_string_to_file($sum_file, 1, sprintf("\# $script_name :: merge SSU rRNA alignments\n"));
-    print_string_to_file($sum_file, 1, sprintf("\# SSU-ALIGN 0.1 (October 2009)\n"));
-    print_string_to_file($sum_file, 1, sprintf("\# Copyright (C) 2009 HHMI Janelia Farm Research Campus\n"));
-    print_string_to_file($sum_file, 1, sprintf("\# Freely distributed under the GNU General Public License (GPLv3)\n"));
-    print_string_to_file($sum_file, 1, sprintf("\# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n"));
-    print_string_to_file($sum_file, 1, sprintf("%-10s %s ", "# command:", $script_call . $enabled_options));
-    for($i = 0; $i < scalar(@{$argv_R}) - 1; $i++) { 
-	print_string_to_file($sum_file, 1, sprintf("$argv_R->[$i] "));
-    }
-    print_string_to_file($sum_file, 1, sprintf("$argv_R->[$i]\n"));
-    print_string_to_file($sum_file, 1, sprintf("%-10s ", "# date:"));
-    print_string_to_file($sum_file, 1, sprintf(scalar localtime()));
-    print_string_to_file($sum_file, 1, sprintf("\n"));
-
-    return;
-}
-
 
 #####################################################################
-# Subroutine: validate_and_setup()
+# Subroutine: validate_and_setup_ssu_merge()
 # Incept:     EPN, Tue Oct 27 14:26:48 2009
 # 
 # Purpose:    Validation and setup:
@@ -278,6 +251,7 @@ sub print_banner {
 #             - verify that all ssu-align runs are done
 #
 # Arguments: 
+# $ssualigndir:            dir defined by SSUALIGNDIR environment variable 
 # $opt_HR:                 reference to hash of command line options
 # $dir:                    main directory created by ssu-align --prep-* that 
 #                          includes subdirectories with alignments
@@ -305,20 +279,13 @@ sub print_banner {
 #             print a message to STDERR and exit with non-zero status.
 #
 ####################################################################
-sub validate_and_setup { 
-    my $narg_expected = 13;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, validate_and_setup() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($opt_HR, $dir, $subdir_AR, $score_to_merge_AR, $sum_to_merge_AR, $tab_to_merge_AR, $cmalign_to_merge_AAR, $hits_fa_to_merge_AAR, $hits_list_to_merge_AAR, $stk_to_merge_AAR, $cm_names_AR, $cmalign_R, $cm_file_R) = @_;
+sub validate_and_setup_ssu_merge { 
+    my $narg_expected = 14;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, validate_and_setup_ssu_merge() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my($ssualigndir, $opt_HR, $dir, $subdir_AR, $score_to_merge_AR, $sum_to_merge_AR, $tab_to_merge_AR, $cmalign_to_merge_AAR, $hits_fa_to_merge_AAR, $hits_list_to_merge_AAR, $stk_to_merge_AAR, $cm_names_AR, $cmalign_R, $cm_file_R) = @_;
 
     #Make sure $dir exists
     if(!(-d $dir)) { printf STDERR ("\nERROR, directory $dir does not exist.\n"); exit(1); }
-
-    #Make sure the SSUALIGNDIR environmental variable is set.
-    my $ssualigndir = $ENV{'SSUALIGNDIR'};
-    if(! exists($ENV{'SSUALIGNDIR'})) { 
-	printf STDERR ("ERROR, the environment variable SSUALIGNDIR is not set, please set it to the directory where you installed SSU-ALIGN.\n"); 
-	exit(1); 
-    }
 
     #Make sure the CM file exists
     my $cm_file = "";
@@ -357,7 +324,7 @@ sub validate_and_setup {
     # check that cmalign is in the PATH
     my ($tmp, $command);
     my $cmalign    = "ssu-cmalign";
-    run_executable("$cmalign -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $cmalign is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
+    RunExecutable("$cmalign -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $cmalign is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
 
     # determine which subdirectories in $dir were created by ssu-align
     my %subdir_H = ();
@@ -495,7 +462,7 @@ sub merge_alignments_for_a_cm {
 	    printf STDERR ("ERROR, alignment file $stk_name already exists. Delete it or use -F to overwrite it.\n"); exit(1); 
 	}
 	else {
-	    unlink $stk_name || die "\nERROR, unable to remove file $stk_name.\n";
+	    UnlinkFile($stk_name, $log_file);
 	}
     }
 
@@ -503,7 +470,7 @@ sub merge_alignments_for_a_cm {
     if($opt_HR->{"-1"}) { $extra_opts = " -1"; }
 
     $command = "$cmalign $extra_opts --cm-idx $cm_idx --list-merge -o $stk_name $cm_file $list_file 2>&1";
-    run_executable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
+    RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
 
     return;
 }
@@ -546,195 +513,19 @@ sub concatenate_a_list_of_files {
 	    printf STDERR ("ERROR, file $concat_file already exists. Delete it or use -F to overwrite it.\n"); exit(1); 
 	}
 	else {
-	    unlink $concat_file || die "\nERROR, unable to remove $concat_file.\n";
+	    UnlinkFile($concat_file, $log_file);
 	}
     }
 
     # create concat file
     $command = "cat $files_to_concat_AR->[0] > $concat_file";
-    run_executable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
+    RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
 
     # add to concat file
     for($i = 1; $i < scalar(@{$files_to_concat_AR}); $i++) { 
-	run_executable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
+	RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
     }
 
     return;
 }
 
-
-#####################################################################
-# Subroutine: determine_num_seqs()
-# Incept:     EPN, Mon Nov  3 15:18:52 2008
-# 
-# Purpose:    Count the number of sequences in the fasta file 
-#             <$target_file>.
-#
-# Arguments: 
-# $target_file: the target sequence file 
-#
-# 
-# Returns:    <$nseq_target_file>: number of sequences in 
-#             <$target_file>.
-# 
-####################################################################
-sub determine_num_seqs { 
-    my $narg_expected = 1;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, determine_num_seqs() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($file) = $_[0];
-
-    if(!(-e $file)) { printf STDERR ("ERROR, determine_num_seqs(), file $file does not exist.\n"); exit(1); }
-    my $command = "grep \"\^\>\" $file | nl | tail -1 2>&1";
-    my $output = `$command`;
-    if(($? >> 8) != 0) { printf STDERR ("\nERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status %d\nand output:\n$output\n", ($? >> 8)); exit($? >> 8); }
-    chomp $output;
-    $output =~ s/^\s+//;
-    $output =~ s/\s+.*$//;
-    return $output;
-}
-
-
-#################################################################
-# Subroutine : max_length_scalar_in_arr()
-# Incept:      EPN, Tue Nov  4 15:19:44 2008
-# 
-# Purpose:     Return the maximum length of a scalar in an array
-#
-# Arguments: 
-# $arr_R: reference to the array
-# 
-################################################################# 
-sub max_length_scalar_in_array {
-    my $narg_expected = 1;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, max_length_scalar_in_arr() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($arr_R) = $_[0];
-
-    my ($max, $i);
-    $max = length($arr_R->[0]);
-    for($i = 1; $i < scalar(@{$arr_R}); $i++) { 
-	if(length($arr_R->[$i]) > $max) { $max = length($arr_R->[$i]); }
-    }
-    return $max;
-}
-
-
-#####################################################################
-# Subroutine: print_timing()
-# Incept:     EPN, Tue Jun 16 08:52:08 2009
-# 
-# Purpose:    Print a timing in hhhh:mm:ss format to 1 second precision.
-# 
-# Arguments:
-# $prefix:       string to print before the hhhh:mm:ss time info.
-# $inseconds:    number of seconds
-# $sum_file:     file to print output file notices to
-#
-# Returns:    Nothing, if it returns, everything is valid.
-# 
-####################################################################
-sub print_timing { 
-    my $narg_expected = 3;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_timing() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($prefix, $inseconds, $sum_file) = @_;
-    my ($i, $hours, $minutes, $seconds, $thours, $tminutes, $tseconds);
-
-    $hours = int($inseconds / 3600);
-    $inseconds -= ($hours * 3600);
-    $minutes = int($inseconds / 60);
-    $inseconds -= ($minutes * 60);
-    $seconds = $inseconds;
-    $thours   = $hours;
-    $tminutes = $minutes;
-    $tseconds = $seconds;
-
-    if($hours < 10)   { $thours   = "0" . $thours; }
-    if($minutes< 10)  { $tminutes = "0" . $tminutes; }
-    if($seconds< 10)  { $tseconds = "0" . $tseconds; }
-
-    print_string_to_file($sum_file, 1, sprintf("%s %2s:%2s:%2s\n", $prefix, $thours, $tminutes, $tseconds));
-}
-
-
-###########################################################
-# Subroutine: print_string_to_file()
-# Incept: EPN, Thu Oct 29 10:47:25 2009
-#
-# Purpose: Given a string and a file name, append the 
-#          string to the file, and potentially to stdout
-#          as well. If $filename is the empty string,
-#          don't print to a file. 
-#
-# Returns: Nothing. If the file can't be written to 
-#          an error message is printed and the program
-#          exits.
-#
-###########################################################
-sub print_string_to_file {
-    my $narg_expected = 3;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_string_to_file() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($filename, $print_to_stdout, $string) = @_;
-
-    if($filename ne "") { 
-	open(OUT, ">>" . $filename) || die "ERROR, couldn't open $filename for appending.\n";
-	printf OUT $string;
-	close(OUT);
-    }
-
-    if($print_to_stdout) { 
-	printf($string);
-    }
-    return;
-}
-
-
-###########################################################
-# Subroutine: run_executable
-# Incept: EPN, Fri Oct 30 06:05:37 2009
-#
-# Purpose: Run a command with backticks, capturing its standard
-#          output and standard error. Print command execution
-#          and its output to $log_file. If command returns 
-#          non-zero status, print error message $errmsg to 
-#          STDERR, and exit if $die_if_fails is TRUE. 
-#
-# Arguments:
-#   $command:                   command to execute
-#   $die_if_fails:              '1' to die if command returns non-zero status
-#   $print_output_upon_failure: '1' to print command output to STDERR if it fails
-#   $log_file:                  file to print command and output to
-#   $command_worked_ref:        set to '1' if command works (returns 0), else set to '0'         
-#   $errmsg:                    message to print if command returns non-0 exit status
-# 
-# Returns: Output (stdout and stderr) of the command.
-#
-###########################################################
-sub run_executable {
-    my $narg_expected = 6;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, run_executable() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($command, $die_if_fails, $print_output_upon_failure, $log_file, $command_worked_ref, $errmsg) = @_;
-
-    #contract check
-    if(($die_if_fails) && ($errmsg eq "")) { die "ERROR, misuse of run_executable: errmsg is the empty string and die_if_fails is TRUE."; }
-    my $output = "";
-    my $command_worked = 1;
-
-    if ($command !~ m/2\>\&1$/) { $command .= " 2>&1"; }
-
-    print_string_to_file($log_file, 0, ("Executing: \(" . $command . "\)\n"));
-    $output = `$command`;
-
-    if(($? != 0) && ($errmsg ne "")) { 
-	print_string_to_file($log_file, 0, ("Output:\n\(" . $output . "\)\n\n"));
-	printf STDERR ("\n$errmsg\n");
-	if($print_output_upon_failure) { printf STDERR ("Command output: $output\n"); }
-	print_string_to_file($log_file, 0, ("\n$errmsg\n"));
-	if($die_if_fails) { exit(1); }
-	$command_worked = 0;
-    }
-    else { 
-	print_string_to_file($log_file, 0, ("Output:\n\(" . $output . "\)\n\n"));
-    }
-
-    $$command_worked_ref = $command_worked;
-    return $output;
-}
