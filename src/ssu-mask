@@ -289,7 +289,7 @@ PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, 
 ##################################
 my @stk_list_A = ();
 my ($cm_file, $template_file, $alimanip, $ssdraw, $weight, $seqstat, $reformat);
-validate_and_setup_ssu_mask($ssualigndir, $dir, $key_in, \%opt_H, \$cm_file, \$template_file, \$alimanip, \$ssdraw, \$weight, \$seqstat, \$reformat, \@stk_list_A, $log_file);
+validate_and_setup_ssu_mask($ssualigndir, $dir, $key_in, \%opt_H, \$cm_file, \$template_file, \$alimanip, \$ssdraw, \$weight, \$seqstat, \$reformat, \@stk_list_A, $log_file, $sum_file);
 my $naln = scalar(@stk_list_A);
 my $aln_file;
 
@@ -654,7 +654,11 @@ if($do_remove_seqs_mode)
 	my $nali = 0;
 	my @nseq_A = ();
 	DetermineNumSeqsStockholm($seqstat, $seqr_aln, $log_file, \@nseq_A, \$nali);
-	if($nali != 1) { die "\nERROR, unexpectedly found %d (not 1) alignments in $seqr_aln.\n"; }
+	if($nali != 1) { 
+	    my $errmsg = "\nERROR, unexpectedly found %d (not 1) alignments in $seqr_aln.\n"; 
+	    PrintStringToFile($sum_file, 0, $errmsg);
+	    die $errmsg; 
+	}
 	PrintStringToFile($sum_file, 1, sprintf("  %-*s  %8d\n", $max_width, $seqr_aln, $nseq_A[0]));
     }
     elsif($opt_H{"--seq-k"} ne "") { 
@@ -809,6 +813,7 @@ exit(0);
 # $reformat_ref:      RETURN; the esl-reformat command, only relevant if --afa, --only-afa, or --stk2afa enabled
 # $stk_list_arr_ref:  RETURN: ref to array of alignment files to operate on
 # $log_file:          the log file
+# $sum_file:          the summary file
 #
 # Returns:    Nothing, if it returns, everything is valid.
 # 
@@ -818,7 +823,7 @@ exit(0);
 #
 ####################################################################
 sub validate_and_setup_ssu_mask { 
-    my $narg_expected = 13;
+    my $narg_expected = 14;
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, validate_and_setup_ssu_mask() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my($ssualigndir, $dir, $key_in, $opt_HR, $cm_file_ref, $template_file_ref, $alimanip_ref, $ssdraw_ref, $weight_ref, $seqstat_ref, $reformat_ref, $stk_list_arr_ref) = @_;
 
@@ -916,7 +921,11 @@ sub validate_and_setup_ssu_mask {
 	}
 	my ($name, $line);
 	my @names_A = ();
-	open(CM, $cm_file) || die "\nERROR, could not open CM file $cm_file for reading.\n";
+	if(! open(CM, $cm_file)) { 
+	    my $errmsg = "\nERROR, could not open CM file $cm_file for reading.\n";
+	    PrintStringToFile($sum_file, 0, $errmsg);
+	    die $errmsg; 
+	}
 	while($line = <CM>) { 
 	    if($line =~ s/NAME\s+//) { 
 		chomp $line;
@@ -1236,7 +1245,12 @@ sub filter_alignment {
     RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
     @nseq_A = ();
     DetermineNumSeqsStockholm($seqstat, $filtered_aln_file, $log_file, \@nseq_A, \$nali);
-    if($nali != 1) { die "\nERROR, unexpectedly found %d (not 1) alignments in $filtered_aln_file.\n"; }
+    if($nali != 1) { 
+	my $errmsg = "\nERROR, unexpectedly found %d (not 1) alignments in $filtered_aln_file.\n"; 
+	PrintStringToFile($sum_file, 0, $errmsg);
+	die $errmsg; 
+    }
+
     $nseq_filtered = $nseq_A[0];
 
 
@@ -1356,20 +1370,27 @@ sub run_ssdraw_for_ssu_mask {
 # Incept: EPN, Mon Nov  2 10:12:08 2009
 #
 # Purpose: Determine the number of '\n' delimited lines
-#          in a file.
+#          in a file. Print out error message to summary
+#          file and die with error message if the file
+#          does not exist.
 #
 # Returns: Number of lines in the file. 
 #          If the file can't be opened we die.
 #
 ###########################################################
 sub get_num_lines_in_file {
-    my $narg_expected = 1;
+    my $narg_expected = 2;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, get_num_lines_in_file() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($filename) = $_[0];
+    my ($filename, $sum_file) = $_[0];
 
     my $line;
     my $nlines = 0;
-    open(IN, $filename) || die "\nERROR couldn't open file $filename.\n";
+    if(! open(IN, $filename)) { 
+	my $errmsg = "\nERROR couldn't open file $filename in get_num_lines_in_file().\n";
+	PrintStringToFile($sum_file, 0, $errmsg);
+	die $errmsg; 
+    }
+
     while($line = <IN>) { $nlines++; }
     close(IN);
 

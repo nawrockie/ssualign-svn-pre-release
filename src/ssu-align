@@ -67,11 +67,11 @@ $options_usage .= "  -F     : force; if <output dir> already exists - empty it a
 $options_usage .= "  --FF   : really force; remove <output dir> and all its subdirectories\n" ,
 $options_usage .= "  --keep : keep intermediate files which are normally removed\n";
 
-$options_usage .= "\noptions for running ssu-align in 'prep' mode to split up a large job:\n";
+$options_usage .= "\noptions for running ssu-align in 'preparation' mode to split up a large job:\n";
 $options_usage .= "  --prep-n <n> : split target seq file into multiple files with <n> seqs each\n";
 $options_usage .= "  --prep-p <n> : split target seq file into <n> files with equal number of seqs\n";
 
-$options_usage .= "\noptions for skipping either the 1st (search) stage or 2nd (alignment) stage)\n";
+$options_usage .= "\noptions for skipping either the 1st (search) stage or 2nd (alignment) stage\n";
 $options_usage .= "  --no-align  : only search target sequence file for hits, skip alignment step\n";
 $options_usage .= "  --no-search : only align  target sequence file, skip initial search step\n"; 
 
@@ -82,9 +82,10 @@ $options_usage .= "  --forward  : use the HMM forward algorithm for searching, n
 $options_usage .= "  --global   : search with globally configured HMM [default: local]\n";
 
 $options_usage .= "\nexpert options for tuning the alignment stage:\n";
-$options_usage .= "  --filter <f> : filter aln based on seq identity, allow no 2 seqs > <f> identical\n";
-$options_usage .= "  --no-prob    : DO NOT append posterior probabilities to alignments\n";
-$options_usage .= "  --mxsize <f> : increase mx size for cmalign to <f> Mb (default: 4096)\n";
+$options_usage .= "  --only-aln <s> : only align best-matching sequences to the CM named <s> in CM file\n";
+$options_usage .= "  --filter <f>   : filter aln based on seq identity, allow no 2 seqs > <f> identical\n";
+$options_usage .= "  --no-prob      : DO NOT append posterior probabilities to alignments\n";
+$options_usage .= "  --mxsize <f>   : increase mx size for cmalign to <f> Mb (default: 4096)\n";
 
 
 ###################
@@ -104,14 +105,15 @@ $opt_takes_arg_H{"-l"}          = 1;  push(@opt_order_A, "-l");           $opt_i
 $opt_takes_arg_H{"-F"}          = 0;  push(@opt_order_A, "-F");           $opt_is_prep_H{"-F"}          = 0;
 $opt_takes_arg_H{"--FF"}        = 0;  push(@opt_order_A, "--FF");         $opt_is_prep_H{"--FF"}        = 0;
 $opt_takes_arg_H{"--keep"}      = 0;  push(@opt_order_A, "--keep");       $opt_is_prep_H{"--keep"}      = 1;
-$opt_takes_arg_H{"--prep-n"}    = 1;  push(@opt_order_A, "--prep-n");     $opt_is_prep_H{"--prep-n"}    = 0;
-$opt_takes_arg_H{"--prep-p"}    = 1;  push(@opt_order_A, "--prep-p");     $opt_is_prep_H{"--prep-p"}    = 0;
+$opt_takes_arg_H{"--prep-n"}    = 1;  push(@opt_order_A, "--prep-n");     $opt_is_prep_H{"--prep-n"}   = 0;
+$opt_takes_arg_H{"--prep-p"}    = 1;  push(@opt_order_A, "--prep-p");     $opt_is_prep_H{"--prep-p"}   = 0;
 $opt_takes_arg_H{"--no-align"}  = 0;  push(@opt_order_A, "--no-align");   $opt_is_prep_H{"--no-align"}  = 1;
 $opt_takes_arg_H{"--no-search"} = 0;  push(@opt_order_A, "--no-search");  $opt_is_prep_H{"--no-search"} = 1;
 $opt_takes_arg_H{"--no-trunc"}  = 0;  push(@opt_order_A, "--no-trunc");   $opt_is_prep_H{"--no-trunc"}  = 1;
 $opt_takes_arg_H{"--toponly"}   = 0;  push(@opt_order_A, "--toponly");    $opt_is_prep_H{"--toponly"}   = 1;
 $opt_takes_arg_H{"--forward"}   = 0;  push(@opt_order_A, "--forward");    $opt_is_prep_H{"--forward"}   = 1;
 $opt_takes_arg_H{"--global"}    = 0;  push(@opt_order_A, "--global");     $opt_is_prep_H{"--global"}    = 1;
+$opt_takes_arg_H{"--only-aln"}  = 1;  push(@opt_order_A, "--only-aln");   $opt_is_prep_H{"--only-aln"}  = 1;
 $opt_takes_arg_H{"--filter"}    = 1;  push(@opt_order_A, "--filter");     $opt_is_prep_H{"--filter"}    = 1;
 $opt_takes_arg_H{"--no-prob"}   = 0;  push(@opt_order_A, "--no-prob");    $opt_is_prep_H{"--no-prob"}   = 1;
 $opt_takes_arg_H{"--mxsize"}    = 1;  push(@opt_order_A, "--mxsize");     $opt_is_prep_H{"--mxsize"}    = 1;
@@ -146,6 +148,7 @@ my $opt_return = GetOptions
      'toponly'   => \$opt_H{"--toponly"},
      'forward'   => \$opt_H{"--forward"},
      'global'    => \$opt_H{"--global"},
+     'only-aln=s'=> \$opt_H{"--only-aln"},
      'filter=f'  => \$opt_H{"--filter"},
      'no-prob'   => \$opt_H{"--no-prob"},
      'mxsize'    => \$opt_H{"--mxsize"});
@@ -171,11 +174,12 @@ if ($opt_H{"-h"}) {
 
 # Check for incompatible option combinations.
 if(($opt_H{"--no-align"}) && 
-   (($opt_H{"--filter"} ne '') ||
-    ($opt_H{"-1"})             ||
-    ($opt_H{"--no-prob"})      ||
+   (($opt_H{"--filter"} ne '')   ||
+    ($opt_H{"-1"})               ||
+    ($opt_H{"--no-prob"})        ||
+    ($opt_H{"--only-aln"} ne '') ||
     ($opt_H{"--mxsize"}))) { 
-    printf STDERR ("\nERROR, --no-align is incompatible with alignment-specific options: -1,--filter,--no-prob, and --mxsize.\n"); exit(1); 
+    printf STDERR ("\nERROR, --no-align is incompatible with alignment-specific options: -1,--filter,--no-prob, --only-aln and --mxsize.\n"); exit(1); 
 }
 
 if(($opt_H{"--no-search"}) && 
@@ -230,7 +234,7 @@ else {
     $log_file       = $out_dir_and_root . ".ssu-align.log";
     $log_file2print = $out_root         . ".ssu-align.log";
 }
-
+# we don't open the summary and log files here b/c the output dir has not yet been created, we do that in create_output_dir
 create_output_dir($out_dir, \%opt_H, $sum_file, $log_file); 
 PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, $sum_file);
 PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 0, $log_file);
@@ -239,16 +243,23 @@ PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, 
 ##################################################################
 # Validate that everything is go and determine output file names #
 ##################################################################
-my ($ssualign, $cmsearch, $cmalign, $sfetch, $weight, $cm_file);
+my ($ssualign, $cmsearch, $cmalign, $sfetch, $weight, $cm_file, $errmsg);
 validate_and_setup_ssu_align($ssualigndir, $target_file, \%opt_H, \$ssualign, \$cmsearch, \$cmalign, \$sfetch, \$weight, \$cm_file, $log_file);
 
 # determine number of sequences in the target sequence file
 my $nseq_target_file = DetermineNumSeqsFasta($target_file);
-if($nseq_target_file == -1) { die "\nERROR, the target sequence file must be FASTA formatted, but non-whitespace found before first \">\" in $target_file.\nThis is not valid FASTA.\n"; }
-if($nseq_target_file == 0)  { die "\nERROR, the target sequence file must be FASTA formatted, but no \">\" found in $target_file.\nThe file is either empty or not valid FASTA.\n"; }
-
+if($nseq_target_file == -1) { 
+    $errmsg = "\nERROR, the target sequence file must be FASTA formatted, but non-whitespace found before first \">\" in $target_file.\nThis is not valid FASTA.\n";
+    PrintStringToFile($sum_file, 0, $errmsg);
+    die $errmsg; 
+}
+if($nseq_target_file == 0)  { 
+    $errmsg = "\nERROR, the target sequence file must be FASTA formatted, but no \">\" found in $target_file.\nThe file is either empty or not valid FASTA.\n"; 
+    PrintStringToFile($sum_file, 0, $errmsg);
+    die $errmsg; 
+}
 my (@indi_cm_name_A);
-process_cm_file($out_root, $cm_file, \%opt_H, \@indi_cm_name_A);
+process_cm_file($out_root, $cm_file, \%opt_H, \@indi_cm_name_A, $sum_file);
 my $ncm = scalar(@indi_cm_name_A); 
 if(($opt_H{"--no-search"}) && ($ncm > 1)) { printf("ERROR, the --no-search option only works if the CM file contains exactly 1 CM, $cm_file has $ncm CMs in it.\n"); exit(1); }
 
@@ -315,7 +326,7 @@ if(! $opt_H{"--no-align"}) {
 my $scores_file       = $out_dir_and_root . ".scores";
 my $scores_file2print = $out_root         . ".scores";
 if(! $opt_H{"--no-search"}) { 
-    print_scores_file($target_file, $ncm, $scores_file, $scores_file2print, $max_seq_name_width, \@indi_cm_name_A, \%bestmatch_cm_H, \%cmscores2print_H, \%hmmscores2print_H, $sum_file);
+    print_scores_file(\%opt_H, $target_file, $ncm, $scores_file, $scores_file2print, $max_seq_name_width, \@indi_cm_name_A, \%bestmatch_cm_H, \%cmscores2print_H, \%hmmscores2print_H, $sum_file);
     PrintStringToFile($sum_file, 1, sprintf("  %-*s  list of CM/HMM scores for each sequence\n", $max_file_name_width, $scores_file2print));
 }
 
@@ -497,9 +508,9 @@ sub create_output_dir {
     mkdir($out_dir) || die "\nERROR, unable to make directory $out_dir.\n";
 
     # open the sum and log files
-    open(OUT, ">" . $sum_file) || die "ERROR, creating file $sum_file.";
+    open(OUT, ">" . $sum_file) || die "\nERROR, creating file $sum_file.\n";
     close(OUT);
-    open(OUT, ">" . $log_file) || die "ERROR, creating file $log_file.";
+    open(OUT, ">" . $log_file) || die "\nERROR, creating file $log_file.\n";
     close(OUT);
 
     #if we did a 'rm -rf' command, print that to the log file:
@@ -525,6 +536,7 @@ sub create_output_dir {
 # $opt_HR:               reference to the hash of command-line options
 # $indi_cm_name_AR:      RETURN; array of individual CM names in the
 #                        order they appear in the CM file
+# $sum_file:             summary file, only possibly used if --only-aln 
 # 
 # Returns:    Fills RETURN arguments as listed above.
 #
@@ -534,12 +546,13 @@ sub create_output_dir {
 # 
 ####################################################################
 sub process_cm_file { 
-    my $narg_expected = 4;
+    my $narg_expected = 5;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, process_cm_file() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($out_root, $cm_file, $opt_HR, $indi_cm_name_AR) = @_;
+    my($out_root, $cm_file, $opt_HR, $indi_cm_name_AR, $sum_file) = @_;
     
     my($line, $cm_name);
     my %cm_name_exists_H = ();
+    my $found_only_aln_name = 0;
 
     if(open(CM, $cm_file) == 0) { printf STDERR ("ERROR, could not open $cm_file for reading.\n"); exit(1); }
     while($line = <CM>) {
@@ -551,9 +564,17 @@ sub process_cm_file {
 	    if(exists($cm_name_exists_H{$cm_name})) { printf STDERR ("ERROR, two CMs in CM file $cm_file have the name $cm_name. Each CM must have a unique name.\n"); exit(1); }
 	    $cm_name_exists_H{$cm_name} = 1;
 	    if($cm_name eq $df_none_name) { printf STDERR ("ERROR, you can't use a CM with the name $df_none_name, that's reserved for indicating which sequences are not the best-match to any models.\n"); exit(1); }
+	    if(($opt_HR->{"--only-aln"} ne "") && ($cm_name eq $opt_HR->{"--only-aln"})) { 
+		$found_only_aln_name = 1; 
+	    }
 	}
     }
     close(CM);
+    if(($opt_HR->{"--only-aln"} ne "") && (! $found_only_aln_name)) { 
+	my $errmsg = sprintf("\nERROR, --only-aln %s enabled, but no CM named %s exists in $cm_file.\n", $opt_HR->{"--only-aln"}, $opt_HR->{"--only-aln"});
+	PrintStringToFile($sum_file, 0, $errmsg);
+	die $errmsg;
+    }
     return;
 }									 
 
@@ -1057,6 +1078,8 @@ sub align_subseqs {
     $ncm = scalar(@{$indi_cm_name_AR});
     for($m = 1; $m <= $ncm; $m++) { 
 	$cm_name = $indi_cm_name_AR->[($m-1)];
+	if(($opt_HR->{"--only-aln"} ne "") && ($cm_name ne $opt_HR->{"--only-aln"})) { next; }
+
 	if(exists($new_target_file_per_cm_name_HR->{$cm_name})) { # >= 1 sequences in this set were classified as the current CM
 	    $hits_file      = $new_target_file_per_cm_name_HR->{$cm_name};
 	    
@@ -1120,6 +1143,7 @@ sub align_subseqs {
 #             read all the seqs.
 #
 # Arguments: 
+# $opt_HR:             reference to the hash of command-line options
 # $target_file:        name of the target sequence filee
 # $ncm                 number of CMs we've searched with
 # $scores_file:        the name of the 'scores' file we'll print to
@@ -1135,9 +1159,9 @@ sub align_subseqs {
 # 
 ####################################################################
 sub print_scores_file { 
-    my $narg_expected = 10;
+    my $narg_expected = 11;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_scores_file() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($target_file, $ncm, $scores_file, $scores_file2print, $max_seq_name_width, $indi_cm_name_AR, $bestmatch_cm_HR, $cmscores2print_HR, $hmmscores2print_HR, $sum_file) = @_;
+    my ($opt_HR, $target_file, $ncm, $scores_file, $scores_file2print, $max_seq_name_width, $indi_cm_name_AR, $bestmatch_cm_HR, $cmscores2print_HR, $hmmscores2print_HR, $sum_file) = @_;
 
     my ($seq_name, $cmscore2print);
     my ($i, $bestmatch_cm, $max_cm_name_width);
@@ -1198,10 +1222,18 @@ sub print_scores_file {
 	    $seq_name = $line;
 	    if(exists($bestmatch_cm_HR->{$seq_name})) { 
 		$bestmatch_cm = $bestmatch_cm_HR->{$seq_name};
-		($cmsc, $cmstructsc)                         = split(/\s+/, $cmscores2print_HR->{$seq_name});
+
 		($start, $end, $whmmsc, $secondhmm, $shmmsc) = split(/\s+/, $hmmscores2print_HR->{$seq_name});
 
-		printf SCORES ("  %7d  %-*s  %-*s  %4d  %4d  %7.2f  %7.2f  %7.2f", $idx, $max_seq_name_width, $seq_name, $max_cm_name_width, $bestmatch_cm, $start, $end, $cmsc, $cmstructsc, $whmmsc);
+		if(($opt_HR->{"--only-aln"} ne "") && ($opt_HR->{"--only-aln"} ne $bestmatch_cm)) { 
+		    # special case, --only-aln <s> enabled and <s> != best matching cm, we didn't align
+		    # this sequence, output is different, cmsc and structsc are set as '-'
+		    printf SCORES ("  %7d  %-*s  %-*s  %4d  %4d  %7s  %7s  %7.2f", $idx, $max_seq_name_width, $seq_name, $max_cm_name_width, $bestmatch_cm, $start, $end, "-", "-", $whmmsc);
+		}
+		else { # normal case
+		    ($cmsc, $cmstructsc) = split(/\s+/, $cmscores2print_HR->{$seq_name});
+		    printf SCORES ("  %7d  %-*s  %-*s  %4d  %4d  %7.2f  %7.2f  %7.2f", $idx, $max_seq_name_width, $seq_name, $max_cm_name_width, $bestmatch_cm, $start, $end, $cmsc, $cmstructsc, $whmmsc);
+		}
 		# if there was only 1 model that scored above threshold, we stored it as both the first and second model 
 		if($ncm > 1 && ($secondhmm ne $bestmatch_cm)) { printf SCORES ("  %-*s  %7.2f  %7.2f", $max_cm_name_width, $secondhmm, $shmmsc, ($whmmsc - $shmmsc)); }
 		elsif($ncm > 1)                               { printf SCORES ("  %-*s  %7s  %7s",    $max_cm_name_width, "-", "-", "-"); }

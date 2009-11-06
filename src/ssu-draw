@@ -189,9 +189,9 @@ else {
     $log_file2print  = $log_file;
 }
 # open the summary and log files
-open(OUT, ">" . $sum_file) || die "ERROR, couldn't open file $sum_file for writing";
+open(OUT, ">" . $sum_file) || die "\nERROR, couldn't open file $sum_file for writing.\n";
 close(OUT);
-open(OUT, ">" . $log_file) || die "ERROR, couldn't open file $log_file for writing";
+open(OUT, ">" . $log_file) || die "\nERROR, couldn't open file $log_file for writing.\n";
 close(OUT);
 
 PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, $sum_file);
@@ -204,7 +204,7 @@ PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, 
 my @stk_list_A = ();
 my @mask_list_A = ();
 my ($cm_file, $template_file, $ssdraw);
-validate_and_setup_ssu_draw($ssualigndir, $dir, $key_in, \%opt_H, \$cm_file, \$template_file, \$ssdraw, \@stk_list_A, \@mask_list_A, $log_file);
+validate_and_setup_ssu_draw($ssualigndir, $dir, $key_in, \%opt_H, \$cm_file, \$template_file, \$ssdraw, \@stk_list_A, \@mask_list_A, $log_file, $sum_file);
 my $naln = scalar(@stk_list_A);
 my $aln_file;
 
@@ -307,6 +307,7 @@ exit(0);
 # $stk_list_arr_ref:  RETURN; ref to array of alignment files to operate on
 # $mask_list_arr_ref: RETURN; ref to array of alignment files to operate on
 # $log_file:          the log file
+# $sum_file:          the summary file
 #
 # Returns:    Nothing, if it returns, everything is valid.
 # 
@@ -316,9 +317,9 @@ exit(0);
 #
 ####################################################################
 sub validate_and_setup_ssu_draw { 
-    my $narg_expected = 10;
+    my $narg_expected = 11;
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, validate_and_setup_ssu_draw() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($ssualigndir, $dir, $key_in, $opt_HR, $cm_file_ref, $template_file_ref, $ssdraw_ref, $stk_list_arr_ref, $mask_list_arr_ref, $log_file) = @_;
+    my($ssualigndir, $dir, $key_in, $opt_HR, $cm_file_ref, $template_file_ref, $ssdraw_ref, $stk_list_arr_ref, $mask_list_arr_ref, $log_file, $sum_file) = @_;
 
     #Validate that we can read the CM file
     my $cm_file = "";
@@ -389,7 +390,11 @@ sub validate_and_setup_ssu_draw {
 	}
 	my ($name, $line);
 	my @names_A = ();
-	open(CM, $cm_file) || die "\nERROR, could not open CM file $cm_file for reading.\n";
+	if(! open(CM, $cm_file)) { 
+	    my $errmsg = "\nERROR, could not open CM file $cm_file for reading.\n";
+	    PrintStringToFile($sum_file, 0, $errmsg);
+	    die $errmsg; 
+	}
 	while($line = <CM>) { 
 	    if($line =~ s/NAME\s+//) { 
 		chomp $line;

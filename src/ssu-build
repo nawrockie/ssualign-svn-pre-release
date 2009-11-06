@@ -388,9 +388,9 @@ sub validate_and_setup_ssu_build {
     
     my $sum_file = $root . $key_out . ".ssu-build.sum";
     my $log_file = $root . $key_out . ".ssu-build.log";
-    open(OUT, ">" . $sum_file) || die "ERROR, couldn't open file $sum_file for writing";
+    open(OUT, ">" . $sum_file) || die "\nERROR, couldn't open file $sum_file for writing.\n";
     close(OUT);
-    open(OUT, ">" . $log_file) || die "ERROR, couldn't open file $log_file for writing";
+    open(OUT, ">" . $log_file) || die "\nERROR, couldn't open file $log_file for writing.\n";
     close(OUT);
 
     my $cm_file = "";
