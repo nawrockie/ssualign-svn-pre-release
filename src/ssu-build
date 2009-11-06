@@ -133,7 +133,7 @@ if ($opt_H{"-h"}) {
     PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, ""); 
     print $usage . "\n"; 
     print $options_usage; 
-    exit(1);  
+    exit(0);  
 }
 
 my $key_out = "";

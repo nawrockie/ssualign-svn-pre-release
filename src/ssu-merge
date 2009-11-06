@@ -90,7 +90,7 @@ if ($opt_H{"-h"}) {
     PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, "");
     print $usage . "\n"; 
     print $options_usage; 
-    exit(1); 
+    exit(0); 
 } 
 
 
@@ -133,8 +133,8 @@ my @hits_fa_to_merge_AA = ();
 my @hits_list_to_merge_AA = ();
 my @stk_to_merge_AA = ();
 my @cm_names_A = ();
-validate_and_setup_ssu_merge($ssualigndir, a\%opt_H, $dir, \@subdir_A, \@score_to_merge_A, \@sum_to_merge_A, \@tab_to_merge_A, \@cmalign_to_merge_AA, \@hits_fa_to_merge_AA, \@hits_list_to_merge_AA, \@stk_to_merge_AA, \@cm_names_A, \$cmalign, \$cm_file);
-
+validate_and_setup_ssu_merge($ssualigndir, \%opt_H, $dir, \@subdir_A, \@score_to_merge_A, \@sum_to_merge_A, \@tab_to_merge_A, \@cmalign_to_merge_AA, \@hits_fa_to_merge_AA, \@hits_list_to_merge_AA, \@stk_to_merge_AA, \@cm_names_A, \$cmalign, \$cm_file);
+if(scalar(@score_to_merge_A) == 0) { printf STDERR ("who ERROR, noa *.scores files found.\n"); exit(1); }
 
 ####################################
 # Merge files including alignments #
@@ -183,6 +183,7 @@ PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9s\n", $max_file_na
 
 PrintStringToFile($sum_file, 1, sprintf("#\n"));
 
+my $nseq_cur;
 for($i = 0; $i < scalar(@cm_names_A); $i++) { 
     $nhitsfa   = scalar(@{$hits_fa_to_merge_AA[$i]});
     $nhitslist = scalar(@{$hits_list_to_merge_AA[$i]});
@@ -207,12 +208,12 @@ for($i = 0; $i < scalar(@cm_names_A); $i++) {
 	$nseq_merged = 0;
 	for($j = 0; $j < scalar(@{$hits_fa_to_merge_AA[$i]}); $j++) { 
 	    $nseq_cur     = DetermineNumSeqsFasta($hits_fa_to_merge_AA[$i][$j]);
-	    if($nseq_target_file == -1) { 
+	    if($nseq_cur == -1) { 
 		my $errmsg = "\nERROR, sequence file $hits_fa_to_merge_AA[$i][$j] should be FASTA formatted, but non-whitespace found before first \">\" (not valid FASTA).\n"; 
 		PrintStringToFile($sum_file, 0, $errmsg);
 		die $errmsg; 
 	    }
-	    if($nseq_target_file == 0)  { 
+	    if($nseq_cur == 0)  { 
 		my $errmsg = "\nERROR, sequence file $hits_fa_to_merge_AA[$i][$j] should be FASTA formatted, but no \">\" found.\n"; 
 		PrintStringToFile($sum_file, 0, $errmsg);
 		die $errmsg; 
@@ -333,7 +334,7 @@ sub validate_and_setup_ssu_merge {
     close(CM);
 
     # check that cmalign is in the PATH
-    my ($tmp, $command);
+    my ($command, $command_worked);
     my $cmalign    = "ssu-cmalign";
     RunExecutable("$cmalign -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $cmalign is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
 
@@ -343,11 +344,12 @@ sub validate_and_setup_ssu_merge {
     my ($subdir, $num, $file, $cm, $maybe_dir);
     foreach $maybe_dir (glob("$dir/*")) { 
 	if(-d $maybe_dir) { # $maybe_dir is a dir
-	    if($subdir =~ /^$dir\.(\d+)$/) { 
+	    $maybe_dir =~ s/^$dir\///;
+	    if($maybe_dir =~ /^$dir\.(\d+)$/) { 
 		$num = $1;
 		if($num > 0) { #don't bother with '0' or negative numbers, they weren't created by ssu-align 
 		    if($num > $max_num) { $max_num = $num; }
-		    $subdir_H{$subdir} = 1;
+		    $subdir_H{$maybe_dir} = 1;
 		}
 	    }
 	}		
@@ -396,35 +398,35 @@ sub validate_and_setup_ssu_merge {
 	# $subdir.$cm.stk
 	# 
 
-	foreach $file (glob("$dir/$subdir/")) { 
-	    if($file =~ /$subdir\.scores/) { 
-		push(@{$score_to_merge_AR}, ($dir . "/" . $subdir . "/" . $file));
+	foreach $file (glob("$dir/$subdir/*")) { 
+	    if($file =~ m/$subdir\.scores$/) { 
+		push(@{$score_to_merge_AR}, $file);
 	    }
-	    if($file =~ /$subdir\.ssu-align.sum/) { 
-		push(@{$sum_to_merge_AR}, ($dir . "/" . $subdir . "/" . $file));
+	    if($file =~ m/$subdir\.ssu-align.sum/) { 
+		push(@{$sum_to_merge_AR}, $file);
 	    }
-	    if($file =~ /$subdir\.tab/) { 
-		push(@{$tab_to_merge_AR}, ($dir . "/" . $subdir . "/" . $file));
+	    if($file =~ m/$subdir\.tab/) { 
+		push(@{$tab_to_merge_AR}, $file);
 	    }
-	    if($file =~ /$subdir\.(\S+)\.cmalign/) { 
+	    if($file =~ m/$subdir\.(\S+)\.cmalign/) { 
 		$cm = $1;
 		if(! (exists($cm_name_idx_H{$cm}))) { printf STDERR ("\nERROR, found ssu-align output file $file in subdirectory $subdir/ created for a CM named $cm\nNo such CM exists in $cm_file.\nDid you use -m <s> when you ran ssu-align? If so pass -m <s> to ssu-merge as well.\n"); exit(1); }
-		push(@{$cmalign_to_merge_AAR->[$cm_name_idx_H{$cm}]}, ($dir . "/" . $subdir . "/" . $file));
+		push(@{$cmalign_to_merge_AAR->[$cm_name_idx_H{$cm}]}, $file);
 	    }
-	    if($file =~ /$subdir\.(\S+)\.hits.fa/) { 
+	    if($file =~ m/$subdir\.(\S+)\.hits.fa/) { 
 		$cm = $1;
 		if(! (exists($cm_name_idx_H{$cm}))) { printf STDERR ("\nERROR, found ssu-align output file $file in subdirectory $subdir/ created for a CM named $cm\nNo such CM exists in $cm_file.\nDid you use -m <s> when you ran ssu-align? If so pass -m <s> to ssu-merge as well.\n"); exit(1); }
-		push(@{$hits_fa_to_merge_AAR->[$cm_name_idx_H{$cm}]}, ($dir . "/" . $subdir . "/" . $file));
+		push(@{$hits_fa_to_merge_AAR->[$cm_name_idx_H{$cm}]}, $file);
 	    }
-	    if($file =~ /$subdir\.(\S+)\.hits.list/) { 
+	    if($file =~ m/$subdir\.(\S+)\.hits.list/) { 
 		$cm = $1;
 		if(! (exists($cm_name_idx_H{$cm}))) { printf STDERR ("\nERROR, found ssu-align output file $file in subdirectory $subdir/ created for a CM named $cm\nNo such CM exists in $cm_file.\nDid you use -m <s> when you ran ssu-align? If so pass -m <s> to ssu-merge as well.\n"); exit(1); }
-		push(@{$hits_list_to_merge_AAR->[$cm_name_idx_H{$cm}]}, ($dir . "/" . $subdir . "/" . $file));
+		push(@{$hits_list_to_merge_AAR->[$cm_name_idx_H{$cm}]}, $file);
 	    }
-	    if($file =~ /$subdir\.(\S+)\.stk/) { 
+	    if($file =~ m/$subdir\.(\S+)\.stk/) { 
 		$cm = $1;
 		if(! (exists($cm_name_idx_H{$cm}))) { printf STDERR ("\nERROR, found ssu-align output file $file in subdirectory $subdir/ created for a CM named $cm\nNo such CM exists in $cm_file.\nDid you use -m <s> when you ran ssu-align? If so pass -m <s> to ssu-merge as well.\n"); exit(1); }
-		push(@{$stk_to_merge_AAR->[$cm_name_idx_H{$cm}]}, ($dir . "/" . $subdir . "/" . $file));
+		push(@{$stk_to_merge_AAR->[$cm_name_idx_H{$cm}]}, $file);
 	    }
 	}
     }	
@@ -463,7 +465,7 @@ sub merge_alignments_for_a_cm {
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, merge_alignments_for_a_cm() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my($opt_HR, $stk_name, $dir, $cm_file, $cm_idx, $cm_name, $stk_to_merge_AR) = @_;
 
-    my ($output, $stk, $command, $output);
+    my ($output, $stk, $command, $command_worked);
 
     # create a temporary file with the stk list:
     my $list_file = $dir . "/" . $cm_name . ".merge.list";
@@ -514,11 +516,11 @@ sub concatenate_a_list_of_files {
 
     if(scalar(@{$files_to_concat_AR}) == 0) { return; } #if array is empty, just leave
 
-    my ($file, $command, $output, $i);
+    my ($file, $command, $output, $i, $command_worked);
 
     # ensure all the files exist
     foreach $file (@{$files_to_concat_AR}) { 
-	if(! (-e $file)) { printf STDERR ("ERROR, file $file does not exist, (it was to be cat'ed to $concat_file.\n"); exit(1); }
+	if(! (-e $file)) { printf STDERR ("ERROR, file $file does not exist, (it was to be cat'ed to $concat_file).\n"); exit(1); }
     }
 
     # check if concat file already exists

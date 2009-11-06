@@ -250,7 +250,7 @@ sub RunExecutable {
 	    close(OUTFILE);
 	}
 	if($errmsg ne "") { 
-	    if($output_file ne "") { 
+	    if(($output_file ne "") && ($output_file !~ /dev\/null/)) { 
 		PrintStringToFile($log_file, 0, ("Output (in output file $output_file):\n" . $output . "\n\n"));
 	    }
 	    else { 

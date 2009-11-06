@@ -68,8 +68,9 @@ $options_usage .= "  --FF   : really force; remove <output dir> and all its subd
 $options_usage .= "  --keep : keep intermediate files which are normally removed\n";
 
 $options_usage .= "\noptions for running ssu-align in 'preparation' mode to split up a large job:\n";
-$options_usage .= "  --prep-n <n> : split target seq file into multiple files with <n> seqs each\n";
-$options_usage .= "  --prep-p <n> : split target seq file into <n> files with equal number of seqs\n";
+$options_usage .= "  --prep-n <n>  : split target seq file into multiple files with <n> seqs each\n";
+$options_usage .= "  --prep-p <n>  : split target seq file into <n> files with equal number of seqs\n";
+$options_usage .= "  --prep-in <f> : in file <f>; lines 1/2 specify prefix/suffix for ssu-align runs\n";
 
 $options_usage .= "\noptions for skipping either the 1st (search) stage or 2nd (alignment) stage\n";
 $options_usage .= "  --no-align  : only search target sequence file for hits, skip alignment step\n";
@@ -107,6 +108,7 @@ $opt_takes_arg_H{"--FF"}        = 0;  push(@opt_order_A, "--FF");         $opt_i
 $opt_takes_arg_H{"--keep"}      = 0;  push(@opt_order_A, "--keep");       $opt_is_prep_H{"--keep"}      = 1;
 $opt_takes_arg_H{"--prep-n"}    = 1;  push(@opt_order_A, "--prep-n");     $opt_is_prep_H{"--prep-n"}   = 0;
 $opt_takes_arg_H{"--prep-p"}    = 1;  push(@opt_order_A, "--prep-p");     $opt_is_prep_H{"--prep-p"}   = 0;
+$opt_takes_arg_H{"--prep-in"}   = 1;  push(@opt_order_A, "--prep-in");    $opt_is_prep_H{"--prep-in"}  = 0;
 $opt_takes_arg_H{"--no-align"}  = 0;  push(@opt_order_A, "--no-align");   $opt_is_prep_H{"--no-align"}  = 1;
 $opt_takes_arg_H{"--no-search"} = 0;  push(@opt_order_A, "--no-search");  $opt_is_prep_H{"--no-search"} = 1;
 $opt_takes_arg_H{"--no-trunc"}  = 0;  push(@opt_order_A, "--no-trunc");   $opt_is_prep_H{"--no-trunc"}  = 1;
@@ -142,6 +144,7 @@ my $opt_return = GetOptions
      'FF'        => \$opt_H{"--FF"},
      'prep-n=n'  => \$opt_H{"--prep-n"},
      'prep-p=n'  => \$opt_H{"--prep-p"},
+     'prep-in=n' => \$opt_H{"--prep-in"},
      'no-align'  => \$opt_H{"--no-align"},
      'no-search' => \$opt_H{"--no-search"},
      'no-trunc'  => \$opt_H{"--no-trunc"},
@@ -156,7 +159,7 @@ my $opt_return = GetOptions
 if($opt_return != 1) { exit(1); }
 
 #determine options we'd use for subsequent ssu-align calls on split dataset if we're in prep mode
-my $prep_enabled_options;
+my $prep_enabled_options = "";
 foreach $opt (@opt_order_A) { 
     if($opt_is_prep_H{$opt}) { 
 	if($opt_takes_arg_H{$opt}) { if($opt_H{$opt} ne "") { $prep_enabled_options .= " " . $opt . " " . $opt_H{$opt}; } }
@@ -169,7 +172,7 @@ if ($opt_H{"-h"}) {
     # passing "" as last arg tells PrintBanner not to print banner to a file (usually it does, to the ssu-align output file)
     print $usage . "\n"; 
     print $options_usage; 
-    exit(1);  
+    exit(0);  
 }
 
 # Check for incompatible option combinations.
@@ -195,6 +198,10 @@ if(($opt_H{"--no-search"}) &&
 if(($opt_H{"--prep-n"} ne "") && ($opt_H{"--prep-p"} ne "")) { 
     printf STDERR ("\nERROR, --prep-n and --prep-p are incompatible, choose one or the other.\n"); exit(1);
 }    
+if(($opt_H{"--prep-in"} ne "") && ((! $opt_H{"--prep-p"} ne "") && (! $opt_H{"--prep-n"} ne ""))) { 
+    printf STDERR ("\nERROR, --prep-in only makes sense in combination with --prep-n or --prep-p.\n"); exit(1);
+}    
+
 # Check for incompatible option ranges
 if(($opt_H{"-l"} ne "")       && ($opt_H{"-l"} <= 0))       { printf STDERR ("\nERROR, with -l <n>, <n> must be greater than 0.\n"); exit(1); }
 if(($opt_H{"--prep-n"} ne "") && ($opt_H{"--prep-n"} <= 0)) { printf STDERR ("\nERROR, with --prep-n <n>, <n> must be greater than 0.\n"); exit(1); }
@@ -267,14 +274,12 @@ my ($tab_file, $description_width, $search_time);
 my $max_file_name_width = 0;
 my $abs_orig_cm_file = abs_path($cm_file);
 
-my ($cluster_prefix, $cluster_suffix);
 if($opt_H{"--prep-n"} || $opt_H{"--prep-p"}) { 
     prepare_only($target_file, $out_dir, $out_root, \%opt_H, $ssualign, $weight, $cm_file, $prep_enabled_options, $nseq_target_file, \@indi_cm_name_A, \$max_file_name_width, $sum_file, $log_file);
-    PrintStringToFile($sum_file, 1, (sprintf("  %-*s  ssu-align output file (*this* text printed to stdout)\n", $max_file_name_width, $sum_file2print)));
-    PrintStringToFile($sum_file, 1, sprintf("  %-*s  log file with commands executed by this script\n", $max_file_name_width, $log_file2print));
-    PrintStringToFile($sum_file, 1, sprintf("#\n# All output files created in directory \.\/%s\/\n", $out_dir));
-    PrintStringToFile($sum_file, 1, sprintf("#\n", $out_dir));
+    $total_time += time();
+    PrintConclusion($sum_file, $log_file2print, $sum_file2print, "", $out_dir);
 
+    # Prep mode success! Exit normally
     exit(0);
 }
 # if we get here, neither --prep-p nor --prep-n were enabled
@@ -605,11 +610,12 @@ sub process_cm_file {
 # $ssualign:                the ssu-align executable command
 # $weight                   esl-weight command
 # $cm_file:                 the CM file 
-# $prep_options:            options to pass to children jobs
+# $prep_enabled_options:    options to pass to children jobs
 # $nseq_target_file:        number of sequences in $target_file
 # $indi_cm_name_AR:         reference to array with names of individual CMs
 # $max_file_name_width_R:   RETURN; maximum length of a file name
 # $sum_file:                file to print output file notices to
+# $log_file:                log file
 #
 # Returns:    Nothing.
 #
@@ -619,18 +625,40 @@ sub process_cm_file {
 # 
 ####################################################################
 sub prepare_only { 
-    my $narg_expected = 12;
+    my $narg_expected = 13;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, prepare_only() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($target_file, $out_dir, $out_root, $opt_HR, $ssualign, $weight, $cm_file, $prep_options, $nseq_target_file, $indi_cm_name_AR, $max_file_name_width_R, $sum_file) = @_;
+    my($target_file, $out_dir, $out_root, $opt_HR, $ssualign, $weight, $cm_file, $prep_enabled_options, $nseq_target_file, $indi_cm_name_AR, $max_file_name_width_R, $sum_file, $log_file) = @_;
 
-    # Steps we'll perform
-    # 1. partition the target seq file
-    # 2. print ssu-align.pl calls for each target seq file to screen
-    # 3. print cmalign --merge calls to eventually merge resulting 
+    # Steps we'll perform:
+    # 1. read preparation input file (if --prep-in enabled)
+    # 2. partition the target seq file
+    # 3. print ssu-align.pl calls for each target seq file to screen
+    # 4. print cmalign --merge calls to eventually merge resulting 
     #    alignments from ssu-align.pl calls in 2 together.
-    # 4. exit
+    # 5. exit
 
-    my ($shell_script, $shell_script2print, $merge_script, $merge_script2print, $remainder, $n, $target_subfile_root, $target_subfile, $sub_output);
+    my $prep_prefix = "";
+    my $prep_suffix = "";
+    my $errmsg = "";
+    if($opt_HR->{"--prep-in"} ne "") { # read the prep input file that specifies prefix/suffix for ssu-align runs
+	if(! (-e $opt_HR->{"--prep-in"})) { 
+	    $errmsg = "\nERROR, the prep input file " . $opt_HR->{"--prep-in"} . " specified with --prep-in does not exist.\n";
+	    PrintStringToFile($sum_file, 0, $errmsg);
+	    die $errmsg; 
+	}
+	if(! open(PREPIN, $opt_HR->{"--prep-in"})) {
+	    $errmsg = "\nERROR, unable to open the prep input file " . $opt_HR->{"--prep-in"} . " specified with --prep-in.\n";
+	    PrintStringToFile($sum_file, 0, $errmsg);
+	    die $errmsg; 
+	}
+	$prep_prefix = <PREPIN>;
+	$prep_suffix = <PREPIN>;
+	chomp $prep_prefix;
+	chomp $prep_suffix;
+	close(PREPIN);
+    }    
+
+    my ($shell_script, $shell_script2print, $remainder, $n, $target_subfile_root, $target_subfile, $sub_output);
     my ($nseq_this_file, $line, $ncm, $ndig, $tmp, $description_width, $dashes1, $dashes2);
     my ($i, $nmerge, $iter, $nstop, $lower, $upper, $merged_root, $merged_name, $fil_merged_name, $merged_lower_name, $merged_upper_name, $cm_name);
 
@@ -638,8 +666,6 @@ sub prepare_only {
 
     $shell_script       = $out_dir_and_root . ".sh";
     $shell_script2print = $out_root         . ".sh";
-    $merge_script       = $out_dir_and_root . ".merge.pl";
-    $merge_script2print = $out_root         . ".merge.pl";
     if(open(SH, ">" . $shell_script) == 0) { printf STDERR ("ERROR, could not open $shell_script for writing.\n"); exit(1); }
 
     #determine number of seqs per file (if --prep-p)
@@ -651,6 +677,7 @@ sub prepare_only {
 	if($remainder > 0) { $prep_nseq++; }
     }
     elsif($opt_HR->{"--prep-n"} ne "") { 
+	$prep_nseq  = $opt_HR->{"--prep-n"};
 	$prep_nproc = int($nseq_target_file / ($prep_nseq));
 	$remainder  = $nseq_target_file - ($prep_nseq * $prep_nproc);
 	if($remainder > 0) { $prep_nproc++; }
@@ -665,22 +692,18 @@ sub prepare_only {
     }
 
     $ndig = 1; $tmp = $prep_nproc; while($tmp > 10) { $ndig++; $tmp /= 10.; }
-    my $max_file_name_width = length($merge_script2print);
-    $target_subfile_root = $target_file . "." . $n;
+    my $max_file_name_width = length($shell_script2print);
+    $target_subfile_root = $target_file . ".0";
     $target_subfile_root =~ s/^.+\///;  # remove path 
     if($max_file_name_width < (length($target_subfile_root) + $ndig)) { 
 	$max_file_name_width = length($target_subfile_root) + $ndig;
-    }
-    if($max_file_name_width < (length($out_root . ".ssu-align.prep.out"))) { 
-	$max_file_name_width = length($out_root . ".ssu-align.prep.out");
     }
     if($max_file_name_width < (length("output file name"))) { 
 	$max_file_name_width = length("output file name"); 
     }
     my $max_cm_name_width = MaxLengthScalarInArray($indi_cm_name_AR);
     
-    $description_width = length("perl script to merge alignments when  completes");
-    $description_width += length($shell_script2print);
+    $description_width = length("shell script that will run ssu-align $ndig times");
     $dashes1 = ""; for($i = 0; $i < $max_file_name_width; $i++) { $dashes1 .= "-"; } 
     $dashes2 = ""; for($i = 0; $i < $description_width; $i++)   { $dashes2 .= "-"; } 
     
@@ -698,12 +721,13 @@ sub prepare_only {
     if(open(SUB, ">" . $target_subfile) == 0) { printf STDERR ("ERROR, could not open $target_subfile for writing.\n"); exit(1); }
     $nseq_this_file = -1;
     if(open(FULL, $target_file) == 0) { printf STDERR ("ERROR, could not open $target_file for reading.\n"); exit(1); }
+
     while($line = <FULL>) { 
 	if($line =~ m/^>/) { 
 	    if(++$nseq_this_file == $prep_nseq) { 
 		close(SUB); 
 		PrintStringToFile($sum_file, 1, sprintf("  %-*s  partition %*d fasta sequence file\n", $max_file_name_width, $target_subfile_root, $ndig, $n));
-		printf SH ("%s%s%s\n", $cluster_prefix, "$ssualign -F $prep_enabled_options $target_subfile_root $out_root." . $n, $cluster_suffix);
+		printf SH ("%s%s%s\n", $prep_prefix, "$ssualign -F $prep_enabled_options $target_subfile_root $out_root." . $n, $prep_suffix);
 		$target_subfile_root = $target_file . "." . (++$n);
 		$target_subfile_root =~ s/^.+\///;  # remove path 
 		$target_subfile      = $out_dir . "/" . $target_subfile_root;
@@ -716,7 +740,7 @@ sub prepare_only {
     close(FULL);
     close(SUB);
     PrintStringToFile($sum_file, 1, sprintf("  %-*s  partition %*d fasta sequence file\n", $max_file_name_width, $target_subfile_root, $ndig, $n));
-    printf SH ("%s%s%s\n", $cluster_prefix, "$ssualign $prep_enabled_options $target_subfile_root $out_root." . $n, $cluster_suffix);
+    printf SH ("%s%s%s\n", $prep_prefix, "$ssualign $prep_enabled_options $target_subfile_root $out_root." . $n, $prep_suffix);
     close(SH); 
     if($n != $prep_nproc) { printf STDERR ("ERROR, problem partitioning target fasta file $target_file into $prep_nproc files, only $n files were successfully created.\n"); exit(1); }
     
