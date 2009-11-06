@@ -43,10 +43,10 @@ if(! (-d $ssualigndir)) {
     printf STDERR ("ERROR, the ssu-align directory specified by your environment variable SSUALIGNDIR does not exist, see the User's Guide Installation section.\n"); 
     exit(1); 
 }    
-#Make sure the SSUALIGNDIR directory includes ssu-subs.pm
-my $subs_file = $ssualigndir . "/ssu-subs.pm";
+#Make sure the SSUALIGNDIR directory includes ssu-align-0p1.subs.pm
+my $subs_file = $ssualigndir . "/ssu-align-0p1.subs.pm";
 if(! (-e $subs_file)) { 
-    printf STDERR ("ERROR, the required perl module ssu-subs.pm is not in the directory specified by your SSUALIGNDIR environment variable.\n"); 
+    printf STDERR ("ERROR, the required perl module ssu-align-0p1.subs.pm is not in the directory specified by your SSUALIGNDIR environment variable.\n"); 
     exit(1); 
 }
 require $subs_file;
@@ -65,6 +65,7 @@ $options_usage .= "  -b <f> : set minimum bit score of a surviving subsequence a
 $options_usage .= "  -l <n> : set minimum length    of a surviving subsequence as <n> (default: 1)\n";
 $options_usage .= "  -f     : force; if <output dir> already exists - empty it and fill it\n" ,
 $options_usage .= "  --ff   : really force; remove <output dir> and all its subdirectories\n" ,
+$options_usage .= "  --keep : keep intermediate files which are normally removed\n";
 
 $options_usage .= "\noptions for running ssu-align in 'prep' mode to split up a large job:\n";
 $options_usage .= "  --prep-n <n> : split target seq file into multiple files with <n> seqs each\n";
@@ -102,6 +103,7 @@ $opt_takes_arg_H{"-b"}          = 1;  push(@opt_order_A, "-b");           $opt_i
 $opt_takes_arg_H{"-l"}          = 1;  push(@opt_order_A, "-l");           $opt_is_prep_H{"-l"}          = 1;
 $opt_takes_arg_H{"-f"}          = 0;  push(@opt_order_A, "-f");           $opt_is_prep_H{"-f"}          = 0;
 $opt_takes_arg_H{"--ff"}        = 0;  push(@opt_order_A, "--ff");         $opt_is_prep_H{"--ff"}        = 0;
+$opt_takes_arg_H{"--keep"}      = 0;  push(@opt_order_A, "--keep");       $opt_is_prep_H{"--keep"}      = 1;
 $opt_takes_arg_H{"--prep-n"}    = 1;  push(@opt_order_A, "--prep-n");     $opt_is_prep_H{"--prep-n"}    = 0;
 $opt_takes_arg_H{"--prep-p"}    = 1;  push(@opt_order_A, "--prep-p");     $opt_is_prep_H{"--prep-p"}    = 0;
 $opt_takes_arg_H{"--no-align"}  = 0;  push(@opt_order_A, "--no-align");   $opt_is_prep_H{"--no-align"}  = 1;
@@ -212,21 +214,21 @@ my ($target_file, $out_root) = @ARGV;
 #####################################################
 # Create the output directory and sum and log files #
 #####################################################
-my $out_dir      = $out_root;
-my $out_dir_root = $out_dir . "/" . $out_root;
+my $out_dir          = $out_root;
+my $out_dir_and_root = $out_dir . "/" . $out_root;
 my ($sum_file, $sum_file2print);
 my ($log_file, $log_file2print);
 if($opt_H{"--prep-n"} || $opt_H{"--prep-p"}) { 
-    $sum_file       = $out_dir_root . ".ssu-align.prep.sum";
-    $sum_file2print = $out_root     . ".ssu-align.prep.sum";
-    $log_file       = $out_dir_root . ".ssu-align.prep.log";
-    $log_file2print = $out_root     . ".ssu-align.prep.log";
+    $sum_file       = $out_dir_and_root . ".ssu-align.prep.sum";
+    $sum_file2print = $out_root         . ".ssu-align.prep.sum";
+    $log_file       = $out_dir_and_root . ".ssu-align.prep.log";
+    $log_file2print = $out_root         . ".ssu-align.prep.log";
 }
 else {
-    $sum_file       = $out_dir_root . ".ssu-align.sum";
-    $sum_file2print = $out_root     . ".ssu-align.sum";
-    $log_file       = $out_dir_root . ".ssu-align.log";
-    $log_file2print = $out_root     . ".ssu-align.log";
+    $sum_file       = $out_dir_and_root . ".ssu-align.sum";
+    $sum_file2print = $out_root         . ".ssu-align.sum";
+    $log_file       = $out_dir_and_root . ".ssu-align.log";
+    $log_file2print = $out_root         . ".ssu-align.log";
 }
 
 create_output_dir($out_dir, \%opt_H, $sum_file, $log_file); 
@@ -272,7 +274,7 @@ if($opt_H{"--prep-n"} || $opt_H{"--prep-p"}) {
 ############################################################################
 if(! $opt_H{"--no-search"}) { 
     $search_time = -1 * time();
-    search_sequences_with_each_model(\%opt_H, $cmsearch, $cm_file, $target_file, $out_dir_root, $nseq_target_file, 
+    search_sequences_with_each_model(\%opt_H, $cmsearch, $cm_file, $target_file, $out_dir_and_root, $nseq_target_file, 
 				     \@indi_cm_name_A, \$tab_file, \$max_file_name_width, \$description_width, $sum_file);
     $search_time += time();
 }
@@ -287,7 +289,7 @@ my %hmmscores2print_H = ();
 my $max_seq_name_width;
 
 if(! $opt_H{"--no-search"}) { 
-    classify_and_extract_subseqs(\%opt_H, $tab_file, $target_file, $out_dir_root, $sfetch, $max_file_name_width, \@indi_cm_name_A, \%bestmatch_cm_H, \%new_target_file_per_cm_name_H, \%hmmscores2print_H, \$max_seq_name_width, $sum_file);
+    classify_and_extract_subseqs(\%opt_H, $tab_file, $target_file, $out_dir_and_root, $sfetch, $max_file_name_width, \@indi_cm_name_A, \%bestmatch_cm_H, \%new_target_file_per_cm_name_H, \%hmmscores2print_H, \$max_seq_name_width, $sum_file);
 }
 else { 
     # No initial search stage; align all the sequences in the full target sequence file to the only CM (we've checked there's only 1 CM)
@@ -302,7 +304,7 @@ my ($align_time);
 my %cmscores2print_H = ();
 if(! $opt_H{"--no-align"}) {
     $align_time = -1 * time();
-    align_subseqs(\%opt_H, $out_dir_root, $cmalign, $max_file_name_width, $description_width, $weight, \@indi_cm_name_A, \%new_target_file_per_cm_name_H, \%cmscores2print_H, $sum_file); 
+    align_subseqs(\%opt_H, $out_dir_and_root, $cmalign, $max_file_name_width, $description_width, $weight, \@indi_cm_name_A, \%new_target_file_per_cm_name_H, \%cmscores2print_H, $sum_file); 
     $align_time += time();
 }
 
@@ -310,8 +312,8 @@ if(! $opt_H{"--no-align"}) {
 #############################
 # Step 4: Print scores file #
 #############################
-my $scores_file       = $out_dir_root . ".scores";
-my $scores_file2print = $out_root     . ".scores";
+my $scores_file       = $out_dir_and_root . ".scores";
+my $scores_file2print = $out_root         . ".scores";
 if(! $opt_H{"--no-search"}) { 
     print_scores_file($target_file, $ncm, $scores_file, $scores_file2print, $max_seq_name_width, \@indi_cm_name_A, \%bestmatch_cm_H, \%cmscores2print_H, \%hmmscores2print_H, $sum_file);
     PrintStringToFile($sum_file, 1, sprintf("  %-*s  list of CM/HMM scores for each sequence\n", $max_file_name_width, $scores_file2print));
@@ -332,7 +334,7 @@ PrintStringToFile($sum_file, 1, sprintf("#\n", $out_dir));
 
 #remove esl-sfetch index file we created for the target file
 my $ssi_file = $target_file . ".ssi";
-if(-e $ssi_file) { UnlinkFile($ssi_file, $log_file); }
+if((-e $ssi_file) && (! $opt_H{"--keep"})) { UnlinkFile($ssi_file, $log_file); }
 
 # Success! Exit normally
 exit(0); 
@@ -398,25 +400,25 @@ sub validate_and_setup_ssu_align {
     my $ssualign   = "ssu-align";
     # check that the required programs are in the PATH
     if(!($opt_HR->{"--no-search"})) { 
-	RunExecutable("$cmsearch -h", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $cmsearch is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
-	RunExecutable("$sfetch -h", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $sfetch is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
+	RunExecutable("$cmsearch -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $cmsearch is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
+	RunExecutable("$sfetch -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $sfetch is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
     }
     if(!($opt_HR->{"--no-align"})) { 
-	RunExecutable("$cmalign -h", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $cmalign is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
+	RunExecutable("$cmalign -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $cmalign is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
     }
     if($opt_HR->{"--filter"} ne "") { 
-	RunExecutable("$weight -h", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $weight is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
+	RunExecutable("$weight -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $weight is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
     }
     if(($opt_HR->{"--prep-n"} ne "") || ($opt_HR->{"--prep-p"})) { 
-	RunExecutable("$ssualign -h", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $ssualign is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
+	RunExecutable("$ssualign -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $ssualign is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
     }
 
-    $$ssualign_R    = $ssualign;
-    $$cmsearch_R    = $cmsearch;
-    $$cmalign_R     = $cmalign;
-    $$sfetch_R  = $sfetch;
-    $$weight_R  = $weight;
-    $$cm_file_R     = $cm_file;
+    $$ssualign_R = $ssualign;
+    $$cmsearch_R = $cmsearch;
+    $$cmalign_R  = $cmalign;
+    $$sfetch_R   = $sfetch;
+    $$weight_R   = $weight;
+    $$cm_file_R  = $cm_file;
 
     return;
 }
@@ -483,7 +485,7 @@ sub create_output_dir {
         # Note: we can't use RunExecutable, b/c that requires a output file to write to, which will be put
 	# into $out_dir, and since that hasn't been created yet, we can't write to it. Instead if the command
 	# succeeds, we write it to the log file at the end of the function.
-	if($? == -1) { 
+	if($? != 0) { 
 	    printf STDERR ("\nERROR, the command \"rm -rf $out_dir did not successfully complete.\n"); 
 	    exit(1);
 	}
@@ -502,8 +504,8 @@ sub create_output_dir {
 
     #if we did a 'rm -rf' command, print that to the log file:
     if($ran_command) { 
-	PrintStringToFile($log_file, 0, ("Executing: \(" . $command . "\)\n"));
-	PrintStringToFile($log_file, 0, ("Output:\n\(" . $output . "\)\n\n"));
+	PrintStringToFile($log_file, 0, ("Executing:  \(" . $command . "\)\n"));
+	PrintStringToFile($log_file, 0, ("Output:     \(" . $output . "\)\n\n"));
     }
     return;
 }
@@ -566,13 +568,13 @@ sub process_cm_file {
 #             --prep-p is enabled on the command line. 
 # 
 #             The target sequence file <$target_file> is partitioned
-#             into > 1 new, smaller fasta files. A shell script 
-#             named <$out_dir_root.sh> is created that calls 'ssu-align'
-#             once each for each of the new fasta files. A separate perl 
-#             script named <$out_dir_root.merge.pl> is created that is to be
-#             run after the alignments in <$out_dir_root.sh> are complete.
-#             This script merges all the small alignments into
-#             one big alignment.
+#             into > 1 new, smaller fasta files. A shell script named
+#             <$out_dir_and_root.sh> is created that calls 'ssu-align'
+#             once each for each of the new fasta files. A separate
+#             perl script named <$out_dir_and_root.merge.pl> is
+#             created that is to be run after the alignments in
+#             <$out_dir_and_root.sh> are complete.  This script merges
+#             all the small alignments into one big alignment.
 # 
 # Arguments:  
 # $target_file              the target sequence file
@@ -613,10 +615,10 @@ sub prepare_only {
 
     $ncm = scalar(@{$indi_cm_name_AR});
 
-    $shell_script       = $out_dir_root . ".sh";
-    $shell_script2print = $out_root . ".sh";
-    $merge_script       = $out_dir_root . ".merge.pl";
-    $merge_script2print = $out_root . ".merge.pl";
+    $shell_script       = $out_dir_and_root . ".sh";
+    $shell_script2print = $out_root         . ".sh";
+    $merge_script       = $out_dir_and_root . ".merge.pl";
+    $merge_script2print = $out_root         . ".merge.pl";
     if(open(SH, ">" . $shell_script) == 0) { printf STDERR ("ERROR, could not open $shell_script for writing.\n"); exit(1); }
 
     #determine number of seqs per file (if --prep-p)
@@ -844,7 +846,7 @@ sub prepare_only {
 # $cmsearch:               the cmsearch executable
 # $cm_file:                CM file
 # $target_file:            the target sequence file
-# $out_dir_root:           output file root, for naming output files
+# $out_dir_and_root:           output file root, for naming output files
 # $nseq_target_file:       number of sequences in target file
 # $indi_cm_name_AR:        ref to array with individual CM names
 # $tab_file_R:             RETURN; name of tab file to return
@@ -862,12 +864,13 @@ sub prepare_only {
 sub search_sequences_with_each_model { 
     my $narg_expected = 11;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, search_sequences_with_each_model() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($opt_HR, $cmsearch, $cm_file, $target_file, $out_dir_root, $nseq_target_file, $indi_cm_name_AR, $tab_file_R, $max_file_name_width_R, $description_width_R, $sum_file) = @_;
+    my($opt_HR, $cmsearch, $cm_file, $target_file, $out_dir_and_root, $nseq_target_file, $indi_cm_name_AR, $tab_file_R, $max_file_name_width_R, $description_width_R, $sum_file) = @_;
 
-    my ($i, $cmsearch_opts, $tab_file, $tab_file2print, $alg_flag, $max_file_name_width, $dashes1, $dashes2, $tmp, $command, $command_worked);
+    my ($i, $cmsearch_opts, $tab_file, $tab_file2print, $alg_flag, $max_file_name_width, $dashes1, $dashes2, $tmp, $command, $command_worked, $cmsearch_outfile);
 
-    $tab_file = $out_dir_root . ".tab";
-    $tab_file2print = $out_root . ".tab";
+    $tab_file          = $out_dir_and_root . ".tab";
+    $tab_file2print    = $out_root         . ".tab";
+    $cmsearch_outfile  = $out_dir_and_root . ".cmsearch";
     if   ($opt_HR->{"--forward"}) { $alg_flag = "--forward"; } 
     else                          { $alg_flag = "--viterbi"; } 
     if   ($opt_HR->{"--global"})  { $alg_flag .= " -g"; }
@@ -892,9 +895,11 @@ sub search_sequences_with_each_model {
     my $cmsearch_T = $df_cmsearch_T;
     if($opt_HR->{"--toponly"}) { $cmsearch_opts .= " --toponly"; }
 
-    $command = "$cmsearch $cmsearch_opts -T $cmsearch_T --tab $tab_file $alg_flag $cm_file $target_file";
+    $command = "$cmsearch $cmsearch_opts -T $cmsearch_T --tab $tab_file $alg_flag $cm_file $target_file > $cmsearch_outfile";
     RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
     PrintStringToFile($sum_file, 1, sprintf("  %-*s  locations/scores of hits defined by HMM(s)\n", $max_file_name_width, $tab_file2print));
+
+    if(! $opt_HR->{"--keep"}) { UnlinkFile($cmsearch_outfile, $log_file); }
 
     $$tab_file_R            = $tab_file;
     $$max_file_name_width_R = $max_file_name_width;
@@ -920,7 +925,7 @@ sub search_sequences_with_each_model {
 # $opt_HR:                         reference to the hash of command-line options
 # $tab_file:                       name of the tab output file.
 # $target_file:                    name of the target sequence filee
-# $out_dir_root:                   output root, for naming output files
+# $out_dir_and_root:               output root, for naming output files
 # $sfetch:                         esl-sfetch executable
 # $max_file_name_width:            max length of a file name
 # $indi_cm_name_AR:                reference to array of individual CM names
@@ -938,7 +943,7 @@ sub search_sequences_with_each_model {
 sub classify_and_extract_subseqs { 
     my $narg_expected = 12;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, classify_and_extract_subseqs() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($opt_HR, $tab_file, $target_file, $out_dir_root, $sfetch, $max_file_name_width, $indi_cm_name_AR, $bestmatch_cm_HR, $new_target_file_per_cm_name_HR,
+    my ($opt_HR, $tab_file, $target_file, $out_dir_and_root, $sfetch, $max_file_name_width, $indi_cm_name_AR, $bestmatch_cm_HR, $new_target_file_per_cm_name_HR,
 	$hmmscores2print_HR, $max_seq_name_width_R, $sum_file) = @_;
     my $cur_max_seq_name_width = 0;
     my $max_seq_name_width = 0;
@@ -1070,9 +1075,9 @@ sub classify_and_extract_subseqs {
 
     for($m = 0; $m < scalar(@{$indi_cm_name_AR}); $m++) { 
 	$cm_name = $indi_cm_name_AR->[$m];
-	$list_file = $out_dir_root . "." . $cm_name . ".hits.list"; 
-	$list_file2print = $out_root . "." . $cm_name . ".hits.list"; 
-	$sfetch_in_file = $out_dir_root . "." . $cm_name . ".hits.in";
+	$list_file = $out_dir_and_root      . "." . $cm_name . ".hits.list"; 
+	$list_file2print = $out_root        . "." . $cm_name . ".hits.list"; 
+	$sfetch_in_file = $out_dir_and_root . "." . $cm_name . ".hits.in";
 	if(!(exists($by_cm_name_HA{$cm_name}))) { $nwinners = 0; }
 	else                                    { $nwinners = scalar(@{$by_cm_name_HA{$cm_name}}); }
 
@@ -1102,8 +1107,9 @@ sub classify_and_extract_subseqs {
 	    close(SFETCHIN);
 	    PrintStringToFile($sum_file, 1, sprintf("  %-*s  list of sequences to align with $cm_name CM\n", $max_file_name_width, $list_file2print));
 
-	    $hits_file = $out_dir_root . "." . $cm_name . ".hits.fa";
+	    $hits_file = $out_dir_and_root . "." . $cm_name . ".hits.fa";
 	    $hits_file2print = $out_root . "." . $cm_name . ".hits.fa";
+	    # if somehow this file already exists, remove it
 	    if(-e ($hits_file)) { UnlinkFile($hits_file, $log_file); }
 	    if($do_truncate) { $sfetch_options = "-Cf"; }
 	    else             { $sfetch_options = "-f";  }
@@ -1114,7 +1120,7 @@ sub classify_and_extract_subseqs {
 		if($nwinners > 1) { PrintStringToFile($sum_file, 1, sprintf("  %-*s  %7d sequences to align with $cm_name CM\n", $max_file_name_width, $hits_file2print, scalar(@{$by_cm_name_HA{$cm_name}}))); }
 		else              { PrintStringToFile($sum_file, 1, sprintf("  %-*s  %7d sequence  to align with $cm_name CM\n", $max_file_name_width, $hits_file2print, scalar(@{$by_cm_name_HA{$cm_name}}))); }
 	    }
-	    UnlinkFile($sfetch_in_file, $log_file);
+	    if(! $opt_HR->{"--keep"}) { UnlinkFile($sfetch_in_file, $log_file); }
 	    $new_target_file_per_cm_name_HR->{$cm_name} = $hits_file;
 	    if($cur_max_seq_name_width > $max_seq_name_width) { $max_seq_name_width = $cur_max_seq_name_width; };
 	}
@@ -1139,7 +1145,7 @@ sub classify_and_extract_subseqs {
 #
 # Arguments:
 # $opt_HR:                         reference to the hash of command-line options
-# $out_dir_root:                   output directory and output root, concatenated
+# $out_dir_and_root:               output directory and output root, concatenated
 # $cmalign:                        cmalign executable
 # $max_file_name_width:            num chars in max length of a file name
 # $description_width:              num chars in description field of output
@@ -1159,7 +1165,7 @@ sub classify_and_extract_subseqs {
 sub align_subseqs { 
     my $narg_expected = 10;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, align_subseqs() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($opt_HR, $out_dir_root, $cmalign, $max_file_name_width, $description_width, $weight, $indi_cm_name_AR, $new_target_file_per_cm_name_HR, $cmscores2print_HR, $sum_file) = @_;
+    my ($opt_HR, $out_dir_and_root, $cmalign, $max_file_name_width, $description_width, $weight, $indi_cm_name_AR, $new_target_file_per_cm_name_HR, $cmscores2print_HR, $sum_file) = @_;
 
     my($i, $ncm, $m, $cm_file_name, $cm_name, $hits_file, $align_psecs, $cmalign_out, $cmalign_stk);
     my($cmalign_out2print, $cmalign_stk2print, $fil_cmalign_stk, $fil_cmalign_stk2print, $dashes1, $dashes2);
@@ -1180,24 +1186,24 @@ sub align_subseqs {
 	if(exists($new_target_file_per_cm_name_HR->{$cm_name})) { # >= 1 sequences in this set were classified as the current CM
 	    $hits_file      = $new_target_file_per_cm_name_HR->{$cm_name};
 	    
-	    $cmalign_out       = $out_dir_root . "." . $cm_name . ".cmalign";
+	    $cmalign_out       = $out_dir_and_root . "." . $cm_name . ".cmalign";
 	    $cmalign_out2print = $out_root     . "." . $cm_name . ".cmalign";
 	    if($opt_HR->{"--filter"} ne "") { 
-		$cmalign_stk           = $out_dir_root . "." . $cm_name . ".nf.stk";
-		$cmalign_stk2print     = $out_root     . "." . $cm_name . ".nf.stk";
-		$fil_cmalign_stk       = $out_dir_root . "." . $cm_name . ".stk";
-		$fil_cmalign_stk2print = $out_root     . "." . $cm_name . ".stk";
+		$cmalign_stk           = $out_dir_and_root . "." . $cm_name . ".nf.stk";
+		$cmalign_stk2print     = $out_root         . "." . $cm_name . ".nf.stk";
+		$fil_cmalign_stk       = $out_dir_and_root . "." . $cm_name . ".stk";
+		$fil_cmalign_stk2print = $out_root         . "." . $cm_name . ".stk";
 	    }
 	    else { 
-		$cmalign_stk           = $out_dir_root . "." . $cm_name . ".stk";
-		$cmalign_stk2print     = $out_root     . "." . $cm_name . ".stk";
+		$cmalign_stk           = $out_dir_and_root . "." . $cm_name . ".stk";
+		$cmalign_stk2print     = $out_root         . "." . $cm_name . ".stk";
 	    }
 	    
 	    my $mxsize = $df_mxsize;
 	    if($opt_HR->{"--mxsize"} ne "") { $mxsize = $opt_HR->{"--mxsize"}; }
 	    my $prob_opt = "-p";
 	    if($opt_HR->{"--no-prob"}) { $prob_opt = ""; }
-	    $command = "$cmalign --cm-idx $m $prob_opt --mxsize $mxsize --sub -o $cmalign_stk $cm_file $hits_file > $cmalign_out 2>&1"; 
+	    $command = "$cmalign --cm-idx $m $prob_opt --mxsize $mxsize --sub -o $cmalign_stk $cm_file $hits_file > $cmalign_out"; 
 	    RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
 	    
 	    #open and parse the cmalign output
@@ -1214,7 +1220,7 @@ sub align_subseqs {
 	    close(CMALIGN);
 
 	    if($opt_HR->{"--filter"} ne "") { 
-		$command = "$weight -f --idf " . $opt_HR->{"--filter"} . " $cmalign_stk > $fil_cmalign_stk 2>&1";
+		$command = "$weight -f --idf " . $opt_HR->{"--filter"} . " $cmalign_stk > $fil_cmalign_stk";
 		RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
 		PrintStringToFile($sum_file, 1, sprintf("  %-*s  complete %s alignment\n", $max_file_name_width, $cmalign_stk2print, $cm_name));
 		PrintStringToFile($sum_file, 1, sprintf("  %-*s  filtered %s alignment\n", $max_file_name_width, $fil_cmalign_stk2print, $cm_name));
@@ -1268,7 +1274,7 @@ sub print_scores_file {
     $dashes_seqname = ""; for($i = 0; $i < $max_seq_name_width; $i++) { $dashes_seqname .= "-"; } 
 
     $max_cm_name_width = MaxLengthScalarInArray($indi_cm_name_AR); 
-    if($max_cm_name_width < length("best-matching model")) { $max_cm_name_width = length("best-matching model"); } 
+    if($max_cm_name_width < length("model name")) { $max_cm_name_width = length("model name"); } 
     $dashes_cmname  = ""; for($i = 0; $i < $max_cm_name_width; $i++)  { $dashes_cmname .= "-"; } 
     
     if(open(SCORES,  ">" . $scores_file) == 0) { printf STDERR ("ERROR, could not open $scores_file for writing.\n"); exit(1); }

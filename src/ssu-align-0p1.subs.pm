@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# ssu-subs.pm
+# ssu-align-0p1.subs.pm
 # Eric Nawrocki
 # EPN, Thu Nov  5 05:39:37 2009
 #
@@ -87,7 +87,6 @@ sub PrintBanner {
 }
 
 
-
 #######################################################################
 # Subroutine: PrintConclusion()
 # Incept:     EPN, Thu Nov  5 18:25:31 2009
@@ -126,6 +125,7 @@ sub PrintConclusion {
 
     return;
 }
+
 
 #####################################################################
 # Subroutine: PrintTiming()
@@ -225,7 +225,10 @@ sub RunExecutable {
     my $output = "";
     my $command_worked = 1;
 
-    if ($command !~ m/2\>\&1$/) { $command .= " 2>&1"; }
+    # redirect stderr to stdout, unless stdout has been piped to /dev/null, in which case we still want to be able to get stderr
+    if (($command !~ m/2\>\&1$/) && ($command !~ m/\>\s*\/dev\/null/)) { 
+	$command .= " 2>&1"; 
+    }
 
     PrintStringToFile($log_file, 0, ("Executing:  \(" . $command . "\)\n"));
     $output = `$command`;
@@ -256,7 +259,7 @@ sub RunExecutable {
 # Incept: EPN, Wed Nov  4 18:19:29 2009
 #
 # Purpose: Unlink (remove) a file. Print info to log file 
-#          saying it's been unlinked.
+#          saying it's been unlinked. 
 #
 # Returns: Nothing. If the file can't be unlinked, we die.
 #
@@ -271,7 +274,7 @@ sub UnlinkFile {
 	PrintStringToFile($log_file, 0, ("ERROR, couldn't unlink it."));
 	die "\nERROR, couldn't remove file $file with unlink function.\n";
     }
-    PrintStringToFile($log_file, 0, ("done.\n"));
+    PrintStringToFile($log_file, 0, ("done.\n\n"));
     
     return;
 }
@@ -342,7 +345,7 @@ sub DetermineNumSeqsStockholm {
     my($seqstat, $alifile, $log_file, $nseq_AR, $nali_R) = @_;
 
     my ($nseq, $command, $line, $command_worked, $output);
-    $command = "$seqstat $alifile 2>&1";
+    $command = "$seqstat $alifile";
     $output = RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
 
     my @tmp_A = split("\n", $output);

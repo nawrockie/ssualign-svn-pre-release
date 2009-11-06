@@ -31,10 +31,10 @@ if(! (-d $ssualigndir)) {
     printf STDERR ("ERROR, the ssu-align directory specified by your environment variable SSUALIGNDIR does not exist, see the User's Guide Installation section.\n"); 
     exit(1); 
 }    
-#Make sure the SSUALIGNDIR directory includes ssu-subs.pm
-my $subs_file = $ssualigndir . "/ssu-subs.pm";
+#Make sure the SSUALIGNDIR directory includes ssu-align-0p1.subs.pm
+my $subs_file = $ssualigndir . "/ssu-align-0p1.subs.pm";
 if(! (-e $subs_file)) { 
-    printf STDERR ("ERROR, the required perl module ssu-subs.pm is not in the directory specified by your SSUALIGNDIR environment variable.\n"); 
+    printf STDERR ("ERROR, the required perl module ssu-align-0p1.subs.pm is not in the directory specified by your SSUALIGNDIR environment variable.\n"); 
     exit(1); 
 }
 require $subs_file;
@@ -420,7 +420,7 @@ sub validate_and_setup_ssu_build {
 
 	#Validate that ssu-cmbuild exists and is in path
 	$cmbuild = "ssu-cmbuild";
-	RunExecutable("$cmbuild -h", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $cmbuild is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
+	RunExecutable("$cmbuild -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $cmbuild is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
     }
 
     my $alimanip = "";
@@ -432,7 +432,7 @@ sub validate_and_setup_ssu_build {
     if(($opt_HR->{"--trunc"}) || $do_number_mode) { 
 	# verify that we can run esl-alimanip
 	$alimanip = "ssu-esl-alimanip";
-	RunExecutable("$alimanip -h", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $alimanip is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
+	RunExecutable("$alimanip -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $alimanip is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
     }
 
     # if $do_draw (passed in), we'll try to draw a secondary structure diagram showing the part of the model included/excluded by the truncation,
@@ -443,7 +443,7 @@ sub validate_and_setup_ssu_build {
 
 	if($template_file ne "") { 
 	    $ssdraw = "ssu-esl-ssdraw";
-	    RunExecutable("$ssdraw -h", 0, 0, $log_file, \$command_worked, "WARNING: the command \"$ssdraw -h\" should have successfully completed but it didn't. No structure diagrams will be drawn.");
+	    RunExecutable("$ssdraw -h > /dev/null", 0, 0, $log_file, \$command_worked, "WARNING: the command \"$ssdraw -h\" should have successfully completed but it didn't. No structure diagrams will be drawn.");
                                         #0 = don't die if command fails
 	    if(! $command_worked ) { $ssdraw = ""; }
 	}

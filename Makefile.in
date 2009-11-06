@@ -77,7 +77,7 @@ ESLPROGS = ssu-esl-alimanip\
 
 # List of the files to be copied to the lib/ directory.
 #
-PERLMODULEFILES = ssu-subs.pm
+PERLMODULEFILES = ssu-align-0p1.subs.pm
 
 SEEDLIBFILES = ssu-align-0p1.cm\
 	       archaea-0p1.cm\

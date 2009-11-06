@@ -29,10 +29,10 @@ if(! (-d $ssualigndir)) {
     printf STDERR ("ERROR, the ssu-align directory specified by your environment variable SSUALIGNDIR does not exist, see the User's Guide Installation section.\n"); 
     exit(1); 
 }    
-#Make sure the SSUALIGNDIR directory includes ssu-subs.pm
-my $subs_file = $ssualigndir . "/ssu-subs.pm";
+#Make sure the SSUALIGNDIR directory includes ssu-align-0p1.subs.pm
+my $subs_file = $ssualigndir . "/ssu-align-0p1.subs.pm";
 if(! (-e $subs_file)) { 
-    printf STDERR ("ERROR, the required perl module ssu-subs.pm is not in the directory specified by your SSUALIGNDIR environment variable.\n"); 
+    printf STDERR ("ERROR, the required perl module ssu-align-0p1.subs.pm is not in the directory specified by your SSUALIGNDIR environment variable.\n"); 
     exit(1); 
 }
 require $subs_file;
@@ -41,7 +41,7 @@ my $total_time     = -1 * time();
 my $script_desc    = "mask SSU rRNA alignments";
 my $date           = scalar localtime();
 my $usage          = "Usage: ssu-mask [options] <directory created by ssu-align (includes >= 1 alignment file(s))>\n";
-   $usage         .= "Usage: ssu-mask [options] -a <Stockholm alignment file (must have .stk suffix)>\n";
+   $usage         .= "Usage: ssu-mask [options] -a <Stockholm alignment file>\n";
 my $options_usage  = "where general options are:\n";
 #                           1         2         3         4         5         6         7         8
 #                  12345678901234567890123456789012345678901234567890123456789012345678901234567890
@@ -54,6 +54,7 @@ $options_usage .= "  --afa         : output aligned FASTA (.afa) alignments as w
 $options_usage .= "  --only-afa    : only output aligned FASTA (.afa) alignments, no Stockholm ones\n";
 $options_usage .= "  --key-in <s>  : assume <s> is part of input file names, before the suffix\n";
 $options_usage .= "  --key-out <s> : add <s> to all output file names, before the suffix\n";
+
 $options_usage .= "\noptions related to masking alignments\n";
 $options_usage .= "  --pf <x>        : include columns w/<x> fraction of seqs w/prob >= --pt <y> [df: 0.95]\n";
 $options_usage .= "  --pt <y>        : set probability threshold for --pf as <x> [default=0.95]\n";
@@ -63,12 +64,16 @@ $options_usage .= "  --in-mask <f>   : mask alignment given 1/0s in 1-line mask 
 $options_usage .= "  --keep          : keep all intermediate files which are normally removed\n";
 $options_usage .= "  --pdf <s>       : <s> (!= \"ps2pdf\") is the command for converting ps to pdf\n";
 $options_usage .= "  --ps-keep       : if --pdf or ps2pdf is installed, save postscript (& pdf) files\n";
+
 $options_usage .= "\noption for filtering alignments based on sequence identity (no masking)\n";
 $options_usage .= "  --filter <x> : remove seqs such that no 2 seqs > <x> identical (1st seq is always kept)\n";
+
 $options_usage .= "\noption for listing sequences in alignment(s) (no masking)\n";
-$options_usage .= "  --list : output list of sequence names in alignment(s)\n";    
+$options_usage .= "  --list : output list file(s) of sequence names in alignment(s)\n";    
+
 $options_usage .= "\noptions for converting a Stockholm alignment to aligned fasta (no masking):\n";
-$options_usage .= "  --stk2afa : convert Stockholm alignment(s) to aligned FASTA and exit\n"; 
+$options_usage .= "  --stk2afa : convert Stockholm alignment(s) to aligned FASTA\n";
+
 $options_usage .= "\noptions for only removing sequences from an alignment, require -a (no masking):\n";
 $options_usage .= "  --seq-r <f> : with -a, remove sequences with names listed in file <f>\n"; 
 $options_usage .= "  --seq-k <f> : with -a, remove all sequences *except* those listed in file <f>\n"; 
@@ -1113,15 +1118,16 @@ sub mask_alignment {
     if($mask_root ne "mask") { $mask_file2print = $aln_root2print . $key_out . "." . $mask_root . ".mask"; }
     else                     { $mask_file2print = $aln_root2print . $key_out . ".mask"; }
 
-    # cmask: $command = "$alimanip -k --num-rf --kmask $cmask_file -o $cmasked_aln_file $aln_file2mask 2>&1";
-    # pmask: $command = "$alimanip --p-rf --pf $opt_HR->{"--pf"} --pt $opt_HR->{"--pt"} -k --kmask $pmask_file -o $pmasked_aln_file $cmasked_aln_file 2>&1";
-    # gmask: $command = "$alimanip --verbose -g --gapthresh $opt_HR->{"--gapthresh"} -k --kmask $gmask_file -o $gmasked_aln_file $cmasked_aln_file 2>&1";
-    # pgmask:$command = "$alimanip -k --mask-rf $pgmask_file -o $pgmasked_aln_file $cmasked_aln_file 2>&1";
+    # Commands from previous implementation (for reference)
+    # cmask: $command = "$alimanip -k --num-rf --kmask $cmask_file -o $cmasked_aln_file $aln_file2mask";
+    # pmask: $command = "$alimanip --p-rf --pf $opt_HR->{"--pf"} --pt $opt_HR->{"--pt"} -k --kmask $pmask_file -o $pmasked_aln_file $cmasked_aln_file";
+    # gmask: $command = "$alimanip --verbose -g --gapthresh $opt_HR->{"--gapthresh"} -k --kmask $gmask_file -o $gmasked_aln_file $cmasked_aln_file";
+    # pgmask:$command = "$alimanip -k --mask-rf $pgmask_file -o $pgmasked_aln_file $cmasked_aln_file";
     if   ($rfmask_file2use ne "")  { $extra_opts = "--mask-rf $rfmask_file2use";  $mask_file = $rfmask_file2use; }
     elsif($allmask_file2use ne "") { $extra_opts = "--mask-all $allmask_file2use"; $mask_file = $allmask_file2use; }
     else                           { $extra_opts = "--kmask $mask_file"; }
     if($opt_HR->{"-1"})                      { $extra_opts .= " -1"; }
-    $command = "$alimanip $mask_opts $extra_opts -o $masked_aln_file $aln_file2mask 2>&1";
+    $command = "$alimanip $mask_opts $extra_opts -o $masked_aln_file $aln_file2mask";
     my $errmsg = "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.";
     my $die_if_fails = 1;
     if($mask_ok_if_fails) { 
@@ -1226,7 +1232,7 @@ sub filter_alignment {
     # esl-weight -f --idf 0.75 10.stk
     if($opt_HR->{"--filter"} < 0.) { printf STDERR ("\nERROR, with --filter <f>, <f> must be between 0.0 and 1.0, you entered %.4f.\n", $opt_HR->{"--filter"}); exit(1); }
     if($opt_HR->{"--filter"} > 1.) { printf STDERR ("\nERROR, with --filter <f>, <f> must be between 0.0 and 1.0, you entered %.4f.\n", $opt_HR->{"--filter"}); exit(1); }
-    $command = "$weight -o $filtered_aln_file -f --idf " . $opt_HR->{"--filter"} . " $aln_file2filter 2>&1";
+    $command = "$weight -o $filtered_aln_file -f --idf " . $opt_HR->{"--filter"} . " $aln_file2filter";
     RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
     @nseq_A = ();
     DetermineNumSeqsStockholm($seqstat, $filtered_aln_file, $log_file, \@nseq_A, \$nali);
@@ -1299,7 +1305,7 @@ sub run_ssdraw_for_ssu_mask {
     $draw_ps2print   = $root2print . $key_out . $draw_key . ".ps";
     $draw_pdf2print  = $root2print . $key_out . $draw_key . ".pdf";
 
-    my $command = "$ssdraw $ssdraw_opts $aln_file $template_file $draw_ps 2>&1";
+    my $command = "$ssdraw $ssdraw_opts $aln_file $template_file $draw_ps";
     my $die_if_fails = 0;
     my $print_output_upon_failure = 0;
     RunExecutable("$command", $die_if_fails, $print_output_upon_failure, $log_file, \$command_worked, "");
