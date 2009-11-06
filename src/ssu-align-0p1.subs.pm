@@ -225,19 +225,37 @@ sub RunExecutable {
     my $output = "";
     my $command_worked = 1;
 
-    # redirect stderr to stdout, unless stdout has been piped to /dev/null, in which case we still want to be able to get stderr
-    if (($command !~ m/2\>\&1$/) && ($command !~ m/\>\s*\/dev\/null/)) { 
+    my $output_file = "";
+    # determine if we're piping output to a file (or /dev/null)
+    if($command =~ m/\>\s*(\S+)\s*$/) { 
+	$output_file = $1;
+    }
+
+    # redirect stderr to stdout
+    if($command !~ m/2\>\&1\s*$/) { 
 	$command .= " 2>&1"; 
     }
 
-    PrintStringToFile($log_file, 0, ("Executing:  \(" . $command . "\)\n"));
+    PrintStringToFile($log_file, 0, ("Executing:  " . $command . "\n"));
     $output = `$command`;
 
-    PrintStringToFile($log_file, 0, ("Returned:   \(" . ($? >> 8) . "\)\n"));
+    PrintStringToFile($log_file, 0, ("Returned:   " . ($? >> 8) . "\n"));
 
-    if(($? >> 8)!= 0) { 
+    if(($? >> 8) != 0) { 
+	if($output_file ne "") { 
+	    my $line;
+	    $output = "";
+	    open(OUTFILE, $output_file) || die "\nERROR, couldn't open recently created output file $output_file for reading.\n";
+	    while($line = <OUTFILE>) { $output .= $line; }
+	    close(OUTFILE);
+	}
 	if($errmsg ne "") { 
-	    PrintStringToFile($log_file, 0, ("Output:     \(" . $output . "\)\n\n"));
+	    if($output_file ne "") { 
+		PrintStringToFile($log_file, 0, ("Output (in output file $output_file):\n" . $output . "\n\n"));
+	    }
+	    else { 
+		PrintStringToFile($log_file, 0, ("Output:     " . $output . "\n\n"));
+	    }
 	    printf STDERR ("\n$errmsg\n");
 	    PrintStringToFile($log_file, 0, ("\n$errmsg\n"));
 	}
@@ -246,7 +264,7 @@ sub RunExecutable {
 	$command_worked = 0;
     }
     else { 
-	PrintStringToFile($log_file, 0, ("Output:     \(" . $output . "\)\n\n"));
+	PrintStringToFile($log_file, 0, ("Output:     " . $output . "\n\n"));
     }
 
     $$command_worked_ref = $command_worked;

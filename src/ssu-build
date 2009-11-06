@@ -755,9 +755,9 @@ sub run_ssdraw_for_ssu_build {
     if(! $command_worked) { return 0;}
     PrintStringToFile($sum_file, 1, sprintf("#\n"));
 
-    $max_width = length($pdf_file);
+    my $max_width = length($pdf_file);
     if($max_width < length("structure diagram file")) { $max_width = length("structure diagram file"); } 
-    $dashes = ""; for($i = 0; $i < $max_width; $i++) { $dashes .= "-"; }
+    my $dashes = ""; for($i = 0; $i < $max_width; $i++) { $dashes .= "-"; }
     PrintStringToFile($sum_file, 1, sprintf("# %-*s\n", $max_width, "structure diagram file"));
     PrintStringToFile($sum_file, 1, sprintf("# %-*s\n", $max_width, $dashes));
     
@@ -765,8 +765,8 @@ sub run_ssdraw_for_ssu_build {
     my $ps2pdf;
     if($opt_HR->{"--pdf"} ne "") { $ps2pdf = $opt_HR->{"--pdf"}; }
     else                         { $ps2pdf = "ps2pdf"; }
-    $die_if_fails = 0;
-    $print_output_upon_failure = 0;
+    my $die_if_fails = 0;
+    my $print_output_upon_failure = 0;
     my $errmsg = "";
     if($opt_HR->{"--pdf"} ne "") { 
 	$die_if_fails = 1; 
