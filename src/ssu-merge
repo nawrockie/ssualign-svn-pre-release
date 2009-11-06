@@ -54,6 +54,7 @@ $options_usage .= "  -1     : output alignments in non-interleaved, 1 line/seq f
 $options_usage .= "  -m <s> : use CM file <f> instead of the default CM file\n";
 $options_usage .= "  -F     : force; allow file clobbering\n" ,
 
+
 ###################
 # Process options #
 ###################
@@ -92,6 +93,7 @@ if ($opt_H{"-h"}) {
     exit(1); 
 } 
 
+
 ################
 # Print banner #
 ################
@@ -129,8 +131,8 @@ validate_and_setup_ssu_merge($ssualigndir, a\%opt_H, $dir, \@subdir_A, \@score_t
 ####################################
 
 my ($i, $j, $cm_idx, $nhitsfa, $nhitslist, $ncmalign, $nstk);
-my ($scores_file, $sum_file, $tab_file, $cmalign_file, $hitsfa_file, $hitslist_file, $merged_stk_file);
-my ($scores_file2print, $sum_file2print, $tab_file2print, $cmalign_file2print, $hitsfa_file2print, $hitslist_file2print, $merged_stk_file2print);
+my ($scores_file, $ssu_align_sum_file, $tab_file, $cmalign_file, $hitsfa_file, $hitslist_file, $merged_stk_file);
+my ($scores_file2print, $ssu_align_sum_file2print, $tab_file2print, $cmalign_file2print, $hitsfa_file2print, $hitslist_file2print, $merged_stk_file2print);
 my ($max_file_name_width, $max_cm_name_width, $file_dashes, $cm_dashes, $nseq_merged);
 
 if(scalar(@score_to_merge_A) == 0) { printf STDERR ("ERROR, no *.scores files found.\n"); exit(1); }
@@ -153,18 +155,18 @@ PrintStringToFile($sum_file, 1, sprintf("# %-*s  %-*s  %7s  %9s\n", $max_file_na
 PrintStringToFile($sum_file, 1, sprintf("# %-*s  %-*s  %7s  %9s\n", $max_file_name_width, "merged file name", $max_cm_name_width, "CM name",  "merged", "merged"));
 PrintStringToFile($sum_file, 1, sprintf("# %-*s  %-*s  %7s  %9s\n", $max_file_name_width, $file_dashes,       $max_cm_name_width, $cm_dashes, "-------", "---------"));
 
-$scores_file       = $dir . "/" . $dir . ".scores";
-$sum_file          = $dir . "/" . $dir . ".ssu-align.sum";
-$tab_file          = $dir . "/" . $dir . ".tab";
-$scores_file2print = $dir . ".scores";
-$sum_file2print    = $dir . ".ssu-align.sum";
-$tab_file2print    = $dir . ".tab";
+$scores_file              = $dir . "/" . $dir . ".scores";
+$ssu_align_sum_file       = $dir . "/" . $dir . ".ssu-align.sum";
+$tab_file                 = $dir . "/" . $dir . ".tab";
+$scores_file2print        = $dir . ".scores";
+$ssu_align_sum_file2print = $dir . ".ssu-align.sum";
+$tab_file2print           = $dir . ".tab";
 
 concatenate_a_list_of_files(\%opt_H, $scores_file, \@score_to_merge_A);
 PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9s\n", $max_file_name_width, $scores_file2print, $max_cm_name_width, "-", scalar(@score_to_merge_A), "-"));
 
-concatenate_a_list_of_files(\%opt_H, $sum_file, \@sum_to_merge_A);
-PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9s\n", $max_file_name_width, $sum_file2print, $max_cm_name_width, "-", scalar(@sum_to_merge_A), "-"));
+concatenate_a_list_of_files(\%opt_H, $ssu_align_sum_file, \@sum_to_merge_A);
+PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9s\n", $max_file_name_width, $ssu_align_sum_file2print, $max_cm_name_width, "-", scalar(@sum_to_merge_A), "-"));
 
 concatenate_a_list_of_files(\%opt_H, $tab_file, \@tab_to_merge_A);
 PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9s\n", $max_file_name_width, $tab_file2print, $max_cm_name_width, "-", scalar(@tab_to_merge_A), "-"));
@@ -215,22 +217,13 @@ for($i = 0; $i < scalar(@cm_names_A); $i++) {
 }
 
 
-#################
-# Print timings #
-#################
+############
+# Conclude #
+############
 $total_time += time();
+PrintConclusion($sum_file, $log_file2print, $sum_file2print, $total_time, $dir);
 
-my $ssu_merge_sum_file = $dir . "/" . $dir . ".ssu-merge.sum";
-my $ssu_merge_sum_file2print = $dir . ".ssu-merge.sum";
-PrintStringToFile($sum_file, 1, sprintf("# Summary file (*this* text printed to stdout) saved to %.\n", $ssu_merge_sum_file2print));
-
-PrintStringToFile($sum_file, 1, sprintf("#\n# All output files created in directory \.\/%s\/\n", $dir));
-PrintStringToFile($sum_file, 1, sprintf("#\n"));
-
-print_timing("# CPU time: ", $total_time, $sum_file);
-PrintStringToFile($sum_file, 1, sprintf("\/\/\n"));
-
-# success, exit normally
+# Success! Exit normally
 exit(0); 
 
 

@@ -157,7 +157,6 @@ if($opt_H{"--key-out"}  ne "") { $key_out   = "." . $opt_H{"--key-out"};  }
 ##############################################################################
 # Determine the "mode" to run and check for incompatible option combinations.#
 ##############################################################################
-
 # There are 5 possible modes, each is exclusive.
 my $do_mask_mode        = 0; # default mode, mask the alignment
 my $do_remove_seqs_mode = 0; # remove some sequences from the alignment given a list file, no masking
@@ -241,6 +240,7 @@ if(($opt_H{"--only-afa"})  && ((! $do_mask_mode) && (! $do_filter_mode))) { prin
 
 if($opt_H{"--afa"}  && ($opt_H{"--only-afa"})) { printf STDERR ("\nERROR, --afa is incompatible with only-afa\n"); exit(1); }
 
+
 ###################################################
 # Process command-line arguments and print banner #
 ###################################################
@@ -278,10 +278,10 @@ close(OUT);
 PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, $sum_file);
 PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 0, $log_file);
 
+
 ##################################
 # Validate that everything is go #
 ##################################
-
 my @stk_list_A = ();
 my ($cm_file, $template_file, $alimanip, $ssdraw, $weight, $seqstat, $reformat);
 validate_and_setup_ssu_mask($ssualigndir, $dir, $key_in, \%opt_H, \$cm_file, \$template_file, \$alimanip, \$ssdraw, \$weight, \$seqstat, \$reformat, \@stk_list_A, $log_file);
@@ -294,7 +294,6 @@ my $alimanip_options = "";
 ##########################
 # Mask mode: Do the work #
 ##########################
-
 my $max_width;
 my ($i, $tmp, $command, $aln_root, $aln_root2print, $final_key, $nec_width, $dashes, $print_input_aln);
 my $ssdraw_failed_at_least_once = 0;
@@ -521,7 +520,6 @@ if($do_mask_mode)
 ############################
 # Filter mode: Do the work #
 ############################
-
 my $filtered_aln_file;
 if($do_filter_mode) { 
     my $max_width_fil = length("file name");
@@ -566,7 +564,6 @@ if($do_filter_mode) {
 ##########################
 # List mode: Do the work #
 ##########################
-
 if($do_list_mode) 
 { 
     # determine max file name width
@@ -621,7 +618,6 @@ if($do_list_mode)
 ######################################
 # Sequence removal mode: Do the work #
 ######################################
-
 if($do_remove_seqs_mode) 
 { 
     # determine max file name width
@@ -674,7 +670,6 @@ if($do_remove_seqs_mode)
 #############################
 # stk2afa mode: Do the work #
 #############################
-
 if($do_stk2afa_mode) 
 { 
     # determine max file name width
@@ -723,12 +718,13 @@ if($do_stk2afa_mode)
     }
 }
 
-##########################
-# Print the summary file #
-##########################
 
-
+############
+# Conclude #
+############
+my $dir2print = "";
 if(!($opt_H{"-a"})) { 
+    $dir2print = $dir;
     if($do_filter_mode) {
 	my $fil_key2print = $key_out . "." . "fil";
 	$fil_key2print =~ s/\.//;
@@ -772,10 +768,9 @@ foreach $file (@files_to_unlink_A) {
 }
 
 $total_time += time();
-PrintConclusion($sum_file, $log_file2print, $sum_file2print, $total_time, $dir);
-# HERE, is $dir really always the output dir??
+PrintConclusion($sum_file, $log_file2print, $sum_file2print, $total_time, $dir2print);
 
-# Success!
+# Success! Exit normally
 exit(0);
 
 
@@ -1313,11 +1308,10 @@ sub run_ssdraw_for_ssu_mask {
 	return 0; 
     } 
 
-    # try ps2pdf, its okay if it doesn't work (unless --pdf, in which case its not ok)
+    # try ps2pdf, it's okay if it doesn't work (unless --pdf, in which case its not ok)
     my $ps2pdf;
     if($opt_HR->{"--pdf"} ne "") { $ps2pdf = $opt_HR->{"--pdf"}; }
     else                         { $ps2pdf = "ps2pdf"; }
-    $command = "$ps2pdf $draw_ps $draw_pdf 2>&1";
     $die_if_fails = 0;
     $print_output_upon_failure = 0;
     my $errmsg = "";
@@ -1325,7 +1319,7 @@ sub run_ssdraw_for_ssu_mask {
 	$die_if_fails = 1; 
 	$errmsg = "ERROR, --pdf " . $opt_HR->{"--pdf"} . " was enabled, but command $command did not work."; 
     }
-    RunExecutable("$command", $die_if_fails, $print_output_upon_failure, $log_file, \$command_worked, $errmsg);
+    TryPs2Pdf($ps2pdf, $draw_ps, $draw_pdf, $die_if_fails, $print_output_upon_failure, $log_file, \$command_worked, $errmsg);
 
     if($command_worked) { 
 	if($do_column_breakdown) { 

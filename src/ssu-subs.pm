@@ -19,6 +19,7 @@
 # DetermineNumSeqsStockholm():  determine the number of sequences in a Stockholm aln file.
 # ArgmaxArray():                determine the index of the max value scalar in an array
 # MaxLengthScalarInArray():     determine the max length scalar in an array.
+# TryPs2Pdf():                  attempt to run 'ps2pdf' to convert ps to pdf file.
 #
 use strict;
 use warnings;
@@ -416,8 +417,50 @@ sub MaxLengthScalarInArray {
 }
 
 
+#################################################################
+# Subroutine : TryPs2Pdf
+# Incept:      EPN, Fri Nov  6 05:50:40 2009
+# 
+# Purpose:     Try running $ps2pdf command to convert a postscript 
+#              file into a pdf file. If $ps2pdf == "", use command
+#              'ps2pdf', else use $ps2pdf. 
+# Arguments: 
+#   $ps2pdf:                    command to execute, if "", use 'ps2pdf'
+#   $ps_file:                   postscript file
+#   $pdf_file:                  pdf file to create
+#   $die_if_fails:              '1' to die if command returns non-zero status
+#   $print_output_upon_failure: '1' to print command output to STDERR if it fails
+#   $log_file:                  file to print command and output to
+#   $command_worked_ref:        set to '1' if command works (returns 0), else set to '0'         
+#   $errmsg:                    message to print if command returns non-0 exit status
+# 
+# Returns:     The output of $ps2pdf. $command_worked_ref is filled with
+#              '1' if command worked (return 0), '0' otherwise.
+#
+################################################################# 
+sub TryPs2Pdf {
+    my $narg_expected = 8;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, TryPs2Pdf() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($ps2pdf, $ps_file, $pdf_file, $die_if_fails, $print_output_upon_failure, $log_file, $command_worked_ref, $errmsg) = @_;
+
+    # contract check
+    if(! (-e $ps_file)) { die "\nERROR, in TryPs2Pdf(), ps file $ps_file doesn't exist.\n"; }
+
+    my $command_worked;
+    # Change the following line to change the default ps2pdf command
+    if($ps2pdf eq "") { $ps2pdf = "ps2pdf"; }
+
+    my $command = "$ps2pdf $ps_file $pdf_file";
+    my $output = RunExecutable("$command", $die_if_fails, $print_output_upon_failure, $log_file, \$command_worked, $errmsg);
+
+    $$command_worked_ref = $command_worked;
+    return $output;
+}
+
+
 ####################################################################
 # the next line is critical, a perl module must return a true value
 return 1;
 ####################################################################
+
 

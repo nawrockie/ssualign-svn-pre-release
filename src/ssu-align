@@ -85,6 +85,7 @@ $options_usage .= "  --filter <f> : filter aln based on seq identity, allow no 2
 $options_usage .= "  --no-prob    : DO NOT append posterior probabilities to alignments\n";
 $options_usage .= "  --mxsize <f> : increase mx size for cmalign to <f> Mb (default: 4096)\n";
 
+
 ###################
 # Process options #
 ###################
@@ -199,7 +200,6 @@ if(($opt_H{"--filter"} ne "") && (($opt_H{"--filter"} < 0.) || ($opt_H{"--filter
 ###################################################
 # Process command-line arguments and print banner #
 ###################################################
-
 if(scalar(@ARGV) != 2) {   
     print "Incorrect number of command line arguments.\n";
     print $usage;
@@ -207,6 +207,7 @@ if(scalar(@ARGV) != 2) {
     exit(1);
 }
 my ($target_file, $out_root) = @ARGV;
+
 
 #####################################################
 # Create the output directory and sum and log files #
@@ -231,6 +232,7 @@ else {
 create_output_dir($out_dir, \%opt_H, $sum_file, $log_file); 
 PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, $sum_file);
 PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 0, $log_file);
+
 
 ##################################################################
 # Validate that everything is go and determine output file names #
@@ -304,6 +306,7 @@ if(! $opt_H{"--no-align"}) {
     $align_time += time();
 }
 
+
 #############################
 # Step 4: Print scores file #
 #############################
@@ -315,12 +318,10 @@ if(! $opt_H{"--no-search"}) {
 }
 
 
-#################
-# Print timings #
-#################
+############
+# Conclude #
+############
 $total_time += time();
-#PrintStringToFile($sum_file, 1, sprintf("  %-*s  summary file (*this* text printed to stdout)\n", $max_file_name_width, $sum_file2print));
-#PrintStringToFile($sum_file, 1, sprintf("  %-*s  log file with commands executed by this script\n", $max_file_name_width, $log_file2print));
 PrintConclusion($sum_file, $log_file2print, $sum_file2print, "", $out_dir);
 
 # print 3 different timings: search, alignment, total
@@ -333,7 +334,7 @@ PrintStringToFile($sum_file, 1, sprintf("#\n", $out_dir));
 my $ssi_file = $target_file . ".ssi";
 if(-e $ssi_file) { UnlinkFile($ssi_file, $log_file); }
 
-# success, exit normally
+# Success! Exit normally
 exit(0); 
 
 
@@ -882,7 +883,7 @@ sub search_sequences_with_each_model {
     $dashes1 = ""; for($i = 0; $i < $max_file_name_width; $i++) { $dashes1 .= "-"; } 
     $dashes2 = ""; for($i = 0; $i < $description_width; $i++)   { $dashes2 .= "-"; } 
 
-    PrintStringToFile($sum_file, 1, sprintf("#\n# Stage 1: Determining SSU start/end positions and best-matching models.\n"));
+    PrintStringToFile($sum_file, 1, sprintf("#\n# Stage 1: Determining SSU start/end positions and best-matching models...\n"));
     PrintStringToFile($sum_file, 1, sprintf("#\n"));
     PrintStringToFile($sum_file, 1, sprintf("# %-*s  %-*s\n", $max_file_name_width, "output file name", $description_width, "description"));
     PrintStringToFile($sum_file, 1, sprintf("# %-*s  %-*s\n", $max_file_name_width, $dashes1, $description_width, $dashes2));
@@ -1168,7 +1169,7 @@ sub align_subseqs {
     $dashes1 = ""; for($i = 0; $i < $max_file_name_width; $i++) { $dashes1 .= "-"; } 
     $dashes2 = ""; for($i = 0; $i < $description_width;   $i++) { $dashes2 .= "-"; } 
     PrintStringToFile($sum_file, 1, sprintf("#\n"));
-    PrintStringToFile($sum_file, 1, sprintf("# Stage 2: Aligning each sequence to its best-matching model.\n"));
+    PrintStringToFile($sum_file, 1, sprintf("# Stage 2: Aligning each sequence to its best-matching model...\n"));
     PrintStringToFile($sum_file, 1, sprintf("#\n"));
     PrintStringToFile($sum_file, 1, sprintf("# %-*s  %s\n", $max_file_name_width, "output file name", "description"));
     PrintStringToFile($sum_file, 1, sprintf("# %-*s  %-*s\n", $max_file_name_width, $dashes1, $description_width, $dashes2));

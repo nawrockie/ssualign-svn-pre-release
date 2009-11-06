@@ -77,7 +77,6 @@ $options_usage .= "  --ps-keep : if --pdf or ps2pdf is installed, save postscrip
 ###################
 # Process options #
 ###################
-
 my %opt_H = ();              # key: option (example "-h"); value: option argument (example ("0" or "1") if option takes no arg, actual argument if option takes arg)
 my %opt_takes_arg_H  = ();   # key: option; value: "1" if option takes argument, "0" if not
 my @opt_order_A  = ();       # order of options for printing in banner
@@ -140,10 +139,10 @@ if ($opt_H{"-h"}) {
 my $key_out = "";
 if($opt_H{"--key-out"}  ne "") { $key_out   = "." . $opt_H{"--key-out"};  }
 
+
 ##############################################################################
 # Determine the "mode" to run and check for incompatible option combinations.#
 ##############################################################################
-
 # There are only 2 possible modes, they are exclusive.
 my $do_build_mode  = 1; # default mode, build a CM
 my $do_number_mode = 0; # number alignment columns and exit
@@ -213,6 +212,7 @@ if(($opt_H{"--rf"}) && (($opt_H{"--gapthresh"}) ne "")) {
     printf STDERR ("\nERROR, --rf is incompatible with --gapthresh.\n"); exit(1); 
 }
 
+
 #############################################################
 # Process command-line arguments and print banner to stdout #
 #############################################################
@@ -223,7 +223,11 @@ if(scalar(@ARGV) != 1) {
     exit(1);
 }
 my ($aln_file_or_model_name) = $ARGV[0];
+
 PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, "");
+
+# Note: We don't define sum and log file names here, nor open those files here (as in the other ssu-* scripts)
+#       This is because definition of the names is somewhat complex and handled in validate_and_setup_ssu_build()
 
 ##################################################################
 # Validate that everything is go and determine output file names #
@@ -239,10 +243,10 @@ validate_and_setup_ssu_build($ssualigndir, $aln_file_or_model_name, $key_out, \%
 PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 0, "");
 PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 0, "");
 
+
 ###########################
 # Build mode: Do the work #
 ###########################
-
 my $ssdraw_failed_at_least_once = 0;
 my $ssdraw_worked_at_least_once = 0;
 my $gapthresh = $opt_H{"--gapthresh"};
@@ -269,20 +273,19 @@ if($do_build_mode)
 ############################
 # Number mode: do the work #
 ############################
-
 if($do_number_mode) 
 { 
     run_alimanip_to_number($alimanip, $aln_file, $num_aln_file, $gapthresh, \%opt_H, $sum_file, $log_file);
 }
 
-$total_time += time();
-PrintStringToFile($sum_file, 1, sprintf("#\n"));
-PrintStringToFile($sum_file, 1, sprintf("# Commands executed by this script written to log file: $log_file.\n"));
-PrintStringToFile($sum_file, 1, sprintf("# This output saved to summary file:                    $sum_file.\n"));
-PrintStringToFile($sum_file, 1, sprintf("# \n"));
-print_timing("# CPU time: ", $total_time, $sum_file); 
-PrintStringToFile($sum_file, 1, sprintf("# \n"));
 
+############
+# Conclude #
+############
+$total_time += time();
+PrintConclusion($sum_file, $log_file, $sum_file, $total_time, "");
+
+# Success! Exit normally
 exit(0);
 
 
@@ -762,7 +765,6 @@ sub run_ssdraw_for_ssu_build {
     my $ps2pdf;
     if($opt_HR->{"--pdf"} ne "") { $ps2pdf = $opt_HR->{"--pdf"}; }
     else                         { $ps2pdf = "ps2pdf"; }
-    $command = "$ps2pdf $ps_file $pdf_file 2>&1";
     $die_if_fails = 0;
     $print_output_upon_failure = 0;
     my $errmsg = "";
@@ -770,7 +772,7 @@ sub run_ssdraw_for_ssu_build {
 	$die_if_fails = 1; 
 	$errmsg = "ERROR, --pdf " . $opt_HR->{"--pdf"} . " was enabled, but command $command did not work."; 
     }
-    RunExecutable("$command", $die_if_fails, $print_output_upon_failure, $log_file, \$command_worked, $errmsg);
+    TryPs2Pdf($ps2pdf, $ps_file, $pdf_file, $die_if_fails, $print_output_upon_failure, $log_file, \$command_worked, $errmsg);
 
     if($command_worked) { 
 	PrintStringToFile($sum_file, 1, sprintf("  %-*s\n", $max_width, $pdf_file));

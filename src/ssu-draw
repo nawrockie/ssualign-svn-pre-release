@@ -197,10 +197,10 @@ close(OUT);
 PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, $sum_file);
 PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 0, $log_file);
 
+
 ##################################
 # Validate that everything is go #
 ##################################
-
 my @stk_list_A = ();
 my @mask_list_A = ();
 my ($cm_file, $template_file, $ssdraw);
@@ -212,7 +212,6 @@ my $aln_file;
 #################
 # Format output #
 #################
-
 # determine max file name width
 my $max_width_aln = length("alignment file name");
 my ($nec_width, $i, $max_width_draw, $aln_root, $aln_root2print);
@@ -235,12 +234,12 @@ for($i = 0; $i < $naln; $i++) {
     $nec_width = length($aln_root2print) + length($key_out) + length(".stk");
     if($max_width_aln < $nec_width) { $max_width_aln = $nec_width; }
 }					     
-my $max_width_draw = $max_width_aln + $extra_draw_chars; # ('.stk' and '.pdf' are same len) ($extra_draw_chars is for adding keys, such as 'struct.' to names )
+$max_width_draw = $max_width_aln + $extra_draw_chars; # ('.stk' and '.pdf' are same len) ($extra_draw_chars is for adding keys, such as 'struct.' to names )
 if($max_width_draw < length("structure diagram file")) { $max_width_draw = length("structure diagram file"); }
 my $dashes_aln = "";  for($i = 0; $i < $max_width_aln; $i++)  { $dashes_aln .= "-"; }
 my $dashes_draw = ""; for($i = 0; $i < $max_width_draw; $i++) { $dashes_draw .= "-"; }
 
-PrintStringToFile($sum_file, 1, sprintf("#\n# Drawing secondary structures...\n"));
+PrintStringToFile($sum_file, 1, sprintf("#\n# Drawing secondary structure diagrams...\n"));
 PrintStringToFile($sum_file, 1, sprintf("#\n"));
 PrintStringToFile($sum_file, 1, sprintf("# %-*s  %-*s\n", $max_width_aln, "alignment file name", $max_width_draw, "structure diagram file"));
 PrintStringToFile($sum_file, 1, sprintf("# %-*s  %-*s\n", $max_width_aln, $dashes_aln, $max_width_draw, $dashes_draw));
@@ -249,8 +248,7 @@ PrintStringToFile($sum_file, 1, sprintf("# %-*s  %-*s\n", $max_width_aln, $dashe
 #######################
 # Create the drawings #
 #######################
-
-my ($aln_file, $mask_file, $aln_file2print);
+my ($mask_file, $aln_file2print);
 for($i = 0; $i < $naln; $i++) { 
     $aln_file  = $stk_list_A[$i];
     $mask_file = $mask_list_A[$i]; 
@@ -264,22 +262,19 @@ for($i = 0; $i < $naln; $i++) {
     draw_alignment($ssdraw, $template_file, $aln_file, $aln_file2print, $mask_file,
 		   $max_width_aln, $max_width_draw, $key_out, \%opt_H, $sum_file);
 }
-PrintStringToFile($sum_file, 1, sprintf("#\n"));
 
+############
+# Conclude #
+############
 $total_time += time();
 if(!($opt_H{"-a"})) { 
-    PrintStringToFile($sum_file, 1, sprintf("# Commands executed by this script written to log file: $log_file2print.\n"));
-    PrintStringToFile($sum_file, 1, sprintf("# This output saved to summary file: $sum_file2print.\n"));
-    PrintStringToFile($sum_file, 1, sprintf("# \n"));
-    PrintStringToFile($sum_file, 1, sprintf("# All files saved in directory: \.\/$dir\/\n"));
+    PrintConclusion($sum_file, $log_file2print, $sum_file2print, $total_time, $dir);
 }
 else { 
-    PrintStringToFile($sum_file, 1, sprintf("# This output saved to summary file:\n#  $sum_file2print.\n"));
+    PrintConclusion($sum_file, $log_file2print, $sum_file2print, $total_time, "");
 }
-PrintStringToFile($sum_file, 1, sprintf("# \n"));
-print_timing("# CPU time: ", $total_time, $sum_file); 
-PrintStringToFile($sum_file, 1, sprintf("# \n"));
 
+# Success! Exit normally
 exit(0);
 
 
@@ -310,8 +305,6 @@ exit(0);
 # $template_file_ref: RETURN; the path to the template file, either default template file or $alt_template_file
 # $ssdraw_ref:        RETURN; the esl-ssdraw command
 # $stk_list_arr_ref:  RETURN; ref to array of alignment files to operate on
-# $mask_list_arr_ref: RETURN; ref to array of alignment files to operate on
-# $mask_list_arr_ref: RETURN; ref to array of alignment files to operate on
 # $mask_list_arr_ref: RETURN; ref to array of alignment files to operate on
 # $log_file:          the log file
 #
@@ -381,6 +374,8 @@ sub validate_and_setup_ssu_draw {
 	    }
 	    push(@{$mask_list_arr_ref}, $mask_name);
 	}
+	else { push(@{$mask_list_arr_ref}, ""); } # empty string tells later functions: don't use mask for this alignment
+
     }
     else { 
 	# Validate there is at least 1 alignment in the input dir
@@ -414,6 +409,7 @@ sub validate_and_setup_ssu_draw {
 		    }
 		    push(@{$mask_list_arr_ref}, $mask_name);
 		}
+		else { push(@{$mask_list_arr_ref}, ""); } # empty string tells later functions: don't use mask for this alignment
 	    }
 	}
 	if($naln == 0) { 
@@ -463,7 +459,7 @@ sub draw_alignment {
     my($ssdraw, $template_file, $aln_file, $aln_file2print, $mask_file2use, $max_width_aln, $max_width_draw, $key_out, $opt_HR, $sum_file) = @_;
 
     my ($all_aln_opts, $mask_opts, $draw_opts, $draw_key);
-    if($mask_file2use ne '')  { $mask_opts = " --mask $mask_file2use"; }
+    if($mask_file2use ne "")  { $mask_opts = " --mask $mask_file2use"; }
     else                      { $mask_opts = ""; }
 
     # Default multi-page align call, or not if --no-aln enabled
@@ -582,15 +578,14 @@ sub run_ssdraw_for_ssu_draw {
     my $ps2pdf;
     if($opt_HR->{"--pdf"} ne "") { $ps2pdf = $opt_HR->{"--pdf"}; }
     else                         { $ps2pdf = "ps2pdf"; }
-    $command = "$ps2pdf $ps_file $pdf_file 2>&1";
-    $die_if_fails = 0;
-    $print_output_upon_failure = 0;
+    my $die_if_fails = 0;
+    my $print_output_upon_failure = 0;
     my $errmsg = "";
     if($opt_HR->{"--pdf"} ne "") { 
 	$die_if_fails = 1; 
 	$errmsg = "ERROR, --pdf " . $opt_HR->{"--pdf"} . " was enabled, but command $command did not work."; 
     }
-    RunExecutable("$command", $die_if_fails, $print_output_upon_failure, $log_file, \$command_worked, $errmsg);
+    TryPs2Pdf($ps2pdf, $draw_ps, $draw_pdf, $die_if_fails, $print_output_upon_failure, $log_file, \$command_worked, $errmsg);
 
     if($command_worked) { 
 	PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s\n", $max_width_aln, $aln_file2print, $max_width_draw, $draw_pdf2print));
@@ -598,5 +593,5 @@ sub run_ssdraw_for_ssu_draw {
     if((! $command_worked) || ($opt_HR->{"--ps-keep"})) { # we don't have a pdf, --ps-keep enabled, or both, print info about postscript file
 	PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s\n", $max_width_aln, $aln_file2print, $max_width_draw, $draw_ps2print));
     }
-    else { UnlinkFile($ps_file, $log_file); }
+    else { UnlinkFile($draw_ps, $log_file); }
 }
