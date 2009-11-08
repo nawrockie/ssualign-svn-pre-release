@@ -127,13 +127,14 @@ my ($cmalign, $cm_file);
 my @subdir_A = ();
 my @score_to_merge_A = ();
 my @sum_to_merge_A = ();
+my @log_to_merge_A = ();
 my @tab_to_merge_A = ();
 my @cmalign_to_merge_AA = ();
 my @hits_fa_to_merge_AA = ();
 my @hits_list_to_merge_AA = ();
 my @stk_to_merge_AA = ();
 my @cm_names_A = ();
-validate_and_setup_ssu_merge($ssualigndir, \%opt_H, $dir, \@subdir_A, \@score_to_merge_A, \@sum_to_merge_A, \@tab_to_merge_A, \@cmalign_to_merge_AA, \@hits_fa_to_merge_AA, \@hits_list_to_merge_AA, \@stk_to_merge_AA, \@cm_names_A, \$cmalign, \$cm_file);
+validate_and_setup_ssu_merge($ssualigndir, \%opt_H, $dir, \@subdir_A, \@score_to_merge_A, \@sum_to_merge_A, \@log_to_merge_A, \@tab_to_merge_A, \@cmalign_to_merge_AA, \@hits_fa_to_merge_AA, \@hits_list_to_merge_AA, \@stk_to_merge_AA, \@cm_names_A, \$cmalign, \$cm_file);
 if(scalar(@score_to_merge_A) == 0) { printf STDERR ("who ERROR, noa *.scores files found.\n"); exit(1); }
 
 ####################################
@@ -141,12 +142,13 @@ if(scalar(@score_to_merge_A) == 0) { printf STDERR ("who ERROR, noa *.scores fil
 ####################################
 
 my ($i, $j, $cm_idx, $nhitsfa, $nhitslist, $ncmalign, $nstk);
-my ($scores_file, $ssu_align_sum_file, $tab_file, $cmalign_file, $hitsfa_file, $hitslist_file, $merged_stk_file);
-my ($scores_file2print, $ssu_align_sum_file2print, $tab_file2print, $cmalign_file2print, $hitsfa_file2print, $hitslist_file2print, $merged_stk_file2print);
+my ($scores_file, $ssu_align_sum_file, $ssu_align_log_file, $tab_file, $cmalign_file, $hitsfa_file, $hitslist_file, $merged_stk_file);
+my ($scores_file2print, $ssu_align_sum_file2print, $ssu_align_log_file2print, $tab_file2print, $cmalign_file2print, $hitsfa_file2print, $hitslist_file2print, $merged_stk_file2print);
 my ($max_file_name_width, $max_cm_name_width, $file_dashes, $cm_dashes, $nseq_merged);
 
 if(scalar(@score_to_merge_A) == 0) { printf STDERR ("ERROR, no *.scores files found.\n"); exit(1); }
 if(scalar(@sum_to_merge_A)   == 0) { printf STDERR ("ERROR, no *.sum files found.\n"); exit(1); }
+if(scalar(@log_to_merge_A)   == 0) { printf STDERR ("ERROR, no *.log files found.\n"); exit(1); }
 if(scalar(@tab_to_merge_A)   == 0) { printf STDERR ("ERROR, no *.tab files found.\n"); exit(1); }
 
 $max_cm_name_width = MaxLengthScalarInArray(\@cm_names_A);
@@ -167,9 +169,11 @@ PrintStringToFile($sum_file, 1, sprintf("# %-*s  %-*s  %7s  %9s\n", $max_file_na
 
 $scores_file              = $dir . "/" . $dir . ".scores";
 $ssu_align_sum_file       = $dir . "/" . $dir . ".ssu-align.sum";
+$ssu_align_log_file       = $dir . "/" . $dir . ".ssu-align.log";
 $tab_file                 = $dir . "/" . $dir . ".tab";
 $scores_file2print        = $dir . ".scores";
 $ssu_align_sum_file2print = $dir . ".ssu-align.sum";
+$ssu_align_log_file2print = $dir . ".ssu-align.log";
 $tab_file2print           = $dir . ".tab";
 
 concatenate_a_list_of_files(\%opt_H, $scores_file, \@score_to_merge_A);
@@ -177,6 +181,9 @@ PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9s\n", $max_file_na
 
 concatenate_a_list_of_files(\%opt_H, $ssu_align_sum_file, \@sum_to_merge_A);
 PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9s\n", $max_file_name_width, $ssu_align_sum_file2print, $max_cm_name_width, "-", scalar(@sum_to_merge_A), "-"));
+
+concatenate_a_list_of_files(\%opt_H, $ssu_align_log_file, \@log_to_merge_A);
+PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9s\n", $max_file_name_width, $ssu_align_log_file2print, $max_cm_name_width, "-", scalar(@log_to_merge_A), "-"));
 
 concatenate_a_list_of_files(\%opt_H, $tab_file, \@tab_to_merge_A);
 PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9s\n", $max_file_name_width, $tab_file2print, $max_cm_name_width, "-", scalar(@tab_to_merge_A), "-"));
@@ -270,6 +277,7 @@ exit(0);
 # $subdir_AR:              reference to the array of subdirectories created by ssu-align, filled here
 # $score_to_merge_AR:      reference to array of ssu-align .scores files to merge (concatenate)
 # $sum_to_merge_AR:        reference to array of ssu-align .sum files to merge (concatenate)
+# $log_to_merge_AR:        reference to array of ssu-align .log files to merge (concatenate)
 # $tab_to_merge_AR:        reference to array of ssu-align .tab files to merge (concatenate)
 # $cmalign_to_merge_AAR:   reference to 2D array of ssu-align .cmalign output files to merge,
 #                          first dimension is the corresponding CM's index in the cm file
@@ -292,9 +300,9 @@ exit(0);
 #
 ####################################################################
 sub validate_and_setup_ssu_merge { 
-    my $narg_expected = 14;
+    my $narg_expected = 15;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, validate_and_setup_ssu_merge() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($ssualigndir, $opt_HR, $dir, $subdir_AR, $score_to_merge_AR, $sum_to_merge_AR, $tab_to_merge_AR, $cmalign_to_merge_AAR, $hits_fa_to_merge_AAR, $hits_list_to_merge_AAR, $stk_to_merge_AAR, $cm_names_AR, $cmalign_R, $cm_file_R) = @_;
+    my($ssualigndir, $opt_HR, $dir, $subdir_AR, $score_to_merge_AR, $sum_to_merge_AR, $log_to_merge_AR, $tab_to_merge_AR, $cmalign_to_merge_AAR, $hits_fa_to_merge_AAR, $hits_list_to_merge_AAR, $stk_to_merge_AAR, $cm_names_AR, $cmalign_R, $cm_file_R) = @_;
 
     #Make sure $dir exists
     if(!(-d $dir)) { printf STDERR ("\nERROR, directory $dir does not exist.\n"); exit(1); }
@@ -405,6 +413,9 @@ sub validate_and_setup_ssu_merge {
 	    if($file =~ m/$subdir\.ssu-align.sum/) { 
 		push(@{$sum_to_merge_AR}, $file);
 	    }
+	    if($file =~ m/$subdir\.ssu-align.log/) { 
+		push(@{$log_to_merge_AR}, $file);
+	    }
 	    if($file =~ m/$subdir\.tab/) { 
 		push(@{$tab_to_merge_AR}, $file);
 	    }
@@ -488,6 +499,7 @@ sub merge_alignments_for_a_cm {
     $command = "$cmalign $extra_opts --cm-idx $cm_idx --list-merge -o $stk_name $cm_file $list_file 2>&1";
     RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
 
+    UnlinkFile($list_file, $log_file);
     return;
 }
 
@@ -539,6 +551,7 @@ sub concatenate_a_list_of_files {
 
     # add to concat file
     for($i = 1; $i < scalar(@{$files_to_concat_AR}); $i++) { 
+	$command = "cat " . $files_to_concat_AR->[$i] . " >> $concat_file";
 	RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
     }
 
