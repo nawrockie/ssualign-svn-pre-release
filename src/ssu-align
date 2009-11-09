@@ -31,7 +31,7 @@
 use Getopt::Long;
 use Cwd 'abs_path';
 use strict;
-use warnings;
+use warnings FATAL => 'all';
 
 #Make sure the SSUALIGNDIR environmental variable is set and the directory exists
 my $ssualigndir = $ENV{'SSUALIGNDIR'};
@@ -77,16 +77,16 @@ $options_usage .= "  --no-align  : only search target sequence file for hits, sk
 $options_usage .= "  --no-search : only align  target sequence file, skip initial search step\n"; 
 
 $options_usage .= "\nexpert options for tuning the initial search stage:\n";
-$options_usage .= "  --no-trunc : do not truncate seqs to HMM predicted start/end, align full seqs\n";
 $options_usage .= "  --toponly  : only search the top strand [default: search both strands]\n";
 $options_usage .= "  --forward  : use the HMM forward algorithm for searching, not HMM viterbi\n";
 $options_usage .= "  --global   : search with globally configured HMM [default: local]\n";
 
 $options_usage .= "\nexpert options for tuning the alignment stage:\n";
-$options_usage .= "  --only-aln <s> : only align best-matching sequences to the CM named <s> in CM file\n";
-$options_usage .= "  --filter <f>   : filter aln based on seq identity, allow no 2 seqs > <f> identical\n";
-$options_usage .= "  --no-prob      : DO NOT append posterior probabilities to alignments\n";
-$options_usage .= "  --mxsize <f>   : increase mx size for cmalign to <f> Mb (default: 4096)\n";
+$options_usage .= "  --no-trunc   : do not truncate seqs to HMM predicted start/end, align full seqs\n";
+$options_usage .= "  --aln-cm <s> : only align best-matching sequences to the CM named <s> in CM file\n";
+$options_usage .= "  --filter <f> : filter aln based on seq identity, allow no 2 seqs > <f> identical\n";
+$options_usage .= "  --no-prob    : DO NOT append posterior probabilities to alignments\n";
+$options_usage .= "  --mxsize <f> : increase mx size for cmalign to <f> Mb (default: 4096)\n";
 
 
 ###################
@@ -115,7 +115,7 @@ $opt_takes_arg_H{"--no-trunc"}  = 0;  push(@opt_order_A, "--no-trunc");   $opt_i
 $opt_takes_arg_H{"--toponly"}   = 0;  push(@opt_order_A, "--toponly");    $opt_is_prep_H{"--toponly"}   = 1;
 $opt_takes_arg_H{"--forward"}   = 0;  push(@opt_order_A, "--forward");    $opt_is_prep_H{"--forward"}   = 1;
 $opt_takes_arg_H{"--global"}    = 0;  push(@opt_order_A, "--global");     $opt_is_prep_H{"--global"}    = 1;
-$opt_takes_arg_H{"--only-aln"}  = 1;  push(@opt_order_A, "--only-aln");   $opt_is_prep_H{"--only-aln"}  = 1;
+$opt_takes_arg_H{"--aln-cm"}    = 1;  push(@opt_order_A, "--aln-cm");     $opt_is_prep_H{"--aln-cm"}  = 1;
 $opt_takes_arg_H{"--filter"}    = 1;  push(@opt_order_A, "--filter");     $opt_is_prep_H{"--filter"}    = 1;
 $opt_takes_arg_H{"--no-prob"}   = 0;  push(@opt_order_A, "--no-prob");    $opt_is_prep_H{"--no-prob"}   = 1;
 $opt_takes_arg_H{"--mxsize"}    = 1;  push(@opt_order_A, "--mxsize");     $opt_is_prep_H{"--mxsize"}    = 1;
@@ -151,7 +151,7 @@ my $opt_return = GetOptions
      'toponly'   => \$opt_H{"--toponly"},
      'forward'   => \$opt_H{"--forward"},
      'global'    => \$opt_H{"--global"},
-     'only-aln=s'=> \$opt_H{"--only-aln"},
+     'aln-cm=s'  => \$opt_H{"--aln-cm"},
      'filter=f'  => \$opt_H{"--filter"},
      'no-prob'   => \$opt_H{"--no-prob"},
      'mxsize'    => \$opt_H{"--mxsize"});
@@ -180,9 +180,9 @@ if(($opt_H{"--no-align"}) &&
    (($opt_H{"--filter"} ne '')   ||
     ($opt_H{"-1"})               ||
     ($opt_H{"--no-prob"})        ||
-    ($opt_H{"--only-aln"} ne '') ||
+    ($opt_H{"--aln-cm"} ne '')   ||
     ($opt_H{"--mxsize"}))) { 
-    printf STDERR ("\nERROR, --no-align is incompatible with alignment-specific options: -1,--filter,--no-prob, --only-aln and --mxsize.\n"); exit(1); 
+    printf STDERR ("\nERROR, --no-align is incompatible with alignment-specific options: -1,--filter,--no-prob, --aln-cm and --mxsize.\n"); exit(1); 
 }
 
 if(($opt_H{"--no-search"}) && 
@@ -541,7 +541,7 @@ sub create_output_dir {
 # $opt_HR:               reference to the hash of command-line options
 # $indi_cm_name_AR:      RETURN; array of individual CM names in the
 #                        order they appear in the CM file
-# $sum_file:             summary file, only possibly used if --only-aln 
+# $sum_file:             summary file, only possibly used if --aln-cm 
 # 
 # Returns:    Fills RETURN arguments as listed above.
 #
@@ -569,14 +569,14 @@ sub process_cm_file {
 	    if(exists($cm_name_exists_H{$cm_name})) { printf STDERR ("ERROR, two CMs in CM file $cm_file have the name $cm_name. Each CM must have a unique name.\n"); exit(1); }
 	    $cm_name_exists_H{$cm_name} = 1;
 	    if($cm_name eq $df_none_name) { printf STDERR ("ERROR, you can't use a CM with the name $df_none_name, that's reserved for indicating which sequences are not the best-match to any models.\n"); exit(1); }
-	    if(($opt_HR->{"--only-aln"} ne "") && ($cm_name eq $opt_HR->{"--only-aln"})) { 
+	    if(($opt_HR->{"--aln-cm"} ne "") && ($cm_name eq $opt_HR->{"--aln-cm"})) { 
 		$found_only_aln_name = 1; 
 	    }
 	}
     }
     close(CM);
-    if(($opt_HR->{"--only-aln"} ne "") && (! $found_only_aln_name)) { 
-	my $errmsg = sprintf("\nERROR, --only-aln %s enabled, but no CM named %s exists in $cm_file.\n", $opt_HR->{"--only-aln"}, $opt_HR->{"--only-aln"});
+    if(($opt_HR->{"--aln-cm"} ne "") && (! $found_only_aln_name)) { 
+	my $errmsg = sprintf("\nERROR, --aln-cm %s enabled, but no CM named %s exists in $cm_file.\n", $opt_HR->{"--aln-cm"}, $opt_HR->{"--aln-cm"});
 	PrintStringToFile($sum_file, 0, $errmsg);
 	die $errmsg;
     }
@@ -1102,7 +1102,7 @@ sub align_subseqs {
     $ncm = scalar(@{$indi_cm_name_AR});
     for($m = 1; $m <= $ncm; $m++) { 
 	$cm_name = $indi_cm_name_AR->[($m-1)];
-	if(($opt_HR->{"--only-aln"} ne "") && ($cm_name ne $opt_HR->{"--only-aln"})) { next; }
+	if(($opt_HR->{"--aln-cm"} ne "") && ($cm_name ne $opt_HR->{"--aln-cm"})) { next; }
 
 	if(exists($new_target_file_per_cm_name_HR->{$cm_name})) { # >= 1 sequences in this set were classified as the current CM
 	    $hits_file      = $new_target_file_per_cm_name_HR->{$cm_name};
@@ -1249,8 +1249,8 @@ sub print_scores_file {
 
 		($start, $end, $whmmsc, $secondhmm, $shmmsc) = split(/\s+/, $hmmscores2print_HR->{$seq_name});
 
-		if(($opt_HR->{"--only-aln"} ne "") && ($opt_HR->{"--only-aln"} ne $bestmatch_cm)) { 
-		    # special case, --only-aln <s> enabled and <s> != best matching cm, we didn't align
+		if(($opt_HR->{"--aln-cm"} ne "") && ($opt_HR->{"--aln-cm"} ne $bestmatch_cm)) { 
+		    # special case, --aln-cm <s> enabled and <s> != best matching cm, we didn't align
 		    # this sequence, output is different, cmsc and structsc are set as '-'
 		    printf SCORES ("  %7d  %-*s  %-*s  %4d  %4d  %7s  %7s  %7.2f", $idx, $max_seq_name_width, $seq_name, $max_cm_name_width, $bestmatch_cm, $start, $end, "-", "-", $whmmsc);
 		}
