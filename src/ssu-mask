@@ -17,7 +17,7 @@
 use Getopt::Long;
 use Cwd 'abs_path';
 use strict;
-use warnings;
+use warnings FATAL => 'all';
 
 #Make sure the SSUALIGNDIR environmental variable is set and the directory exists
 my $ssualigndir = $ENV{'SSUALIGNDIR'};
@@ -269,9 +269,11 @@ if(!($opt_H{"-a"})) {
     $log_file2print = $dir . $key_out . ".ssu-mask.log";
 }
 else { 
-    $sum_file       = $dir . $key_out . ".ssu-mask.sum";
+    my $filekey = $dir;
+    $filekey =~ s/^.+\///;
+    $sum_file       = $filekey . $key_out . ".ssu-mask.sum";
     $sum_file2print = $sum_file;
-    $log_file       = $dir . $key_out . ".ssu-mask.log";
+    $log_file       = $filekey . $key_out . ".ssu-mask.log";
     $log_file2print = $log_file;
 }
 # open the summary and log files
@@ -741,8 +743,6 @@ if(!($opt_H{"-a"})) {
     }
 }
 else { 
-    $log_file       = $dir . $key_out . ".ssu-mask.log";
-    $log_file2print = $log_file;
     if($do_filter_mode) {
 	PrintStringToFile($sum_file, 1, sprintf("#\n"));
 	my $fil_key2print = "fil." . $key_out;
@@ -761,10 +761,13 @@ if($do_mask_mode) {
 	PrintStringToFile($sum_file, 1, sprintf("# No structure diagrams were attempted. Unable to locate default template file.\n"));
     }
     elsif((! $ssdraw_worked_at_least_once) && $ssdraw_failed_at_least_once) { 
-	if($opt_H{"-m"} eq "") { 
+	if(($opt_H{"-m"} eq "") && (! $opt_H{"-a"})) { 
 	    PrintStringToFile($sum_file, 1, sprintf("# All attempts to draw structure diagrams failed.\n# This shouldn't happen, but masking was unaffected.\n"));
 	}
-	else {
+	elsif ($opt_H{"-a"}) {
+	    PrintStringToFile($sum_file, 1, sprintf("# All attempts to draw structure diagrams failed.\n# Input alignment must have been created with a non-default, user-created model.\n"));
+	}
+	elsif ($opt_H{"-m"} ne "") { 
 	    PrintStringToFile($sum_file, 1, sprintf("# All attempts to draw structure diagrams failed.\n# " . $opt_H{"-m"} . " must contain non-default, user-created model(s).\n"));
 	}
     }
@@ -1126,6 +1129,13 @@ sub mask_alignment {
     $masked_aln_file2print = $aln_root2print . $key_out . "." . $mask_root . ".stk";
     if($mask_root ne "mask") { $mask_file2print = $aln_root2print . $key_out . "." . $mask_root . ".mask"; }
     else                     { $mask_file2print = $aln_root2print . $key_out . ".mask"; }
+    if($opt_HR->{"-a"}) { 
+        # when -a enabled, output files go to cwd
+	$masked_aln_file       =~ s/^.+\///; 
+	$mask_file             =~ s/^.+\///; 
+	$masked_aln_file2print =~ s/^.+\///; 
+	$mask_file2print       =~ s/^.+\///; 
+    }
 
     # Commands from previous implementation (for reference)
     # cmask: $command = "$alimanip -k --num-rf --kmask $cmask_file -o $cmasked_aln_file $aln_file2mask";
@@ -1318,6 +1328,13 @@ sub run_ssdraw_for_ssu_mask {
     $draw_pdf        = $root . $key_out . $draw_key . ".pdf";
     $draw_ps2print   = $root2print . $key_out . $draw_key . ".ps";
     $draw_pdf2print  = $root2print . $key_out . $draw_key . ".pdf";
+    if($opt_HR->{"-a"}) { 
+        # when -a enabled, output files go to cwd
+	$draw_ps  =~ s/^.+\///; 
+	$draw_pdf =~ s/^.+\///; 
+	$draw_ps2print  =~ s/^.+\///; 
+	$draw_pdf2print =~ s/^.+\///; 
+    }
 
     my $command = "$ssdraw $ssdraw_opts $aln_file $template_file $draw_ps";
     my $die_if_fails = 0;
