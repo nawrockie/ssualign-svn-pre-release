@@ -76,7 +76,7 @@ $options_usage .= "\noptions for converting a Stockholm alignment to aligned fas
 $options_usage .= "  --stk2afa : convert Stockholm alignment(s) to aligned FASTA\n";
 
 $options_usage .= "\noptions for only removing sequences from an alignment, require -a (no masking):\n";
-$options_usage .= "  --seq-r <f> : with -a,, remove sequences with names listed in file <f>\n"; 
+$options_usage .= "  --seq-r <f> : with -a, remove sequences with names listed in file <f>\n"; 
 $options_usage .= "  --seq-k <f> : with -a, remove all sequences *except* those listed in file <f>\n"; 
 
 ###################
@@ -132,13 +132,13 @@ my $opt_return = GetOptions
      'only-afa'    => \$opt_H{"--only-afa"},
      'key-in=s'    => \$opt_H{"--key-in"},
      'key-out=s'   => \$opt_H{"--key-out"},
-     'pf'          => \$opt_H{"--pf"},
-     'pt'          => \$opt_H{"--pt"},
+     'pf=s'        => \$opt_H{"--pf"},
+     'pt=s'        => \$opt_H{"--pt"},
      'no-prob'     => \$opt_H{"--no-prob"},
      'gapthresh=s' => \$opt_H{"--gapthresh"},
      'in-mask'     => \$opt_H{"--in-mask"},
      'keep'        => \$opt_H{"--keep"},
-     'ps2pdf'      => \$opt_H{"--ps2pdf"},
+     'ps2pdf=s'    => \$opt_H{"--ps2pdf"},
      'ps-keep'     => \$opt_H{"--ps-keep"},
      'ps-only'     => \$opt_H{"--ps-only"},
      'filter=s'    => \$opt_H{"--filter"},
@@ -1117,11 +1117,6 @@ sub mask_alignment {
 	}
 
 	if(($opt_HR->{"--afa"}) || ($opt_HR->{"--only-afa"})) { # convert stk to afa
-	    $masked_afa_file       = SwapOrAppendFileSuffix $masked_stk_file;
-	    $masked_afa_file2print = $masked_stk_file2print;
-
-	    $masked_afa_file       =~ s/\.stk$/\.afa/;
-	    $masked_afa_file2print =~ s/\.stk$/\.afa/;
 	    $command = "$reformat -o $masked_afa_file --informat stockholm afa $masked_stk_file"; 
 	    RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
 	    PrintStringToFile($sum_file, 1, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $masked_afa_file2print, "output", "aln", $n1, "-", "-"));
