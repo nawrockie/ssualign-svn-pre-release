@@ -144,7 +144,7 @@ my $opt_return = GetOptions
      'FF'        => \$opt_H{"--FF"},
      'prep-n=n'  => \$opt_H{"--prep-n"},
      'prep-p=n'  => \$opt_H{"--prep-p"},
-     'prep-in=n' => \$opt_H{"--prep-in"},
+     'prep-in=s' => \$opt_H{"--prep-in"},
      'no-align'  => \$opt_H{"--no-align"},
      'no-search' => \$opt_H{"--no-search"},
      'no-trunc'  => \$opt_H{"--no-trunc"},
