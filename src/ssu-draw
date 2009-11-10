@@ -50,8 +50,9 @@ $options_usage .= "  --key-in <s>  : assume <s> is part of input file names, bef
 $options_usage .= "  --key-out <s> : add <s> to all output file names, before the suffix\n";
 $options_usage .= "  --use-masks   : draw masks from ssu-mask created '.mask' files in the aln dir\n";
 $options_usage .= "  --in-mask <s> : mask alignment given 1/0s in 1-line mask file <f>, requires -a\n";
-$options_usage .= "  --pdf <s>     : <s> (!= \"ps2pdf\") is the command for converting ps to pdf\n";
-$options_usage .= "  --ps-keep     : if --pdf or ps2pdf is installed, save postscript (& pdf) files\n";
+$options_usage .= "  --ps2pdf <s>  : <s> (!= \"ps2pdf\") is the command for converting ps to pdf\n";
+$options_usage .= "  --ps-keep     : if --ps2pdf or ps2pdf is installed, save postscript (& pdf) files\n";
+$options_usage .= "  --ps-only     : only save postscript secondary structure diagrams, no pdfs\n";
 $options_usage .= "\noptions for 1-page alignment summary diagrams (by default, all are drawn):\n";
 $options_usage .= "  --no-aln : do not create multi-page pdf with all alignment stats\n";
 $options_usage .= "  --prob   : draw average posterior probability per column (save as *.prob.pdf)\n";
@@ -85,8 +86,9 @@ $opt_takes_arg_H{"--key-in"}    = 1;  push(@opt_order_A, "--key-in");
 $opt_takes_arg_H{"--key-out"}   = 1;  push(@opt_order_A, "--key-out");    
 $opt_takes_arg_H{"--use-masks"} = 0;  push(@opt_order_A, "--use-masks");  
 $opt_takes_arg_H{"--in-mask"}   = 1;  push(@opt_order_A, "--in-mask");    
-$opt_takes_arg_H{"--pdf"}       = 1;  push(@opt_order_A, "--pdf");      
+$opt_takes_arg_H{"--ps2pdf"}    = 1;  push(@opt_order_A, "--ps2pdf");      
 $opt_takes_arg_H{"--ps-keep"}   = 0;  push(@opt_order_A, "--ps-keep");      
+$opt_takes_arg_H{"--ps-only"}   = 0;  push(@opt_order_A, "--ps-only");      
 $opt_takes_arg_H{"--no-aln"}    = 0;  push(@opt_order_A, "--no-aln");     
 $opt_takes_arg_H{"--prob"}      = 0;  push(@opt_order_A, "--prob");       
 $opt_takes_arg_H{"--ins"}       = 0;  push(@opt_order_A, "--ins");        
@@ -117,7 +119,9 @@ my $opt_return = GetOptions
      'key-out=s' => \$opt_H{"key-out"},
      'use-masks' => \$opt_H{"--use-masks"},
      'in-mask=s' => \$opt_H{"in-mask"},
+     'ps2pdf=s'  => \$opt_H{"--ps2pdf"},
      'ps-keep'   => \$opt_H{"--ps-keep"},
+     'ps-only'   => \$opt_H{"--ps-only"},
      'no-aln'    => \$opt_H{"--no-aln"},
      'prob'      => \$opt_H{"--prob"},
      'ins'       => \$opt_H{"--ins"},
@@ -156,6 +160,9 @@ if(($opt_H{"--in-mask"} ne '') && ($opt_H{"-a"} == 0)) {
 if(($opt_H{"--no-prob"}) && (!($opt_H{"--indi"}))) {
     printf STDERR ("\nERROR, --no-prob only makes sense in combination with --indi.\n"); exit(1);
 }    
+if($opt_H{"--ps-only"} && ($opt_H{"--ps2pdf"} ne "")) { 
+    printf STDERR ("\nERROR, --ps-only is incompatible with --ps2pdf\n"); exit(1); 
+}
 
 
 ###################################################
@@ -170,24 +177,22 @@ if(scalar(@ARGV) != 1) {
 
 my ($dir) = $ARGV[0];
 $dir =~ s/\/$//;
+my @stk_suffix_A = (".stk", ".sto");
 
 my ($sum_file, $sum_file2print, $log_file, $log_file2print);
-if(!($opt_H{"-a"})) { 
+if(! $opt_H{"-a"}) { 
     #validate that $dir exists
     if(!(-d $dir)) { printf STDERR ("\nERROR, directory $dir does not exist.\n"); exit(1); }
-    $sum_file       = $dir . "/" . $dir . $key_out . ".ssu-draw.sum";
-    $sum_file2print = $dir . $key_out . ".ssu-draw.sum";
-    $log_file       = $dir . "/" . $dir . $key_out . ".ssu-draw.log";
-    $log_file2print = $dir . $key_out . ".ssu-draw.log";
+    $sum_file       = $dir . "\/" . $dir . $key_out . ".ssu-draw.sum";
+    $log_file       = $dir . "\/" . $dir . $key_out . ".ssu-draw.log";
+    $sum_file2print = RemoveDirPath($sum_file);
+    $log_file2print = RemoveDirPath($log_file);
 }
 else { 
-    my $file_root;
-    $file_root       = $dir;
-    $file_root       =~ s/\.stk$//;
-    $sum_file        = $file_root . $key_out . ".ssu-draw.sum";
-    $sum_file2print  = $sum_file;
-    $log_file        = $file_root . $key_out . ".ssu-draw.log";
-    $log_file2print  = $log_file;
+    $sum_file       = SwapOrAppendFileSuffix($dir, \@stk_suffix_A, $key_out . ".ssu-draw.sum", 0);
+    $log_file       = SwapOrAppendFileSuffix($dir, \@stk_suffix_A, $key_out . ".ssu-draw.log", 0);
+    $sum_file2print = $sum_file;
+    $log_file2print = $log_file;
 }
 # open the summary and log files
 open(OUT, ">" . $sum_file) || die "\nERROR, couldn't open file $sum_file for writing.\n";
@@ -225,13 +230,7 @@ if($opt_H{"--struct"}) { $extra_draw_chars = 5+1; }
 
 for($i = 0; $i < $naln; $i++) { 
     $aln_file         = $stk_list_A[$i];
-    ($aln_root)       = ($aln_file =~ /(.+)\.stk/);
-    if($opt_H{"-a"}) { #print directory as well as aln name
-	($aln_root2print) = ($aln_file =~ /(.+)\.stk/);
-    }
-    else {
-	($aln_root2print) = ($aln_file =~ /.+\/(.+)\.stk/);
-    }
+    $aln_root2print = SwapOrAppendFileSuffix($aln_file, \@stk_suffix_A, "", $opt_H{"-a"}); # if -a, we'll write output dir as well as file name
     $nec_width = length($aln_root2print) + length($key_out) + length(".stk");
     if($max_width_aln < $nec_width) { $max_width_aln = $nec_width; }
 }					     
@@ -249,19 +248,12 @@ PrintStringToFile($sum_file, 1, sprintf("# %-*s  %-*s\n", $max_width_aln, $dashe
 #######################
 # Create the drawings #
 #######################
-my ($mask_file, $aln_file2print);
+my ($mask_file, $aln_file2print, $nfiles_created);
 for($i = 0; $i < $naln; $i++) { 
     $aln_file  = $stk_list_A[$i];
     $mask_file = $mask_list_A[$i]; 
-    if($opt_H{"-a"}) { #print directory as well as aln name
-	$aln_file2print = $aln_file;
-    }
-    else { 
-	($aln_file2print) = ($aln_file =~ /.+\/(.+)$/);
-    }
-
-    draw_alignment($ssdraw, $template_file, $aln_file, $aln_file2print, $mask_file,
-		   $max_width_aln, $max_width_draw, $key_out, \%opt_H, $sum_file);
+    $nfiles_created = draw_alignment($ssdraw, $template_file, $aln_file, \@stk_suffix_A, $mask_file, $max_width_aln, $max_width_draw, $key_out, \%opt_H, $sum_file);
+    if(($i < ($naln-1)) && ($nfiles_created > 1)) { PrintStringToFile($sum_file, 1, sprintf("#\n")); }
 }
 
 ############
@@ -362,15 +354,11 @@ sub validate_and_setup_ssu_draw {
 	if(! (-e $aln_name)) { 
 	    printf STDERR ("\nERROR, the alignment file $aln_name does not exist.\n"); exit(1); 
 	}
-	my $aln_root = $aln_name;
-	if($aln_root !~ s/\.stk$//) { 
-	    printf STDERR ("\nERROR, the alignment file must end with \".stk\", $aln_name does not.\n"); exit(1); 
-	}
 	push(@{$stk_list_arr_ref}, $aln_name);
 	$naln++; 
 
 	if($opt_HR->{"--use-masks"}) { #ensure that the mask for this alignment exists
-	    $mask_name = $aln_root . ".mask";
+	    $mask_name = SwapOrAppendFileSuffix($aln_file, \@stk_suffix_A, ($key_in . ".mask"), 1);
 	    if(! (-e $mask_name)) { 
 		printf STDERR ("\nERROR, --use-masks enabled, but the mask file $mask_name does not exist.\n"); exit(1); 
 	    }
@@ -437,7 +425,6 @@ sub validate_and_setup_ssu_draw {
 }
 
 
-
 #####################################################################
 # Subroutine: draw_alignment()
 # Incept:     EPN, Wed Oct  7 13:55:56 2009
@@ -448,7 +435,7 @@ sub validate_and_setup_ssu_draw {
 #   $ssdraw:            path and name of esl-alimanip/ssu-esl-alimanip executable
 #   $template_file:     template file for esl-ssdraw
 #   $aln_file:          alignment file with path to draw
-#   $aln_file2print:    name of alignment file, minus the directory
+#   $stk_suffix_AR:     reference to array of legal stockholm suffixes
 #   $mask_file2use:     mask file to use with --mask, or don't use --mask if ''
 #   $max_width_aln:     width of output string for printing aln file names
 #   $max_width_draw:    width of output string for printing draw file names
@@ -456,14 +443,15 @@ sub validate_and_setup_ssu_draw {
 #   $opt_HR:            REFERENCE to hash of command-line options
 #   $sum_file:          file to print output file notices to
 # 
-# Returns:  Nothing, if it returns, everything is valid.
+# Returns: Number of files created (and saved (not unlinked)).
 # 
 ####################################################################
 sub draw_alignment { 
     my $narg_expected = 10;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, draw_alignment() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($ssdraw, $template_file, $aln_file, $aln_file2print, $mask_file2use, $max_width_aln, $max_width_draw, $key_out, $opt_HR, $sum_file) = @_;
+    my($ssdraw, $template_file, $aln_file, $stk_suffix_AR, $mask_file2use, $max_width_aln, $max_width_draw, $key_out, $opt_HR, $sum_file) = @_;
 
+    my $nfiles_created = 0;
     my ($all_aln_opts, $mask_opts, $draw_opts, $draw_key);
     if($mask_file2use ne "")  { $mask_opts = " --mask $mask_file2use"; }
     else                      { $mask_opts = ""; }
@@ -472,43 +460,43 @@ sub draw_alignment {
     if(! ($opt_HR->{"--no-aln"})) { 
 	$draw_opts = "--prob --ins --dall --dint --struct"; 
 	$draw_key = $key_out; #this will be "" unless --key-out was enabled
-	run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts), $aln_file, $aln_file2print, $template_file, 
+	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts), $aln_file, $stk_suffix_AR, $template_file, 
 		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $sum_file, $log_file);
     }
     if($opt_HR->{"--prob"}) { 
 	$draw_opts = "-q --prob"; 
-	$draw_key = $key_out . "prob.";
-	run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts), $aln_file, $aln_file2print, $template_file, 
+	$draw_key = $key_out . ".prob";
+	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts), $aln_file, $stk_suffix_AR, $template_file, 
 		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $sum_file, $log_file);
     }
     if($opt_HR->{"--ins"}) { 
 	$draw_opts = "-q --ins"; 
-	$draw_key = $key_out . "ins.";
-	run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts), $aln_file, $aln_file2print, $template_file, 
+	$draw_key = $key_out . ".ins";
+	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts), $aln_file, $stk_suffix_AR, $template_file, 
 		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $sum_file, $log_file);
     }
     if($opt_HR->{"--dall"}) { 
 	$draw_opts = "-q --dall"; 
-	$draw_key = $key_out . "dall.";
-	run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts), $aln_file, $aln_file2print, $template_file, 
+	$draw_key = $key_out . ".dall";
+	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts), $aln_file, $stk_suffix_AR, $template_file, 
 		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $sum_file, $log_file);
     }
     if($opt_HR->{"--dint"}) { 
 	$draw_opts = "-q --dint"; 
-	$draw_key = $key_out . "dint.";
-	run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts), $aln_file, $aln_file2print, $template_file, 
+	$draw_key = $key_out . ".dint";
+	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts), $aln_file, $stk_suffix_AR, $template_file, 
 		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $sum_file, $log_file);
     }
     if($opt_HR->{"--info"}) { 
 	$draw_opts = ""; 
-	$draw_key = $key_out . "info.";
-	run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts), $aln_file, $aln_file2print, $template_file, 
+	$draw_key = $key_out . ".info";
+	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts), $aln_file, $stk_suffix_AR, $template_file, 
 		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $sum_file, $log_file);
     }
     if($opt_HR->{"--struct"}) { 
 	$draw_opts = "--struct"; 
-	$draw_key = $key_out . "struct.";
-	run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts), $aln_file, $aln_file2print, $template_file, 
+	$draw_key = $key_out . ".struct";
+	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts), $aln_file, $stk_suffix_AR, $template_file, 
 		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $sum_file, $log_file);
     }
     if($opt_HR->{"--indi"}) { 
@@ -519,16 +507,17 @@ sub draw_alignment {
 	    $draw_opts = "--indi --all --prob"; 
 	}
 	$draw_key = $key_out . "indi.";
-	run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts), $aln_file, $aln_file2print, $template_file, 
+	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts), $aln_file, $stk_suffix_AR, $template_file, 
 		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $sum_file, $log_file);
     }
     if($opt_HR->{"--cons"}) { 
 	$draw_opts = "--indi"; 
-	$draw_key = $key_out . "cons.";
-	run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts), $aln_file, $aln_file2print, $template_file, 
+	$draw_key = $key_out . ".cons";
+	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts), $aln_file, $stk_suffix_AR, $template_file, 
 		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $sum_file, $log_file);
     }
-    return 1;
+
+    return $nfiles_created;
 }    
 
 
@@ -543,7 +532,7 @@ sub draw_alignment {
 #   $ssdraw:            path and name of esl-alimanip/ssu-esl-alimanip executable
 #   $ssdraw_opts:       string defining options for esl-ssdraw call
 #   $aln_file           name of alignment file 
-#   $aln_file2print:    name of alignment file, minus the directory
+#   $stk_suffix_AR:     reference to array of legal stockholm suffixes
 #   $template_file:     name of template file to use
 #   $draw_key:          string to use for naming ps and pdf files
 #   $max_width_aln:     width of output string for printing align file names
@@ -552,52 +541,67 @@ sub draw_alignment {
 #   $sum_file:          reference to log2print array with log file text
 #   $log_file:          log file
 #
-# Returns:    Nothing, if it returns, everything is valid.
+# Returns:    Number of files created (and saved (not unlinked)).
 # 
 ####################################################################
 sub run_ssdraw_for_ssu_draw { 
     my $narg_expected = 11;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, run_ssdraw_for_ssu_draw() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($ssdraw, $ssdraw_opts, $aln_file, $aln_file2print, $template_file, $draw_key, $max_width_aln,
+    my ($ssdraw, $ssdraw_opts, $aln_file, $stk_suffix_AR, $template_file, $draw_key, $max_width_aln,
 	$max_width_draw, $opt_HR, $sum_file, $log_file) = @_;
 
-    my($draw_ps, $draw_pdf, $draw_ps2print, $draw_pdf2print, $command_worked);
+    my($draw_ps, $draw_pdf, $draw_ps2print, $draw_pdf2print, $command_worked, $aln_file2print);
+    my $nfiles_created = 0;
 
-    $draw_ps  = $aln_file;
-    $draw_ps  =~ s/\.stk$/\.$draw_key/; # we've ensured all alignments end with .stk in validate_input
-    $draw_ps .= "ps";
-    $draw_pdf = $aln_file;
-    $draw_pdf =~ s/\.stk$/\.$draw_key/; # we've ensured all alignments end with .stk in validate_input
-    $draw_pdf.= "pdf";
-
-    $draw_ps2print  = $aln_file2print;
-    $draw_ps2print  =~ s/\.stk$/\.$draw_key/;
-    $draw_ps2print .= "ps";
-    $draw_pdf2print = $aln_file2print;
-    $draw_pdf2print =~ s/\.stk$/\.$draw_key/;
-    $draw_pdf2print.= "pdf";
+    if($opt_HR->{"-a"}) { # save diagrams to CWD, print full path to input alignment
+	$aln_file2print = $aln_file;
+	$draw_ps        = SwapOrAppendFileSuffix($aln_file, $stk_suffix_AR, $key_out . $draw_key . ".ps", 0);
+	$draw_ps2print  = $draw_ps;
+	$draw_pdf       = SwapOrAppendFileSuffix($aln_file, $stk_suffix_AR, $key_out . $draw_key . ".pdf", 0);
+	$draw_pdf2print = $draw_pdf;
+    }
+    else { # save diagrams to same dir as aln
+	$aln_file2print = RemoveDirPath($aln_file);
+	$draw_ps        = SwapOrAppendFileSuffix($aln_file, \@stk_suffix_A, $key_out . $draw_key . ".ps", 1);
+	$draw_ps2print  = RemoveDirPath($draw_ps);
+	$draw_pdf       = SwapOrAppendFileSuffix($aln_file, \@stk_suffix_A, $key_out . $draw_key . ".pdf", 1);
+	$draw_pdf2print = RemoveDirPath($draw_pdf);
+    }
 
     my $command = "$ssdraw $ssdraw_opts $aln_file $template_file $draw_ps";
     RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
 
-    # try ps2pdf, it's okay if it doesn't work (unless --pdf, in which case its not ok)
-    my $ps2pdf;
-    if($opt_HR->{"--pdf"} ne "") { $ps2pdf = $opt_HR->{"--pdf"}; }
-    else                         { $ps2pdf = "ps2pdf"; }
-    my $die_if_fails = 0;
-    my $print_output_upon_failure = 0;
-    my $errmsg = "";
-    if($opt_HR->{"--pdf"} ne "") { 
-	$die_if_fails = 1; 
-	$errmsg = "ERROR, --pdf " . $opt_HR->{"--pdf"} . " was enabled, but command $command did not work."; 
+    # unless --ps-only, try ps2pdf, it's okay if it doesn't work (unless --ps2pdf, in which case its not ok)
+    my $keep_ps = 1;
+    if(! $opt_HR->{"--ps-only"}) { 
+	my $ps2pdf;
+	if($opt_HR->{"--ps2pdf"} ne "") { $ps2pdf = $opt_HR->{"--ps2pdf"}; }
+	else                         { $ps2pdf = "ps2pdf"; }
+	my $die_if_fails = 0;
+	my $print_output_upon_failure = 0;
+	my $errmsg = "";
+	if($opt_HR->{"--ps2pdf"} ne "") { 
+	    $die_if_fails = 1; 
+	    $errmsg = "ERROR, --ps2pdf " . $opt_HR->{"--ps2pdf"} . " was enabled, but command $command did not work."; 
+	}
+	TryPs2Pdf($ps2pdf, $draw_ps, $draw_pdf, $die_if_fails, $print_output_upon_failure, $log_file, \$command_worked, $errmsg);
+	
+	if($command_worked) { 
+	    PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s\n", $max_width_aln, $aln_file2print, $max_width_draw, $draw_pdf2print));
+	    $nfiles_created++;
+	}
+	# if --ps-keep is not enabled and we successfully have the pdf ($command_worked above), remove the ps below
+	if(! $opt_HR->{"--ps-keep"}) { 
+	    $keep_ps = 0;
+	}
     }
-    TryPs2Pdf($ps2pdf, $draw_ps, $draw_pdf, $die_if_fails, $print_output_upon_failure, $log_file, \$command_worked, $errmsg);
-
-    if($command_worked) { 
-	PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s\n", $max_width_aln, $aln_file2print, $max_width_draw, $draw_pdf2print));
-    }
-    if((! $command_worked) || ($opt_HR->{"--ps-keep"})) { # we don't have a pdf, --ps-keep enabled, or both, print info about postscript file
+    if($keep_ps) { # $keep_ps is set to 0 only if we successfully make a pdf above and --ps-keep was not enabled
 	PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s\n", $max_width_aln, $aln_file2print, $max_width_draw, $draw_ps2print));
+	$nfiles_created++;
     }
-    else { UnlinkFile($draw_ps, $log_file); }
+    else { 
+	UnlinkFile($draw_ps, $log_file); 
+    }
+
+    return $nfiles_created;
 }

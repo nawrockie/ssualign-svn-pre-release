@@ -20,6 +20,8 @@
 # ArgmaxArray():                determine the index of the max value scalar in an array
 # MaxLengthScalarInArray():     determine the max length scalar in an array.
 # TryPs2Pdf():                  attempt to run 'ps2pdf' to convert ps to pdf file.
+# SwapOrAppendFileSuffix():     given a file name, return a new name with a suffix swapped.
+# RemoveDirPath():              remove the leading directory path of a filename
 #
 use strict;
 use warnings;
@@ -111,11 +113,17 @@ sub PrintConclusion {
     my ($sum_file, $log_file2print, $sum_file2print, $total_time, $out_dir) = @_;
 
     PrintStringToFile($sum_file, 1, sprintf("#\n"));
-    PrintStringToFile($sum_file, 1, sprintf("# Commands executed by this script written to log file:  $log_file2print.\n"));
-    PrintStringToFile($sum_file, 1, sprintf("# This output printed to screen written to summary file: $sum_file2print.\n"));
+    #PrintStringToFile($sum_file, 1, sprintf("# Commands executed by this script written to log file:  $log_file2print.\n"));
+    #PrintStringToFile($sum_file, 1, sprintf("# This output printed to screen written to summary file: $sum_file2print.\n"));
+    PrintStringToFile($sum_file, 1, sprintf("# List of executed commands saved in:     $log_file2print.\n"));
+    PrintStringToFile($sum_file, 1, sprintf("# Output printed to the screen saved in:  $sum_file2print.\n"));
     PrintStringToFile($sum_file, 1, sprintf("#\n"));
     if($out_dir ne "") { 
 	PrintStringToFile($sum_file, 1, sprintf("# All output files created in directory \.\/%s\/\n", $out_dir));
+	PrintStringToFile($sum_file, 1, sprintf("#\n"));
+    }
+    else { 
+	PrintStringToFile($sum_file, 1, sprintf("# All output files created in the current working directory.\n"));
 	PrintStringToFile($sum_file, 1, sprintf("#\n"));
     }
     if($total_time ne "") { 
@@ -476,6 +484,75 @@ sub TryPs2Pdf {
 
     $$command_worked_ref = $command_worked;
     return $output;
+}
+
+
+
+#################################################################
+# Subroutine : SwapOrAppendFileSuffix
+# Incept:      EPN, Mon Nov  9 14:21:07 2009# 
+#
+# Purpose:     Given a file name, possible original suffixes it may 
+#              have (such as '.stk', '.sto'), and a new suffix: 
+#              if the name has any of the original suffixes replace them
+#              with the new one, else simply append the new suffix.
+#              Also, if <$use_orig_dir> == 1, then include
+#              the same dir path to the new file, else remove
+#              the dir path (in this case, it is assumed that we
+#              want the new file in the CWD.
+#
+# Arguments: 
+#   $orig_file:       name of original file
+#   $orig_suffix_AR:  reference to array of original suffixes 
+#   $new_suffix:      new suffix to include in new file
+#   $use_orig_dir: '1' to place new file in same dir as old one
+#                     '0' to always place new file in CWD.
+# 
+# Returns:     The name of the new file, with $new_suffix appended
+#              or swapped.
+#
+################################################################# 
+sub SwapOrAppendFileSuffix() {
+    my $narg_expected = 4;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, SwapOrAppendFileSuffix() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($orig_file, $orig_suffix_AR, $new_suffix, $use_orig_dir) = @_;
+
+    my $new_file = $orig_file;
+    my $suffix;
+    my $did_swap = 0;
+    foreach $suffix (@{$orig_suffix_AR}) { 
+	if($new_file =~ s/$suffix$/$new_suffix/) { $did_swap = 1; last; } #only remove final suffix (if ".stk.sto", remove only ".sto")
+    }
+    if(! $did_swap) { # we couldn't find one of the orig suffixes in @{$orig_suffix_AR}, append $new_suffix
+	$new_file .= $new_suffix;
+    }
+    if(! $use_orig_dir) { 
+	$new_file = RemoveDirPath($new_file); # remove dir path
+    }
+    return $new_file;
+}
+
+
+#################################################################
+# Subroutine : RemoveDirPath()
+# Incept:      EPN, Mon Nov  9 14:30:59 2009
+#
+# Purpose:     Given a file name remove the directory path.
+#              For example: "foodir/foodir2/foo.stk" becomes "foo.stk".
+#
+# Arguments: 
+#   $orig_file: name of original file
+# 
+# Returns:     The string $orig_file with dir path removed.
+#
+################################################################# 
+sub RemoveDirPath() {
+    my $narg_expected = 1;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, RemoveDirPath() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my $orig_file = $_[0];
+
+    $orig_file =~ s/^.+\///;
+    return $orig_file;
 }
 
 

@@ -70,8 +70,9 @@ $options_usage .= "  --eent          : use 'entropy weighting' method to achieve
 $options_usage .= "  --ere <x>       : with --eent, set target relative entropy as <x>\n";
 
 $options_usage .= "\noptions for output of structure diagram, only relevant with -d and --trunc:\n";
-$options_usage .= "  --pdf <s> : command for converting ps to pdf is <s> (not \"ps2pdf\")\n";
-$options_usage .= "  --ps-keep : if --pdf or ps2pdf is installed, save postscript (& pdf) files\n";
+$options_usage .= "  --ps2pdf <s> : command for converting ps to pdf is <s> (not \"ps2pdf\")\n";
+$options_usage .= "  --ps-keep    : if --ps2pdf or ps2pdf is installed, save postscript (& pdf) files\n";
+$options_usage .= "  --ps-only    : only save postscript secondary structure diagram, no pdf\n";
 
 
 ###################
@@ -96,7 +97,7 @@ $opt_takes_arg_H{"--gapthresh"} = 1;  push(@opt_order_A, "--gapthresh");
 $opt_takes_arg_H{"--rf"}        = 0;  push(@opt_order_A, "--rf");
 $opt_takes_arg_H{"--eent"}      = 0;  push(@opt_order_A, "--eent");
 $opt_takes_arg_H{"--ere"}       = 1;  push(@opt_order_A, "--ere");
-$opt_takes_arg_H{"--pdf"}       = 1;  push(@opt_order_A, "--pdf");
+$opt_takes_arg_H{"--ps2pdf"}    = 1;  push(@opt_order_A, "--ps2pdf");
 $opt_takes_arg_H{"--ps-keep"}   = 0;  push(@opt_order_A, "--ps-keep");      
 
 #set default options
@@ -124,7 +125,7 @@ my $opt_return = GetOptions
      'rf'          => \$opt_H{"--rf"},
      'eent'        => \$opt_H{"--eent"},
      'ere=f'       => \$opt_H{"--ere"},
-     'pdf=s'       => \$opt_H{"--pdf"},
+     'ps2pdf=s'    => \$opt_H{"--ps2pdf"},
      'ps-keep'     => \$opt_H{"--ps-keep"});
  
 if($opt_return != 1) { exit(1); }
@@ -197,7 +198,7 @@ if($opt_H{"--num"}) {
        ($opt_H{"--trunc"}     ne "") ||
        ($opt_H{"--eent"})            ||
        ($opt_H{"--ere"}       ne "") ||
-       ($opt_H{"--pdf"})             ||
+       ($opt_H{"--ps2pdf"})          ||
        ($opt_H{"--ps-keep"})) {
 	printf STDERR ("\nERROR, --num is incompatible with all other options except for --rf, -1, --gapthresh and --key-out.\n"); exit(1);
     }
@@ -210,6 +211,9 @@ if(($opt_H{"--append"} ne "") && (($opt_H{"-o"}) ne "")) {
 }
 if(($opt_H{"--rf"}) && (($opt_H{"--gapthresh"}) ne "")) { 
     printf STDERR ("\nERROR, --rf is incompatible with --gapthresh.\n"); exit(1); 
+}
+if($opt_H{"--ps-only"} && ($opt_H{"--ps2pdf"} ne "")) { 
+    printf STDERR ("\nERROR, --ps-only is incompatible with --ps2pdf\n"); exit(1); 
 }
 
 
@@ -761,23 +765,30 @@ sub run_ssdraw_for_ssu_build {
     PrintStringToFile($sum_file, 1, sprintf("# %-*s\n", $max_width, "structure diagram file"));
     PrintStringToFile($sum_file, 1, sprintf("# %-*s\n", $max_width, $dashes));
     
-    # try ps2pdf, it's okay if it doesn't work (unless --pdf, in which case its not ok)
-    my $ps2pdf;
-    if($opt_HR->{"--pdf"} ne "") { $ps2pdf = $opt_HR->{"--pdf"}; }
-    else                         { $ps2pdf = "ps2pdf"; }
-    my $die_if_fails = 0;
-    my $print_output_upon_failure = 0;
-    my $errmsg = "";
-    if($opt_HR->{"--pdf"} ne "") { 
-	$die_if_fails = 1; 
-	$errmsg = "ERROR, --pdf " . $opt_HR->{"--pdf"} . " was enabled, but command $command did not work."; 
-    }
-    TryPs2Pdf($ps2pdf, $ps_file, $pdf_file, $die_if_fails, $print_output_upon_failure, $log_file, \$command_worked, $errmsg);
+    # unless --ps-only, try ps2pdf, it's okay if it doesn't work (unless --ps2pdf, in which case its not ok)
+    my $keep_ps = 1;
+    if(! $opt_HR->{"--ps-only"}) { 
+	my $ps2pdf;
+	if($opt_HR->{"--ps2pdf"} ne "") { $ps2pdf = $opt_HR->{"--ps2pdf"}; }
+	else                            { $ps2pdf = "ps2pdf"; }
+	my $die_if_fails = 0;
+	my $print_output_upon_failure = 0;
+	my $errmsg = "";
+	if($opt_HR->{"--ps2pdf"} ne "") { 
+	    $die_if_fails = 1; 
+	    $errmsg = "ERROR, --ps2pdf " . $opt_HR->{"--ps2pdf"} . " was enabled, but command $command did not work."; 
+	}
+	TryPs2Pdf($ps2pdf, $ps_file, $pdf_file, $die_if_fails, $print_output_upon_failure, $log_file, \$command_worked, $errmsg);
 
-    if($command_worked) { 
-	PrintStringToFile($sum_file, 1, sprintf("  %-*s\n", $max_width, $pdf_file));
+	if($command_worked) { 
+	    PrintStringToFile($sum_file, 1, sprintf("  %-*s\n", $max_width, $pdf_file));
+	}
+	# if --ps-keep is not enabled and we successfully have the pdf ($command_worked above), remove the ps below
+	if(! $opt_HR->{"--ps-keep"}) { 
+	    $keep_ps = 0;
+	}
     }
-    if((! $command_worked) || ($opt_HR->{"--ps-keep"})) { # we don't have a pdf, --ps-keep enabled, or both, print info about postscript file
+    if($keep_ps) { # $keep_ps is set to 0 only if we successfully make a pdf above and --ps-keep was not enabled
 	PrintStringToFile($sum_file, 1, sprintf("  %-*s\n", $max_width, $ps_file));
     }
     else { UnlinkFile($ps_file, $log_file); }
