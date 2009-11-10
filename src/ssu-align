@@ -29,9 +29,9 @@
 # See definition of $options_usage for options, below.
 #
 use Getopt::Long;
-use Cwd 'abs_path';
 use strict;
 use warnings FATAL => 'all';
+
 
 #Make sure the SSUALIGNDIR environmental variable is set and the directory exists
 my $ssualigndir = $ENV{'SSUALIGNDIR'};
@@ -51,7 +51,13 @@ if(! (-e $subs_file)) {
 }
 require $subs_file;
 
-my $total_time = -1 * time();
+# Start timing, this is done different depending on if Time::HiRes is installed or not
+my $time_hires_installed = CheckForModule("Time::HiRes");
+if($time_hires_installed) { 
+    use Time::HiRes qw(gettimeofday);
+}
+my $total_seconds = -1 * SecondsSinceEpoch($time_hires_installed);
+
 my $script_desc    = "define and align SSU rRNA sequences";
 my $date           = scalar localtime();
 my $usage          = "Usage: ssu-align [-options] <sequence file> <output dir to create>\n";
@@ -177,16 +183,16 @@ if ($opt_H{"-h"}) {
 
 # Check for incompatible option combinations.
 if(($opt_H{"--no-align"}) && 
-   (($opt_H{"--filter"} ne '')   ||
+   (($opt_H{"--filter"} ne "")   ||
     ($opt_H{"-1"})               ||
     ($opt_H{"--no-prob"})        ||
-    ($opt_H{"--aln-one"} ne '')   ||
+    ($opt_H{"--aln-one"} ne "")   ||
     ($opt_H{"--mxsize"}))) { 
     printf STDERR ("\nERROR, --no-align is incompatible with alignment-specific options: -1,--filter,--no-prob, --aln-one and --mxsize.\n"); exit(1); 
 }
 
 if(($opt_H{"--no-search"}) && 
-   (($opt_H{"-b"} ne '') ||
+   (($opt_H{"-b"} ne "") ||
     ($opt_H{"-l"})      ||
     ($opt_H{"--toponly"})  ||
     ($opt_H{"--no-trunc"})  ||
@@ -270,14 +276,16 @@ process_cm_file($out_root, $cm_file, \%opt_H, \@indi_cm_name_A, $sum_file);
 my $ncm = scalar(@indi_cm_name_A); 
 if(($opt_H{"--no-search"}) && ($ncm > 1)) { printf("ERROR, the --no-search option only works if the CM file contains exactly 1 CM, $cm_file has $ncm CMs in it.\n"); exit(1); }
 
-my ($tab_file, $description_width, $search_time);
+my ($tab_file, $description_width, $search_seconds);
 my $max_file_name_width = 0;
-my $abs_orig_cm_file = abs_path($cm_file);
 
 if($opt_H{"--prep-n"} || $opt_H{"--prep-p"}) { 
     prepare_only($target_file, $out_dir, $out_root, \%opt_H, $ssualign, $weight, $cm_file, $prep_enabled_options, $nseq_target_file, \@indi_cm_name_A, \$max_file_name_width, $sum_file, $log_file);
-    $total_time += time();
-    PrintConclusion($sum_file, $log_file2print, $sum_file2print, "", $out_dir);
+    $total_seconds += SecondsSinceEpoch($time_hires_installed);
+    PrintConclusion($sum_file, $log_file2print, $sum_file2print, $total_seconds, $time_hires_installed, $out_dir);
+
+    PrintStringToFile($log_file, 0, `date`);
+    PrintStringToFile($log_file, 0, `uname -a`);
 
     # Prep mode success! Exit normally
     exit(0);
@@ -289,10 +297,10 @@ if($opt_H{"--prep-n"} || $opt_H{"--prep-p"}) {
 # Step 1: Define sequence ends (and classify seqs if > 1 CM) with cmsearch #
 ############################################################################
 if(! $opt_H{"--no-search"}) { 
-    $search_time = -1 * time();
+    $search_seconds = -1 * SecondsSinceEpoch($time_hires_installed);
     search_sequences_with_each_model(\%opt_H, $cmsearch, $cm_file, $target_file, $out_dir_and_root, $nseq_target_file, 
 				     \@indi_cm_name_A, \$tab_file, \$max_file_name_width, \$description_width, $sum_file);
-    $search_time += time();
+    $search_seconds += SecondsSinceEpoch($time_hires_installed);
 }
 
 
@@ -316,12 +324,12 @@ else {
 ###########################
 # Step 3: Align sequences #
 ###########################
-my ($align_time);
+my ($align_seconds);
 my %cmscores2print_H = ();
 if(! $opt_H{"--no-align"}) {
-    $align_time = -1 * time();
+    $align_seconds = -1 * SecondsSinceEpoch($time_hires_installed);
     align_subseqs(\%opt_H, $out_dir_and_root, $cmalign, $max_file_name_width, $description_width, $weight, \@indi_cm_name_A, \%new_target_file_per_cm_name_H, \%cmscores2print_H, $sum_file); 
-    $align_time += time();
+    $align_seconds += SecondsSinceEpoch($time_hires_installed);
 }
 
 
@@ -339,18 +347,21 @@ if(! $opt_H{"--no-search"}) {
 ############
 # Conclude #
 ############
-$total_time += time();
-PrintConclusion($sum_file, $log_file2print, $sum_file2print, "", $out_dir);
+PrintConclusion($sum_file, $log_file2print, $sum_file2print, "", $time_hires_installed, $out_dir);
 
 # print 3 different timings: search, alignment, total
-if(! $opt_H{"--no-align"})  { PrintTiming("# CPU time (search):    ", $search_time, $sum_file); }
-if(! $opt_H{"--no-search"}) { PrintTiming("# CPU time (alignment): ", $align_time, $sum_file); }
-PrintTiming("# CPU time (total):     ", $total_time, $sum_file); 
+if(! $opt_H{"--no-align"})  { PrintTiming("# CPU time (search):    ", $search_seconds, $time_hires_installed, $sum_file); }
+if(! $opt_H{"--no-search"}) { PrintTiming("# CPU time (alignment): ", $align_seconds,  $time_hires_installed, $sum_file); }
+$total_seconds += SecondsSinceEpoch($time_hires_installed);
+PrintTiming("# CPU time (total):     ", $total_seconds, $time_hires_installed, $sum_file); 
 PrintStringToFile($sum_file, 1, sprintf("#\n", $out_dir));
 
 #remove esl-sfetch index file we created for the target file
 my $ssi_file = $target_file . ".ssi";
 if((-e $ssi_file) && (! $opt_H{"--keep"})) { UnlinkFile($ssi_file, $log_file); }
+
+PrintStringToFile($log_file, 0, `date`);
+PrintStringToFile($log_file, 0, `uname -a`);
 
 # Success! Exit normally
 exit(0); 

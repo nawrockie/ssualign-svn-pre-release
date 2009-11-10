@@ -13,9 +13,22 @@
 # See definition of $options_usage for options, below.
 #
 use Getopt::Long;
-use Cwd 'abs_path';
 use strict;
 use warnings;
+
+# Start timing, this is done different depending on if Time::HiRes is installed or not
+my ($time_hires_installed, $seconds, $microseconds, $total_seconds);;
+eval 'require Time::HiRes';
+if ($@) { 
+    $time_hires_installed = 0; 
+    $total_seconds      = -1 * time();
+}
+else {
+    use Time::HiRes qw(gettimeofday);
+    $time_hires_installed = 1; 
+    ($seconds, $microseconds) = gettimeofday();
+    $total_seconds = -1 * ($seconds + ($microseconds / 1000000.));
+}
 
 #Make sure the SSUALIGNDIR environmental variable is set and the directory exists
 my $ssualigndir = $ENV{'SSUALIGNDIR'};
@@ -35,7 +48,6 @@ if(! (-e $subs_file)) {
 }
 require $subs_file;
 
-my $total_time     = -1 * time();
 my $script_desc    = "draw SSU rRNA secondary structure diagrams";
 my $date           = scalar localtime();
 my $usage          =  "Usage: ssu-draw [options] <directory created by ssu-align (includes >= 1 alignment file(s))>\n";
@@ -115,10 +127,10 @@ my $opt_return = GetOptions
      'h'         => \$opt_H{"-h"}, 
      'm=s'       => \$opt_H{"-m"},
      't=s'       => \$opt_H{"-t"},
-     'key-in=s'  => \$opt_H{"key-in"},
-     'key-out=s' => \$opt_H{"key-out"},
+     'key-in=s'  => \$opt_H{"--key-in"},
+     'key-out=s' => \$opt_H{"--key-out"},
      'use-masks' => \$opt_H{"--use-masks"},
-     'in-mask=s' => \$opt_H{"in-mask"},
+     'in-mask=s' => \$opt_H{"--in-mask"},
      'ps2pdf=s'  => \$opt_H{"--ps2pdf"},
      'ps-keep'   => \$opt_H{"--ps-keep"},
      'ps-only'   => \$opt_H{"--ps-only"},
@@ -146,15 +158,15 @@ if ($opt_H{"-h"}) {
 } 
 
 my $key_in = "";
-if($opt_H{"--key-in"}  ne '') { $key_in   = "." . opt_H{"--key-in"};  }
+if($opt_H{"--key-in"}  ne "") { $key_in   = "." . $opt_H{"--key-in"};  }
 my $key_out = "";
-if($opt_H{"--key-out"}  ne '') { $key_out   = "." . opt_H{"--key-out"};  }
+if($opt_H{"--key-out"}  ne "") { $key_out   = "." . $opt_H{"--key-out"};  }
 
 # Check for incompatible options combinations.
-if($opt_H{"--use-masks"} && ($opt_H{"--in-mask"} ne '')) { 
+if($opt_H{"--use-masks"} && ($opt_H{"--in-mask"} ne "")) { 
     printf STDERR ("\nERROR, --in-mask is incompatible with --use-masks.\n"); exit(1); 
 }
-if(($opt_H{"--in-mask"} ne '') && ($opt_H{"-a"} == 0)) { 
+if(($opt_H{"--in-mask"} ne "") && ($opt_H{"-a"} == 0)) { 
     printf STDERR ("\nERROR, --in-mask requires the -a option.\n"); exit(1);
 }    
 if(($opt_H{"--no-prob"}) && (!($opt_H{"--indi"}))) {
@@ -162,6 +174,12 @@ if(($opt_H{"--no-prob"}) && (!($opt_H{"--indi"}))) {
 }    
 if($opt_H{"--ps-only"} && ($opt_H{"--ps2pdf"} ne "")) { 
     printf STDERR ("\nERROR, --ps-only is incompatible with --ps2pdf\n"); exit(1); 
+}
+if(($opt_H{"--no-aln"}) && 
+   (! (($opt_H{"--prob"}) || ($opt_H{"--ins"}) || ($opt_H{"--dall"}) || ($opt_H{"--dint"}) || ($opt_H{"--info"}) || ($opt_H{"--struct"}) ||
+       ($opt_H{"--indi"}) ||($opt_H{"--cons"})))) { 
+    printf STDERR ("\nERROR, --no-aln only makes sense if used in combination with at least one of: --prob, --ins, --dall, --dint, --info, --struct, --indi, --cons.\n"); 
+    exit(1);
 }
 
 
@@ -259,12 +277,19 @@ for($i = 0; $i < $naln; $i++) {
 ############
 # Conclude #
 ############
-$total_time += time();
-if(!($opt_H{"-a"})) { 
-    PrintConclusion($sum_file, $log_file2print, $sum_file2print, $total_time, $dir);
+if(! $time_hires_installed) { 
+    $total_seconds += time();
 }
 else { 
-    PrintConclusion($sum_file, $log_file2print, $sum_file2print, $total_time, "");
+    ($seconds, $microseconds) = gettimeofday();
+    $total_seconds += ($seconds + ($microseconds / 1000000.));
+}
+
+if(!($opt_H{"-a"})) { 
+    PrintConclusion($sum_file, $log_file2print, $sum_file2print, $total_seconds, $time_hires_installed, $dir);
+}
+else { 
+    PrintConclusion($sum_file, $log_file2print, $sum_file2print, $total_seconds, $time_hires_installed, "");
 }
 
 # Success! Exit normally
@@ -291,7 +316,7 @@ exit(0);
 # Arguments: 
 # $ssualigndir:       dir defined by SSUALIGNDIR environment variable 
 # $dir:               the directory we will create files in
-# $key_in:            '' or a key that is included in input file names, just prior to the suffix
+# $key_in:            "" or a key that is included in input file names, just prior to the suffix
 #                     e.g. $key_in = "fookey", $dir = "foodir", aln file is foodir/foodir.archaea.fookey.stk
 # $opt_HR:            reference to the hash of command-line options
 # $cm_file_ref:       RETURN; the path to the CM file, either default CM file or $alt_cm_file
@@ -316,7 +341,7 @@ sub validate_and_setup_ssu_draw {
 
     #Validate that we can read the CM file
     my $cm_file = "";
-    if($opt_HR->{"-m"} ne '') {
+    if($opt_HR->{"-m"} ne "") {
 	$cm_file = $opt_HR->{"-m"};
 	if(!(-e $cm_file)) { printf STDERR ("\nERROR, CM file $cm_file, specified with -m does not exist.\n"); exit(1); }
     }
@@ -326,7 +351,7 @@ sub validate_and_setup_ssu_draw {
     }
 
     #Validate that we can read the template postscript diagram file
-    if($opt_HR->{"-t"} ne '') {
+    if($opt_HR->{"-t"} ne "") {
 	$template_file = $opt_HR->{"-t"};
 	if(!(-e $template_file)) { printf STDERR ("\nERROR, template postscript file $template_file, specified with -t does not exist.\n"); exit(1); }
     }
@@ -347,8 +372,8 @@ sub validate_and_setup_ssu_draw {
     }
 
     my $naln = 0;
-    my $aln_name = '';
-    my $mask_name = '';
+    my $aln_name = "";
+    my $mask_name = "";
     if($opt_HR->{"-a"}) { # special mode, single command line argument is not a directory, it's an alignment
 	$aln_name = $dir;
 	if(! (-e $aln_name)) { 
@@ -436,7 +461,7 @@ sub validate_and_setup_ssu_draw {
 #   $template_file:     template file for esl-ssdraw
 #   $aln_file:          alignment file with path to draw
 #   $stk_suffix_AR:     reference to array of legal stockholm suffixes
-#   $mask_file2use:     mask file to use with --mask, or don't use --mask if ''
+#   $mask_file2use:     mask file to use with --mask, or don't use --mask if ""
 #   $max_width_aln:     width of output string for printing aln file names
 #   $max_width_draw:    width of output string for printing draw file names
 #   $key_out:           <s> from --key-out ("" if --key-out not enabled)

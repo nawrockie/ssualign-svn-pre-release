@@ -15,7 +15,6 @@
 # See definition of $options_usage for options, below.
 #
 use Getopt::Long;
-use Cwd 'abs_path';
 use strict;
 use warnings FATAL => 'all';
 
@@ -157,7 +156,7 @@ if ($opt_H{"-h"}) {
 } 
 
 my $key_in = "";
-if($opt_H{"--key-in"}  ne "") { $key_in   = "." . $opt_H{"--key-in"};  }
+if($opt_H{"--key-in"}  ne "")  { $key_in   = "." . $opt_H{"--key-in"};  }
 my $key_out = "";
 if($opt_H{"--key-out"}  ne "") { $key_out   = "." . $opt_H{"--key-out"};  }
 

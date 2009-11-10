@@ -1,4 +1,7 @@
 # ssu-mask's crash exercises, in sqc command format.
+# These exercises are meant to test each option at least
+# once, and some in more than one circumstance.
+#
 # EPN, Tue Nov 11 15:45:00 2008
 #
 1  exercise  seed-15:ssu-align   @ssu-align@ -F seed-15.fa seed-15

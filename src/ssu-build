@@ -17,7 +17,6 @@
 # See definition of $options_usage for options, below.
 #
 use Getopt::Long;
-use Cwd 'abs_path';
 use strict;
 use warnings;
 

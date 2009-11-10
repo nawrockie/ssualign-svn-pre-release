@@ -22,6 +22,8 @@
 # TryPs2Pdf():                  attempt to run 'ps2pdf' to convert ps to pdf file.
 # SwapOrAppendFileSuffix():     given a file name, return a new name with a suffix swapped.
 # RemoveDirPath():              remove the leading directory path of a filename
+# CheckForModule():             check if a particular module is installed on the system
+# SecondsSinceEpoch():          return number of seconds since the epoch 
 #
 use strict;
 use warnings;
@@ -97,20 +99,21 @@ sub PrintBanner {
 #             run time timing.
 #
 # Arguments: 
-#    $sum_file:         full path to summary file
-#    $log_file2print:   name of log file
-#    $sum_file2print:   name of summary file
-#    $total_time:       total number of seconds, "" to not print timing
-#    $out_dir:          output directory where output files were put,
-#                       "" if it is current dir.
+#    $sum_file:               full path to summary file
+#    $log_file2print:         name of log file
+#    $sum_file2print:         name of summary file
+#    $total_time:             total number of seconds, "" to not print timing
+#    $time_hires_installed: '1' if Time:HiRes is installed (we'll print milliseconds)
+#    $out_dir:                output directory where output files were put,
+#                             "" if it is current dir.
 #
 # Returns:    Nothing.
 # 
 ####################################################################
 sub PrintConclusion { 
-    my $narg_expected = 5;
+    my $narg_expected = 6;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, PrintConclusion() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($sum_file, $log_file2print, $sum_file2print, $total_time, $out_dir) = @_;
+    my ($sum_file, $log_file2print, $sum_file2print, $total_time, $time_hires_installed, $out_dir) = @_;
 
     PrintStringToFile($sum_file, 1, sprintf("#\n"));
     #PrintStringToFile($sum_file, 1, sprintf("# Commands executed by this script written to log file:  $log_file2print.\n"));
@@ -127,7 +130,7 @@ sub PrintConclusion {
 	PrintStringToFile($sum_file, 1, sprintf("#\n"));
     }
     if($total_time ne "") { 
-	PrintTiming("# CPU time: ", $total_time, $sum_file); 
+	PrintTiming("# CPU time: ", $total_time, $time_hires_installed, $sum_file); 
 	PrintStringToFile($sum_file, 1, sprintf("# \n"));
     }
 
@@ -142,17 +145,18 @@ sub PrintConclusion {
 # Purpose:    Print a timing in hhhh:mm:ss format to 1 second precision.
 # 
 # Arguments:
-# $prefix:       string to print before the hhhh:mm:ss time info.
-# $inseconds:    number of seconds
-# $sum_file:     file to print output file notices to
+# $prefix:                 string to print before the hhhh:mm:ss time info.
+# $inseconds:              number of seconds
+# $time_hires_installed: '1' if Time:HiRes is installed (we'll print milliseconds)
+# $sum_file:               file to print output file notices to
 #
 # Returns:    Nothing, if it returns, everything is valid.
 # 
 ####################################################################
 sub PrintTiming { 
-    my $narg_expected = 3;
+    my $narg_expected = 4;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_timing() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($prefix, $inseconds, $sum_file) = @_;
+    my ($prefix, $inseconds, $time_hires_installed, $sum_file) = @_;
     my ($i, $hours, $minutes, $seconds, $thours, $tminutes, $tseconds);
 
     $hours = int($inseconds / 3600);
@@ -160,15 +164,16 @@ sub PrintTiming {
     $minutes = int($inseconds / 60);
     $inseconds -= ($minutes * 60);
     $seconds = $inseconds;
-    $thours   = $hours;
-    $tminutes = $minutes;
-    $tseconds = $seconds;
-
-    if($hours < 10)   { $thours   = "0" . $thours; }
-    if($minutes< 10)  { $tminutes = "0" . $tminutes; }
-    if($seconds< 10)  { $tseconds = "0" . $tseconds; }
-
-    PrintStringToFile($sum_file, 1, sprintf("%s %2s:%2s:%2s\n", $prefix, $thours, $tminutes, $tseconds));
+    $thours   = sprintf("%02d", $hours);
+    $tminutes = sprintf("%02d", $minutes);
+    if($time_hires_installed) { 
+	$tseconds = sprintf("%05.2f", $seconds);
+	PrintStringToFile($sum_file, 1, sprintf("%s %2s:%2s:%5s\n", $prefix, $thours, $tminutes, $tseconds));
+    }
+    else { 
+	$tseconds = sprintf("%02d", $seconds);
+	PrintStringToFile($sum_file, 1, sprintf("%s %2s:%2s:%2s\n", $prefix, $thours, $tminutes, $tseconds));
+    }
 }
 
 
@@ -553,6 +558,61 @@ sub RemoveDirPath() {
 
     $orig_file =~ s/^.+\///;
     return $orig_file;
+}
+
+
+#################################################################
+# Subroutine : CheckForModule()
+# Incept:      EPN, Tue Nov 10 17:36:16 2009
+#
+# Purpose:     Check to see if we have a given module installed
+#              on the system.
+#
+# Arguments: 
+#   $module: name of module to check for (ex: "Time::HiRes")
+# 
+# Returns:     '1' if module is installed, '0' if not.
+#
+################################################################# 
+sub CheckForModule() { 
+    my $narg_expected = 1;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, CheckForModule() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my $module = $_[0];
+
+    eval "require $module";
+    if ($@) { return 0; }
+    else    { return 1; }
+}
+
+
+
+#################################################################
+# Subroutine : SecondsSinceEpoch()
+# Incept:      EPN, Tue Nov 10 17:38:11 2009
+#
+# Purpose:     Return number of seconds since the epoch, this
+#              will be different precision depending on if
+#              <$time_hires_installed>.
+#
+# Arguments: 
+#   $time_hires_installed: '1' if we can use gettimeofday
+#                            to get high precision timings.
+# 
+# Returns:     Number of seconds since the epoch.
+#
+################################################################# 
+sub SecondsSinceEpoch() { 
+    my $narg_expected = 1;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, GetSecondsSinceEpoch() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my $time_hires_installed = $_[0];
+
+    if($time_hires_installed) { 
+	my ($seconds, $microseconds) = gettimeofday();
+	return ($seconds + ($microseconds / 1000000.));
+    }
+    else { # this will be one-second precision
+	return time();
+    }
 }
 
 
