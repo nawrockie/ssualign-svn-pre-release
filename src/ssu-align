@@ -740,7 +740,7 @@ sub prepare_only {
     close(FULL);
     close(SUB);
     PrintStringToFile($sum_file, 1, sprintf("  %-*s  partition %*d fasta sequence file\n", $max_file_name_width, $target_subfile_root, $ndig, $n));
-    printf SH ("%s%s%s\n", $prep_prefix, "$ssualign $prep_enabled_options $target_subfile_root $out_root." . $n, $prep_suffix);
+    printf SH ("%s%s%s\n", $prep_prefix, "$ssualign -F $prep_enabled_options $target_subfile_root $out_root." . $n, $prep_suffix);
     close(SH); 
     if($n != $prep_nproc) { printf STDERR ("ERROR, problem partitioning target fasta file $target_file into $prep_nproc files, only $n files were successfully created.\n"); exit(1); }
     

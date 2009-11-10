@@ -334,6 +334,7 @@ sub validate_and_setup_ssu_merge {
 	    @{$cmalign_to_merge_AAR->[$ncm]} = ();
 	    @{$hits_fa_to_merge_AAR->[$ncm]} = ();
 	    @{$hits_list_to_merge_AAR->[$ncm]} = ();
+	    @{$stk_to_merge_AAR->[$ncm]} = ();
 	    $cm_name_idx_H{$cm_name} = $ncm++;
 
 	    if($cm_name eq $df_none_name) { printf STDERR ("ERROR, you can't use a CM with the name $df_none_name, that's reserved for indicating which sequences are not the best-match to any models.\n"); exit(1); }
