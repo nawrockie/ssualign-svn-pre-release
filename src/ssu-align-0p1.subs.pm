@@ -19,6 +19,8 @@
 # DetermineNumSeqsStockholm():  determine the number of sequences in a Stockholm aln file.
 # ArgmaxArray():                determine the index of the max value scalar in an array
 # MaxLengthScalarInArray():     determine the max length scalar in an array.
+# SumArrayElements():           return sum of values in a numeric array
+# SumHashElements():            return sum of values in a numeric hash 
 # TryPs2Pdf():                  attempt to run 'ps2pdf' to convert ps to pdf file.
 # SwapOrAppendFileSuffix():     given a file name, return a new name with a suffix swapped.
 # RemoveDirPath():              remove the leading directory path of a filename
@@ -451,6 +453,59 @@ sub MaxLengthScalarInArray {
 	if(length($arr_R->[$i]) > $max) { $max = length($arr_R->[$i]); }
     }
     return $max;
+}
+
+
+#################################################################
+# Subroutine : SumArrayElements()
+# Incept:      EPN, Wed Nov 11 16:59:26 2009
+# 
+# Purpose:     Return the sum of all elements in a numeric array.
+#
+# Arguments:
+# $arr_R: reference to the array
+# 
+# Returns:     The sum.
+#
+################################################################# 
+sub SumArrayElements 
+{
+    my $narg_expected = 1;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, SumArrayElements() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($arr_R) = $_[0];
+
+    my $nels = scalar(@{$arr_R}); 
+    my $sum = 0.;
+    my $i;
+
+    for($i = 1; $i < $nels; $i++) { $sum += $arr_R->[$i]; } 
+    return $sum;
+}
+
+
+#################################################################
+# Subroutine : SumHashElements()
+# Incept:      EPN, Wed Nov 11 17:01:19 2009
+# 
+# Purpose:     Return the sum of all elements in a numerich hash.
+#
+# Arguments:
+# $hash_R: reference to the hash
+# 
+# Returns:     The sum.
+#
+################################################################# 
+sub SumHashElements 
+{
+    my $narg_expected = 1;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, SumHashElements() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($hash_R) = $_[0];
+
+    my $key;
+    my $sum = 0.;
+    foreach $key (keys %{$hash_R}) { $sum += $hash_R->{$key}; }
+
+    return $sum;
 }
 
 

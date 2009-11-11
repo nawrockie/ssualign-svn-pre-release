@@ -256,21 +256,18 @@ PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, 
 ##################################################################
 # Validate that everything is go and determine output file names #
 ##################################################################
-my ($ssualign, $cmsearch, $cmalign, $sfetch, $weight, $cm_file, $errmsg);
-validate_and_setup_ssu_align($ssualigndir, $target_file, \%opt_H, \$ssualign, \$cmsearch, \$cmalign, \$sfetch, \$weight, \$cm_file, $sum_file, $log_file);
+my ($ssualign, $cmsearch, $cmalign, $sfetch, $seqstat, $weight, $cm_file, $errmsg);
+validate_and_setup_ssu_align($ssualigndir, $target_file, \%opt_H, \$ssualign, \$cmsearch, \$cmalign, \$sfetch, \$seqstat, \$weight, \$cm_file, $sum_file, $log_file);
 
-# determine number of sequences in the target sequence file
-my $nseq_target_file = DetermineNumSeqsFasta($target_file);
-if($nseq_target_file == -1) { 
-    $errmsg = "\nERROR, the target sequence file must be FASTA formatted, but non-whitespace found before first \">\" in $target_file.\nThis is not valid FASTA.\n";
-    PrintStringToFile($sum_file, 0, $errmsg);
-    die $errmsg; 
-}
-if($nseq_target_file == 0)  { 
-    $errmsg = "\nERROR, the target sequence file must be FASTA formatted, but no \">\" found in $target_file.\nThe file is either empty or not valid FASTA.\n"; 
-    PrintStringToFile($sum_file, 0, $errmsg);
-    die $errmsg; 
-}
+# get stats on the input sequences, including the length of each sequence
+my $seqstat_out_file = $out_dir_and_root . ".seqstat";
+my ($target_nres, $target_nseq, $target_format);
+my @target_order_A = ();
+my %target_len_H = ();
+seqstat_seq_file_per_seq($seqstat, $target_file, $seqstat_out_file, \$target_nres, \$target_nseq, \$target_format, \@target_order_A, \%target_len_H, $sum_file, $log_file); 
+$target_format =~ tr/a-z/A-Z/;
+if($target_format ne "FASTA") { PrintErrorAndExit("ERROR, the target sequence file must be FASTA formatted.", $sum_file, 1); }
+
 my (@indi_cm_name_A);
 process_cm_file($out_root, $cm_file, \%opt_H, \@indi_cm_name_A, $sum_file);
 my $ncm = scalar(@indi_cm_name_A); 
@@ -281,7 +278,7 @@ my ($tab_file, $description_width, $search_seconds);
 my $max_file_name_width = 0;
 
 if($opt_H{"--prep-n"} || $opt_H{"--prep-p"}) { 
-    prepare_only($target_file, $out_dir, $out_root, \%opt_H, $ssualign, $weight, $cm_file, $prep_enabled_options, $nseq_target_file, \@indi_cm_name_A, \$max_file_name_width, $sum_file, $log_file);
+    prepare_only($target_file, $out_dir, $out_root, \%opt_H, $ssualign, $weight, $cm_file, $prep_enabled_options, $target_nseq, \@indi_cm_name_A, \$max_file_name_width, $sum_file, $log_file);
     $total_seconds += SecondsSinceEpoch($time_hires_installed);
     PrintConclusion($sum_file, $log_file2print, $sum_file2print, $total_seconds, $time_hires_installed, $out_dir);
 
@@ -299,8 +296,8 @@ if($opt_H{"--prep-n"} || $opt_H{"--prep-p"}) {
 ############################################################################
 if(! $opt_H{"--no-search"}) { 
     $search_seconds = -1 * SecondsSinceEpoch($time_hires_installed);
-    search_sequences_with_each_model(\%opt_H, $cmsearch, $cm_file, $target_file, $out_dir_and_root, $nseq_target_file, 
-				     \@indi_cm_name_A, \$tab_file, \$max_file_name_width, \$description_width, $sum_file);
+    search_sequences_with_each_model(\%opt_H, $cmsearch, $cm_file, $target_file, $out_dir_and_root, $target_nseq, 
+				     \@indi_cm_name_A, \$tab_file, \$max_file_name_width, \$description_width, $sum_file, $log_file);
     $search_seconds += SecondsSinceEpoch($time_hires_installed);
 }
 
@@ -311,10 +308,11 @@ if(! $opt_H{"--no-search"}) {
 my %bestmatch_cm_H = ();
 my %new_target_file_per_cm_name_H = ();
 my %hmmscores2print_H = ();
+my %aligned_len_H = ();
 my $max_seq_name_width;
 
 if(! $opt_H{"--no-search"}) { 
-    classify_and_extract_subseqs(\%opt_H, $tab_file, $target_file, $out_dir_and_root, $sfetch, $max_file_name_width, \@indi_cm_name_A, \%bestmatch_cm_H, \%new_target_file_per_cm_name_H, \%hmmscores2print_H, \$max_seq_name_width, $sum_file);
+    classify_and_extract_subseqs(\%opt_H, $tab_file, $target_file, $out_dir_and_root, $sfetch, $max_file_name_width, \@indi_cm_name_A, \%bestmatch_cm_H, \%new_target_file_per_cm_name_H, \%hmmscores2print_H, \%aligned_len_H, \$max_seq_name_width, $sum_file, $log_file);
 }
 else { 
     # No initial search stage; align all the sequences in the full target sequence file to the only CM (we've checked there's only 1 CM)
@@ -329,7 +327,7 @@ my ($align_seconds);
 my %cmscores2print_H = ();
 if(! $opt_H{"--no-align"}) {
     $align_seconds = -1 * SecondsSinceEpoch($time_hires_installed);
-    align_subseqs(\%opt_H, $out_dir_and_root, $cmalign, $max_file_name_width, $description_width, $weight, \@indi_cm_name_A, \%new_target_file_per_cm_name_H, \%cmscores2print_H, $sum_file); 
+    align_subseqs(\%opt_H, $out_dir_and_root, $cmalign, $max_file_name_width, $description_width, $weight, \@indi_cm_name_A, \%new_target_file_per_cm_name_H, \%cmscores2print_H, $sum_file, $log_file); 
     $align_seconds += SecondsSinceEpoch($time_hires_installed);
 }
 
@@ -337,17 +335,25 @@ if(! $opt_H{"--no-align"}) {
 #############################
 # Step 4: Print scores file #
 #############################
-my $scores_file       = $out_dir_and_root . ".scores";
-my $scores_file2print = $out_root         . ".scores";
+my $scores_file        = $out_dir_and_root . ".scores";
+my $scores_file2print  = $out_root         . ".scores";
+my $nomatch_file       = $out_dir_and_root . ".nomatch.list";
+my $nomatch_file2print = $out_root         . ".nomatch.list";
+my $n_nomatch = 0;
 if(! $opt_H{"--no-search"}) { 
-    print_scores_file(\%opt_H, $target_file, $ncm, $scores_file, $scores_file2print, $max_seq_name_width, \@indi_cm_name_A, \%bestmatch_cm_H, \%cmscores2print_H, \%hmmscores2print_H, $sum_file);
+    $n_nomatch = print_scores_and_nomatch_files(\%opt_H, $target_file, $ncm, $scores_file, $nomatch_file, $max_seq_name_width, \@indi_cm_name_A, \%bestmatch_cm_H, \%cmscores2print_H, \%hmmscores2print_H, $sum_file);
     PrintStringToFile($sum_file, 1, sprintf("  %-*s  list of CM/HMM scores for each sequence\n", $max_file_name_width, $scores_file2print));
+    if($n_nomatch == 0) { UnlinkFile($nomatch_file, $log_file); }
+    else { 
+	PrintStringToFile($sum_file, 1, sprintf("  %-*s  list of sequences that don't match any model\n", $max_file_name_width, $nomatch_file2print));
+    }
 }
 
 
 ############
 # Conclude #
 ############
+print_statistics(\%opt_H, $search_seconds, $align_seconds, \@indi_cm_name_A, \@target_order_A, \%target_len_H, \%aligned_len_H, \%bestmatch_cm_H, $sum_file);
 PrintConclusion($sum_file, $log_file2print, $sum_file2print, "", $time_hires_installed, $out_dir);
 
 # print 3 different timings: search, alignment, total
@@ -390,6 +396,7 @@ exit(0);
 # $cmsearch_R:     RETURN; cmsearch executable command
 # $cmalign_R:      RETURN; cmalign executable command
 # $sfetch_R:       RETURN; esl-sfetch executable command
+# $seqstat_R:      RETURN; esl-seqstat executable command
 # $weight_R:       RETURN; esl-weight executable command
 # $cm_file_R:      RETURN; the path to the CM file, either default CM file or <s> from -m <s>
 # $sum_file:       summary file
@@ -403,9 +410,9 @@ exit(0);
 #
 ####################################################################
 sub validate_and_setup_ssu_align { 
-    my $narg_expected = 11;
+    my $narg_expected = 12;
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, validate_and_setup_ssu_align() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($ssualigndir, $target_file, $opt_HR, $ssualign_R, $cmsearch_R, $cmalign_R, $sfetch_R, $weight_R, $cm_file_R, $sum_file, $log_file) = @_;
+    my($ssualigndir, $target_file, $opt_HR, $ssualign_R, $cmsearch_R, $cmalign_R, $sfetch_R, $seqstat_R, $weight_R, $cm_file_R, $sum_file, $log_file) = @_;
 
     #Make sure the CM file exists
     my $cm_file = "";
@@ -425,9 +432,11 @@ sub validate_and_setup_ssu_align {
     my $cmsearch   = "ssu-cmsearch";
     my $cmalign    = "ssu-cmalign";
     my $sfetch     = "ssu-esl-sfetch";
+    my $seqstat    = "ssu-esl-seqstat";
     my $weight     = "ssu-esl-weight";
     my $ssualign   = "ssu-align";
     # check that the required programs are in the PATH
+    RunExecutable("$seqstat -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $seqstat is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
     if(!($opt_HR->{"--no-search"})) { 
 	RunExecutable("$cmsearch -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $cmsearch is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
 	RunExecutable("$sfetch -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $sfetch is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
@@ -446,6 +455,7 @@ sub validate_and_setup_ssu_align {
     $$cmsearch_R = $cmsearch;
     $$cmalign_R  = $cmalign;
     $$sfetch_R   = $sfetch;
+    $$seqstat_R  = $seqstat;
     $$weight_R   = $weight;
     $$cm_file_R  = $cm_file;
 
@@ -487,7 +497,8 @@ sub create_output_dir {
     # create output directory
     if(-d $out_dir) { 
 	if((! $opt_HR->{"-F"}) && (! $opt_HR->{"--FF"})) { 
-	    PrintErrorAndExit("ERROR, output directory $out_dir already exists. Delete it or use -F to overwrite it.", $sum_file, 1);
+	    printf STDERR ("\nERROR, output directory $out_dir already exists. Delete it or use -F to overwrite it.\n");
+	    exit(1);
 	}
 	elsif(($opt_HR->{"-F"}) && (! $opt_HR->{"--FF"})) { 
             # directory $out_dir exists, -F enabled  but --FF not enabled, check to see if there's any subdirectories in it:
@@ -495,7 +506,7 @@ sub create_output_dir {
 		if(-d $maybe_dir) { # $maybe_dir is a dir
 		    $has_subdir = 1;
 		    if($maybe_dir !~ m/^$out_dir\/$out_dir\.(\d+)/) { # subdirectory not created by ssu-align
-			printf STDERR ("Subdirectory $maybe_dir of $out_dir exists; it doesn't appear to have been created by ssu-align.\nEither delete it, or use --FF to remove all subdirectories of $out_dir.");
+			printf STDERR "Subdirectory $maybe_dir of $out_dir exists; it doesn't appear to have been created by ssu-align.\nEither delete it, or use --FF to remove all subdirectories of $out_dir.";
 		    }
 		    else { # subdirectory (probably) created by ssu-align
 			$has_ssualign_subdir = 1;
@@ -516,13 +527,16 @@ sub create_output_dir {
         # Note: we can't use RunExecutable, b/c that requires a output file to write to, which will be put
 	# into $out_dir, and since that hasn't been created yet, we can't write to it. Instead if the command
 	# succeeds, we write it to the log file at the end of the function.
-	if($? != 0) { PrintErrorAndExit("ERROR, the command \"rm -rf $out_dir did not successfully complete.", $sum_file, 1); }
+	if($? != 0) { printf STDERR "\nERROR, the command \"rm -rf $out_dir did not successfully complete."; exit(1); }
 	$ran_command = 1;
-	if(-d $out_dir) { PrintErrorAndExit("ERROR, output directory $out_dir still exists after the command \"rmdir $out_dir\".", $sum_file, 1); }
+	if(-d $out_dir) { printf STDERR "\nERROR, output directory $out_dir still exists after the command \"rmdir $out_dir\".\n"; exit(1); }
     }
 
     # make the directory 
-    mkdir($out_dir) || die "\nERROR, unable to make directory $out_dir.\n";
+    if(! mkdir($out_dir)) { 
+	printf STDERR "ERROR, unable to make directory $out_dir with PERL's mkdir command.";
+	exit(1); 
+    }
 
     # open the sum and log files
     open(OUT, ">" . $sum_file) || die "\nERROR, creating file $sum_file.\n";
@@ -592,9 +606,7 @@ sub process_cm_file {
     }
     close(CM);
     if(($opt_HR->{"--aln-one"} ne "") && (! $found_only_aln_name)) { 
-	my $errmsg = sprintf("\nERROR, --aln-one %s enabled, but no CM named %s exists in $cm_file.\n", $opt_HR->{"--aln-one"}, $opt_HR->{"--aln-one"});
-	PrintStringToFile($sum_file, 0, $errmsg);
-	die $errmsg;
+	PrintErrorAndExit(sprintf("\nERROR, --aln-one %s enabled, but no CM named %s exists in $cm_file.\n", $opt_HR->{"--aln-one"}, $opt_HR->{"--aln-one"}), $sum_file, 1);
     }
     return;
 }									 
@@ -627,7 +639,7 @@ sub process_cm_file {
 # $weight                   esl-weight command
 # $cm_file:                 the CM file 
 # $prep_enabled_options:    options to pass to children jobs
-# $nseq_target_file:        number of sequences in $target_file
+# $target_nseq:        number of sequences in $target_file
 # $indi_cm_name_AR:         reference to array with names of individual CMs
 # $max_file_name_width_R:   RETURN; maximum length of a file name
 # $sum_file:                file to print output file notices to
@@ -643,7 +655,7 @@ sub process_cm_file {
 sub prepare_only { 
     my $narg_expected = 13;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, prepare_only() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($target_file, $out_dir, $out_root, $opt_HR, $ssualign, $weight, $cm_file, $prep_enabled_options, $nseq_target_file, $indi_cm_name_AR, $max_file_name_width_R, $sum_file, $log_file) = @_;
+    my($target_file, $out_dir, $out_root, $opt_HR, $ssualign, $weight, $cm_file, $prep_enabled_options, $target_nseq, $indi_cm_name_AR, $max_file_name_width_R, $sum_file, $log_file) = @_;
 
     # Steps we'll perform:
     # 1. read preparation input file (if --prep-in enabled)
@@ -658,9 +670,7 @@ sub prepare_only {
     my $errmsg = "";
     if($opt_HR->{"--prep-in"} ne "") { # read the prep input file that specifies prefix/suffix for ssu-align runs
 	if(! (-e $opt_HR->{"--prep-in"})) { 
-	    $errmsg = "\nERROR, the prep input file " . $opt_HR->{"--prep-in"} . " specified with --prep-in does not exist.\n";
-	    PrintStringToFile($sum_file, 0, $errmsg);
-	    die $errmsg; 
+	    PrintErrorAndExit("ERROR, the prep input file " . $opt_HR->{"--prep-in"} . " specified with --prep-in does not exist.", $sum_file, 1);
 	}
 	open(PREPIN, $opt_HR->{"--prep-in"}) || FileOpenFailure($opt_HR->{"--prep-in"}, $sum_file, $!, "reading");
 	$prep_prefix = <PREPIN>;
@@ -683,23 +693,23 @@ sub prepare_only {
     my ($prep_nseq, $prep_nproc);
     if($opt_HR->{"--prep-p"} ne "") { 
 	$prep_nproc = $opt_HR->{"--prep-p"};
-	$prep_nseq  = int($nseq_target_file / ($prep_nproc)); 
-	$remainder  = $nseq_target_file - ($prep_nseq * $prep_nproc);
+	$prep_nseq  = int($target_nseq / ($prep_nproc)); 
+	$remainder  = $target_nseq - ($prep_nseq * $prep_nproc);
 	if($remainder > 0) { $prep_nseq++; }
     }
     elsif($opt_HR->{"--prep-n"} ne "") { 
 	$prep_nseq  = $opt_HR->{"--prep-n"};
-	$prep_nproc = int($nseq_target_file / ($prep_nseq));
-	$remainder  = $nseq_target_file - ($prep_nseq * $prep_nproc);
+	$prep_nproc = int($target_nseq / ($prep_nseq));
+	$remainder  = $target_nseq - ($prep_nseq * $prep_nproc);
 	if($remainder > 0) { $prep_nproc++; }
     }
     else { PrintErrorAndExit("ERROR, in prepare_only but neither --prep-p nor --prep-n enabled on the command-line. This shouldn't happen.", $sum_file, 1); }
 
-    if(($opt_HR->{"--prep-p"} ne "") && ($prep_nproc > $nseq_target_file)) { 
-	PrintErrorAndExit(sprintf("ERROR, --prep-p %d enabled, but there's only %d sequences in the target file.", $prep_nproc, $nseq_target_file), $sum_file, 1);
+    if(($opt_HR->{"--prep-p"} ne "") && ($prep_nproc > $target_nseq)) { 
+	PrintErrorAndExit(sprintf("ERROR, --prep-p %d enabled, but there's only %d sequences in the target file.", $prep_nproc, $target_nseq), $sum_file, 1);
     }
     if(($opt_HR->{"--prep-n"} ne "") && ($prep_nproc == 1)) {
-	PrintErrorAndExit(sprintf("ERROR, --prep-n %d enabled, but there's only %d sequences in the target file.\nNo need to use --prep-n, you're requesting the target file be split into only 1 partition.", $prep_nseq, $nseq_target_file), $sum_file, 1);
+	PrintErrorAndExit(sprintf("ERROR, --prep-n %d enabled, but there's only %d sequences in the target file.\nNo need to use --prep-n, you're requesting the target file be split into only 1 partition.", $prep_nseq, $target_nseq), $sum_file, 1);
     }
 
     $ndig = 1; $tmp = $prep_nproc; while($tmp > 10) { $ndig++; $tmp /= 10.; }
@@ -777,12 +787,13 @@ sub prepare_only {
 # $cm_file:                CM file
 # $target_file:            the target sequence file
 # $out_dir_and_root:           output file root, for naming output files
-# $nseq_target_file:       number of sequences in target file
+# $target_nseq:       number of sequences in target file
 # $indi_cm_name_AR:        ref to array with individual CM names
 # $tab_file_R:             RETURN; name of tab file to return
 # $max_file_name_width_R:  RETURN; num chars in max length file name
 # $description_width_R:    RETURN; num chars in description
-# $sum_file:                file to print output file notices to
+# $sum_file:               file to print output file notices to
+# $log_file:               log file
 #
 # Returns:    Nothing.
 #
@@ -792,9 +803,9 @@ sub prepare_only {
 # 
 ####################################################################
 sub search_sequences_with_each_model { 
-    my $narg_expected = 11;
+    my $narg_expected = 12;
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, search_sequences_with_each_model() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($opt_HR, $cmsearch, $cm_file, $target_file, $out_dir_and_root, $nseq_target_file, $indi_cm_name_AR, $tab_file_R, $max_file_name_width_R, $description_width_R, $sum_file) = @_;
+    my($opt_HR, $cmsearch, $cm_file, $target_file, $out_dir_and_root, $target_nseq, $indi_cm_name_AR, $tab_file_R, $max_file_name_width_R, $description_width_R, $sum_file, $log_file) = @_;
 
     my ($i, $cmsearch_opts, $tab_file, $tab_file2print, $alg_flag, $max_file_name_width, $dashes1, $dashes2, $tmp, $command, $command_worked, $cmsearch_outfile);
 
@@ -862,8 +873,10 @@ sub search_sequences_with_each_model {
 # $bestmatch_cm_HR:                RETURN; reference to hash of best-matching CM for each sequence
 # $new_target_file_per_cm_name_HR: RETURN; reference to hash of newly created target sequence file (key is CM name)
 # $hmmscores2print_HR:             RETURN; reference to hash of hmm scores to print
+# $aligned_len_HR:                 RETURN; reference to hash of lengths of subseqs that were aligned
 # $max_seq_name_width_R:           RETURN; max length of a sequence name
 # $sum_file:                       file to print output file notices to
+# $log_file:                       log file
 #
 # Returns:    Nothing, except values stored in RETURN arguments (see above)
 #
@@ -871,10 +884,10 @@ sub search_sequences_with_each_model {
 # 
 ####################################################################
 sub classify_and_extract_subseqs { 
-    my $narg_expected = 12;
+    my $narg_expected = 14;
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, classify_and_extract_subseqs() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my ($opt_HR, $tab_file, $target_file, $out_dir_and_root, $sfetch, $max_file_name_width, $indi_cm_name_AR, $bestmatch_cm_HR, $new_target_file_per_cm_name_HR,
-	$hmmscores2print_HR, $max_seq_name_width_R, $sum_file) = @_;
+	$hmmscores2print_HR, $aligned_len_HR, $max_seq_name_width_R, $sum_file, $log_file) = @_;
     my $cur_max_seq_name_width = 0;
     my $max_seq_name_width = 0;
 
@@ -1011,7 +1024,7 @@ sub classify_and_extract_subseqs {
 
 	if($nwinners > 0) { 
 	    $ncm_with_at_least_one_seq++;
-	    open(OUTLIST, ">" . $list_file) || FileOpenFailure($list_file, $sum_file, $!, "writing");
+	    open(OUTLIST,  ">" . $list_file)      || FileOpenFailure($list_file, $sum_file, $!, "writing");
 	    open(SFETCHIN, ">" . $sfetch_in_file) || FileOpenFailure($sfetch_in_file, $sum_file, $!, "writing");
 
 	    # determine max seq name width 
@@ -1025,10 +1038,19 @@ sub classify_and_extract_subseqs {
 	    printf OUTLIST  ("# %*s  %6s  %6s  %8s\n", $cur_max_seq_name_width, $dashes, "------", "------", "--------");
 
 	    for($i = 0; $i < $nwinners; $i++) { 
-		#PrintStringToFile($sum_file, 1, sprintf("%4d  $cm_name  %25s  %7.2f  %8d  %8d\n", ($i+1), $by_cm_name_HA{$cm_name}[$i], $by_cm_bitHA{$cm_name}[$i], $by_cm_startHA{$cm_name}[$i], $by_cm_endHA{$cm_name}[$i]));
 		printf OUTLIST ("  %-*s  %6d  %6d  %8.2f\n", $cur_max_seq_name_width, $by_cm_name_HA{$cm_name}[$i], $by_cm_start_HA{$cm_name}[$i], $by_cm_end_HA{$cm_name}[$i], $by_cm_bit_HA{$cm_name}[$i]);
-		if($do_truncate) { printf SFETCHIN ("$by_cm_name_HA{$cm_name}[$i]\t$by_cm_start_HA{$cm_name}[$i]\t$by_cm_end_HA{$cm_name}[$i]\t$by_cm_name_HA{$cm_name}[$i]\n"); }
-		else             { printf SFETCHIN ("$by_cm_name_HA{$cm_name}[$i]\n"); }
+		if($by_cm_start_HA{$cm_name}[$i] < $by_cm_end_HA{$cm_name}[$i]) { # positive strand
+		    $aligned_len_HR->{$by_cm_name_HA{$cm_name}[$i]} = $by_cm_end_HA{$cm_name}[$i] - $by_cm_start_HA{$cm_name}[$i] + 1; 
+		}
+		else { # reverse strand
+		    $aligned_len_HR->{$by_cm_name_HA{$cm_name}[$i]} = $by_cm_start_HA{$cm_name}[$i] - $by_cm_end_HA{$cm_name}[$i] + 1; 
+		}
+		if($do_truncate) { 
+		    printf SFETCHIN ("$by_cm_name_HA{$cm_name}[$i]\t$by_cm_start_HA{$cm_name}[$i]\t$by_cm_end_HA{$cm_name}[$i]\t$by_cm_name_HA{$cm_name}[$i]\n"); 
+		}
+		else { 
+		    printf SFETCHIN ("$by_cm_name_HA{$cm_name}[$i]\n"); 
+		}
 	    }
 	    #PrintStringToFile($sum_file, 1, sprintf("\n"));
 	    close(OUTLIST);
@@ -1043,7 +1065,7 @@ sub classify_and_extract_subseqs {
 	    else             { $sfetch_options = "-f";  }
 	    $command = "$sfetch -o $hits_file $sfetch_options $target_file $sfetch_in_file";
 	    RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
-	    #PrintStringToFile($sum_file, 1, sprintf("esl-sfetch -Cf $target_file $listfile > $hits_file\n"));
+
 	    if(-e $hits_file) { 
 		if($nwinners > 1) { PrintStringToFile($sum_file, 1, sprintf("  %-*s  %7d sequences to align with $cm_name CM\n", $max_file_name_width, $hits_file2print, scalar(@{$by_cm_name_HA{$cm_name}}))); }
 		else              { PrintStringToFile($sum_file, 1, sprintf("  %-*s  %7d sequence  to align with $cm_name CM\n", $max_file_name_width, $hits_file2print, scalar(@{$by_cm_name_HA{$cm_name}}))); }
@@ -1081,6 +1103,7 @@ sub classify_and_extract_subseqs {
 # $new_target_file_per_cm_name_HR: reference to hash, key CM name, value target file to align with that CM
 # $cmscores2print_HR:              reference to hash of CM scores to print
 # $sum_file:                       file to print output file notices to
+# $log_file:                       log file
 #
 # Returns:    Nothing.
 #
@@ -1090,9 +1113,9 @@ sub classify_and_extract_subseqs {
 #  
 ####################################################################
 sub align_subseqs { 
-    my $narg_expected = 10;
+    my $narg_expected = 11;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, align_subseqs() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($opt_HR, $out_dir_and_root, $cmalign, $max_file_name_width, $description_width, $weight, $indi_cm_name_AR, $new_target_file_per_cm_name_HR, $cmscores2print_HR, $sum_file) = @_;
+    my ($opt_HR, $out_dir_and_root, $cmalign, $max_file_name_width, $description_width, $weight, $indi_cm_name_AR, $new_target_file_per_cm_name_HR, $cmscores2print_HR, $sum_file, $log_file) = @_;
 
     my($i, $ncm, $m, $cm_file_name, $cm_name, $hits_file, $align_psecs, $cmalign_out, $cmalign_stk);
     my($cmalign_out2print, $cmalign_stk2print, $fil_cmalign_stk, $fil_cmalign_stk2print, $dashes1, $dashes2);
@@ -1165,7 +1188,7 @@ sub align_subseqs {
 
 
 #####################################################################
-# Subroutine: print_scores_file
+# Subroutine: print_scores_and_nomatch_files
 # Incept:     EPN, Tue Jun 16 14:39:38 2009
 # 
 # Purpose:    Print the scores file with CM and HMM scores.
@@ -1179,7 +1202,7 @@ sub align_subseqs {
 # $target_file:        name of the target sequence filee
 # $ncm                 number of CMs we've searched with
 # $scores_file:        the name of the 'scores' file we'll print to
-# $scores_file2print:  name of scores file as we print to screen
+# $nomatch_file:       the name of the 'nomatch.list' file we'll print to
 # $max_seq_name_width: num chars in max length sequence
 # $indi_cm_name_AR:    reference to array of CM names
 # $bestmatch_cm_HR:    reference to hash of best-matching CM for each sequence
@@ -1187,13 +1210,14 @@ sub align_subseqs {
 # $hmmscores2print_HR: reference to hash with HMM scores
 # $sum_file:           file to print output file notices to
 # 
-# Returns:    Nothing, if it returns, everything is valid.
+# Returns:    Number of sequences that don't contain any hits with scores above
+#             threshold to any model that were printed to <$nomatch_file>.
 # 
 ####################################################################
-sub print_scores_file { 
+sub print_scores_and_nomatch_files { 
     my $narg_expected = 11;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_scores_file() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($opt_HR, $target_file, $ncm, $scores_file, $scores_file2print, $max_seq_name_width, $indi_cm_name_AR, $bestmatch_cm_HR, $cmscores2print_HR, $hmmscores2print_HR, $sum_file) = @_;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_scores_and_nomatch_files() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($opt_HR, $target_file, $ncm, $scores_file, $nomatch_file, $max_seq_name_width, $indi_cm_name_AR, $bestmatch_cm_HR, $cmscores2print_HR, $hmmscores2print_HR, $sum_file) = @_;
 
     my ($seq_name, $cmscore2print);
     my ($i, $bestmatch_cm, $max_cm_name_width);
@@ -1208,6 +1232,7 @@ sub print_scores_file {
     $dashes_cmname  = ""; for($i = 0; $i < $max_cm_name_width; $i++)  { $dashes_cmname .= "-"; } 
     
     open(SCORES, ">" . $scores_file) || FileOpenFailure($scores_file, $sum_file, $!, "writing");
+    open(NOMATCH, ">" . $nomatch_file) || FileOpenFailure($nomatch_file, $sum_file, $!, "writing");
     open(TARGET, $target_file) || FileOpenFailure($target_file, $sum_file, $!, "reading");
     $i = 0;
 
@@ -1246,6 +1271,7 @@ sub print_scores_file {
     if($ncm > 1) { printf SCORES ("  %-*s  %7s  %7s", $max_cm_name_width, $dashes_cmname, "-------", "-------"); }
     printf SCORES ("\n");
 
+    my $n_nomatch = 0;
     $idx = 1;
     while($line = <TARGET>) { 
 	if($line =~ s/^\>//) { 
@@ -1270,9 +1296,11 @@ sub print_scores_file {
 		if($ncm > 1 && ($secondhmm ne $bestmatch_cm)) { printf SCORES ("  %-*s  %7.2f  %7.2f", $max_cm_name_width, $secondhmm, $shmmsc, ($whmmsc - $shmmsc)); }
 		elsif($ncm > 1)                               { printf SCORES ("  %-*s  %7s  %7s",    $max_cm_name_width, "-", "-", "-"); }
 	    }
-	    else {
+	    else { # this sequence did not include any hits to any model with a score above threshold 
 		printf SCORES ("  %7d  %-*s  %-*s  %4s  %4s  %7s  %7s  %7s", $idx, $max_seq_name_width, $seq_name, $max_cm_name_width, $df_none_name, "-", "-", "-", "-", "-");
 		if($ncm > 1) { printf SCORES ("  %-*s  %7s  %7s", $max_cm_name_width, "-", "-", "-"); }
+		printf NOMATCH ("%s\n", $seq_name); 
+		$n_nomatch++;
 	    }
 	    printf SCORES ("\n");
 	    $idx++;
@@ -1280,5 +1308,228 @@ sub print_scores_file {
     }
     close(TARGET);
     close(SCORES);
+    close(NOMATCH);
+
+    return $n_nomatch;
 }
 
+
+#####################################################################
+# Subroutine: seqstat_seq_file_per_seq()
+# Incept:     EPN, Wed Nov 11 15:30:40 2009
+# 
+# Purpose:    Get statistics on a sequence file using easel's
+#             esl-seqstat miniapp, including the length of each
+#             sequence.
+#
+# Arguments: 
+# $seqstat:          the esl-seqstat executable
+# $seqfile:          the target sequence file 
+# $seqstat_out_file: output file from seqstat, created here
+# $total_nres_R:     RETURN: total number of residues in all seqs in the file
+# $total_nseq_R:     RETURN: total number of sequences in the file
+# $format_R:         RETURN: sequence file format (ex: "FASTA")
+# $target_order_AR:  reference to an array to fill with order of sequences
+# $target_len_HR:    reference to a hash to fill with length of sequences
+# $sum_file:         summary file 
+# $log_file:         log file to print commands to
+# 
+# Returns:    <$total_nres_R>, <$total_nseq_R>, <$format_R>, 
+#             <$seq_order_AR>, <$seq_len_HR> filled. Other than
+#             that nothing is returned.
+#             
+# 
+####################################################################
+sub seqstat_seq_file_per_seq { 
+    my $narg_expected = 10;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, seqstat_seq_file_per_seq() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($seqstat, $seqfile, $seqstat_out_file, $total_nres_R, $total_nseq_R, $format_R, $seq_order_AR, $seq_len_HR, $sum_file, $log_file) = @_;
+
+    my ($command, $command_worked, $line, $format, $total_nseq, $total_nres);
+    $command = "$seqstat -a $seqfile > $seqstat_out_file";
+    RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
+
+    # parse seqstat output
+    my $nseq_read = 0;
+    my $nres_read = 0;
+    my ($seqname, $seqlen);
+    open(SEQSTAT, $seqstat_out_file) || FileOpenFailure($seqstat_out_file, $sum_file, $!, "reading");
+    while($line = <SEQSTAT>) { 
+	if($line =~ /^\=\s+(\S+)\s+(\d+)/) { 
+	    $seqname = $1;
+	    $seqlen  = $2;
+	    $nseq_read++;
+	    $nres_read += $seqlen;
+	    push(@{$seq_order_AR}, $seqname);
+	    $seq_len_HR->{"$seqname"} = $seqlen;
+	}
+	elsif($line =~ s/^Format\:\s+//) { 
+	    chomp $line; 
+	    $format = $line;
+	}
+	elsif($line =~ s/^Number of sequences\:\s+//) { 
+	    chomp $line; 
+	    $total_nseq = $line;
+	}
+	elsif($line =~ s/^Total \# residues\:\s+//) { 
+	    chomp $line; 
+	    $total_nres = $line;
+	}
+    }
+    close(SEQSTAT);
+
+    # validate what we just parsed
+    if($nseq_read == 0)           { PrintErrorAndExit("ERROR, unable to parse $seqstat output in file $seqstat_out_file,\n0 individual sequence lengths read.", $sum_file, 0); }
+    if($nseq_read != $total_nseq) { PrintErrorAndExit("ERROR, unable to parse $seqstat output in file $seqstat_out_file,\nnumber of individual sequences disagrees with summary output.", $sum_file, 0); }
+    if($nres_read != $total_nres) { PrintErrorAndExit("ERROR, unable to parse $seqstat output in file $seqstat_out_file,\nsummed length of individual sequences disagrees with summary output.", $sum_file, 0); }
+    if($format eq "")             { PrintErrorAndExit("ERROR, unable to parse sequence file format in $seqstat output in file $seqstat_out_file.", $sum_file, 0); }
+
+    $$total_nres_R = $total_nres;
+    $$total_nseq_R = $total_nseq;
+    $$format_R     = $format;
+    
+    return;
+}
+
+
+#####################################################################
+# Subroutine: print_statistics()
+# Incept:     EPN, Wed Nov 11 16:49:25 2009
+# 
+# Purpose:    Print statistics on the search and alignment we just 
+#             performed to the summary file and stdout.
+#
+# Arguments: 
+# $opt_HR:           the command-line options hash
+# $search_seconds:   seconds required for search
+# $align_seconds:    seconds required for alignment
+# $indi_cm_name_AR:  reference to array with CM names
+# $target_order_AR:  all the target sequence files
+# $target_len_HR:    full lengths of the target sequences
+# $aligned_len_HR:   lengths of target subsequences that were aligned
+# $bestmatch_cm_HR:  the best-matching CM for each target sequence
+# $sum_file:         summary file 
+# 
+# Returns:    Nothing.
+#             
+# 
+####################################################################
+sub print_statistics { 
+    my $narg_expected = 9;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_statistics() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($opt_HR, $search_seconds, $align_seconds, $indi_cm_name_AR, $target_order_AR, $target_len_HR, $aligned_len_HR, $bestmatch_cm_HR, $sum_file) = @_;
+
+    my ($cm_name, $target, $i);
+    my $target_nseq = scalar(@{$target_order_AR});
+    my $target_nres = SumHashElements ($target_len_HR);
+
+    my %nres_total_cm_H = ();
+    my %nres_aligned_cm_H = ();
+    my %nseq_cm_H = ();
+
+    # initialize
+    my $nres_total_all_cms = 0;
+    my $nres_aligned_all_cms = 0;
+    my $nseq_all_cms = 0;
+    foreach $cm_name (@{$indi_cm_name_AR}) { 
+	$nres_total_cm_H{$cm_name} = 0;
+	$nres_aligned_cm_H{$cm_name} = 0;
+	$nseq_cm_H{$cm_name} = 0;
+    }
+
+    # compile stats
+    foreach $target (keys %{$bestmatch_cm_HR}) { 
+	if(! exists $target_len_HR->{$target})  { PrintErrorAndExit("ERROR, printing final stats, can't find $target in hash created after seqstat call.", $sum_file, 1); }
+	if(! exists $aligned_len_HR->{$target}) { PrintErrorAndExit("ERROR, printing final stats, can't find $target in hash created during subsequence extraction.", $sum_file, 1); }
+
+	$cm_name = $bestmatch_cm_HR->{$target};
+	$nseq_cm_H{$cm_name}++;
+	$nseq_all_cms++;
+	$nres_total_cm_H{$cm_name}   += $target_len_HR->{$target};
+	$nres_total_all_cms          += $target_len_HR->{$target};
+	$nres_aligned_cm_H{$cm_name} += $aligned_len_HR->{$target};
+	$nres_aligned_all_cms        += $aligned_len_HR->{$target};
+    }
+
+    # output stats
+    PrintStringToFile($sum_file, 1, sprintf("#\n"));
+    PrintStringToFile($sum_file, 1, sprintf("#\n"));
+    PrintStringToFile($sum_file, 1, sprintf("# Summary statistics:\n"));
+    PrintStringToFile($sum_file, 1, sprintf("#\n"));
+
+    my $cm_width = MaxLengthScalarInArray($indi_cm_name_AR);
+    if($cm_width < length("*all models*")) { $cm_width = length("*all models*"); }
+    my $dashes = ""; for($i = 0; $i < $cm_width; $i++) { $dashes .= "-"; } 
+    PrintStringToFile($sum_file, 1, sprintf("# %-*s  %7s  %8s  %13s  %8s\n", $cm_width, "model or",   "number",  "fraction", "average",        "average"));
+    PrintStringToFile($sum_file, 1, sprintf("# %-*s  %7s  %8s  %13s  %8s\n", $cm_width, "category",   "of seqs", "of total", "length",         "coverage"));
+    PrintStringToFile($sum_file, 1, sprintf("# %-*s  %7s  %8s  %13s  %8s\n", $cm_width, $dashes,      "-------", "--------", "-------------",  "--------"));
+
+    PrintStringToFile($sum_file, 1, sprintf("  %-*s  %7d  %8.4f  %13.2f  %8s\n", 
+					    $cm_width, "*input*", 
+					    $target_nseq,
+					    1.0, 
+					    $target_nres / $target_nseq,
+					    "-"));
+    foreach $cm_name (@{$indi_cm_name_AR}) { 
+	if($nseq_cm_H{$cm_name} == 0) { 
+	    PrintStringToFile($sum_file, 1, sprintf("  %-*s  %7d  %8.4f  %13s  %8s\n", 
+						    $cm_width, $cm_name, 
+						    $nseq_cm_H{$cm_name},
+						    $nseq_cm_H{$cm_name} / $target_nseq,
+						    "-", "-"));
+	}
+	else { 
+	    PrintStringToFile($sum_file, 1, sprintf("  %-*s  %7d  %8.4f  %13.2f  %8.4f\n", 
+						    $cm_width, $cm_name, 
+						    $nseq_cm_H{$cm_name},
+						    $nseq_cm_H{$cm_name} / $target_nseq,
+						    $nres_aligned_cm_H{$cm_name} / $nseq_cm_H{$cm_name}, 
+						    $nres_aligned_cm_H{$cm_name} / $nres_total_cm_H{$cm_name}));
+	}
+    }
+    if($nseq_all_cms == 0) { PrintErrorAndExit("ERROR, no seqs matched to any CM (during stat printing). Program should've exited earlier. Error in code.", $sum_file, 1); }
+    PrintStringToFile($sum_file, 1, sprintf("  %-*s  %7d  %8.4f  %13.2f  %8.4f\n", 
+					    $cm_width, "*all models*", 
+					    $nseq_all_cms,
+					    $nseq_all_cms / $target_nseq,
+					    $nres_aligned_all_cms / $nseq_all_cms, 
+					    $nres_aligned_all_cms / $nres_total_all_cms));
+    if($target_nseq > $nseq_all_cms) { 
+	PrintStringToFile($sum_file, 1, sprintf("  %-*s  %7d  %8.4f  %13.2f  %8s\n", 
+						$cm_width, "*no models*", 
+						$target_nseq - $nseq_all_cms,
+						($target_nseq - $nseq_all_cms) / $target_nseq,
+						($target_nres - $nres_total_all_cms) / ($target_nseq - $nseq_all_cms),
+						"-"));
+    }
+    else { 
+	PrintStringToFile($sum_file, 1, sprintf("  %-*s  %7d  %8.4f  %13s  %8s\n", 
+						$cm_width, "*no models*", 
+						$target_nseq - $nseq_all_cms,
+						0., "-", "-"));
+    }
+
+    if($search_seconds eq "0") { $search_seconds = 1; }
+    if($align_seconds eq "0") { $align_seconds = 1; }
+    PrintStringToFile($sum_file, 1, sprintf("#\n"));
+    PrintStringToFile($sum_file, 1, sprintf("#\n"));
+    PrintStringToFile($sum_file, 1, sprintf("# Speed statistics:\n"));
+    PrintStringToFile($sum_file, 1, sprintf("#\n"));
+    PrintStringToFile($sum_file, 1, sprintf("# %-9s  %8s  %7s  %13s  %13s  %8s\n","stage",     "num seqs", "seq/sec", "seq/sec/model", "nucleotides",   "nt/sec"));
+    PrintStringToFile($sum_file, 1, sprintf("# %9s  %8s  %7s  %13s  %13s  %8s\n", "---------", "--------", "-------", "-------------", "-------------", "--------"));
+    PrintStringToFile($sum_file, 1, sprintf("  %-9s  %8d  %7.3f  %13.3f  %13d  %8.1f\n", 
+					    "search", $target_nseq, 
+					    ($target_nseq / $search_seconds), 
+					    ($target_nseq / ($search_seconds * scalar(@{$indi_cm_name_AR}))), 
+					    $target_nres, 
+					    $target_nres / $search_seconds));
+    PrintStringToFile($sum_file, 1, sprintf("  %-9s  %8d  %7.3f  %13.3f  %13d  %8.1f\n", 
+					    "alignment", $nseq_all_cms, 
+					    ($nseq_all_cms / $align_seconds), 
+					    ($nseq_all_cms / $align_seconds), 
+					    $nres_aligned_all_cms, 
+					    $nres_aligned_all_cms / $align_seconds));
+    PrintStringToFile($sum_file, 1, sprintf("#\n"));
+
+    return;
+}
