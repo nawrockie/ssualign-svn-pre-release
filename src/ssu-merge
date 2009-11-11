@@ -41,7 +41,13 @@ if(! (-e $subs_file)) {
 }
 require $subs_file;
 
-my $total_time     = -1 * time();
+# Start timing, this is done different depending on if Time::HiRes is installed or not
+my $time_hires_installed = CheckForModule("Time::HiRes");
+if($time_hires_installed) { 
+    use Time::HiRes qw(gettimeofday);
+}
+my $total_seconds = -1 * SecondsSinceEpoch($time_hires_installed);
+
 my $script_desc    = "merge SSU rRNA alignments";
 my $date           = scalar localtime();
 my $usage          = "Usage: ssu-merge [-options] <dir created by ssu-align --prep-n or --prep-p call>";
@@ -83,7 +89,7 @@ my $opt_return = GetOptions
      'm=s'       => \$opt_H{"-m"},
      'F'         => \$opt_H{"-F"});
 
-if($opt_return != 1) { exit(1); }
+if($opt_return != 1) { print STDERR "\nERROR, GetOptions() did not return 1, but $opt_return\n"; exit(1); }
 
 if ($opt_H{"-h"}) { 
     PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, "");
@@ -133,8 +139,8 @@ my @hits_fa_to_merge_AA = ();
 my @hits_list_to_merge_AA = ();
 my @stk_to_merge_AA = ();
 my @cm_names_A = ();
-validate_and_setup_ssu_merge($ssualigndir, \%opt_H, $dir, \@subdir_A, \@score_to_merge_A, \@sum_to_merge_A, \@log_to_merge_A, \@tab_to_merge_A, \@cmalign_to_merge_AA, \@hits_fa_to_merge_AA, \@hits_list_to_merge_AA, \@stk_to_merge_AA, \@cm_names_A, \$cmalign, \$cm_file);
-if(scalar(@score_to_merge_A) == 0) { printf STDERR ("who ERROR, noa *.scores files found.\n"); exit(1); }
+validate_and_setup_ssu_merge($ssualigndir, \%opt_H, $dir, \@subdir_A, \@score_to_merge_A, \@sum_to_merge_A, \@log_to_merge_A, \@tab_to_merge_A, \@cmalign_to_merge_AA, \@hits_fa_to_merge_AA, \@hits_list_to_merge_AA, \@stk_to_merge_AA, \@cm_names_A, \$cmalign, \$cm_file, $sum_file);
+if(scalar(@score_to_merge_A) == 0) { PrintErrorAndExit("ERROR, no *.scores files found.", $sum_file, 1); }
 
 ####################################
 # Merge files including alignments #
@@ -144,11 +150,12 @@ my ($i, $j, $cm_idx, $nhitsfa, $nhitslist, $ncmalign, $nstk);
 my ($scores_file, $ssu_align_sum_file, $ssu_align_log_file, $tab_file, $cmalign_file, $hitsfa_file, $hitslist_file, $merged_stk_file);
 my ($scores_file2print, $ssu_align_sum_file2print, $ssu_align_log_file2print, $tab_file2print, $cmalign_file2print, $hitsfa_file2print, $hitslist_file2print, $merged_stk_file2print);
 my ($max_file_name_width, $max_cm_name_width, $file_dashes, $cm_dashes, $nseq_merged);
+my ($summed_search_seconds, $summed_align_seconds, $summed_total_seconds);
 
-if(scalar(@score_to_merge_A) == 0) { printf STDERR ("ERROR, no *.scores files found.\n"); exit(1); }
-if(scalar(@sum_to_merge_A)   == 0) { printf STDERR ("ERROR, no *.sum files found.\n"); exit(1); }
-if(scalar(@log_to_merge_A)   == 0) { printf STDERR ("ERROR, no *.log files found.\n"); exit(1); }
-if(scalar(@tab_to_merge_A)   == 0) { printf STDERR ("ERROR, no *.tab files found.\n"); exit(1); }
+if(scalar(@score_to_merge_A) == 0) { PrintErrorAndExit("ERROR, no *.scores files found.", $sum_file, 1); }
+if(scalar(@sum_to_merge_A)   == 0) { PrintErrorAndExit("ERROR, no *.sum files found.", $sum_file, 1); }
+if(scalar(@log_to_merge_A)   == 0) { PrintErrorAndExit("ERROR, no *.log files found.", $sum_file, 1); }
+if(scalar(@tab_to_merge_A)   == 0) { PrintErrorAndExit("ERROR, no *.tab files found.", $sum_file, 1); }
 
 $max_cm_name_width = MaxLengthScalarInArray(\@cm_names_A);
 if($max_cm_name_width < length("CM name")) { $max_cm_name_width = length("CM name"); }
@@ -178,7 +185,7 @@ $tab_file2print           = $dir . ".tab";
 concatenate_a_list_of_files(\%opt_H, $scores_file, \@score_to_merge_A);
 PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9s\n", $max_file_name_width, $scores_file2print, $max_cm_name_width, "-", scalar(@score_to_merge_A), "-"));
 
-concatenate_a_list_of_files(\%opt_H, $ssu_align_sum_file, \@sum_to_merge_A);
+concatenate_sum_files_and_add_up_timings(\%opt_H, $ssu_align_sum_file, \@sum_to_merge_A, $time_hires_installed, $sum_file, \$summed_search_seconds, \$summed_align_seconds, \$summed_total_seconds);
 PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9s\n", $max_file_name_width, $ssu_align_sum_file2print, $max_cm_name_width, "-", scalar(@sum_to_merge_A), "-"));
 
 concatenate_a_list_of_files(\%opt_H, $ssu_align_log_file, \@log_to_merge_A);
@@ -196,9 +203,9 @@ for($i = 0; $i < scalar(@cm_names_A); $i++) {
     $ncmalign  = scalar(@{$cmalign_to_merge_AA[$i]});
     $nstk      = scalar(@{$stk_to_merge_AA[$i]});
     $cm_idx    = $i+1;
-    if($nhitsfa != $nhitslist)  { printf STDERR ("ERROR, for cm $cm_names_A[$i], %d *.hits.fa files but %d *.hits.list files.\n", $nhitsfa, $nhitslist); exit(1); }
-    if($nhitsfa != $ncmalign)   { printf STDERR ("ERROR, for cm $cm_names_A[$i], %d *.hits.fa files but %d *.cmalign files.\n", $nhitsfa, $ncmalign); exit(1); }
-    if($nhitsfa != $nstk)       { printf STDERR ("ERROR, for cm $cm_names_A[$i], %d *.hits.fa files but %d *.stk files.\n", $nhitsfa, $nstk); exit(1); }
+    if($nhitsfa != $nhitslist)  { PrintErrorAndExit(sprintf("ERROR, for cm $cm_names_A[$i], %d *.hits.fa files but %d *.hits.list files.", $nhitsfa, $nhitslist), $sum_file, 1); }
+    if($nhitsfa != $ncmalign)   { PrintErrorAndExit(sprintf("ERROR, for cm $cm_names_A[$i], %d *.hits.fa files but %d *.cmalign files.", $nhitsfa, $ncmalign), $sum_file, 1); }
+    if($nhitsfa != $nstk)       { PrintErrorAndExit(sprintf("ERROR, for cm $cm_names_A[$i], %d *.hits.fa files but %d *.stk files.", $nhitsfa, $nstk), $sum_file, 1); }
     if($nhitsfa > 0) { 
 	$cmalign_file          = $dir . "/" . $dir . "." . $cm_names_A[$i] . ".cmalign";
 	$hitsfa_file           = $dir . "/" . $dir . "." . $cm_names_A[$i] . ".hits.fa";
@@ -234,7 +241,7 @@ for($i = 0; $i < scalar(@cm_names_A); $i++) {
 	concatenate_a_list_of_files(\%opt_H, $cmalign_file,  \@{$cmalign_to_merge_AA[$i]});
 	PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9d\n", $max_file_name_width, $cmalign_file2print, $max_cm_name_width, $cm_names_A[$i], $ncmalign, $nseq_merged));
 
-	merge_alignments_for_a_cm(\%opt_H, $merged_stk_file, $dir, $cm_file, $cm_idx, $cm_names_A[$i], \@{$stk_to_merge_AA[$i]});
+	merge_alignments_for_a_cm(\%opt_H, $merged_stk_file, $dir, $cm_file, $cm_idx, $cm_names_A[$i], \@{$stk_to_merge_AA[$i]}, $sum_file, $log_file);
 	PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9d\n", $max_file_name_width, $merged_stk_file2print, $max_cm_name_width, $cm_names_A[$i], $nstk, $nseq_merged));
 
 	PrintStringToFile($sum_file, 1, sprintf("#\n"));
@@ -245,8 +252,12 @@ for($i = 0; $i < scalar(@cm_names_A); $i++) {
 ############
 # Conclude #
 ############
-$total_time += time();
-PrintConclusion($sum_file, $log_file2print, $sum_file2print, $total_time, $dir);
+PrintTiming("# Summed ssu-align CPU time (search):    ", $summed_search_seconds, $time_hires_installed, 1, $sum_file); 
+PrintTiming("# Summed ssu-align CPU time (align):     ", $summed_align_seconds, $time_hires_installed, 1, $sum_file); 
+PrintTiming("# Summed ssu-align CPU time (total):     ", $summed_total_seconds, $time_hires_installed, 1, $sum_file); 
+
+$total_seconds += SecondsSinceEpoch($time_hires_installed);
+PrintConclusion($sum_file, $log_file2print, $sum_file2print, $total_seconds, $time_hires_installed, $dir);
 
 # Success! Exit normally
 exit(0); 
@@ -289,6 +300,7 @@ exit(0);
 # $cm_names_AR:            reference to a hash of arrays of alignments to merge, hash key is CM name, 
 # $cmalign_R:              RETURN; cmalign executable command
 # $cm_file_R:              RETURN; the path to the CM file, either default CM file or <s> from -m <s>
+# $sum_file:               ssu-merge summary file
 # 
 # Returns:    Nothing, if it returns, everything is valid.
 # 
@@ -299,36 +311,37 @@ exit(0);
 #
 ####################################################################
 sub validate_and_setup_ssu_merge { 
-    my $narg_expected = 15;
+    my $narg_expected = 16;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, validate_and_setup_ssu_merge() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($ssualigndir, $opt_HR, $dir, $subdir_AR, $score_to_merge_AR, $sum_to_merge_AR, $log_to_merge_AR, $tab_to_merge_AR, $cmalign_to_merge_AAR, $hits_fa_to_merge_AAR, $hits_list_to_merge_AAR, $stk_to_merge_AAR, $cm_names_AR, $cmalign_R, $cm_file_R) = @_;
+    my($ssualigndir, $opt_HR, $dir, $subdir_AR, $score_to_merge_AR, $sum_to_merge_AR, $log_to_merge_AR, $tab_to_merge_AR, $cmalign_to_merge_AAR, $hits_fa_to_merge_AAR, $hits_list_to_merge_AAR, $stk_to_merge_AAR, $cm_names_AR, $cmalign_R, $cm_file_R, $sum_file) = @_;
 
     #Make sure $dir exists
-    if(!(-d $dir)) { printf STDERR ("\nERROR, directory $dir does not exist.\n"); exit(1); }
+    if(!(-d $dir)) { PrintErrorAndExit("ERROR, directory $dir does not exist.", $sum_file, 1); }
 
     #Make sure the CM file exists
     my $cm_file = "";
     if($opt_HR->{"-m"} ne "") { 
 	$cm_file = $opt_HR->{"-m"}; 
-	if(!(-e $cm_file))   { printf STDERR ("ERROR, CM file $cm_file, specified with -M does not exist.\n"); exit(1); }
+	if(!(-e $cm_file))   { PrintErrorAndExit("ERROR, CM file $cm_file, specified with -m does not exist.", $sum_file, 1); }
     }
     else { 
 	$cm_file = $ssualigndir . "/ssu-align-0p1.cm";
-	if(!(-e $cm_file))   { printf STDERR ("ERROR, the default CM file $cm_file does not exist.\n"); exit(1); }
+	if(!(-e $cm_file))   { PrintErrorAndExit("ERROR, the default CM file $cm_file does not exist.", $sum_file, 1); }
     }
 
     # determine CM names
     my %cm_name_idx_H = ();
     my ($cm_name, $line);
     my $ncm = 0;
-    if(open(CM, $cm_file) == 0) { printf STDERR ("ERROR, could not open $cm_file for reading.\n"); exit(1); }
+    my $errmsg;
+    open(CM, $cm_file) || FileOpenFailure($cm_file, $sum_file, $!, "reading");
     while($line = <CM>) {
 	# the lines we're interested in look like this:
 	#NAME     archaea
 	if($line =~ /^NAME\s+(\S+)/) { 
 	    $cm_name = $1;
 	    push(@{$cm_names_AR}, $cm_name);
-	    if(exists($cm_name_idx_H{$cm_name})) { printf STDERR ("ERROR, two CMs in CM file $cm_file have the name $cm_name. Each CM must have a unique name.\n"); exit(1); }
+	    if(exists($cm_name_idx_H{$cm_name})) { PrintErrorAndExit("ERROR, two CMs in CM file $cm_file have the name $cm_name. Each CM must have a unique name.", $sum_file, 1); }
 	    # initialize arrays for this cm:
 	    @{$cmalign_to_merge_AAR->[$ncm]} = ();
 	    @{$hits_fa_to_merge_AAR->[$ncm]} = ();
@@ -336,7 +349,7 @@ sub validate_and_setup_ssu_merge {
 	    @{$stk_to_merge_AAR->[$ncm]} = ();
 	    $cm_name_idx_H{$cm_name} = $ncm++;
 
-	    if($cm_name eq $df_none_name) { printf STDERR ("ERROR, you can't use a CM with the name $df_none_name, that's reserved for indicating which sequences are not the best-match to any models.\n"); exit(1); }
+	    if($cm_name eq $df_none_name) { PrintErrorAndExit("ERROR, you can't use a CM with the name $df_none_name, that's reserved for indicating which sequences are not the best-match to any models.", $sum_file, 1); }
 	}
     }
     close(CM);
@@ -366,28 +379,28 @@ sub validate_and_setup_ssu_merge {
     # verify we have a contiguous set of ssu-align created subdirectories, each
     # of which contains a finished sum file that indicates ssu-align is done running there.
     my @cpu_A = ();
-    my ($sum_file, $seen_cpu);
-    if($max_num == 0) { printf STDERR ("\nERROR, couldn't find any subdirectories created by ssu-align in $dir.\nDid you run the shell script created by your initial ssu-align --prep-* call?\n"); exit(1); }
+    my ($child_sum_file, $seen_cpu);
+    if($max_num == 0) { PrintErrorAndExit("ERROR, couldn't find any subdirectories created by ssu-align in $dir.\nDid you run the shell script created by your initial ssu-align --prep-* call?", $sum_file, 1); }
     # Make sure we have all directories from <dir>.1 to <dir>.$max_num, and they all
     # contain ssu-align sum files in them that are finished running.
     for($i = 1; $i <= $max_num; $i++) { 
 	$subdir = "$dir." . $i;
 	if(! (exists $subdir_H{($subdir)})) { 
-	    printf STDERR ("\nERROR, ssu-align created subdirectory " . $dir . "." . $i . " does not exist in $dir (but " . $dir . "." . $max_num . " does).\n"); exit(1); 
+	    PrintErrorAndExit("ERROR, ssu-align created subdirectory " . $dir . "." . $i . " does not exist in $dir (but " . $dir . "." . $max_num . " does).", $sum_file, 1); 
 	}
-	$sum_file = $dir . "/" . $subdir . "/" . $subdir . ".ssu-align.sum";
-	if(! (-e $sum_file)) { 
-	    printf STDERR ("\nERROR, ssu-align created subdirectory " . $dir . "/$subdir does not have a ssu-align summary (.sum) file in it.\nThis suggests the ssu-align job for that directory has not completed executing yet.\nPlease execute it, or if it is currently executing, wait until it is finished.\nThen run ssu-merge again.\n"); exit(1);  
+	$child_sum_file = $dir . "/" . $subdir . "/" . $subdir . ".ssu-align.sum";
+	if(! (-e $child_sum_file)) { 
+	    PrintErrorAndExit("ERROR, ssu-align created subdirectory " . $dir . "/$subdir does not have a ssu-align summary (.sum) file in it.\nThis suggests the ssu-align job for that directory has not completed executing yet.\nPlease execute it, or if it is currently executing, wait until it is finished.\nThen run ssu-merge again.", $sum_file, 1);  
 	}
 	# look for a line starting with  "# CPU" (reporting running time) in ssu-align summary file (it should be there if the file is finished running) 
-	open(SUM, $sum_file) || die "\nERROR, unable to open file $sum_file, but it exists.\nIt is possible the ssu-align job is still running, and this file is currently being written to.\n";
+	open(SUM, $child_sum_file) || FileOpenFailure($child_sum_file, $sum_file, $!, "reading");
 	$seen_cpu = 0;
 	while($line = <SUM>) { 
 	    if($line =~ m/^\#\s+CPU time/) { $seen_cpu = 1; }
 	}
 	close(SUM);
 	if(! $seen_cpu) { 
-	    printf STDERR ("\nERROR, ssu-align created subdirectory " . $dir . "/$subdir has an incomplete ssu-align summary (.sum) file in it.\nThis suggests the ssu-align job for that directory did not successfully finish running yet.\nPlease rerun it or wait until it is finished.\nThen run ssu-merge again.\n"); exit(1);  
+	    PrintErrorAndExit("ERROR, ssu-align created subdirectory " . $dir . "/$subdir has an incomplete ssu-align summary (.sum) file in it.\nThis suggests the ssu-align job for that directory did not successfully finish running yet.\nPlease rerun it or wait until it is finished.\nThen run ssu-merge again.", $sum_file, 1);  
 	}
 	push(@{$subdir_AR}, $subdir);
     }
@@ -421,22 +434,22 @@ sub validate_and_setup_ssu_merge {
 	    }
 	    if($file =~ m/$subdir\.(\S+)\.cmalign/) { 
 		$cm = $1;
-		if(! (exists($cm_name_idx_H{$cm}))) { printf STDERR ("\nERROR, found ssu-align output file $file in subdirectory $subdir/ created for a CM named $cm\nNo such CM exists in $cm_file.\nDid you use -m <s> when you ran ssu-align? If so pass -m <s> to ssu-merge as well.\n"); exit(1); }
+		if(! (exists($cm_name_idx_H{$cm}))) { PrintErrorAndExit("ERROR, found ssu-align output file $file in subdirectory $subdir/ created for a CM named $cm\nNo such CM exists in $cm_file.\nDid you use -m <s> when you ran ssu-align? If so pass -m <s> to ssu-merge as well.", $sum_file, 1); }
 		push(@{$cmalign_to_merge_AAR->[$cm_name_idx_H{$cm}]}, $file);
 	    }
 	    if($file =~ m/$subdir\.(\S+)\.hits.fa/) { 
 		$cm = $1;
-		if(! (exists($cm_name_idx_H{$cm}))) { printf STDERR ("\nERROR, found ssu-align output file $file in subdirectory $subdir/ created for a CM named $cm\nNo such CM exists in $cm_file.\nDid you use -m <s> when you ran ssu-align? If so pass -m <s> to ssu-merge as well.\n"); exit(1); }
+		if(! (exists($cm_name_idx_H{$cm}))) { PrintErrorAndExit("ERROR, found ssu-align output file $file in subdirectory $subdir/ created for a CM named $cm\nNo such CM exists in $cm_file.\nDid you use -m <s> when you ran ssu-align? If so pass -m <s> to ssu-merge as well.", $sum_file, 1); }
 		push(@{$hits_fa_to_merge_AAR->[$cm_name_idx_H{$cm}]}, $file);
 	    }
 	    if($file =~ m/$subdir\.(\S+)\.hits.list/) { 
 		$cm = $1;
-		if(! (exists($cm_name_idx_H{$cm}))) { printf STDERR ("\nERROR, found ssu-align output file $file in subdirectory $subdir/ created for a CM named $cm\nNo such CM exists in $cm_file.\nDid you use -m <s> when you ran ssu-align? If so pass -m <s> to ssu-merge as well.\n"); exit(1); }
+		if(! (exists($cm_name_idx_H{$cm}))) { PrintErrorAndExit("ERROR, found ssu-align output file $file in subdirectory $subdir/ created for a CM named $cm\nNo such CM exists in $cm_file.\nDid you use -m <s> when you ran ssu-align? If so pass -m <s> to ssu-merge as well.", $sum_file, 1); }
 		push(@{$hits_list_to_merge_AAR->[$cm_name_idx_H{$cm}]}, $file);
 	    }
 	    if($file =~ m/$subdir\.(\S+)\.stk/) { 
 		$cm = $1;
-		if(! (exists($cm_name_idx_H{$cm}))) { printf STDERR ("\nERROR, found ssu-align output file $file in subdirectory $subdir/ created for a CM named $cm\nNo such CM exists in $cm_file.\nDid you use -m <s> when you ran ssu-align? If so pass -m <s> to ssu-merge as well.\n"); exit(1); }
+		if(! (exists($cm_name_idx_H{$cm}))) { PrintErrorAndExit("ERROR, found ssu-align output file $file in subdirectory $subdir/ created for a CM named $cm\nNo such CM exists in $cm_file.\nDid you use -m <s> when you ran ssu-align? If so pass -m <s> to ssu-merge as well.", $sum_file, 1); }
 		push(@{$stk_to_merge_AAR->[$cm_name_idx_H{$cm}]}, $file);
 	    }
 	}
@@ -456,14 +469,16 @@ sub validate_and_setup_ssu_merge {
 #             merge them with a single call to cmalign --list-merge.
 #
 # Arguments: 
-# $opt_HR:           reference to hash of command line options
-# $stk_name:         name for merged alignment file
-# $dir:              main directory created by ssu-align --prep-* that 
-#                    includes subdirectories with alignments
-# $cm_file:          the CM file
-# $cm_idx:           index of the relevant CM in the CM file
-# $cm_name:          name of the relevant CM in the CM file
-# $stk_to_merge_AR:  reference to the array of alignments to merge
+# $opt_HR:             reference to hash of command line options
+# $stk_name:           name for merged alignment file
+# $dir:                main directory created by ssu-align --prep-* that 
+#                      includes subdirectories with alignments
+# $cm_file:            the CM file
+# $cm_idx:             index of the relevant CM in the CM file
+# $cm_name:            name of the relevant CM in the CM file
+# $stk_to_merge_AR:    reference to the array of alignments to merge
+# $sum_file:           ssu-merge summary file
+# $log_file:           log file
 # 
 # Returns:    Nothing, if it returns, everything is valid.
 # 
@@ -472,21 +487,21 @@ sub validate_and_setup_ssu_merge {
 #
 ####################################################################
 sub merge_alignments_for_a_cm { 
-    my $narg_expected = 7;
+    my $narg_expected = 9;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, merge_alignments_for_a_cm() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($opt_HR, $stk_name, $dir, $cm_file, $cm_idx, $cm_name, $stk_to_merge_AR) = @_;
+    my($opt_HR, $stk_name, $dir, $cm_file, $cm_idx, $cm_name, $stk_to_merge_AR, $sum_file, $log_file) = @_;
 
     my ($output, $stk, $command, $command_worked);
 
     # create a temporary file with the stk list:
     my $list_file = $dir . "/" . $cm_name . ".merge.list";
-    if(! (open(LIST, ">" . $list_file))) { printf STDERR ("ERROR, couldn't open list file $list_file for merging alignments with CM: $cm_name\n"); }
+    open(LIST, ">" . $list_file) || FileOpenFailure($list_file, $sum_file, $!, "writing");
     foreach $stk (@{$stk_to_merge_AR})   { printf LIST ("$stk\n"); }
     close(LIST);
 
     if(-e $stk_name) { 
 	if(! ($opt_HR->{"-F"})) { 
-	    printf STDERR ("ERROR, alignment file $stk_name already exists. Delete it or use -F to overwrite it.\n"); exit(1); 
+	    PrintErrorAndExit("ERROR, alignment file $stk_name already exists. Delete it or use -F to overwrite it.", $sum_file, 1); 
 	}
 	else {
 	    UnlinkFile($stk_name, $log_file);
@@ -512,7 +527,7 @@ sub merge_alignments_for_a_cm {
 #
 # Arguments: 
 # $opt_HR:              reference to hash of command line options
-# $concat_file:         the name for the file we want to concatenate
+# $concat_file:         the name for the file we want to create
 # $files_to_concat_AR:  reference to the array of files to concatenate
 # 
 # Returns:    Nothing, if it returns, everything is valid.
@@ -532,13 +547,13 @@ sub concatenate_a_list_of_files {
 
     # ensure all the files exist
     foreach $file (@{$files_to_concat_AR}) { 
-	if(! (-e $file)) { printf STDERR ("ERROR, file $file does not exist, (it was to be cat'ed to $concat_file).\n"); exit(1); }
+	if(! (-e $file)) { PrintErrorAndExit("ERROR, file $file does not exist, (it was to be cat'ed to $concat_file).", $sum_file, 1); }
     }
 
     # check if concat file already exists
     if(-e $concat_file) { 
 	if(! ($opt_HR->{"-F"})) { 
-	    printf STDERR ("ERROR, file $concat_file already exists. Delete it or use -F to overwrite it.\n"); exit(1); 
+	    PrintErrorAndExit("ERROR, file $concat_file already exists. Delete it or use -F to overwrite it.", $sum_file, 1); 
 	}
 	else {
 	    UnlinkFile($concat_file, $log_file);
@@ -555,6 +570,92 @@ sub concatenate_a_list_of_files {
 	RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
     }
 
+    return;
+}
+
+
+#####################################################################
+# Subroutine: concatenate_sum_files_and_add_up_timings()
+# Incept:     EPN, Wed Oct 28 17:12:05 2009
+# 
+# Purpose:    Given a list of files to concatenate, do it.
+#
+# Arguments: 
+# $opt_HR:                  reference to hash of command line options
+# $concat_file:             the name for the file we want to create
+# $sum_files_to_concat_AR:  reference to the array of files to concatenate
+# $time_hires_installed:    '1' if Time::HiRes is installed on system
+# $sum_file:                ssu-merge sum_file
+# $summed_search_seconds_R: RETURN: summed search seconds
+# $summed_align_seconds_R:  RETURN: summed align seconds
+# $summed_total_seconds_R:  RETURN: summed total seconds
+#
+# Returns:    Nothing, if it returns, everything is valid.
+# 
+# Exits:      If something goes wrong, this subroutine prints an
+#             error and exits.
+#
+####################################################################
+sub concatenate_sum_files_and_add_up_timings { 
+    my $narg_expected = 8;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, concatenate_sum_files_and_add_up_timings() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my($opt_HR, $concat_file, $sum_files_to_concat_AR, $time_hires_installed, $sum_file, $summed_search_seconds_R, $summed_align_seconds_R, $summed_total_seconds_R) = @_;
+
+    if(scalar(@{$sum_files_to_concat_AR}) == 0) { return; } #if array is empty, just leave
+
+    my ($child_sum_file, $command, $output, $i, $command_worked, $line);
+
+    # ensure all the files exist
+    foreach $child_sum_file (@{$sum_files_to_concat_AR}) { 
+	if(! (-e $child_sum_file)) { PrintErrorAndExit("ERROR, file $child_sum_file does not exist, (it was to be cat'ed to $concat_file).", $sum_file, 1); }
+    }
+
+    # check if concat file already exists
+    if(-e $concat_file) { 
+	if(! ($opt_HR->{"-F"})) { 
+	    PrintErrorAndExit("ERROR, file $concat_file already exists. Delete it or use -F to overwrite it.", $sum_file, 1); 
+	}
+	else {
+	    UnlinkFile($concat_file, $log_file);
+	}
+    }
+
+    # Create concat file by printing one line at a time, we do it this way only for *.sum files so we can
+    # total up the running times within them.
+
+    open(NEW, ">" . $concat_file) || FileOpenFailure($concat_file, $sum_file, $!, "writing");
+    if(! (open(NEW, ">" . $concat_file))) { PrintErrorAndExit("ERROR, couldn't open $concat_file for merging *.sum files.", $sum_file, 1); }
+    
+    my $summed_search_seconds = 0.;
+    my $summed_align_seconds = 0.;
+    my $summed_total_seconds = 0.;
+    my ($action, $hours, $minutes, $seconds, $cur_seconds, $errmsg);
+    foreach $child_sum_file (@{$sum_files_to_concat_AR}) { 
+	open(CHILD, $child_sum_file) || FileOpenFailure($child_sum_file, $sum_file, $!, "reading");
+	while($line = <CHILD>) { 
+	    if($line =~ /^\#\s+CPU\stime\s+\((\S+)\)\:\s+(\S+)\s*$/) { 
+		$action = $1;
+		($hours, $minutes, $seconds) = split(":", $2);
+		$cur_seconds = (3600. * $hours) + (60. * $minutes) + $seconds;
+		if   ($action eq "search")     { $summed_search_seconds += $cur_seconds; }
+		elsif($action eq "alignment")  { $summed_align_seconds  += $cur_seconds; }
+		elsif($action eq "total")      { $summed_total_seconds  += $cur_seconds; }
+		else { PrintErrorAndExit("ERROR, unable to parse the following \"CPU time\" line from $child_sum_file:\n$line", $sum_file, 1); }
+	    }
+	    printf NEW $line;
+	}
+	close(CHILD);
+    }
+    close(NEW);
+    # print summed timings
+
+    PrintTiming("# Summed ssu-align CPU time (search):    ", $summed_search_seconds, $time_hires_installed, 0, $concat_file); 
+    PrintTiming("# Summed ssu-align CPU time (align):     ", $summed_align_seconds, $time_hires_installed, 0, $concat_file); 
+    PrintTiming("# Summed ssu-align CPU time (total):     ", $summed_total_seconds, $time_hires_installed, 0, $concat_file); 
+
+    $$summed_search_seconds_R = $summed_search_seconds;
+    $$summed_align_seconds_R = $summed_align_seconds;
+    $$summed_total_seconds_R = $summed_total_seconds;
     return;
 }
 

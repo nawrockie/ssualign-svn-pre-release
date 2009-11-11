@@ -38,7 +38,13 @@ if(! (-e $subs_file)) {
 }
 require $subs_file;
 
-my $total_time = -1 * time();
+# Start timing, this is done different depending on if Time::HiRes is installed or not
+my $time_hires_installed = CheckForModule("Time::HiRes");
+if($time_hires_installed) { 
+    use Time::HiRes qw(gettimeofday);
+}
+my $total_seconds = -1 * SecondsSinceEpoch($time_hires_installed);
+
 my $script_desc    = "build SSU rRNA covariance models";
 my $date           = scalar localtime();
 my $usage          = "Usage: ssu-build [options] <Stockholm alignment file to build CM from>\n";
@@ -127,7 +133,7 @@ my $opt_return = GetOptions
      'ps2pdf=s'    => \$opt_H{"--ps2pdf"},
      'ps-keep'     => \$opt_H{"--ps-keep"});
  
-if($opt_return != 1) { exit(1); }
+if($opt_return != 1) { print STDERR "\nERROR, GetOptions() did not return 1, but $opt_return\n"; exit(1); }
 
 if ($opt_H{"-h"}) { 
     PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, ""); 
@@ -285,8 +291,8 @@ if($do_number_mode)
 ############
 # Conclude #
 ############
-$total_time += time();
-PrintConclusion($sum_file, $log_file, $sum_file, $total_time, "");
+$total_seconds += SecondsSinceEpoch($time_hires_installed);
+PrintConclusion($sum_file, $log_file, $sum_file, $total_seconds, $time_hires_installed, "");
 
 # Success! Exit normally
 exit(0);
@@ -652,15 +658,16 @@ sub run_alimanip_to_truncate {
     my ($alimanip, $aln_file, $trunc_aln_file, $gapthresh, $opt_HR, $sum_file, $log_file) = @_;
 
     # sanity check
-    if($opt_H{"--trunc"} eq "") { printf STDERR ("ERROR, run_alimanip_to_truncate() entered, but -t option argument is the empty string. This shouldn't happen.\n"); exit(1); }
-
+    if($opt_H{"--trunc"} eq "") { 
+	PrintErrorAndExit("ERROR, run_alimanip_to_truncate() entered, but -t option argument is the empty string. This shouldn't happen.", $sum_file, 1);
+    }
     #determine start and end positions:
     my ($start, $end);
     if   ($opt_HR->{"--trunc"} =~ /(\d+)\-(\d+)/)  { $start = $1; $end   = $2; }
     elsif($opt_HR->{"--trunc"} =~ /(\d+)\:(\d+)/)  { $start = $1; $end   = $2; }
     elsif($opt_HR->{"--trunc"} =~ /(\d+)\.+(\d+)/) { $start = $1; $end   = $2; }
     else { 
-	printf STDERR ("\nERROR, formatting of the -t argument " . $opt_H{"--trunc"} . " is invalid.\nIt must include two integers separated by a \"-\"; such as \"-t 822-930\"\n");
+	PrintErrorAndExit("ERROR, formatting of the -t argument " . $opt_H{"--trunc"} . " is invalid.\nIt must include two integers separated by a \"-\"; such as \"-t 822-930\"", $sum_file, 1);
 	exit(1);
     }
 
@@ -720,10 +727,10 @@ sub run_ssdraw_for_ssu_build {
     my ($ssdraw, $template_file, $aln_file, $ps_file, $pdf_file, $opt_HR, $sum_file, $log_file) = @_;
 
     # contract check
-    if($opt_H{"--trunc"} eq "") { printf STDERR ("ERROR, run_ssdraw_for_ssu_build() entered, but -t option argument is the empty string. This shouldn't happen.\n"); exit(1); }
-    if(! $opt_H{"-d"})          { printf STDERR ("ERROR, run_ssdraw_for_ssu_build() entered, but -d option argument not enabled. This shouldn't happen.\n"); exit(1); }
-    if($ps_file eq "")          { printf STDERR ("ERROR, run_ssdraw_for_ssu_build() entered, but ps file is the empty string. This shouldn't happen.\n"); exit(1); }
-    if($pdf_file eq "")         { printf STDERR ("ERROR, run_ssdraw_for_ssu_build() entered, but pdf file is the empty string. This shouldn't happen.\n"); exit(1); }
+    if($opt_H{"--trunc"} eq "") { PrintErrorAndExit("ERROR, run_ssdraw_for_ssu_build() entered, but -t option argument is the empty string. This shouldn't happen.", $sum_file, 1); }
+    if(! $opt_H{"-d"})          { PrintErrorAndExit("ERROR, run_ssdraw_for_ssu_build() entered, but -d option argument not enabled. This shouldn't happen.", $sum_file, 1); }
+    if($ps_file eq "")          { PrintErrorAndExit("ERROR, run_ssdraw_for_ssu_build() entered, but ps file is the empty string. This shouldn't happen.", $sum_file, 1); }
+    if($pdf_file eq "")         { PrintErrorAndExit("ERROR, run_ssdraw_for_ssu_build() entered, but pdf file is the empty string. This shouldn't happen.", $sum_file, 1); }
 
     if($ssdraw eq "")        { return -1; }
     if($template_file eq "") { return -1; }
@@ -745,7 +752,7 @@ sub run_ssdraw_for_ssu_build {
     #create the mask (a temporary file)
     my $mask_file = $ps_file . ".mask";
     my $i;
-    open(MASK, ">" . $mask_file);
+    open(MASK, ">" . $mask_file) || FileOpenFailure($mask_file, $sum_file, $!, "writing");
     for($i = 1;      $i < $start; $i++) { printf MASK ("0") };
     for($i = $start; $i <= $end;  $i++) { printf MASK ("1") };
     for($i = $end+1; $i <= $clen; $i++) { printf MASK ("0") };
@@ -793,5 +800,5 @@ sub run_ssdraw_for_ssu_build {
     else { UnlinkFile($ps_file, $log_file); }
 
     return 1; #if ssdraw failed we returned 0 above
-}
-
+    }
+				  

@@ -16,20 +16,6 @@ use Getopt::Long;
 use strict;
 use warnings;
 
-# Start timing, this is done different depending on if Time::HiRes is installed or not
-my ($time_hires_installed, $seconds, $microseconds, $total_seconds);;
-eval 'require Time::HiRes';
-if ($@) { 
-    $time_hires_installed = 0; 
-    $total_seconds      = -1 * time();
-}
-else {
-    use Time::HiRes qw(gettimeofday);
-    $time_hires_installed = 1; 
-    ($seconds, $microseconds) = gettimeofday();
-    $total_seconds = -1 * ($seconds + ($microseconds / 1000000.));
-}
-
 #Make sure the SSUALIGNDIR environmental variable is set and the directory exists
 my $ssualigndir = $ENV{'SSUALIGNDIR'};
 if(! exists($ENV{'SSUALIGNDIR'})) { 
@@ -47,6 +33,13 @@ if(! (-e $subs_file)) {
     exit(1); 
 }
 require $subs_file;
+
+# Start timing, this is done differently depending on if Time::HiRes is installed or not
+my $time_hires_installed = CheckForModule("Time::HiRes");
+if($time_hires_installed) { 
+    use Time::HiRes qw(gettimeofday);
+}
+my $total_seconds = -1 * SecondsSinceEpoch($time_hires_installed);
 
 my $script_desc    = "draw SSU rRNA secondary structure diagrams";
 my $date           = scalar localtime();
@@ -148,7 +141,7 @@ my $opt_return = GetOptions
      'no-head'   => \$opt_H{"--no-head"},
      'no-foot'   => \$opt_H{"--no-foot"});
 
-if($opt_return != 1) { exit(1); }
+if($opt_return != 1) { print STDERR "\nERROR, GetOptions() did not return 1, but $opt_return\n"; exit(1); }
 
 if ($opt_H{"-h"}) { 
     PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, ""); 
@@ -277,13 +270,7 @@ for($i = 0; $i < $naln; $i++) {
 ############
 # Conclude #
 ############
-if(! $time_hires_installed) { 
-    $total_seconds += time();
-}
-else { 
-    ($seconds, $microseconds) = gettimeofday();
-    $total_seconds += ($seconds + ($microseconds / 1000000.));
-}
+$total_seconds += SecondsSinceEpoch($time_hires_installed);
 
 if(!($opt_H{"-a"})) { 
     PrintConclusion($sum_file, $log_file2print, $sum_file2print, $total_seconds, $time_hires_installed, $dir);
@@ -343,21 +330,21 @@ sub validate_and_setup_ssu_draw {
     my $cm_file = "";
     if($opt_HR->{"-m"} ne "") {
 	$cm_file = $opt_HR->{"-m"};
-	if(!(-e $cm_file)) { printf STDERR ("\nERROR, CM file $cm_file, specified with -m does not exist.\n"); exit(1); }
+	if(!(-e $cm_file)) { PrintErrorAndExit("ERROR, CM file $cm_file, specified with -m does not exist.", $sum_file, 1); }
     }
     else { # -m not enabled, assume the user used the default CM file:
 	$cm_file = $ssualigndir . "/ssu-align-0p1.cm";
-	if(!(-e $cm_file)) { printf STDERR ("\nERROR, the default CM file $cm_file does not exist.\nIf you used a different CM file to create the alignments in $dir, use the -m option.\n"); exit(1); }
+	if(!(-e $cm_file)) { PrintErrorAndExit("ERROR, the default CM file $cm_file does not exist.\nIf you used a different CM file to create the alignments in $dir, use the -m option.", $sum_file, 1); }
     }
 
     #Validate that we can read the template postscript diagram file
     if($opt_HR->{"-t"} ne "") {
 	$template_file = $opt_HR->{"-t"};
-	if(!(-e $template_file)) { printf STDERR ("\nERROR, template postscript file $template_file, specified with -t does not exist.\n"); exit(1); }
+	if(!(-e $template_file)) { PrintErrorAndExit("ERROR, template postscript file $template_file, specified with -t does not exist.", $sum_file, 1); }
     }
     else { # -t not enabled, assume the user used the default CM file:
 	$template_file = $ssualigndir . "/ssu-align-0p1.ps";
-	if(!(-e $template_file)) { printf STDERR ("\nERROR, the default template file $template_file does not exist.\nIf you want to use a different postscript template file to create the structure diagrams, use the -t option.\n"); exit(1); }
+	if(!(-e $template_file)) { PrintErrorAndExit("ERROR, the default template file $template_file does not exist.\nIf you want to use a different postscript template file to create the structure diagrams, use the -t option.", $sum_file, 1); }
     }
 
     #Validate that esl-ssdraw exist
@@ -367,17 +354,18 @@ sub validate_and_setup_ssu_draw {
 
     if($opt_HR->{"--in-mask"} ne "") { 
 	if(!(-e $opt_HR->{"--in-mask"})) { 
-	    printf STDERR ("\nERROR, the --in-mask file %s does not exist.\n", $opt_HR->{"--in-mask"}); exit(1); 
+	    PrintErrorAndExit(sprintf("ERROR, the --in-mask file %s does not exist.\n", $opt_HR->{"--in-mask"}), $sum_file, 1);
 	}
     }
 
     my $naln = 0;
     my $aln_name = "";
     my $mask_name = "";
+    my $errmsg = "";
     if($opt_HR->{"-a"}) { # special mode, single command line argument is not a directory, it's an alignment
 	$aln_name = $dir;
 	if(! (-e $aln_name)) { 
-	    printf STDERR ("\nERROR, the alignment file $aln_name does not exist.\n"); exit(1); 
+	    PrintErrorAndExit("ERROR, the alignment file $aln_name does not exist.", $sum_file, 1); 
 	}
 	push(@{$stk_list_arr_ref}, $aln_name);
 	$naln++; 
@@ -385,7 +373,7 @@ sub validate_and_setup_ssu_draw {
 	if($opt_HR->{"--use-masks"}) { #ensure that the mask for this alignment exists
 	    $mask_name = SwapOrAppendFileSuffix($aln_file, \@stk_suffix_A, ($key_in . ".mask"), 1);
 	    if(! (-e $mask_name)) { 
-		printf STDERR ("\nERROR, --use-masks enabled, but the mask file $mask_name does not exist.\n"); exit(1); 
+		PrintErrorAndExit("ERROR, --use-masks enabled, but the mask file $mask_name does not exist.", $sum_file, 1); 
 	    }
 	    push(@{$mask_list_arr_ref}, $mask_name);
 	}
@@ -396,19 +384,15 @@ sub validate_and_setup_ssu_draw {
 	# Validate there is at least 1 alignment in the input dir
 	if(! (-d $dir)) { 
 	    if(-e $dir) { 
-		printf STDERR ("\nERROR, the command-line argument $dir is a file, not a directory.\nIt should be the directory that includes the input alignment files,\nor if you want to operate on a single alignment, use the -a option.\n"); exit(1); 
+		PrintErrorAndExit("ERROR, the command-line argument $dir is a file, not a directory.\nIt should be the directory that includes the input alignment files,\nor if you want to operate on a single alignment, use the -a option.", $sum_file, 1); 
 	    }
 	    else { 
-		printf STDERR ("\nERROR, the directory $dir with input alignment files does not exist.\n"); exit(1); 
+		PrintErrorAndExit("ERROR, the directory $dir with input alignment files does not exist.", $sum_file, 1); 
 	    }
 	}
 	my ($name, $line);
 	my @names_A = ();
-	if(! open(CM, $cm_file)) { 
-	    my $errmsg = "\nERROR, could not open CM file $cm_file for reading.\n";
-	    PrintStringToFile($sum_file, 0, $errmsg);
-	    die $errmsg; 
-	}
+	open(CM, $cm_file) || FileOpenFailure($cm_file, $sum_file, $!, "reading");
 	while($line = <CM>) { 
 	    if($line =~ s/NAME\s+//) { 
 		chomp $line;
@@ -424,7 +408,7 @@ sub validate_and_setup_ssu_draw {
 		if($opt_HR->{"--use-masks"}) { 
 		    $mask_name = $dir . "/" . $dir . "." . $name . $key_in . ".mask";
 		    if(!(-e $mask_name)) { 
-			printf STDERR ("\nERROR, --use-masks enabled, but the mask file $mask_name for aln $aln_name does not exist.\n"); exit(1); 
+			PrintErrorAndExit("ERROR, --use-masks enabled, but the mask file $mask_name for aln $aln_name does not exist.", $sum_file, 1); 
 		    }
 		    push(@{$mask_list_arr_ref}, $mask_name);
 		}
@@ -432,11 +416,17 @@ sub validate_and_setup_ssu_draw {
 	    }
 	}
 	if($naln == 0) { 
-	    printf STDERR ("\nERROR, found 0 alignments created by ssu-align using the CM file $cm_file\nin directory $dir.\n\n");
-	    printf STDERR ("The following alignments were searched for, but none were found:\n");
+	    $errmsg = "ERROR, found 0 alignments created by ssu-align using the CM file $cm_file\nin directory $dir.\n\n"
+	    PrintStringToFile($sum_file, 0, $errmsg);
+	    printf STDERR $errmsg;
+	    $errmsg = "The following alignments were searched for, but none were found:\n";
+	    PrintStringToFile($sum_file, 0, $errmsg);
+	    printf STDERR $errmsg;
 	    foreach $name (@names_A) { 
 		$aln_name = $dir . "/" . $dir . "." . $name . $key_in . ".stk";
-		printf STDERR ("\t$aln_name\n");
+		$errmsg = "\t$aln_name\n";
+		PrintStringToFile($sum_file, 0, $errmsg);
+		printf STDERR $errmsg;
 	    }
 	    exit(1);
 	}

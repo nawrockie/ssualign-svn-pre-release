@@ -169,12 +169,14 @@ fi
 ################################################
 if [[ $do6 -eq "1" ]]; then
     echo "Performing test 6 ..."
+    ssu-build -F -d archaea --trunc 822-930 > /dev/null
+    check_return_status
     ssu-align -F -m archaea-0p1-sb.822-930.cm seed-15.fa test6 > /dev/null
     check_return_status
     ssu-mask -m archaea-0p1-sb.822-930.cm --key-out 6 test6 > /dev/null
     check_return_status
-    concatenate_files test6.sum test6/test6.ssu-align.sum test6/test6.6.ssu-mask.sum
-    concatenate_files test6.log test6/test6.ssu-align.log test6/test6.6.ssu-mask.log
+    concatenate_files test6.sum archaea-0p1-sb.822-930.ssu-build.sum test6/test6.ssu-align.sum test6/test6.6.ssu-mask.sum
+    concatenate_files test6.log archaea-0p1-sb.822-930.ssu-build.log test6/test6.ssu-build.sum test6/test6.ssu-align.log test6/test6.6.ssu-mask.log
     echo " complete [Examine test6.sum, test6.log]"
 fi
 ################################################
@@ -185,6 +187,8 @@ fi
 ################################################
 if [[ $do7 -eq "1" ]]; then
     echo "Performing test 7 ..."
+    ssu-build -F -d archaea --trunc 822-930 > /dev/null
+    check_return_status
     ssu-align -F -m archaea-0p1-sb.822-930.cm -1 --filter 0.95 -b 20 -l 30 seed-15.fa test7 > /dev/null
     check_return_status
     ssu-mask -a test7/test7.archaea-0p1-sb.822-930.stk > /dev/null
@@ -195,8 +199,8 @@ if [[ $do7 -eq "1" ]]; then
     check_return_status
     ssu-mask --stk2afa -m archaea-0p1-sb.822-930.cm test7 > /dev/null
     check_return_status
-    concatenate_files test7.sum test7/test7.ssu-align.sum test7.archaea-0p1-sb.822-930.ssu-mask.sum test7/test7.ssu-mask.sum
-    concatenate_files test7.log test7/test7.ssu-align.log test7.archaea-0p1-sb.822-930.ssu-mask.log test7/test7.ssu-mask.log
+    concatenate_files test7.sum archaea-0p1-sb.822-930.ssu-build.sum test7/test7.ssu-align.sum test7.archaea-0p1-sb.822-930.ssu-mask.sum test7/test7.ssu-mask.sum
+    concatenate_files test7.log archaea-0p1-sb.822-930.ssu-build.sum test7/test7.ssu-align.log test7.archaea-0p1-sb.822-930.ssu-mask.log test7/test7.ssu-mask.log
     echo " complete [Examine test7.sum, test7.log]"
 fi
 ################################################

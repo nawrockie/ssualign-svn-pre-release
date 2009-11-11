@@ -24,6 +24,8 @@
 # RemoveDirPath():              remove the leading directory path of a filename
 # CheckForModule():             check if a particular module is installed on the system
 # SecondsSinceEpoch():          return number of seconds since the epoch 
+# FileOpenFailure():            called if an open() call fails, print error msg and exit
+# PrintErrorAndExit():          print an error message and call exit to kill the program
 #
 use strict;
 use warnings;
@@ -130,7 +132,7 @@ sub PrintConclusion {
 	PrintStringToFile($sum_file, 1, sprintf("#\n"));
     }
     if($total_time ne "") { 
-	PrintTiming("# CPU time: ", $total_time, $time_hires_installed, $sum_file); 
+	PrintTiming("# CPU time: ", $total_time, $time_hires_installed, 1, $sum_file); 
 	PrintStringToFile($sum_file, 1, sprintf("# \n"));
     }
 
@@ -148,15 +150,16 @@ sub PrintConclusion {
 # $prefix:                 string to print before the hhhh:mm:ss time info.
 # $inseconds:              number of seconds
 # $time_hires_installed: '1' if Time:HiRes is installed (we'll print milliseconds)
+# $print_to_stdout:        '1' to print to stdout, '0' not to
 # $sum_file:               file to print output file notices to
 #
 # Returns:    Nothing, if it returns, everything is valid.
 # 
 ####################################################################
 sub PrintTiming { 
-    my $narg_expected = 4;
+    my $narg_expected = 5;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_timing() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($prefix, $inseconds, $time_hires_installed, $sum_file) = @_;
+    my ($prefix, $inseconds, $time_hires_installed, $print_to_stdout, $sum_file) = @_;
     my ($i, $hours, $minutes, $seconds, $thours, $tminutes, $tseconds);
 
     $hours = int($inseconds / 3600);
@@ -168,11 +171,11 @@ sub PrintTiming {
     $tminutes = sprintf("%02d", $minutes);
     if($time_hires_installed) { 
 	$tseconds = sprintf("%05.2f", $seconds);
-	PrintStringToFile($sum_file, 1, sprintf("%s %2s:%2s:%5s\n", $prefix, $thours, $tminutes, $tseconds));
+	PrintStringToFile($sum_file, $print_to_stdout, sprintf("%s %2s:%2s:%5s\n", $prefix, $thours, $tminutes, $tseconds));
     }
     else { 
 	$tseconds = sprintf("%02d", $seconds);
-	PrintStringToFile($sum_file, 1, sprintf("%s %2s:%2s:%2s\n", $prefix, $thours, $tminutes, $tseconds));
+	PrintStringToFile($sum_file, $print_to_stdout, sprintf("%s %2s:%2s:%2s\n", $prefix, $thours, $tminutes, $tseconds));
     }
 }
 
@@ -596,7 +599,7 @@ sub CheckForModule() {
 #
 # Arguments: 
 #   $time_hires_installed: '1' if we can use gettimeofday
-#                            to get high precision timings.
+#                          to get high precision timings.
 # 
 # Returns:     Number of seconds since the epoch.
 #
@@ -613,6 +616,72 @@ sub SecondsSinceEpoch() {
     else { # this will be one-second precision
 	return time();
     }
+}
+
+
+#################################################################
+# Subroutine : FileOpenFailure()
+# Incept:      EPN, Wed Nov 11 05:39:56 2009
+#
+# Purpose:     Called if a open() call fails on a file.
+#              Print an informative error message
+#              to <$out_file> and to STDERR, then exit with
+#              <$status>.
+#
+# Arguments: 
+#   $file_to_open: file that we couldn't open
+#   $out_file:     file to write errmsg to, "" for none
+#   $status:       error status
+#   $action:       "reading", "writing", "appending"
+# 
+# Returns:     Nothing, this function will exit the program.
+#
+################################################################# 
+sub FileOpenFailure() { 
+    my $narg_expected = 4;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, FileOpenForReadingFailure() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($file_to_open, $out_file, $status, $action) = @_;
+
+    my $errmsg;
+    if(($action eq "reading") && (! (-e $file_to_open))) { 
+	$errmsg = "\nERROR, could not open $file_to_open for reading. It does not exist.\n";
+    }
+    else { 
+	$errmsg = "\nERROR, could not open $file_to_open for $action.\n";
+    }
+    PrintErrorAndExit($errmsg, $out_file, $status);
+}
+
+
+#################################################################
+# Subroutine : PrintErrorAndExit()
+# Incept:      EPN, Wed Nov 11 06:22:59 2009
+#
+# Purpose:     Print an error message to STDERR and optionally
+#              to a file, then exit with return status <$status>.
+#
+# Arguments: 
+#   $errmsg:       the error message to write
+#   $out_file:     file to write errmsg to, "" for none
+#   $status:       error status to exit with
+# 
+# Returns:     Nothing, this function will exit the program.
+#
+################################################################# 
+sub PrintErrorAndExit() { 
+    my $narg_expected = 3;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, FileOpenForReadingFailure() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($errmsg, $out_file, $status) = @_;
+
+    if($errmsg !~ m/\n$/) { $errmsg .= "\n\n"; }
+    else                  { $errmsg .= "\n"; }
+    if($errmsg !~ m/^\n/) { $errmsg = "\n" . $errmsg; }
+
+    if($out_file ne "") { 
+	PrintStringToFile($out_file, 0, $errmsg);
+    }
+    printf STDERR $errmsg; 
+    exit($status);
 }
 
 

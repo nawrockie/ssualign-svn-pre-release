@@ -36,7 +36,13 @@ if(! (-e $subs_file)) {
 }
 require $subs_file;
 
-my $total_time     = -1 * time();
+# Start timing, this is done different depending on if Time::HiRes is installed or not
+my $time_hires_installed = CheckForModule("Time::HiRes");
+if($time_hires_installed) { 
+    use Time::HiRes qw(gettimeofday);
+}
+my $total_seconds = -1 * SecondsSinceEpoch($time_hires_installed);
+
 my $script_desc    = "mask SSU rRNA alignments";
 my $date           = scalar localtime();
 my $usage          = "Usage: ssu-mask [options] <directory created by ssu-align (includes >= 1 alignment file(s))>\n";
@@ -363,10 +369,10 @@ if($do_mask_mode)
 	    my ($mask_worked, $n0, $n1, $inmask_masked_aln_file, $mask_file, $keep_mask, $do_draw, $mask_ok_if_fails);
 
 	    if(!$opt_H{"-a"}) { 
-		printf STDERR ("\nERROR, --in-mask requires the -a option.\n"); exit(1); 
+		PrintErrorAndExit("ERROR, --in-mask requires the -a option.", $sum_file, 1); 
 	    }
 	    if(!(-e $opt_H{"--in-mask"})) { 
-		printf STDERR ("\nERROR, the --in-mask file " . $opt_H{"--in-mask"} . " does not exist.\n"); exit(1); 
+		PrintErrorAndExit("ERROR, the --in-mask file " . $opt_H{"--in-mask"} . " does not exist.", $sum_file, 1); 
 	    }
 
 	    # first try --mask-rf (to see if the mask is non-gap RF length (instead of full alignment length))
@@ -459,7 +465,7 @@ if($do_mask_mode)
 		$pgmask_file       = SwapOrAppendFileSuffix($aln_file, \@stk_suffix_A, $key_out . ".mask", 1);
 
 		#create the union of the masks, any column that is excluded (a '0') in either mask is a '0' in the union
-		write_union_of_masks($pmask_file, $gmask_file, $pgmask_file);
+		write_union_of_masks($pmask_file, $gmask_file, $pgmask_file, $sum_file);
 		$mask_root = "mask";
 		$keep_mask = 1;
 		$print_input_aln = 0;
@@ -590,13 +596,13 @@ if($do_remove_seqs_mode)
     PrintStringToFile($sum_file, 1, sprintf("# %-*s  %8s\n", $max_width, "subset aln file name", "num seqs"));
     PrintStringToFile($sum_file, 1, sprintf("# %-*s  %8s\n", $max_width, $dashes, "--------"));
     
-    if($naln != 1)     { printf STDERR ("\nERROR, --seq-r and --seq-k require the -a option.\n"); exit(1); }
-    if(! $opt_H{"-a"}) { printf STDERR ("\nERROR, --seq-r and --seq-k require the -a option.\n"); exit(1); }
+    if($naln != 1)     { PrintErrorAndExit("ERROR, --seq-r and --seq-k require the -a option.", $sum_file, 1); }
+    if(! $opt_H{"-a"}) { PrintErrorAndExit("ERROR, --seq-r and --seq-k require the -a option.", $sum_file, 1); }
 
     if($opt_H{"--seq-r"} ne "") { 
 	my $seqr_aln = $aln_root2print . $key_out . ".seqr.stk";
 	if(!(-e $opt_H{"--seq-r"})) { 
-	    printf STDERR ("\nERROR, the --seq-r file " . $opt_H{"--seq-r"} . " does not exist.\n"); exit(1); 
+	    PrintErrorAndExit("ERROR, the --seq-r file " . $opt_H{"--seq-r"} . " does not exist.", $sum_file, 1); 
 	}
 	$command = "$alimanip -o $seqr_aln --seq-r " . $opt_H{"--seq-r"} . " $aln_file";
 	RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
@@ -615,7 +621,7 @@ if($do_remove_seqs_mode)
     elsif($opt_H{"--seq-k"} ne "") { 
 	my $seqk_aln = $aln_root2print . $key_out . ".seqk.stk";
 	if(!(-e $opt_H{"--seq-k"})) { 
-	    printf STDERR ("\nERROR, the --seq-k file " . $opt_H{"--seq-k"} . " does not exist.\n"); exit(1); 
+	    PrintErrorAndExit("ERROR, the --seq-k file " . $opt_H{"--seq-k"} . " does not exist.", $sum_file, 1); 
 	}
 	$command = "$alimanip -o $seqk_aln --seq-k " . $opt_H{"--seq-k"} . " $aln_file";
 	RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
@@ -714,8 +720,8 @@ foreach $file (@files_to_unlink_A) {
     UnlinkFile($file, $log_file);
 }
 
-$total_time += time();
-PrintConclusion($sum_file, $log_file2print, $sum_file2print, $total_time, $dir2print);
+$total_seconds += SecondsSinceEpoch($time_hires_installed);
+PrintConclusion($sum_file, $log_file2print, $sum_file2print, $total_seconds, $time_hires_installed, $dir2print);
 
 # Success! Exit normally
 exit(0);
@@ -769,26 +775,26 @@ sub validate_and_setup_ssu_mask {
     my $cm_file = "";
     if($opt_HR->{"-m"} ne "") {
 	$cm_file = $opt_HR->{"-m"};
-	if(!(-e $cm_file)) { printf STDERR ("\nERROR, CM file $cm_file, specified with -m does not exist.\n"); exit(1); }
+	if(!(-e $cm_file)) { PrintErrorAndExit("ERROR, CM file $cm_file, specified with -m does not exist.", $sum_file, 1); }
     }
     else { # -m not enabled, assume the user used the default CM file:
 	$cm_file = $ssualigndir . "/ssu-align-0p1.cm";
-	if(!(-e $cm_file)) { printf STDERR ("\nERROR, the default CM file $cm_file does not exist.\nIf you used a different CM file to create the alignments in $dir, use the -m option.\n"); exit(1); }
+	if(!(-e $cm_file)) { PrintErrorAndExit("ERROR, the default CM file $cm_file does not exist.\nIf you used a different CM file to create the alignments in $dir, use the -m option.", $sum_file, 1); }
     }
 
     #if --in-mask <s> enabled, verify that <s> exists
     if($opt_HR->{"--in-mask"} ne "") { 
-	if(!(-e $opt_HR->{"--in-mask"})) { printf STDERR ("\nERROR, mask file " . $opt_HR->{"--in-mask"} . ", specified with --in-mask does not exist.\n"); exit(1); }
+	if(!(-e $opt_HR->{"--in-mask"})) { PrintErrorAndExit("ERROR, mask file " . $opt_HR->{"--in-mask"} . ", specified with --in-mask does not exist.", $sum_file, 1); }
     }	
 
     #Validate that we can read the template postscript diagram file, if we can't that's okay but only if a non-default CM has been specified with -m.
     if($opt_HR->{"-t"} ne "") { 
 	$template_file = $opt_HR->{"-t"};
-	if(!(-e $template_file)) { printf STDERR ("\nERROR, template postscript file $template_file, specified with -t does not exist.\n"); exit(1); }
+	if(!(-e $template_file)) { PrintErrorAndExit("ERROR, template postscript file $template_file, specified with -t does not exist.", $sum_file, 1); }
     }
     elsif($opt_HR->{"-m"} eq "") { # -t not enabled and -m not enabled, we assume default template file should exist for the default CM file
 	$template_file = $ssualigndir . "/ssu-align-0p1.ps";
-	if(!(-e $template_file)) { printf STDERR ("\nERROR, the default template file $template_file does not exist and you did not specify a non-default CM file with -m.\nIf you used a non-default CM file, use -m.\nIf you want to use a non-default structure template file use -t.\n"); exit(1); }
+	if(!(-e $template_file)) { PrintErrorAndExit("ERROR, the default template file $template_file does not exist and you did not specify a non-default CM file with -m.\nIf you used a non-default CM file, use -m.\nIf you want to use a non-default structure template file use -t.", $sum_file, 1); }
     }
     else { #-m enabled, -t not enabled: with this combo if the default template file exists we'll try to do ssu-align with it,
 	   # if not, then we can still do masking but we won't try to call ssu-draw
@@ -834,11 +840,12 @@ sub validate_and_setup_ssu_mask {
     }	
 
     my $naln = 0;
+    my $errmsg = "";
     my ($aln_name, $alist_file);
     if($opt_HR->{"-a"}) { # special mode, single command line argument is not a directory, it's an alignment
 	$aln_name = $dir;
 	if(! (-e $aln_name)) { 
-	    printf STDERR ("\nERROR, the alignment file $aln_name does not exist.\n"); exit(1); 
+	    PrintErrorAndExit("ERROR, the alignment file $aln_name does not exist.", $sum_file, 1); 
 	}
 	push(@{$stk_list_arr_ref}, $aln_name);
 	$naln = 1; 
@@ -847,19 +854,15 @@ sub validate_and_setup_ssu_mask {
 	# Validate there is at least 1 alignment in the input dir
 	if(! (-d $dir)) { 
 	    if(-e $dir) { 
-		printf STDERR ("\nERROR, the command-line argument $dir is a file, not a directory.\nIt should be the directory that includes the input alignment files,\nor if you want to operate on a single alignment, use the -a option.\n"); exit(1); 
+		PrintErrorAndExit("ERROR, the command-line argument $dir is a file, not a directory.\nIt should be the directory that includes the input alignment files,\nor if you want to operate on a single alignment, use the -a option.", $sum_file, 1); 
 	    }
 	    else { 
-		printf STDERR ("\nERROR, the directory $dir with input alignment files does not exist.\n"); exit(1); 
+		PrintErrorAndExit("ERROR, the directory $dir with input alignment files does not exist.", $sum_file, 1); 
 	    }
 	}
 	my ($name, $line);
 	my @names_A = ();
-	if(! open(CM, $cm_file)) { 
-	    my $errmsg = "\nERROR, could not open CM file $cm_file for reading.\n";
-	    PrintStringToFile($sum_file, 0, $errmsg);
-	    die $errmsg; 
-	}
+	open(CM, $cm_file) || FileOpenFailure($cm_file, $sum_file, $!, "reading");
 	while($line = <CM>) { 
 	    if($line =~ s/NAME\s+//) { 
 		chomp $line;
@@ -875,11 +878,17 @@ sub validate_and_setup_ssu_mask {
 	    }
 	}
 	if($naln == 0) { 
-	    printf STDERR ("\nERROR, found 0 alignments created by ssu-align using the CM file $cm_file\nin directory $dir.\n\n");
-	    printf STDERR ("The following alignments were searched for, but none were found:\n");
+	    $errmsg = "ERROR, found 0 alignments created by ssu-align using the CM file $cm_file\nin directory $dir.\n\n";
+	    PrintStringToFile($sum_file, 0, $errmsg);
+	    printf STDERR $errmsg;
+	    $errmsg = "The following alignments were searched for, but none were found:\n";
+	    PrintStringToFile($sum_file, 0, $errmsg);
+	    printf STDERR $errmsg;
 	    foreach $name (@names_A) { 
 		$aln_name = $dir . "/" . $dir . "." . $name . $key_in . ".stk";
-		printf STDERR ("\t$aln_name\n");
+		$errmsg = "\t$aln_name\n";
+		PrintStringToFile($sum_file, 0, $errmsg);
+		printf STDERR $errmsg;
 	    }
 	    exit(1);
 	}
@@ -909,6 +918,7 @@ sub validate_and_setup_ssu_mask {
 #   $mask1_file:      file name with mask 1.
 #   $mask1_file:      file name with mask 2.
 #   $union_mask_file: file name for outputting union to.
+#   $sum_file:        summary file
 #
 # Returns:    Nothing, if it returns, everything is valid.
 # 
@@ -918,17 +928,17 @@ sub validate_and_setup_ssu_mask {
 #
 ####################################################################
 sub write_union_of_masks {
-    my $narg_expected = 3;
+    my $narg_expected = 4;
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, write_union_of_masks() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($mask1_file, $mask2_file, $union_mask_file) = @_;
+    my($mask1_file, $mask2_file, $union_mask_file, $sum_file) = @_;
 
-    if(!(open(MASK1, $mask1_file))) { printf STDERR ("ERROR, could not open mask file $mask1_file, when trying to create its union with $mask2_file.\n"); exit(1); }
+    open(MASK1, $mask1_file) || FileOpenFailure($mask1_file, $sum_file, $!, "reading");
     my $mask1 = <MASK1>;
     chomp $mask1;
     my @mask1_A = split("", $mask1);
     close(MASK1);
 
-    if(!(open(MASK2, $mask2_file))) { printf STDERR ("ERROR, could not open mask file $mask2_file, when trying to create its union with $mask1_file.\n"); exit(1); } 
+    open(MASK2, $mask2_file) || FileOpenFailure($mask2_file, $sum_file, $!, "reading");
     my $mask2 = <MASK2>;
     chomp $mask2;
     my @mask2_A = split("", $mask2);
@@ -936,7 +946,7 @@ sub write_union_of_masks {
 
     my $mask1_len = scalar(@mask1_A); 
     my $mask2_len = scalar(@mask2_A); 
-    if($mask1_len != $mask2_len) { printf STDERR ("ERROR when trying to create the union of $mask1_file and $mask2_file, their lengths differ: $mask1_len != $mask2_len.\n"); exit(1); }
+    if($mask1_len != $mask2_len) { PrintErrorAndExit("ERROR, when trying to create the union of $mask1_file and $mask2_file, their lengths differ: $mask1_len != $mask2_len.", $sum_file, 1); }
 
     my ($i, $combo);
     my $umask = "";
@@ -947,10 +957,10 @@ sub write_union_of_masks {
 	elsif($combo eq "10") { $umask .= "0"; }
 	elsif($combo eq "01") { $umask .= "0"; }
 	elsif($combo eq "00") { $umask .= "0"; }
-	else { printf STDERR ("ERROR, a non-1/0 character found in $mask1_file or $mask2_file at position %d\n", ($i+1)); exit(1); }
+	else { PrintErrorAndExit(sprintf("ERROR, a non-1/0 character found in $mask1_file or $mask2_file at position %d", ($i+1)), $sum_file, 1); }
     }
     
-    if(!(open(OUT, ">" . $union_mask_file))) { printf STDERR ("\nERROR, write_union_of_masks() could not open file $union_mask_file for writing.\n"); exit(1); } 
+    open(OUT, ">" . $union_mask_file) || FileOpenFailure($union_mask_file, $sum_file, $!, "writing");
     printf OUT ($umask . "\n");
     close(OUT);
 
@@ -968,6 +978,7 @@ sub write_union_of_masks {
 #   $mask_file: file name with mask in it.
 #   $n0_ref:    RETURN: number of 0s in mask file
 #   $n1_ref:    RETURN: number of 1s in mask file
+#   $sum_file:  ssu-mask summary file
 # 
 # Returns:    Nothing, if it returns, everything is valid.
 # 
@@ -977,12 +988,13 @@ sub write_union_of_masks {
 #
 ####################################################################
 sub summarize_mask {
-    my $narg_expected = 3;
+    my $narg_expected = 4;
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, summarize_mask() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($mask_file, $n0_ref, $n1_ref) = @_;
+    my($mask_file, $n0_ref, $n1_ref, $sum_file) = @_;
 
-    if(!(open(MASK, $mask_file))) { printf STDERR ("ERROR, could not open mask file $mask_file when trying to summarize it.\n"); exit(1); }
+    open(MASK, $mask_file) || FileOpenFailure($mask_file, $sum_file, $!, "reading");
     my $mask = <MASK>;
+    close(MASK);
     chomp $mask;
     my $n1 = length($mask);
     my $n0 = ($mask =~ tr/0//);
@@ -990,7 +1002,10 @@ sub summarize_mask {
     # make sure there aren't extra characters
     $mask =~ s/0//g;
     $mask =~ s/1//g;
-    if($mask ne "") { printf("ERROR, mask in file $mask_file has non-1/0 chars. \n"); exit(1); }
+    if($mask ne "") { 
+	PrintErrorAndExit("\nERROR, mask in file $mask_file has non-1/0 chars.\n", $sum_file, 1);
+	# above call will call exit() to kill program
+    }
 
     $$n1_ref = $n1;
     $$n0_ref = $n0;
@@ -1042,7 +1057,7 @@ sub mask_alignment {
 	$n0_R, $n1_R, $masked_stk_file_R, $mask_file_R, $ssdraw_worked_R, $files_to_unlink_AR, $sum_file, $log_file) = @_;
 
     if(($rfmask_file2use ne "") && ($allmask_file2use ne "")) { 
-	printf STDERR ("\nERROR, mask_alignment() entered with both \$rfmask_file2use ($rfmask_file2use) and \$allmask_file2use $allmask_file2use defined.\nThese are incompatible: one must be the empty string.\n"); exit(1); 
+	PrintErrorAndExit("ERROR, mask_alignment() entered with both \$rfmask_file2use ($rfmask_file2use) and \$allmask_file2use $allmask_file2use defined.\nThese are incompatible: one must be the empty string.", $sum_file, 1); 
     } 	
 
     my($masked_stk_file, $mask_file, $masked_stk_file2print, $mask_file2print, $masked_afa_file, $masked_afa_file2print, $aln_file2mask2print);
@@ -1091,7 +1106,7 @@ sub mask_alignment {
     RunExecutable("$command", $die_if_fails, $die_if_fails, $log_file, \$command_worked, $errmsg);
     if(! $command_worked) { return 0; } #if (! $mask_ok_if_fails), RunExecutable will cause death if (! $command_worked)
 
-    summarize_mask($mask_file, \$n0, \$n1); 
+    summarize_mask($mask_file, \$n0, \$n1, $sum_file); 
 
     if($print_input_aln) { 
 	PrintStringToFile($sum_file, 1, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $aln_file2mask2print, "input", "aln", ($n0+$n1), "-", "-"));
@@ -1187,8 +1202,8 @@ sub filter_alignment {
     $nseq_input = $nseq_A[0];
 
     # esl-weight -f --idf 0.75 10.stk
-    if($opt_HR->{"--filter"} < 0.) { printf STDERR ("\nERROR, with --filter <f>, <f> must be between 0.0 and 1.0, you entered %.4f.\n", $opt_HR->{"--filter"}); exit(1); }
-    if($opt_HR->{"--filter"} > 1.) { printf STDERR ("\nERROR, with --filter <f>, <f> must be between 0.0 and 1.0, you entered %.4f.\n", $opt_HR->{"--filter"}); exit(1); }
+    if($opt_HR->{"--filter"} < 0.) { PrintErrorAndExit(sprintf("ERROR, with --filter <f>, <f> must be between 0.0 and 1.0, you entered %.4f.\n", $opt_HR->{"--filter"}), $sum_file, 1); }
+    if($opt_HR->{"--filter"} > 1.) { PrintErrorAndExit(sprintf("ERROR, with --filter <f>, <f> must be between 0.0 and 1.0, you entered %.4f.\n", $opt_HR->{"--filter"}), $sum_file, 1); }
     $command = "$weight -o $filtered_stk_file -f --idf " . $opt_HR->{"--filter"} . " $aln_file2filter";
     RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
     @nseq_A = ();
@@ -1339,11 +1354,7 @@ sub get_num_lines_in_file {
 
     my $line;
     my $nlines = 0;
-    if(! open(IN, $filename)) { 
-	my $errmsg = "\nERROR couldn't open file $filename in get_num_lines_in_file().\n";
-	PrintStringToFile($sum_file, 0, $errmsg);
-	die $errmsg; 
-    }
+    open(IN, $filename) || FileOpenFailure($filename, $sum_file, $!, "reading");
 
     while($line = <IN>) { $nlines++; }
     close(IN);

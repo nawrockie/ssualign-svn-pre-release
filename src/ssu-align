@@ -36,22 +36,22 @@ use warnings FATAL => 'all';
 #Make sure the SSUALIGNDIR environmental variable is set and the directory exists
 my $ssualigndir = $ENV{'SSUALIGNDIR'};
 if(! exists($ENV{'SSUALIGNDIR'})) { 
-    printf STDERR ("ERROR, the environment variable SSUALIGNDIR is not set, please set it to the directory where you installed SSU-ALIGN.\n"); 
+    printf STDERR ("\nERROR, the environment variable SSUALIGNDIR is not set, please set it to the directory where you installed SSU-ALIGN.\n"); 
     exit(1); 
 }
 if(! (-d $ssualigndir)) { 
-    printf STDERR ("ERROR, the ssu-align directory specified by your environment variable SSUALIGNDIR does not exist, see the User's Guide Installation section.\n"); 
+    printf STDERR ("\nERROR, the ssu-align directory specified by your environment variable SSUALIGNDIR does not exist, see the User's Guide Installation section.\n"); 
     exit(1); 
 }    
 #Make sure the SSUALIGNDIR directory includes ssu-align-0p1.subs.pm
 my $subs_file = $ssualigndir . "/ssu-align-0p1.subs.pm";
 if(! (-e $subs_file)) { 
-    printf STDERR ("ERROR, the required perl module ssu-align-0p1.subs.pm is not in the directory specified by your SSUALIGNDIR environment variable.\n"); 
+    printf STDERR ("\nERROR, the required perl module ssu-align-0p1.subs.pm is not in the directory specified by your SSUALIGNDIR environment variable.\n"); 
     exit(1); 
 }
 require $subs_file;
 
-# Start timing, this is done different depending on if Time::HiRes is installed or not
+# Start timing, this is done differently depending on if Time::HiRes is installed or not
 my $time_hires_installed = CheckForModule("Time::HiRes");
 if($time_hires_installed) { 
     use Time::HiRes qw(gettimeofday);
@@ -162,7 +162,7 @@ my $opt_return = GetOptions
      'no-prob'   => \$opt_H{"--no-prob"},
      'mxsize'    => \$opt_H{"--mxsize"});
 
-if($opt_return != 1) { exit(1); }
+if($opt_return != 1) { print STDERR "\nERROR, GetOptions() did not return 1, but $opt_return\n"; exit(1); }
 
 #determine options we'd use for subsequent ssu-align calls on split dataset if we're in prep mode
 my $prep_enabled_options = "";
@@ -257,7 +257,7 @@ PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, 
 # Validate that everything is go and determine output file names #
 ##################################################################
 my ($ssualign, $cmsearch, $cmalign, $sfetch, $weight, $cm_file, $errmsg);
-validate_and_setup_ssu_align($ssualigndir, $target_file, \%opt_H, \$ssualign, \$cmsearch, \$cmalign, \$sfetch, \$weight, \$cm_file, $log_file);
+validate_and_setup_ssu_align($ssualigndir, $target_file, \%opt_H, \$ssualign, \$cmsearch, \$cmalign, \$sfetch, \$weight, \$cm_file, $sum_file, $log_file);
 
 # determine number of sequences in the target sequence file
 my $nseq_target_file = DetermineNumSeqsFasta($target_file);
@@ -274,8 +274,9 @@ if($nseq_target_file == 0)  {
 my (@indi_cm_name_A);
 process_cm_file($out_root, $cm_file, \%opt_H, \@indi_cm_name_A, $sum_file);
 my $ncm = scalar(@indi_cm_name_A); 
-if(($opt_H{"--no-search"}) && ($ncm > 1)) { printf("ERROR, the --no-search option only works if the CM file contains exactly 1 CM, $cm_file has $ncm CMs in it.\n"); exit(1); }
-
+if(($opt_H{"--no-search"}) && ($ncm > 1)) { 
+    PrintErrorAndExit("ERROR, the --no-search option only works if the CM file contains exactly 1 CM, $cm_file has $ncm CMs in it.", $sum_file, 1);
+}
 my ($tab_file, $description_width, $search_seconds);
 my $max_file_name_width = 0;
 
@@ -350,10 +351,10 @@ if(! $opt_H{"--no-search"}) {
 PrintConclusion($sum_file, $log_file2print, $sum_file2print, "", $time_hires_installed, $out_dir);
 
 # print 3 different timings: search, alignment, total
-if(! $opt_H{"--no-align"})  { PrintTiming("# CPU time (search):    ", $search_seconds, $time_hires_installed, $sum_file); }
-if(! $opt_H{"--no-search"}) { PrintTiming("# CPU time (alignment): ", $align_seconds,  $time_hires_installed, $sum_file); }
+if(! $opt_H{"--no-align"})  { PrintTiming("# CPU time (search):    ", $search_seconds, $time_hires_installed, 1, $sum_file); }
+if(! $opt_H{"--no-search"}) { PrintTiming("# CPU time (alignment): ", $align_seconds,  $time_hires_installed, 1, $sum_file); }
 $total_seconds += SecondsSinceEpoch($time_hires_installed);
-PrintTiming("# CPU time (total):     ", $total_seconds, $time_hires_installed, $sum_file); 
+PrintTiming("# CPU time (total):     ", $total_seconds, $time_hires_installed, 1, $sum_file); 
 PrintStringToFile($sum_file, 1, sprintf("#\n", $out_dir));
 
 #remove esl-sfetch index file we created for the target file
@@ -391,6 +392,7 @@ exit(0);
 # $sfetch_R:       RETURN; esl-sfetch executable command
 # $weight_R:       RETURN; esl-weight executable command
 # $cm_file_R:      RETURN; the path to the CM file, either default CM file or <s> from -m <s>
+# $sum_file:       summary file
 # $log_file:       file to print commands to 
 # 
 # Returns:    Nothing, if it returns, everything is valid.
@@ -401,23 +403,23 @@ exit(0);
 #
 ####################################################################
 sub validate_and_setup_ssu_align { 
-    my $narg_expected = 10;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, validate_and_setup_ssu_align() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($ssualigndir, $target_file, $opt_HR, $ssualign_R, $cmsearch_R, $cmalign_R, $sfetch_R, $weight_R, $cm_file_R, $log_file) = @_;
+    my $narg_expected = 11;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, validate_and_setup_ssu_align() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my($ssualigndir, $target_file, $opt_HR, $ssualign_R, $cmsearch_R, $cmalign_R, $sfetch_R, $weight_R, $cm_file_R, $sum_file, $log_file) = @_;
 
     #Make sure the CM file exists
     my $cm_file = "";
     if($opt_HR->{"-m"} ne "") { 
 	$cm_file = $opt_HR->{"-m"}; 
-	if(!(-e $cm_file))   { printf STDERR ("ERROR, CM file $cm_file, specified with -M does not exist.\n"); exit(1); }
+	if(!(-e $cm_file))   { PrintErrorAndExit("ERROR, CM file $cm_file, specified with -m does not exist.", $sum_file, 1); }
     }
     else { 
 	$cm_file = $ssualigndir . "/ssu-align-0p1.cm";
-	if(!(-e $cm_file))   { printf STDERR ("ERROR, the default CM file $cm_file does not exist.\n"); exit(1); }
+	if(!(-e $cm_file))   { PrintErrorAndExit("ERROR, the default CM file $cm_file does not exist.", $sum_file, 1); }
     }
 
     #Make sure the target file exists
-    if(!(-e $target_file))   { printf STDERR ("ERROR, target sequence file $target_file does not exist.\n"); exit(1); }
+    if(!(-e $target_file))   { PrintErrorAndExit("ERROR, target sequence file $target_file does not exist.", $sum_file, 1); }
 
     my ($tmp, $command_worked);
     my $cmsearch   = "ssu-cmsearch";
@@ -475,17 +477,17 @@ sub validate_and_setup_ssu_align {
 ####################################################################
 sub create_output_dir { 
     my $narg_expected = 4;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, create_output_dir() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, create_output_dir() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my($out_dir, $opt_HR, $sum_file, $log_file) = @_;
 
-    my ($command, $tmp, $command_worked, $maybe_dir, $has_subdir, $has_ssualign_subdir, $ran_command, $output);
+    my ($command, $tmp, $command_worked, $maybe_dir, $has_subdir, $has_ssualign_subdir, $ran_command, $output, $errmsg);
     $has_subdir = 0;
     $has_ssualign_subdir = 0;
     $ran_command = 0;
     # create output directory
     if(-d $out_dir) { 
 	if((! $opt_HR->{"-F"}) && (! $opt_HR->{"--FF"})) { 
-	    printf STDERR ("ERROR, output directory $out_dir already exists. Delete it or use -F to overwrite it.\n"); exit(1); 
+	    PrintErrorAndExit("ERROR, output directory $out_dir already exists. Delete it or use -F to overwrite it.", $sum_file, 1);
 	}
 	elsif(($opt_HR->{"-F"}) && (! $opt_HR->{"--FF"})) { 
             # directory $out_dir exists, -F enabled  but --FF not enabled, check to see if there's any subdirectories in it:
@@ -501,7 +503,9 @@ sub create_output_dir {
 		}
 	    }
 	    if($has_ssualign_subdir) { 
-		printf STDERR ("\nERROR, subdirectories of $out_dir exist that appear to have been created by ssu-align.\nEither delete them, or use --FF to remove them all.\n");
+		$errmsg = "\nERROR, subdirectories of $out_dir exist that appear to have been created by ssu-align.\nEither delete them, or use --FF to remove them all.\n";
+		PrintStringToFile($sum_file, 0, $errmsg);
+		printf STDERR $errmsg;
 	    }
 	    if($has_subdir) { exit(1); }
 	}
@@ -512,12 +516,9 @@ sub create_output_dir {
         # Note: we can't use RunExecutable, b/c that requires a output file to write to, which will be put
 	# into $out_dir, and since that hasn't been created yet, we can't write to it. Instead if the command
 	# succeeds, we write it to the log file at the end of the function.
-	if($? != 0) { 
-	    printf STDERR ("\nERROR, the command \"rm -rf $out_dir did not successfully complete.\n"); 
-	    exit(1);
-	}
+	if($? != 0) { PrintErrorAndExit("ERROR, the command \"rm -rf $out_dir did not successfully complete.", $sum_file, 1); }
 	$ran_command = 1;
-	if(-d $out_dir) { printf STDERR ("ERROR, output directory $out_dir still exists after the command \"rmdir $out_dir\".\n"); exit(1); }
+	if(-d $out_dir) { PrintErrorAndExit("ERROR, output directory $out_dir still exists after the command \"rmdir $out_dir\".", $sum_file, 1); }
     }
 
     # make the directory 
@@ -563,23 +564,27 @@ sub create_output_dir {
 ####################################################################
 sub process_cm_file { 
     my $narg_expected = 5;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, process_cm_file() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, process_cm_file() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my($out_root, $cm_file, $opt_HR, $indi_cm_name_AR, $sum_file) = @_;
     
     my($line, $cm_name);
     my %cm_name_exists_H = ();
     my $found_only_aln_name = 0;
 
-    if(open(CM, $cm_file) == 0) { printf STDERR ("ERROR, could not open $cm_file for reading.\n"); exit(1); }
+    open(CM, $cm_file) || FileOpenFailure($cm_file, $sum_file, $!, "reading");
     while($line = <CM>) {
 	# the lines we're interested in look like this:
 	#NAME     archaea
 	if($line =~ /^NAME\s+(\S+)/) { 
 	    $cm_name = $1;
 	    push(@{$indi_cm_name_AR}, $cm_name);
-	    if(exists($cm_name_exists_H{$cm_name})) { printf STDERR ("ERROR, two CMs in CM file $cm_file have the name $cm_name. Each CM must have a unique name.\n"); exit(1); }
+	    if(exists($cm_name_exists_H{$cm_name})) { 
+		PrintErrorAndExit("ERROR, two CMs in CM file $cm_file have the name $cm_name. Each CM must have a unique name.", $sum_file, 1); 
+	    }
 	    $cm_name_exists_H{$cm_name} = 1;
-	    if($cm_name eq $df_none_name) { printf STDERR ("ERROR, you can't use a CM with the name $df_none_name, that's reserved for indicating which sequences are not the best-match to any models.\n"); exit(1); }
+	    if($cm_name eq $df_none_name) { 
+		PrintErrorAndExit("ERROR, you can't use a CM with the name $df_none_name, that's reserved for indicating which sequences are not the best-match to any models.", $sum_file, 1); 
+	    }
 	    if(($opt_HR->{"--aln-one"} ne "") && ($cm_name eq $opt_HR->{"--aln-one"})) { 
 		$found_only_aln_name = 1; 
 	    }
@@ -657,11 +662,7 @@ sub prepare_only {
 	    PrintStringToFile($sum_file, 0, $errmsg);
 	    die $errmsg; 
 	}
-	if(! open(PREPIN, $opt_HR->{"--prep-in"})) {
-	    $errmsg = "\nERROR, unable to open the prep input file " . $opt_HR->{"--prep-in"} . " specified with --prep-in.\n";
-	    PrintStringToFile($sum_file, 0, $errmsg);
-	    die $errmsg; 
-	}
+	open(PREPIN, $opt_HR->{"--prep-in"}) || FileOpenFailure($opt_HR->{"--prep-in"}, $sum_file, $!, "reading");
 	$prep_prefix = <PREPIN>;
 	$prep_suffix = <PREPIN>;
 	chomp $prep_prefix;
@@ -677,8 +678,7 @@ sub prepare_only {
 
     $shell_script       = $out_dir_and_root . ".sh";
     $shell_script2print = $out_root         . ".sh";
-    if(open(SH, ">" . $shell_script) == 0) { printf STDERR ("ERROR, could not open $shell_script for writing.\n"); exit(1); }
-
+    open(SH, ">" . $shell_script) || FileOpenFailure($shell_script, $sum_file, $!, "writing");
     #determine number of seqs per file (if --prep-p)
     my ($prep_nseq, $prep_nproc);
     if($opt_HR->{"--prep-p"} ne "") { 
@@ -693,13 +693,13 @@ sub prepare_only {
 	$remainder  = $nseq_target_file - ($prep_nseq * $prep_nproc);
 	if($remainder > 0) { $prep_nproc++; }
     }
-    else { printf STDERR ("ERROR, in prepare_only but neither --prep-p nor --prep-n enabled on the command-line. This shoudln't happen.\n"); exit(1); }
+    else { PrintErrorAndExit("ERROR, in prepare_only but neither --prep-p nor --prep-n enabled on the command-line. This shouldn't happen.", $sum_file, 1); }
 
     if(($opt_HR->{"--prep-p"} ne "") && ($prep_nproc > $nseq_target_file)) { 
-	printf STDERR ("ERROR, --prep-p %d enabled, but there's only %d sequences in the target file.\n", $prep_nproc, $nseq_target_file); exit(1); 
+	PrintErrorAndExit(sprintf("ERROR, --prep-p %d enabled, but there's only %d sequences in the target file.", $prep_nproc, $nseq_target_file), $sum_file, 1);
     }
     if(($opt_HR->{"--prep-n"} ne "") && ($prep_nproc == 1)) {
-	printf STDERR ("ERROR, --prep-n %d enabled, but there's only %d sequences in the target file.\nNo need to use --prep-n, you're requesting the target file be split into only 1 partition.\n", $prep_nseq, $nseq_target_file); exit(1); 
+	PrintErrorAndExit(sprintf("ERROR, --prep-n %d enabled, but there's only %d sequences in the target file.\nNo need to use --prep-n, you're requesting the target file be split into only 1 partition.", $prep_nseq, $nseq_target_file), $sum_file, 1);
     }
 
     $ndig = 1; $tmp = $prep_nproc; while($tmp > 10) { $ndig++; $tmp /= 10.; }
@@ -729,10 +729,9 @@ sub prepare_only {
     $target_subfile_root = $target_file . "." . $n;
     $target_subfile_root =~ s/^.+\///;  # remove path 
     $target_subfile      = $out_dir . "/" . $target_subfile_root;
-    if(open(SUB, ">" . $target_subfile) == 0) { printf STDERR ("ERROR, could not open $target_subfile for writing.\n"); exit(1); }
-    $nseq_this_file = -1;
-    if(open(FULL, $target_file) == 0) { printf STDERR ("ERROR, could not open $target_file for reading.\n"); exit(1); }
 
+    open(SUB, ">". $target_subfile) || FileOpenFailure($target_subfile, $sum_file, $!, "writing");
+    open(FULL, $target_file) || FileOpenFailure($target_file, $sum_file, $!, "reading");
     while($line = <FULL>) { 
 	if($line =~ m/^>/) { 
 	    if(++$nseq_this_file == $prep_nseq) { 
@@ -742,7 +741,7 @@ sub prepare_only {
 		$target_subfile_root = $target_file . "." . (++$n);
 		$target_subfile_root =~ s/^.+\///;  # remove path 
 		$target_subfile      = $out_dir . "/" . $target_subfile_root;
-		if(open(SUB, ">" . $target_subfile) == 0) { printf STDERR ("ERROR, could not open $target_subfile for writing.\n"); exit(1); }
+		open(SUB, ">". $target_subfile) || FileOpenFailure($target_subfile, $sum_file, $!, "writing");
 		$nseq_this_file = 0;
 	    }
 	}
@@ -753,8 +752,9 @@ sub prepare_only {
     PrintStringToFile($sum_file, 1, sprintf("  %-*s  partition %*d fasta sequence file\n", $max_file_name_width, $target_subfile_root, $ndig, $n));
     printf SH ("%s%s%s\n", $prep_prefix, "$ssualign -F $prep_enabled_options $target_subfile_root $out_root." . $n, $prep_suffix);
     close(SH); 
-    if($n != $prep_nproc) { printf STDERR ("ERROR, problem partitioning target fasta file $target_file into $prep_nproc files, only $n files were successfully created.\n"); exit(1); }
-    
+    if($n != $prep_nproc) { 
+	PrintErrorAndExit("ERROR, problem partitioning target fasta file $target_file into $prep_nproc files, only $n files were successfully created.\n", $sum_file, 1);
+    }    
     PrintStringToFile($sum_file, 1, sprintf("  %-*s  shell script that will run ssu-align %d times\n", $max_file_name_width, $shell_script2print, $prep_nproc));
     $shell_script =~ s/$out_dir\///;
 
@@ -793,7 +793,7 @@ sub prepare_only {
 ####################################################################
 sub search_sequences_with_each_model { 
     my $narg_expected = 11;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, search_sequences_with_each_model() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, search_sequences_with_each_model() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my($opt_HR, $cmsearch, $cm_file, $target_file, $out_dir_and_root, $nseq_target_file, $indi_cm_name_AR, $tab_file_R, $max_file_name_width_R, $description_width_R, $sum_file) = @_;
 
     my ($i, $cmsearch_opts, $tab_file, $tab_file2print, $alg_flag, $max_file_name_width, $dashes1, $dashes2, $tmp, $command, $command_worked, $cmsearch_outfile);
@@ -872,7 +872,7 @@ sub search_sequences_with_each_model {
 ####################################################################
 sub classify_and_extract_subseqs { 
     my $narg_expected = 12;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, classify_and_extract_subseqs() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, classify_and_extract_subseqs() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my ($opt_HR, $tab_file, $target_file, $out_dir_and_root, $sfetch, $max_file_name_width, $indi_cm_name_AR, $bestmatch_cm_HR, $new_target_file_per_cm_name_HR,
 	$hmmscores2print_HR, $max_seq_name_width_R, $sum_file) = @_;
     my $cur_max_seq_name_width = 0;
@@ -892,7 +892,7 @@ sub classify_and_extract_subseqs {
     if($max_cm_name_width < length("model name")) { $max_cm_name_width = length("model name"); } 
 
     # Parse tab file, keep track of best scoring hit above our min length and min bit score for each CM for each seq
-    if(open(TAB, $tab_file) == 0) { printf STDERR ("ERROR, could not open $tab_file for reading.\n"); exit(1); }
+    open(TAB, $tab_file) || FileOpenFailure($tab_file, $sum_file, $!, "reading");
     $cm_name = "";
 
     # Set $min_len and $min_bit based on command-line options and defaults
@@ -915,7 +915,7 @@ sub classify_and_extract_subseqs {
 	    $line =~ s/^\s+//;
 	    @tmp_A = split(/\s+/, $line);
 	    if(scalar(@tmp_A) != 9) { 
-		printf STDERR ("ERROR, unable to read following line of $tab_file, it should have 9 tokens.\n"); printf("$line\n"); exit(1); 
+		PrintErrorAndExit("ERROR, unable to read following line of $tab_file, it should have 9 tokens.\n$line", $sum_file, 1);
 	    }
 	    ($cm_name, $seq_name, $tstart, $tend, $qstart, $qend, $bit, $E, $gc) = @tmp_A;
 	    if($tend > $tstart) { $tlen = $tend - $tstart + 1; }
@@ -933,13 +933,11 @@ sub classify_and_extract_subseqs {
     }
     # Make sure our tab file contains the same CMs in the same order as our CM file did.
     if(scalar(@cm_name_from_tab_file_A) != scalar(@{$indi_cm_name_AR})) { 
-	printf STDERR ("ERROR, %d CMs read in tab file != %d CMs read from CM file.\n", scalar(@cm_name_from_tab_file_A), scalar(@{$indi_cm_name_AR}));
-	exit(1);
+	PrintErrorAndExit(sprintf("ERROR, %d CMs read in tab file != %d CMs read from CM file.", scalar(@cm_name_from_tab_file_A), scalar(@{$indi_cm_name_AR})), $sum_file, 1);
     }
     for($m = 0; $m < scalar(@cm_name_from_tab_file_A); $m++) { 
 	if($cm_name_from_tab_file_A[$m] ne $indi_cm_name_AR->[$m]) { 
-	    printf STDERR ("ERROR, CM number %d (%s) from the tab file output is not the same as CM %d from the CM file (%s).\n", $cm_name_from_tab_file_A[$m], $indi_cm_name_AR->[$m]);
-	    exit(1);
+	    PrintErrorAndExit(sprintf("ERROR, CM number %d (%s) from the tab file output is not the same as CM %d from the CM file (%s).", $cm_name_from_tab_file_A[$m], $indi_cm_name_AR->[$m]), $sum_file, 1);
 	}
     }
 
@@ -1013,8 +1011,8 @@ sub classify_and_extract_subseqs {
 
 	if($nwinners > 0) { 
 	    $ncm_with_at_least_one_seq++;
-	    if(open(OUTLIST,  ">" . $list_file) == 0)      { printf STDERR ("ERROR, could not open $list_file for writing.\n"); exit(1); }
-	    if(open(SFETCHIN, ">" . $sfetch_in_file) == 0) { printf STDERR ("ERROR, could not open $sfetch_in_file for writing.\n"); exit(1); }
+	    open(OUTLIST, ">" . $list_file) || FileOpenFailure($list_file, $sum_file, $!, "writing");
+	    open(SFETCHIN, ">" . $sfetch_in_file) || FileOpenFailure($sfetch_in_file, $sum_file, $!, "writing");
 
 	    # determine max seq name width 
 	    $cur_max_seq_name_width = length("target name");
@@ -1056,8 +1054,7 @@ sub classify_and_extract_subseqs {
 	}
     }
     if($ncm_with_at_least_one_seq == 0) { 
-	printf STDERR ("\nERROR, 0 seqs had cmsearch hits with bit score > $min_bit and length > $min_len to any of the %d CMs in the tab file $tab_file.\nYou can change the minimum bit score to <x> with -b <x>, and minimum length to <n> with -l <n>.\n", scalar(@{$indi_cm_name_AR}));
-	exit(1);
+	PrintErrorAndExit(sprintf("ERROR, 0 seqs had cmsearch hits with bit score > $min_bit and length > $min_len to any of the %d CMs in the tab file $tab_file.\nYou can change the minimum bit score to <x> with -b <x>, and minimum length to <n> with -l <n>.", scalar(@{$indi_cm_name_AR})), $sum_file, 1);
     }
 
     $$max_seq_name_width_R = $max_seq_name_width;
@@ -1139,7 +1136,7 @@ sub align_subseqs {
 	    RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
 	    
 	    #open and parse the cmalign output
-	    if(open(CMALIGN, $cmalign_out) == 0) { printf STDERR ("ERROR, could not open $cmalign_out for reading.\n"); exit(1); }
+	    open(CMALIGN, $cmalign_out) || FileOpenFailure($cmalign_out, $sum_file, $!, "reading");
 	    while($line = <CMALIGN>) { 
 		if($line =~ s/^\s+\d+\s+//) { 
 		    @el_A = split(/\s+/, $line);
@@ -1210,8 +1207,8 @@ sub print_scores_file {
     if($max_cm_name_width < length("model name")) { $max_cm_name_width = length("model name"); } 
     $dashes_cmname  = ""; for($i = 0; $i < $max_cm_name_width; $i++)  { $dashes_cmname .= "-"; } 
     
-    if(open(SCORES,  ">" . $scores_file) == 0) { printf STDERR ("ERROR, could not open $scores_file for writing.\n"); exit(1); }
-    if(open(TARGET, $target_file) == 0) { printf STDERR ("ERROR, could not open $target_file for reading.\n"); exit(1); }
+    open(SCORES, ">" . $scores_file) || FileOpenFailure($scores_file, $sum_file, $!, "writing");
+    open(TARGET, $target_file) || FileOpenFailure($target_file, $sum_file, $!, "reading");
     $i = 0;
 
     #print headers
