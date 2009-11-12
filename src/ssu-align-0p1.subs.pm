@@ -9,25 +9,26 @@
 #
 # List of subroutines in this file:
 #
-# PrintBanner():                prints SSU-ALIGN banner given a script description.
-# PrintConclusion():            prints final lines of SSU-ALIGN script output
-# PrintTiming():                prints run time to stdout and summary file.
-# PrintStringToFile():          prints string to a file and optionally stdout.
-# RunExecutable():              runs an executable with backticks, returns output.
-# UnlinkFile():                 unlinks a file, and updates log file.
-# DetermineNumSeqsFasta():      determine the number of sequences in a FASTA file.
-# DetermineNumSeqsStockholm():  determine the number of sequences in a Stockholm aln file.
-# ArgmaxArray():                determine the index of the max value scalar in an array
-# MaxLengthScalarInArray():     determine the max length scalar in an array.
-# SumArrayElements():           return sum of values in a numeric array
-# SumHashElements():            return sum of values in a numeric hash 
-# TryPs2Pdf():                  attempt to run 'ps2pdf' to convert ps to pdf file.
-# SwapOrAppendFileSuffix():     given a file name, return a new name with a suffix swapped.
-# RemoveDirPath():              remove the leading directory path of a filename
-# CheckForModule():             check if a particular module is installed on the system
-# SecondsSinceEpoch():          return number of seconds since the epoch 
-# FileOpenFailure():            called if an open() call fails, print error msg and exit
-# PrintErrorAndExit():          print an error message and call exit to kill the program
+# PrintBanner():                   prints SSU-ALIGN banner given a script description.
+# PrintConclusion():               prints final lines of SSU-ALIGN script output
+# PrintTiming():                   prints run time to stdout and summary file.
+# PrintStringToFile():             prints string to a file and optionally stdout.
+# RunExecutable():                 runs an executable with backticks, returns output.
+# UnlinkFile():                    unlinks a file, and updates log file.
+# DetermineNumSeqsFasta():         determine the number of sequences in a FASTA file.
+# DetermineNumSeqsStockholm():     determine the number of sequences in a Stockholm aln file.
+# ArgmaxArray():                   determine the index of the max value scalar in an array
+# MaxLengthScalarInArray():        determine the max length scalar in an array.
+# SumArrayElements():              return sum of values in a numeric array
+# SumHashElements():               return sum of values in a numeric hash 
+# TryPs2Pdf():                     attempt to run 'ps2pdf' to convert ps to pdf file.
+# SwapOrAppendFileSuffix():        given a file name, return a new name with a suffix swapped.
+# RemoveDirPath():                 remove the leading directory path of a filename
+# CheckForModule():                check if a particular module is installed on the system
+# SecondsSinceEpoch():             return number of seconds since the epoch 
+# FileOpenFailure():               called if an open() call fails, print error msg and exit
+# PrintErrorAndExit():             print an error message and call exit to kill the program
+# PrintSearchAndAlignStatistics(): print ssu-align summary statistics on search and alignment
 #
 use strict;
 use warnings;
@@ -100,12 +101,14 @@ sub PrintBanner {
 # Incept:     EPN, Thu Nov  5 18:25:31 2009
 # 
 # Purpose:    Print the final few lines of output and optionally the 
-#             run time timing.
+#             run time timing to the summary file. Print date and
+#             system information to the log file.
 #
 # Arguments: 
 #    $sum_file:               full path to summary file
-#    $log_file2print:         name of log file
+#    $log_file:               full path to log file
 #    $sum_file2print:         name of summary file
+#    $log_file2print:         name of log file
 #    $total_time:             total number of seconds, "" to not print timing
 #    $time_hires_installed: '1' if Time:HiRes is installed (we'll print milliseconds)
 #    $out_dir:                output directory where output files were put,
@@ -115,9 +118,9 @@ sub PrintBanner {
 # 
 ####################################################################
 sub PrintConclusion { 
-    my $narg_expected = 6;
+    my $narg_expected = 7;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, PrintConclusion() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($sum_file, $log_file2print, $sum_file2print, $total_time, $time_hires_installed, $out_dir) = @_;
+    my ($sum_file, $log_file, $sum_file2print, $log_file2print, $total_time, $time_hires_installed, $out_dir) = @_;
 
     PrintStringToFile($sum_file, 1, sprintf("#\n"));
     #PrintStringToFile($sum_file, 1, sprintf("# Commands executed by this script written to log file:  $log_file2print.\n"));
@@ -137,6 +140,8 @@ sub PrintConclusion {
 	PrintTiming("# CPU time: ", $total_time, $time_hires_installed, 1, $sum_file); 
 	PrintStringToFile($sum_file, 1, sprintf("# \n"));
     }
+    PrintStringToFile($log_file, 0, `date`);
+    PrintStringToFile($log_file, 0, `uname -a`);
 
     return;
 }
@@ -725,7 +730,7 @@ sub FileOpenFailure() {
 ################################################################# 
 sub PrintErrorAndExit() { 
     my $narg_expected = 3;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, FileOpenForReadingFailure() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, PrintErrorAndExit() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my ($errmsg, $out_file, $status) = @_;
 
     if($errmsg !~ m/\n$/) { $errmsg .= "\n\n"; }
@@ -739,6 +744,126 @@ sub PrintErrorAndExit() {
     exit($status);
 }
 
+
+
+#####################################################################
+# Subroutine: PrintSearchAndAlignStatistics()
+# Incept:     EPN, Thu Nov 12 05:40:53 2009
+# 
+# Purpose:    Print statistics on the search and alignment we just 
+#             performed to the summary file and stdout.
+#
+# Arguments: 
+# $search_seconds:       seconds required for search
+# $align_seconds:        seconds required for alignment
+# $target_nseq:          number of sequences in input target file
+# $target_nres:          number of residues in input target file
+# $nseq_all_cms:         number of sequences that were best match to any CM
+# $nres_total_all_cms:   summed length of all target seqs that were best 
+#                        match to any CM
+# $nres_aligned_all_cms: summed length of extracted and aligned target seqs 
+#                        that were best match to any CM
+# $indi_cm_name_AR:      reference to array with CM names
+# $nseq_cm_HR:           number of sequences that were best match to each CM 
+# $nres_total_cm_HR:     summed length of target seqs that were best match to each CM
+# $nres_aligned_cm_HR:   summed length of extracted and aligned target seqs that 
+#                        were best match to each CM
+# $print_to_stdout:      '1' to also print to stdout (in addition to <$sum_file>)
+# $sum_file:             summary file 
+# 
+# Returns:    Nothing.
+#             
+# 
+####################################################################
+sub PrintSearchAndAlignStatistics { 
+    my $narg_expected = 13;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, PrintSearchAndAlignStatistics() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($search_seconds, $align_seconds, $target_nseq, $target_nres, $nseq_all_cms, $nres_total_all_cms, $nres_aligned_all_cms, 
+	$indi_cm_name_AR, $nseq_cm_HR, $nres_total_cm_HR, $nres_aligned_cm_HR, $print_to_stdout, $sum_file) = @_;
+
+    my ($cm_name, $i);
+
+    PrintStringToFile($sum_file, $print_to_stdout, sprintf("#\n"));
+    PrintStringToFile($sum_file, $print_to_stdout, sprintf("#\n"));
+    PrintStringToFile($sum_file, $print_to_stdout, sprintf("# Summary statistics:\n"));
+    PrintStringToFile($sum_file, $print_to_stdout, sprintf("#\n"));
+
+    my $cm_width = MaxLengthScalarInArray($indi_cm_name_AR);
+    if($cm_width < length("*all models*")) { $cm_width = length("*all models*"); }
+    my $dashes = ""; for($i = 0; $i < $cm_width; $i++) { $dashes .= "-"; } 
+    PrintStringToFile($sum_file, $print_to_stdout, sprintf("# %-*s  %7s  %8s  %13s  %8s\n", $cm_width, "model or",   "number",  "fraction", "average",        "average"));
+    PrintStringToFile($sum_file, $print_to_stdout, sprintf("# %-*s  %7s  %8s  %13s  %8s\n", $cm_width, "category",   "of seqs", "of total", "length",         "coverage"));
+    PrintStringToFile($sum_file, $print_to_stdout, sprintf("# %-*s  %7s  %8s  %13s  %8s\n", $cm_width, $dashes,      "-------", "--------", "-------------",  "--------"));
+    
+    PrintStringToFile($sum_file, $print_to_stdout, sprintf("  %-*s  %7d  %8.4f  %13.2f  %8s\n", 
+							   $cm_width, "*input*", 
+							   $target_nseq,
+							   1.0, 
+							   $target_nres / $target_nseq,
+							   "-"));
+    foreach $cm_name (@{$indi_cm_name_AR}) { 
+	if($nseq_cm_HR->{$cm_name} == 0) { 
+	    PrintStringToFile($sum_file, $print_to_stdout, sprintf("  %-*s  %7d  %8.4f  %13s  %8s\n", 
+								   $cm_width, $cm_name, 
+								   $nseq_cm_HR->{$cm_name},
+								   $nseq_cm_HR->{$cm_name} / $target_nseq,
+								   "-", "-"));
+	}
+	else { 
+	    PrintStringToFile($sum_file, $print_to_stdout, sprintf("  %-*s  %7d  %8.4f  %13.2f  %8.4f\n", 
+								   $cm_width, $cm_name, 
+								   $nseq_cm_HR->{$cm_name},
+								   $nseq_cm_HR->{$cm_name} / $target_nseq,
+								   $nres_aligned_cm_HR->{$cm_name} / $nseq_cm_HR->{$cm_name}, 
+								   $nres_aligned_cm_HR->{$cm_name} / $nres_total_cm_HR->{$cm_name}));
+	}
+    }
+    #if($nseq_all_cms == 0) { PrintErrorAndExit("ERROR, no seqs matched to any CM (during stat printing). Program should've exited earlier. Error in code.", $sum_file, 1); }
+    PrintStringToFile($sum_file, $print_to_stdout, sprintf("  %-*s  %7d  %8.4f  %13.2f  %8.4f\n", 
+							   $cm_width, "*all models*", 
+							   $nseq_all_cms,
+							   $nseq_all_cms / $target_nseq,
+							   $nres_aligned_all_cms / $nseq_all_cms, 
+							   $nres_aligned_all_cms / $nres_total_all_cms));
+    if($target_nseq > $nseq_all_cms) { 
+	PrintStringToFile($sum_file, $print_to_stdout, sprintf("  %-*s  %7d  %8.4f  %13.2f  %8s\n", 
+							       $cm_width, "*no models*", 
+							       $target_nseq - $nseq_all_cms,
+							       ($target_nseq - $nseq_all_cms) / $target_nseq,
+							       ($target_nres - $nres_total_all_cms) / ($target_nseq - $nseq_all_cms),
+							       "-"));
+    }
+    else { 
+	PrintStringToFile($sum_file, $print_to_stdout, sprintf("  %-*s  %7d  %8.4f  %13s  %8s\n", 
+							       $cm_width, "*no models*", 
+							       $target_nseq - $nseq_all_cms,
+							       0., "-", "-"));
+    }
+    
+    if($search_seconds eq "0") { $search_seconds = 1; }
+    if($align_seconds eq "0") { $align_seconds = 1; }
+    PrintStringToFile($sum_file, $print_to_stdout, sprintf("#\n"));
+    PrintStringToFile($sum_file, $print_to_stdout, sprintf("#\n"));
+    PrintStringToFile($sum_file, $print_to_stdout, sprintf("# Speed statistics:\n"));
+    PrintStringToFile($sum_file, $print_to_stdout, sprintf("#\n"));
+    PrintStringToFile($sum_file, $print_to_stdout, sprintf("# %-9s  %8s  %7s  %13s  %13s  %8s\n","stage",     "num seqs", "seq/sec", "seq/sec/model", "nucleotides",   "nt/sec"));
+    PrintStringToFile($sum_file, $print_to_stdout, sprintf("# %9s  %8s  %7s  %13s  %13s  %8s\n", "---------", "--------", "-------", "-------------", "-------------", "--------"));
+    PrintStringToFile($sum_file, $print_to_stdout, sprintf("  %-9s  %8d  %7.3f  %13.3f  %13d  %8.1f\n", 
+							   "search", $target_nseq, 
+							   ($target_nseq / $search_seconds), 
+							   ($target_nseq / ($search_seconds * scalar(@{$indi_cm_name_AR}))), 
+							   $target_nres, 
+							   $target_nres / $search_seconds));
+    PrintStringToFile($sum_file, $print_to_stdout, sprintf("  %-9s  %8d  %7.3f  %13.3f  %13d  %8.1f\n", 
+							   "alignment", $nseq_all_cms, 
+							   ($nseq_all_cms / $align_seconds), 
+							   ($nseq_all_cms / $align_seconds), 
+							   $nres_aligned_all_cms, 
+							   $nres_aligned_all_cms / $align_seconds));
+    PrintStringToFile($sum_file, $print_to_stdout, sprintf("#\n"));
+
+    return;
+}
 
 ####################################################################
 # the next line is critical, a perl module must return a true value

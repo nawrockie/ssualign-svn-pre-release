@@ -721,7 +721,7 @@ foreach $file (@files_to_unlink_A) {
 }
 
 $total_seconds += SecondsSinceEpoch($time_hires_installed);
-PrintConclusion($sum_file, $log_file2print, $sum_file2print, $total_seconds, $time_hires_installed, $dir2print);
+PrintConclusion($sum_file, $log_file, $sum_file2print, $log_file2print, $total_seconds, $time_hires_installed, $dir2print);
 
 # Success! Exit normally
 exit(0);

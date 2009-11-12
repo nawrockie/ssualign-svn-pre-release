@@ -273,10 +273,10 @@ for($i = 0; $i < $naln; $i++) {
 $total_seconds += SecondsSinceEpoch($time_hires_installed);
 
 if(!($opt_H{"-a"})) { 
-    PrintConclusion($sum_file, $log_file2print, $sum_file2print, $total_seconds, $time_hires_installed, $dir);
+    PrintConclusion($sum_file, $log_file, $sum_file2print, $log_file2print, $total_seconds, $time_hires_installed, $dir);
 }
 else { 
-    PrintConclusion($sum_file, $log_file2print, $sum_file2print, $total_seconds, $time_hires_installed, "");
+    PrintConclusion($sum_file, $log_file, $sum_file2print, $log_file2print, $total_seconds, $time_hires_installed, "");
 }
 
 # Success! Exit normally

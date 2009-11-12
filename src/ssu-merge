@@ -150,7 +150,6 @@ my ($i, $j, $cm_idx, $nhitsfa, $nhitslist, $ncmalign, $nstk);
 my ($scores_file, $ssu_align_sum_file, $ssu_align_log_file, $tab_file, $cmalign_file, $hitsfa_file, $hitslist_file, $merged_stk_file);
 my ($scores_file2print, $ssu_align_sum_file2print, $ssu_align_log_file2print, $tab_file2print, $cmalign_file2print, $hitsfa_file2print, $hitslist_file2print, $merged_stk_file2print);
 my ($max_file_name_width, $max_cm_name_width, $file_dashes, $cm_dashes, $nseq_merged);
-my ($summed_search_seconds, $summed_align_seconds, $summed_total_seconds);
 
 if(scalar(@score_to_merge_A) == 0) { PrintErrorAndExit("ERROR, no *.scores files found.", $sum_file, 1); }
 if(scalar(@sum_to_merge_A)   == 0) { PrintErrorAndExit("ERROR, no *.sum files found.", $sum_file, 1); }
@@ -185,7 +184,15 @@ $tab_file2print           = $dir . ".tab";
 concatenate_a_list_of_files(\%opt_H, $scores_file, \@score_to_merge_A);
 PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9s\n", $max_file_name_width, $scores_file2print, $max_cm_name_width, "-", scalar(@score_to_merge_A), "-"));
 
-concatenate_sum_files_and_add_up_timings(\%opt_H, $ssu_align_sum_file, \@sum_to_merge_A, $time_hires_installed, $sum_file, \$summed_search_seconds, \$summed_align_seconds, \$summed_total_seconds);
+my ($summed_search_seconds, $summed_align_seconds, $summed_total_seconds);
+my ($summed_target_nseq, $summed_target_nres, $summed_nseq_all_cms, $summed_nres_total_all_cms, $summed_nres_aligned_all_cms);
+my %summed_nseq_cm_H = ();
+my %summed_nres_total_cm_H = ();
+my %summed_nres_aligned_cm_H = ();
+concatenate_sum_files_and_merge_statistics(\%opt_H, $ssu_align_sum_file, \@sum_to_merge_A, \@cm_names_A, \$summed_search_seconds, \$summed_align_seconds, \$summed_total_seconds, 
+					   \$summed_target_nseq, \$summed_target_nres, \$summed_nseq_all_cms, \$summed_nres_total_all_cms, \$summed_nres_aligned_all_cms,
+					   \%summed_nseq_cm_H, \%summed_nres_total_cm_H, \%summed_nres_aligned_cm_H, $sum_file);
+
 PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9s\n", $max_file_name_width, $ssu_align_sum_file2print, $max_cm_name_width, "-", scalar(@sum_to_merge_A), "-"));
 
 concatenate_a_list_of_files(\%opt_H, $ssu_align_log_file, \@log_to_merge_A);
@@ -252,12 +259,21 @@ for($i = 0; $i < scalar(@cm_names_A); $i++) {
 ############
 # Conclude #
 ############
+PrintSearchAndAlignStatistics($summed_search_seconds, $summed_align_seconds, $summed_target_nseq, $summed_target_nres, $summed_nseq_all_cms, $summed_nres_total_all_cms, $summed_nres_aligned_all_cms,
+			      \@cm_names_A, \%summed_nseq_cm_H, \%summed_nres_total_cm_H, \%summed_nres_aligned_cm_H, 1, $sum_file);
+PrintSearchAndAlignStatistics($summed_search_seconds, $summed_align_seconds, $summed_target_nseq, $summed_target_nres, $summed_nseq_all_cms, $summed_nres_total_all_cms, $summed_nres_aligned_all_cms,
+			      \@cm_names_A, \%summed_nseq_cm_H, \%summed_nres_total_cm_H, \%summed_nres_aligned_cm_H, 0, $ssu_align_sum_file);
+
 PrintTiming("# Summed ssu-align CPU time (search):    ", $summed_search_seconds, $time_hires_installed, 1, $sum_file); 
 PrintTiming("# Summed ssu-align CPU time (align):     ", $summed_align_seconds, $time_hires_installed, 1, $sum_file); 
 PrintTiming("# Summed ssu-align CPU time (total):     ", $summed_total_seconds, $time_hires_installed, 1, $sum_file); 
 
+PrintTiming("# Summed ssu-align CPU time (search):    ", $summed_search_seconds, $time_hires_installed, 0, $ssu_align_sum_file); 
+PrintTiming("# Summed ssu-align CPU time (align):     ", $summed_align_seconds, $time_hires_installed, 0, $ssu_align_sum_file); 
+PrintTiming("# Summed ssu-align CPU time (total):     ", $summed_total_seconds, $time_hires_installed, 0, $ssu_align_sum_file); 
+
 $total_seconds += SecondsSinceEpoch($time_hires_installed);
-PrintConclusion($sum_file, $log_file2print, $sum_file2print, $total_seconds, $time_hires_installed, $dir);
+PrintConclusion($sum_file, $log_file, $sum_file2print, $log_file2print, $total_seconds, $time_hires_installed, $dir);
 
 # Success! Exit normally
 exit(0); 
@@ -575,20 +591,33 @@ sub concatenate_a_list_of_files {
 
 
 #####################################################################
-# Subroutine: concatenate_sum_files_and_add_up_timings()
+# Subroutine: concatenate_sum_files_and_merge_statistis()
 # Incept:     EPN, Wed Oct 28 17:12:05 2009
 # 
-# Purpose:    Given a list of files to concatenate, do it.
+# Purpose:    Given a list of ssu-align summary files to concatenate,
+#             concatenate them and merge (by summing) the statistics
+#             within them.
 #
 # Arguments: 
 # $opt_HR:                  reference to hash of command line options
 # $concat_file:             the name for the file we want to create
 # $sum_files_to_concat_AR:  reference to the array of files to concatenate
-# $time_hires_installed:    '1' if Time::HiRes is installed on system
-# $sum_file:                ssu-merge sum_file
+# $cm_names_AR:             reference to array of CM names
 # $summed_search_seconds_R: RETURN: summed search seconds
 # $summed_align_seconds_R:  RETURN: summed align seconds
 # $summed_total_seconds_R:  RETURN: summed total seconds
+# $target_nseq_R:           RETURN: reference to number of sequences in all input target files, filled here
+# $target_nres_R:           RETURN: number of residues in all input target files, filled here
+# $nseq_all_cms_R:          RETURN: number of sequences that were best match to any CM in all child run, filled here
+# $nres_total_all_cms_R:    RETURN: summed length of all target seqs that were best 
+#                           match to any CM in all child run, filled here
+# $nres_aligned_all_cms_R : RETURN: summed length of extracted and aligned target seqs 
+#                           that were best match to any CM in all child run, filled here
+# $nseq_cm_HR:              RETURN: number of sequences that were best match to each CM in all child runs, filled here
+# $nres_total_cm_HR:        RETURN: summed length of target seqs that were best match to each CM in all child runs, filled here
+# $nres_aligned_cm_HR:      RETURN: summed length of extracted and aligned target seqs that 
+#                           were best match to each CM in all child runs, filled here
+# $sum_file:                ssu-merge sum_file
 #
 # Returns:    Nothing, if it returns, everything is valid.
 # 
@@ -596,12 +625,23 @@ sub concatenate_a_list_of_files {
 #             error and exits.
 #
 ####################################################################
-sub concatenate_sum_files_and_add_up_timings { 
-    my $narg_expected = 8;
+sub concatenate_sum_files_and_merge_statistics {
+    my $narg_expected = 16;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, concatenate_sum_files_and_add_up_timings() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($opt_HR, $concat_file, $sum_files_to_concat_AR, $time_hires_installed, $sum_file, $summed_search_seconds_R, $summed_align_seconds_R, $summed_total_seconds_R) = @_;
+    my($opt_HR, $concat_file, $sum_files_to_concat_AR, $cm_names_AR, $summed_search_seconds_R, $summed_align_seconds_R, $summed_total_seconds_R,
+	$target_nseq_R, $target_nres_R, $nseq_all_cms_R, $nres_total_all_cms_R, $nres_aligned_all_cms_R, $nseq_cm_HR, $nres_total_cm_HR, $nres_aligned_cm_HR, $sum_file) = @_;
 
     if(scalar(@{$sum_files_to_concat_AR}) == 0) { return; } #if array is empty, just leave
+
+    # initialize stats
+    my $cm_name;
+    my %cm_name_exists_H = ();
+    foreach $cm_name (@{$cm_names_AR}) { $cm_name_exists_H{$cm_name} = 1; }
+    my $target_nseq = 0;
+    my $target_nres = 0;
+    my $nseq_all_cms = 0;
+    my $nres_total_all_cms = 0;
+    my $nres_aligned_all_cms = 0;
 
     my ($child_sum_file, $command, $output, $i, $command_worked, $line);
 
@@ -629,9 +669,11 @@ sub concatenate_sum_files_and_add_up_timings {
     my $summed_search_seconds = 0.;
     my $summed_align_seconds = 0.;
     my $summed_total_seconds = 0.;
-    my ($action, $hours, $minutes, $seconds, $cur_seconds, $errmsg);
+    my $nstat_lines_expected = 5 + scalar(@{$cm_names_AR});
+    my ($action, $hours, $minutes, $seconds, $cur_seconds, $errmsg, $nseq, $avglen, $cov, $nstat_lines_seen, $aligned_nres, $total_nres, $nt);
     foreach $child_sum_file (@{$sum_files_to_concat_AR}) { 
 	open(CHILD, $child_sum_file) || FileOpenFailure($child_sum_file, $sum_file, $!, "reading");
+	$nstat_lines_seen = 0;
 	while($line = <CHILD>) { 
 	    if($line =~ /^\#\s+CPU\stime\s+\((\S+)\)\:\s+(\S+)\s*$/) { 
 		$action = $1;
@@ -642,20 +684,61 @@ sub concatenate_sum_files_and_add_up_timings {
 		elsif($action eq "total")      { $summed_total_seconds  += $cur_seconds; }
 		else { PrintErrorAndExit("ERROR, unable to parse the following \"CPU time\" line from $child_sum_file:\n$line", $sum_file, 1); }
 	    }
+	    elsif($line =~ m/^\s+\*input\*\s+(\d+)\s+\S+\s+(\S+)\s+(\S+)\s*$/) { 
+		; # no need to store anything
+		$nstat_lines_seen++;
+	    }
+	    elsif($line =~ m/^\s+\*all models\*\s+(\d+)\s+\S+\s+(\S+)\s+(\S+)\s*$/) { 
+		; # no need to store anything
+		$nstat_lines_seen++;
+	    }
+	    elsif($line =~ m/^\s+\*no models\*\s+(\d+)\s+\S+\s+(\S+)\s+(\S+)\s*$/) { 
+		; # no need to store anything
+		$nstat_lines_seen++;
+	    }
+	    elsif($line =~ m/^\s+(\S+)\s+(\d+)\s+\d\.\d+\s+(\S+)\s+(\S+)\s*$/) { 
+		($cm_name, $nseq, $avglen, $cov) = ($1, $2, $3, $4);
+		if(! exists($cm_name_exists_H{$cm_name})) { close(CHILD); close(NEW); PrintErrorAndExit("ERROR, found unexpected CM $cm_name listed in ssu-align summary output file: $child_sum_file.", $sum_file, 1); }
+		$nseq_all_cms           += $nseq;
+		$nseq_cm_HR->{$cm_name} += $nseq;
+		if($nseq > 0) { 
+		    $aligned_nres                    = $nseq * $avglen;
+		    $total_nres                      = $aligned_nres / $cov;
+		    $nres_total_all_cms             += $total_nres;
+		    $nres_total_cm_HR->{$cm_name}   += $total_nres;
+		    $nres_aligned_all_cms           += $aligned_nres;
+		    $nres_aligned_cm_HR->{$cm_name} += $aligned_nres;
+		}
+		$nstat_lines_seen++;
+	    }
+	    elsif($line =~ m/^\s+search\s+(\d+)\s+\S+\s+\S+\s+(\d+)\s+\S+\s*$/) { 
+		($nseq, $nt) = ($1, $2);
+		$target_nseq += $nseq;
+		$target_nres += $nt;
+		$nstat_lines_seen++;
+	    }
+	    elsif($line =~ m/^\s+alignment\s+(\d+)\s+\S+\s+\S+\s+(\d+)\s+\S+\s*$/) { 
+		; # no need to store anything
+		$nstat_lines_seen++;
+	    }
 	    printf NEW $line;
 	}
 	close(CHILD);
+	if($nstat_lines_seen != $nstat_lines_expected) { 
+	    close(NEW);
+	    PrintErrorAndExit("ERROR, failed to parse statistics section of ssu-align summary file $child_sum_file.", $sum_file, 1); 
+	}
     }
     close(NEW);
-    # print summed timings
-
-    PrintTiming("# Summed ssu-align CPU time (search):    ", $summed_search_seconds, $time_hires_installed, 0, $concat_file); 
-    PrintTiming("# Summed ssu-align CPU time (align):     ", $summed_align_seconds, $time_hires_installed, 0, $concat_file); 
-    PrintTiming("# Summed ssu-align CPU time (total):     ", $summed_total_seconds, $time_hires_installed, 0, $concat_file); 
 
     $$summed_search_seconds_R = $summed_search_seconds;
-    $$summed_align_seconds_R = $summed_align_seconds;
-    $$summed_total_seconds_R = $summed_total_seconds;
+    $$summed_align_seconds_R  = $summed_align_seconds;
+    $$summed_total_seconds_R  = $summed_total_seconds;
+    $$target_nseq_R           = $target_nseq;
+    $$target_nres_R           = $target_nres;
+    $$nseq_all_cms_R          = $nseq_all_cms;
+    $$nres_total_all_cms_R    = $nres_total_all_cms;
+    $$nres_aligned_all_cms_R  = $nres_aligned_all_cms;
     return;
 }
 

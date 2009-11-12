@@ -52,7 +52,7 @@ if(! (-e $subs_file)) {
 require $subs_file;
 
 # Start timing, this is done differently depending on if Time::HiRes is installed or not
-my $time_hires_installed = CheckForModule("Time::HiRes");
+my $time_hires_installed = CheckForModule("Time::HiResA");
 if($time_hires_installed) { 
     use Time::HiRes qw(gettimeofday);
 }
@@ -280,10 +280,7 @@ my $max_file_name_width = 0;
 if($opt_H{"--prep-n"} || $opt_H{"--prep-p"}) { 
     prepare_only($target_file, $out_dir, $out_root, \%opt_H, $ssualign, $weight, $cm_file, $prep_enabled_options, $target_nseq, \@indi_cm_name_A, \$max_file_name_width, $sum_file, $log_file);
     $total_seconds += SecondsSinceEpoch($time_hires_installed);
-    PrintConclusion($sum_file, $log_file2print, $sum_file2print, $total_seconds, $time_hires_installed, $out_dir);
-
-    PrintStringToFile($log_file, 0, `date`);
-    PrintStringToFile($log_file, 0, `uname -a`);
+    PrintConclusion($sum_file, $log_file, $sum_file2print, $log_file2print, $total_seconds, $time_hires_installed, $out_dir);
 
     # Prep mode success! Exit normally
     exit(0);
@@ -353,8 +350,21 @@ if(! $opt_H{"--no-search"}) {
 ############
 # Conclude #
 ############
-print_statistics(\%opt_H, $search_seconds, $align_seconds, \@indi_cm_name_A, \@target_order_A, \%target_len_H, \%aligned_len_H, \%bestmatch_cm_H, $sum_file);
-PrintConclusion($sum_file, $log_file2print, $sum_file2print, "", $time_hires_installed, $out_dir);
+#print_statistics(\%opt_H, $search_seconds, $align_seconds, \@indi_cm_name_A, \@target_order_A, \%target_len_H, \%aligned_len_H, \%bestmatch_cm_H, $sum_file);
+my($target_nseq2, $target_nres2, $nseq_all_cms, $nres_total_all_cms, $nres_aligned_all_cms);
+my %nseq_cm_H = ();
+my %nres_total_cm_H = ();
+my %nres_aligned_cm_H = ();
+compile_search_and_align_statistics(\@indi_cm_name_A, \@target_order_A, \%target_len_H, \%aligned_len_H, \%bestmatch_cm_H, 
+				    \$target_nseq2, \$target_nres2, \$nseq_all_cms, \$nres_total_all_cms, \$nres_aligned_all_cms,
+				    \%nseq_cm_H, \%nres_total_cm_H, \%nres_aligned_cm_H, $sum_file);
+if($target_nseq2 != $target_nseq) { PrintErrorAndExit(sprintf("ERROR, seqstat call and statistics compilation function disagree on number of target sequences (%d != %d).", $target_nseq, $target_nseq2), $sum_file, 1); }
+if($target_nres2 != $target_nres) { PrintErrorAndExit(sprintf("ERROR, seqstat call and statistics compilation function disagree on number of target residues (%d != %d).", $target_nres, $target_nres2), $sum_file, 1); }
+PrintSearchAndAlignStatistics($search_seconds, $align_seconds, $target_nseq2, $target_nres2, $nseq_all_cms, $nres_total_all_cms, $nres_aligned_all_cms,
+			      \@indi_cm_name_A, \%nseq_cm_H, \%nres_total_cm_H, \%nres_aligned_cm_H, 1, $sum_file);
+
+
+PrintConclusion($sum_file, $log_file, $sum_file2print, $log_file2print, "", $time_hires_installed, $out_dir);
 
 # print 3 different timings: search, alignment, total
 if(! $opt_H{"--no-align"})  { PrintTiming("# CPU time (search):    ", $search_seconds, $time_hires_installed, 1, $sum_file); }
@@ -639,7 +649,7 @@ sub process_cm_file {
 # $weight                   esl-weight command
 # $cm_file:                 the CM file 
 # $prep_enabled_options:    options to pass to children jobs
-# $target_nseq:        number of sequences in $target_file
+# $target_nseq:             number of sequences in $target_file
 # $indi_cm_name_AR:         reference to array with names of individual CMs
 # $max_file_name_width_R:   RETURN; maximum length of a file name
 # $sum_file:                file to print output file notices to
@@ -681,7 +691,7 @@ sub prepare_only {
     }    
 
     my ($shell_script, $shell_script2print, $remainder, $n, $target_subfile_root, $target_subfile, $sub_output);
-    my ($nseq_this_file, $line, $ncm, $ndig, $tmp, $description_width, $dashes1, $dashes2);
+    my ($nseq_this_file, $nseq_total_regurg, $line, $ncm, $ndig_runs, $ndig_seqs, $tmp, $description_width, $dashes1, $dashes2);
     my ($i, $nmerge, $iter, $nstop, $lower, $upper, $merged_root, $merged_name, $fil_merged_name, $merged_lower_name, $merged_upper_name, $cm_name);
 
     $ncm = scalar(@{$indi_cm_name_AR});
@@ -695,7 +705,12 @@ sub prepare_only {
 	$prep_nproc = $opt_HR->{"--prep-p"};
 	$prep_nseq  = int($target_nseq / ($prep_nproc)); 
 	$remainder  = $target_nseq - ($prep_nseq * $prep_nproc);
-	if($remainder > 0) { $prep_nseq++; }
+	if($remainder > 0) { 
+	    $prep_nseq++; 
+	    $prep_nproc = int($target_nseq / ($prep_nseq));
+	    $remainder  = $target_nseq - ($prep_nseq * $prep_nproc);
+	    if($remainder > 0) { $prep_nproc++; }
+	}
     }
     elsif($opt_HR->{"--prep-n"} ne "") { 
 	$prep_nseq  = $opt_HR->{"--prep-n"};
@@ -712,19 +727,23 @@ sub prepare_only {
 	PrintErrorAndExit(sprintf("ERROR, --prep-n %d enabled, but there's only %d sequences in the target file.\nNo need to use --prep-n, you're requesting the target file be split into only 1 partition.", $prep_nseq, $target_nseq), $sum_file, 1);
     }
 
-    $ndig = 1; $tmp = $prep_nproc; while($tmp > 10) { $ndig++; $tmp /= 10.; }
+    $ndig_runs = 1; $tmp = $prep_nproc; while($tmp > 10) { $ndig_runs++; $tmp /= 10.; }
+    $ndig_seqs = 1; $tmp = $prep_nseq;  while($tmp > 10) { $ndig_seqs++; $tmp /= 10.; }
     my $max_file_name_width = length($shell_script2print);
     $target_subfile_root = $target_file . ".0";
     $target_subfile_root =~ s/^.+\///;  # remove path 
-    if($max_file_name_width < (length($target_subfile_root) + $ndig)) { 
-	$max_file_name_width = length($target_subfile_root) + $ndig;
+    if($max_file_name_width < (length($target_subfile_root) + $ndig_runs)) { 
+	$max_file_name_width = length($target_subfile_root) + $ndig_runs;
     }
     if($max_file_name_width < (length("output file name"))) { 
 	$max_file_name_width = length("output file name"); 
     }
     my $max_cm_name_width = MaxLengthScalarInArray($indi_cm_name_AR);
     
-    $description_width = length("shell script that will run ssu-align $ndig times");
+    $description_width = length("shell script that will run ssu-align  times") + $ndig_runs;
+    if($description_width < length("partition  FASTA sequence file ( seqs)") + $ndig_runs + $ndig_seqs) { 
+	$description_width = length("partition  FASTA sequence file ( seqs)") + $ndig_runs + $ndig_seqs;
+    }
     $dashes1 = ""; for($i = 0; $i < $max_file_name_width; $i++) { $dashes1 .= "-"; } 
     $dashes2 = ""; for($i = 0; $i < $description_width; $i++)   { $dashes2 .= "-"; } 
     
@@ -742,31 +761,45 @@ sub prepare_only {
 
     open(SUB, ">". $target_subfile) || FileOpenFailure($target_subfile, $sum_file, $!, "writing");
     open(FULL, $target_file) || FileOpenFailure($target_file, $sum_file, $!, "reading");
+    $nseq_this_file = 0;
+    $nseq_total_regurg = 0;
     while($line = <FULL>) { 
 	if($line =~ m/^>/) { 
-	    if(++$nseq_this_file == $prep_nseq) { 
+	    if($nseq_this_file == $prep_nseq) { 
 		close(SUB); 
-		PrintStringToFile($sum_file, 1, sprintf("  %-*s  partition %*d fasta sequence file\n", $max_file_name_width, $target_subfile_root, $ndig, $n));
+		PrintStringToFile($sum_file, 1, sprintf("  %-*s  partition %*d FASTA sequence file (%*d seqs)\n", $max_file_name_width, $target_subfile_root, $ndig_runs, $n, $ndig_runs, $nseq_this_file));
 		printf SH ("%s%s%s\n", $prep_prefix, "$ssualign -F $prep_enabled_options $target_subfile_root $out_root." . $n, $prep_suffix);
 		$target_subfile_root = $target_file . "." . (++$n);
 		$target_subfile_root =~ s/^.+\///;  # remove path 
 		$target_subfile      = $out_dir . "/" . $target_subfile_root;
 		open(SUB, ">". $target_subfile) || FileOpenFailure($target_subfile, $sum_file, $!, "writing");
-		$nseq_this_file = 0;
+		$nseq_total_regurg += $nseq_this_file;
+		$nseq_this_file = 1;
 	    }
+	    else { $nseq_this_file++; }
 	}
 	print SUB ($line);
     }
     close(FULL);
     close(SUB);
-    PrintStringToFile($sum_file, 1, sprintf("  %-*s  partition %*d fasta sequence file\n", $max_file_name_width, $target_subfile_root, $ndig, $n));
-    printf SH ("%s%s%s\n", $prep_prefix, "$ssualign -F $prep_enabled_options $target_subfile_root $out_root." . $n, $prep_suffix);
-    close(SH); 
+    $nseq_total_regurg += $nseq_this_file;
+    if($nseq_this_file == 0) { # we opened a new sequence file for output, but didn't output anything to it
+	UnlinkFile($target_subfile, $log_file); 
+	$n--;
+    }
+    else { 
+	PrintStringToFile($sum_file, 1, sprintf("  %-*s  partition %*d FASTA sequence file (%*d seqs)\n", $max_file_name_width, $target_subfile_root, $ndig_runs, $n, $ndig_runs, $nseq_this_file));
+	printf SH ("%s%s%s\n", $prep_prefix, "$ssualign -F $prep_enabled_options $target_subfile_root $out_root." . $n, $prep_suffix);
+	close(SH); 
+    }
+    if($nseq_total_regurg != $target_nseq) { 
+	PrintErrorAndExit(sprintf("ERROR, problem partitioning target FASTA file $target_file into $prep_nproc files, %d of the %d sequences were copied.", $nseq_total_regurg, $target_nseq), $sum_file, 1);
+    }
     if($n != $prep_nproc) { 
-	PrintErrorAndExit("ERROR, problem partitioning target fasta file $target_file into $prep_nproc files, only $n files were successfully created.\n", $sum_file, 1);
+	PrintErrorAndExit("ERROR, problem partitioning target FASTA file $target_file into $prep_nproc files, $n files were successfully created.", $sum_file, 1);
     }    
     PrintStringToFile($sum_file, 1, sprintf("  %-*s  shell script that will run ssu-align %d times\n", $max_file_name_width, $shell_script2print, $prep_nproc));
-    $shell_script =~ s/$out_dir\///;
+    PrintStringToFile($sum_file, 1, sprintf("#\n# To run the master shell script, execute the following 2 commands:\n#\t\"cd $out_dir\"\n#\t\"sh $shell_script2print\"\n"));
 
     $$max_file_name_width_R = $max_file_name_width;
     return;
@@ -1393,54 +1426,64 @@ sub seqstat_seq_file_per_seq {
 
 
 #####################################################################
-# Subroutine: print_statistics()
+# Subroutine: compile_search_and_align_statistics()
 # Incept:     EPN, Wed Nov 11 16:49:25 2009
 # 
-# Purpose:    Print statistics on the search and alignment we just 
-#             performed to the summary file and stdout.
+# Purpose:    Compile statistics on the search and alignment just
+#             performed. A subsequent call to PrintSearchAndAlignStatistics()
+#             will print these out. 
 #
 # Arguments: 
-# $opt_HR:           the command-line options hash
-# $search_seconds:   seconds required for search
-# $align_seconds:    seconds required for alignment
-# $indi_cm_name_AR:  reference to array with CM names
-# $target_order_AR:  all the target sequence files
-# $target_len_HR:    full lengths of the target sequences
-# $aligned_len_HR:   lengths of target subsequences that were aligned
-# $bestmatch_cm_HR:  the best-matching CM for each target sequence
-# $sum_file:         summary file 
+# $indi_cm_name_AR:        reference to array with CM names, already filled
+# $target_order_AR:        all the target sequence files, already filled
+# $target_len_HR:          full lengths of the target sequences, already filled
+# $aligned_len_HR:         lengths of target subsequences that were aligned, already filled
+# $bestmatch_cm_HR:        the best-matching CM for each target sequence, already filled
+# $target_nseq_R:          RETURN: reference to number of sequences in input target file, filled here
+# $target_nres_R:          RETURN: number of residues in input target file, filled here
+# $nseq_all_cms_R:         RETURN: number of sequences that were best match to any CM, filled here
+# $nres_total_all_cms_R:   RETURN: summed length of all target seqs that were best 
+#                          match to any CM, filled here
+# $nres_aligned_all_cms_R: RETURN: summed length of extracted and aligned target seqs 
+#                          that were best match to any CM, filled here
+# $nseq_cm_HR:             RETURN: number of sequences that were best match to each CM, filled here
+# $nres_total_cm_HR:       RETURN: summed length of target seqs that were best match to each CM, filled here
+# $nres_aligned_cm_HR:     RETURN: summed length of extracted and aligned target seqs that 
+#                          were best match to each CM, filled here
+# $sum_file:               summary file 
 # 
-# Returns:    Nothing.
+# Returns:    Fills "RETURN" arguments listed above. Returns void.
 #             
-# 
 ####################################################################
-sub print_statistics { 
-    my $narg_expected = 9;
+sub compile_search_and_align_statistics { 
+    my $narg_expected = 14;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_statistics() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($opt_HR, $search_seconds, $align_seconds, $indi_cm_name_AR, $target_order_AR, $target_len_HR, $aligned_len_HR, $bestmatch_cm_HR, $sum_file) = @_;
+    my ($indi_cm_name_AR, $target_order_AR, $target_len_HR, $aligned_len_HR, $bestmatch_cm_HR, 
+	$target_nseq_R, $target_nres_R, $nseq_all_cms_R, $nres_total_all_cms_R, $nres_aligned_all_cms_R,
+	$nseq_cm_HR, $nres_total_cm_HR, $nres_aligned_cm_HR, $sum_file) = @_;
 
-    my ($cm_name, $target, $i);
+    my ($cm_name, $target);
     my $target_nseq = scalar(@{$target_order_AR});
     my $target_nres = SumHashElements ($target_len_HR);
 
-    my %nres_total_cm_H = ();
-    my %nres_aligned_cm_H = ();
-    my %nseq_cm_H = ();
+    %{$nseq_cm_HR} = ();
+    %{$nres_total_cm_HR} = ();
+    %{$nres_aligned_cm_HR} = ();
 
     # initialize
+    my $nseq_all_cms = 0;
     my $nres_total_all_cms = 0;
     my $nres_aligned_all_cms = 0;
-    my $nseq_all_cms = 0;
     foreach $cm_name (@{$indi_cm_name_AR}) { 
+	$nseq_cm_H{$cm_name} = 0;
 	$nres_total_cm_H{$cm_name} = 0;
 	$nres_aligned_cm_H{$cm_name} = 0;
-	$nseq_cm_H{$cm_name} = 0;
     }
 
     # compile stats
     foreach $target (keys %{$bestmatch_cm_HR}) { 
-	if(! exists $target_len_HR->{$target})  { PrintErrorAndExit("ERROR, printing final stats, can't find $target in hash created after seqstat call.", $sum_file, 1); }
-	if(! exists $aligned_len_HR->{$target}) { PrintErrorAndExit("ERROR, printing final stats, can't find $target in hash created during subsequence extraction.", $sum_file, 1); }
+	if(! exists $target_len_HR->{$target})  { PrintErrorAndExit("ERROR, compiling final stats, can't find $target in hash created after seqstat call.", $sum_file, 1); }
+	if(! exists $aligned_len_HR->{$target}) { PrintErrorAndExit("ERROR, compiling final stats, can't find $target in hash created during subsequence extraction.", $sum_file, 1); }
 
 	$cm_name = $bestmatch_cm_HR->{$target};
 	$nseq_cm_H{$cm_name}++;
@@ -1451,85 +1494,12 @@ sub print_statistics {
 	$nres_aligned_all_cms        += $aligned_len_HR->{$target};
     }
 
-    # output stats
-    PrintStringToFile($sum_file, 1, sprintf("#\n"));
-    PrintStringToFile($sum_file, 1, sprintf("#\n"));
-    PrintStringToFile($sum_file, 1, sprintf("# Summary statistics:\n"));
-    PrintStringToFile($sum_file, 1, sprintf("#\n"));
-
-    my $cm_width = MaxLengthScalarInArray($indi_cm_name_AR);
-    if($cm_width < length("*all models*")) { $cm_width = length("*all models*"); }
-    my $dashes = ""; for($i = 0; $i < $cm_width; $i++) { $dashes .= "-"; } 
-    PrintStringToFile($sum_file, 1, sprintf("# %-*s  %7s  %8s  %13s  %8s\n", $cm_width, "model or",   "number",  "fraction", "average",        "average"));
-    PrintStringToFile($sum_file, 1, sprintf("# %-*s  %7s  %8s  %13s  %8s\n", $cm_width, "category",   "of seqs", "of total", "length",         "coverage"));
-    PrintStringToFile($sum_file, 1, sprintf("# %-*s  %7s  %8s  %13s  %8s\n", $cm_width, $dashes,      "-------", "--------", "-------------",  "--------"));
-
-    PrintStringToFile($sum_file, 1, sprintf("  %-*s  %7d  %8.4f  %13.2f  %8s\n", 
-					    $cm_width, "*input*", 
-					    $target_nseq,
-					    1.0, 
-					    $target_nres / $target_nseq,
-					    "-"));
-    foreach $cm_name (@{$indi_cm_name_AR}) { 
-	if($nseq_cm_H{$cm_name} == 0) { 
-	    PrintStringToFile($sum_file, 1, sprintf("  %-*s  %7d  %8.4f  %13s  %8s\n", 
-						    $cm_width, $cm_name, 
-						    $nseq_cm_H{$cm_name},
-						    $nseq_cm_H{$cm_name} / $target_nseq,
-						    "-", "-"));
-	}
-	else { 
-	    PrintStringToFile($sum_file, 1, sprintf("  %-*s  %7d  %8.4f  %13.2f  %8.4f\n", 
-						    $cm_width, $cm_name, 
-						    $nseq_cm_H{$cm_name},
-						    $nseq_cm_H{$cm_name} / $target_nseq,
-						    $nres_aligned_cm_H{$cm_name} / $nseq_cm_H{$cm_name}, 
-						    $nres_aligned_cm_H{$cm_name} / $nres_total_cm_H{$cm_name}));
-	}
-    }
-    if($nseq_all_cms == 0) { PrintErrorAndExit("ERROR, no seqs matched to any CM (during stat printing). Program should've exited earlier. Error in code.", $sum_file, 1); }
-    PrintStringToFile($sum_file, 1, sprintf("  %-*s  %7d  %8.4f  %13.2f  %8.4f\n", 
-					    $cm_width, "*all models*", 
-					    $nseq_all_cms,
-					    $nseq_all_cms / $target_nseq,
-					    $nres_aligned_all_cms / $nseq_all_cms, 
-					    $nres_aligned_all_cms / $nres_total_all_cms));
-    if($target_nseq > $nseq_all_cms) { 
-	PrintStringToFile($sum_file, 1, sprintf("  %-*s  %7d  %8.4f  %13.2f  %8s\n", 
-						$cm_width, "*no models*", 
-						$target_nseq - $nseq_all_cms,
-						($target_nseq - $nseq_all_cms) / $target_nseq,
-						($target_nres - $nres_total_all_cms) / ($target_nseq - $nseq_all_cms),
-						"-"));
-    }
-    else { 
-	PrintStringToFile($sum_file, 1, sprintf("  %-*s  %7d  %8.4f  %13s  %8s\n", 
-						$cm_width, "*no models*", 
-						$target_nseq - $nseq_all_cms,
-						0., "-", "-"));
-    }
-
-    if($search_seconds eq "0") { $search_seconds = 1; }
-    if($align_seconds eq "0") { $align_seconds = 1; }
-    PrintStringToFile($sum_file, 1, sprintf("#\n"));
-    PrintStringToFile($sum_file, 1, sprintf("#\n"));
-    PrintStringToFile($sum_file, 1, sprintf("# Speed statistics:\n"));
-    PrintStringToFile($sum_file, 1, sprintf("#\n"));
-    PrintStringToFile($sum_file, 1, sprintf("# %-9s  %8s  %7s  %13s  %13s  %8s\n","stage",     "num seqs", "seq/sec", "seq/sec/model", "nucleotides",   "nt/sec"));
-    PrintStringToFile($sum_file, 1, sprintf("# %9s  %8s  %7s  %13s  %13s  %8s\n", "---------", "--------", "-------", "-------------", "-------------", "--------"));
-    PrintStringToFile($sum_file, 1, sprintf("  %-9s  %8d  %7.3f  %13.3f  %13d  %8.1f\n", 
-					    "search", $target_nseq, 
-					    ($target_nseq / $search_seconds), 
-					    ($target_nseq / ($search_seconds * scalar(@{$indi_cm_name_AR}))), 
-					    $target_nres, 
-					    $target_nres / $search_seconds));
-    PrintStringToFile($sum_file, 1, sprintf("  %-9s  %8d  %7.3f  %13.3f  %13d  %8.1f\n", 
-					    "alignment", $nseq_all_cms, 
-					    ($nseq_all_cms / $align_seconds), 
-					    ($nseq_all_cms / $align_seconds), 
-					    $nres_aligned_all_cms, 
-					    $nres_aligned_all_cms / $align_seconds));
-    PrintStringToFile($sum_file, 1, sprintf("#\n"));
+    $$target_nseq_R          = $target_nseq;
+    $$target_nres_R          = $target_nres;
+    $$nseq_all_cms_R         = $nseq_all_cms;
+    $$nres_total_all_cms_R   = $nres_total_all_cms;
+    $$nres_aligned_all_cms_R = $nres_aligned_all_cms;
 
     return;
 }
+
