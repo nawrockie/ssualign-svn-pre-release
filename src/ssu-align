@@ -66,7 +66,7 @@ my $options_usage  = "where general options are:\n";
 #                  12345678901234567890123456789012345678901234567890123456789012345678901234567890
 $options_usage .= "  -h     : show brief help on version and usage\n";
 $options_usage .= "  -1     : output alignments in non-interleaved, 1 line/seq format\n";
-$options_usage .= "  -m <s> : use CM file <f> instead of the default CM file\n";
+$options_usage .= "  -m <f> : use CM file <f> instead of the default CM file\n";
 $options_usage .= "  -b <f> : set minimum bit score of a surviving subsequence as <f> (default: 100)\n";
 $options_usage .= "  -l <n> : set minimum length    of a surviving subsequence as <n> (default: 1)\n";
 $options_usage .= "  -F     : force; if <output dir> already exists - empty it and fill it\n" ,
@@ -692,7 +692,7 @@ sub prepare_only {
 
     my ($shell_script, $shell_script2print, $remainder, $n, $target_subfile_root, $target_subfile, $sub_output);
     my ($nseq_this_file, $nseq_total_regurg, $line, $ncm, $ndig_runs, $ndig_seqs, $tmp, $description_width, $dashes1, $dashes2);
-    my ($i, $nmerge, $iter, $nstop, $lower, $upper, $merged_root, $merged_name, $fil_merged_name, $merged_lower_name, $merged_upper_name, $cm_name);
+    my ($i, $nmerge, $iter, $nstop, $lower, $upper, $merged_root, $merged_name, $fil_merged_name, $merged_lower_name, $merged_upper_name, $cm_name, $tmp2print);
 
     $ncm = scalar(@{$indi_cm_name_AR});
 
@@ -720,12 +720,14 @@ sub prepare_only {
     }
     else { PrintErrorAndExit("ERROR, in prepare_only but neither --prep-p nor --prep-n enabled on the command-line. This shouldn't happen.", $sum_file, 1); }
 
-    if(($opt_HR->{"--prep-p"} ne "") && ($prep_nproc > $target_nseq)) { 
-	PrintErrorAndExit(sprintf("ERROR, --prep-p %d enabled, but there's only %d sequences in the target file.", $prep_nproc, $target_nseq), $sum_file, 1);
-    }
-    if(($opt_HR->{"--prep-n"} ne "") && ($prep_nproc == 1)) {
-	PrintErrorAndExit(sprintf("ERROR, --prep-n %d enabled, but there's only %d sequences in the target file.\nNo need to use --prep-n, you're requesting the target file be split into only 1 partition.", $prep_nseq, $target_nseq), $sum_file, 1);
-    }
+    # Block that checks if --prep-n and --prep-p unnecessarily used b/c they result in only 1 partition.
+    # I decided it was okay to let the user do this.
+    #if(($opt_HR->{"--prep-p"} ne "") && ($prep_nproc > $target_nseq)) { 
+    #   PrintErrorAndExit(sprintf("ERROR, --prep-p %d enabled, but there's only %d sequences in the target file.", $prep_nproc, $target_nseq), $sum_file, 1);
+    #}
+    #if(($opt_HR->{"--prep-n"} ne "") && ($prep_nproc == 1)) {
+    #	PrintErrorAndExit(sprintf("ERROR, --prep-n %d enabled, but there's only %d sequences in the target file.\nNo need to use --prep-n, you're requesting the target file be split into only 1 partition.", $prep_nseq, $target_nseq), $sum_file, 1);
+    #}
 
     $ndig_runs = 1; $tmp = $prep_nproc; while($tmp > 10) { $ndig_runs++; $tmp /= 10.; }
     $ndig_seqs = 1; $tmp = $prep_nseq;  while($tmp > 10) { $ndig_seqs++; $tmp /= 10.; }
@@ -749,6 +751,15 @@ sub prepare_only {
     
     PrintStringToFile($sum_file, 1, sprintf("#\n# Prep mode: Splitting up ssu-align job into %d smaller jobs.\n", $prep_nproc));
     PrintStringToFile($sum_file, 1, sprintf("#\n"));
+    if(($opt_HR->{"--prep-p"} ne "") && ($prep_nproc < ($opt_HR->{"--prep-p"}-1))) { 
+	if($prep_nproc != $target_nseq) { PrintErrorAndExit("ERROR, problem partitioning target FASTA file, coding unknown error in sequence file splitting logic. (Try a different number of processors with --prep-p.)", $sum_file, 1); }
+	PrintStringToFile($sum_file, 1, sprintf("# Note: --prep-p " . $opt_HR->{"--prep-p"} . " was specified, but there are only $target_nseq sequences in the\n\# input file. ssu-align does not split up individual input sequences.\n"));
+	PrintStringToFile($sum_file, 1, sprintf("#\n"));
+    }
+    if(($opt_HR->{"--prep-n"} ne "") && (($prep_nproc == 1) && ($target_nseq < $prep_nseq))) { 
+	PrintStringToFile($sum_file, 1, sprintf("# Note: --prep-n " . $opt_HR->{"--prep-n"} . " was specified, but there are only $target_nseq sequences in the\n\# input file. ssu-align does not split up individual input sequences.\n"));
+	PrintStringToFile($sum_file, 1, sprintf("#\n"));
+    }
     PrintStringToFile($sum_file, 1, sprintf("# %-*s  %-*s\n", $max_file_name_width, "output file name", $description_width, "description"));
     PrintStringToFile($sum_file, 1, sprintf("# %-*s  %-*s\n", $max_file_name_width, $dashes1, $description_width, $dashes2));
 
@@ -767,7 +778,9 @@ sub prepare_only {
 	if($line =~ m/^>/) { 
 	    if($nseq_this_file == $prep_nseq) { 
 		close(SUB); 
-		PrintStringToFile($sum_file, 1, sprintf("  %-*s  partition %*d FASTA sequence file (%*d seqs)\n", $max_file_name_width, $target_subfile_root, $ndig_runs, $n, $ndig_runs, $nseq_this_file));
+		if($nseq_this_file == 1) { $tmp2print = "seq"; } 
+		else                     { $tmp2print = "seqs"; }
+		PrintStringToFile($sum_file, 1, sprintf("  %-*s  partition %*d FASTA sequence file (%*d $tmp2print)\n", $max_file_name_width, $target_subfile_root, $ndig_runs, $n, $ndig_seqs, $nseq_this_file));
 		printf SH ("%s%s%s\n", $prep_prefix, "$ssualign -F $prep_enabled_options $target_subfile_root $out_root." . $n, $prep_suffix);
 		$target_subfile_root = $target_file . "." . (++$n);
 		$target_subfile_root =~ s/^.+\///;  # remove path 
@@ -788,7 +801,9 @@ sub prepare_only {
 	$n--;
     }
     else { 
-	PrintStringToFile($sum_file, 1, sprintf("  %-*s  partition %*d FASTA sequence file (%*d seqs)\n", $max_file_name_width, $target_subfile_root, $ndig_runs, $n, $ndig_runs, $nseq_this_file));
+	if($nseq_this_file == 1) { $tmp2print = "seq"; } 
+	else                     { $tmp2print = "seqs"; }
+	PrintStringToFile($sum_file, 1, sprintf("  %-*s  partition %*d FASTA sequence file (%*d $tmp2print)\n", $max_file_name_width, $target_subfile_root, $ndig_runs, $n, $ndig_seqs, $nseq_this_file));
 	printf SH ("%s%s%s\n", $prep_prefix, "$ssualign -F $prep_enabled_options $target_subfile_root $out_root." . $n, $prep_suffix);
 	close(SH); 
     }
@@ -799,7 +814,8 @@ sub prepare_only {
 	PrintErrorAndExit("ERROR, problem partitioning target FASTA file $target_file into $prep_nproc files, $n files were successfully created.", $sum_file, 1);
     }    
     PrintStringToFile($sum_file, 1, sprintf("  %-*s  shell script that will run ssu-align %d times\n", $max_file_name_width, $shell_script2print, $prep_nproc));
-    PrintStringToFile($sum_file, 1, sprintf("#\n# To run the master shell script, execute the following 2 commands:\n#\t\"cd $out_dir\"\n#\t\"sh $shell_script2print\"\n"));
+    PrintStringToFile($sum_file, 1, sprintf("#\n# To perform the alignments, execute the following 2 commands:\n#\t\"cd $out_dir\"\n#\t\"sh $shell_script2print\"\n"));
+    PrintStringToFile($sum_file, 1, sprintf("#\n# When all runs are complete, move into *this directory* and do:\n#\t\"ssu-merge $out_dir\"\n"));
 
     $$max_file_name_width_R = $max_file_name_width;
     return;
