@@ -64,19 +64,21 @@ my $usage          = "Usage: ssu-align [-options] <sequence file> <output dir to
 my $options_usage  = "where general options are:\n";
 #                           1         2         3         4         5         6         7         8
 #                  12345678901234567890123456789012345678901234567890123456789012345678901234567890
-$options_usage .= "  -h     : show brief help on version and usage\n";
-$options_usage .= "  -1     : output alignments in non-interleaved, 1 line/seq format\n";
-$options_usage .= "  -m <f> : use CM file <f> instead of the default CM file\n";
-$options_usage .= "  -b <f> : set minimum bit score of a surviving subsequence as <f> (default: 100)\n";
-$options_usage .= "  -l <n> : set minimum length    of a surviving subsequence as <n> (default: 1)\n";
-$options_usage .= "  -F     : force; if <output dir> already exists - empty it and fill it\n" ,
-$options_usage .= "  --FF   : really force; remove <output dir> and all its subdirectories\n" ,
-$options_usage .= "  --keep : keep intermediate files which are normally removed\n";
+$options_usage .= "  -h        : show brief help on version and usage\n";
+$options_usage .= "  -1        : output alignments in non-interleaved, 1 line/seq format\n";
+$options_usage .= "  -m <f>    : use CM file <f> instead of the default CM file\n";
+$options_usage .= "  -b <f>    : set minimum bit score of a surviving subsequence as <f> (default: 100)\n";
+$options_usage .= "  -l <n>    : set minimum length    of a surviving subsequence as <n> (default: 1)\n";
+$options_usage .= "  -F        : force; if <output dir> already exists - empty it and fill it\n";
+$options_usage .= "  --FF      : really force; remove <output dir> and all its subdirectories\n";
+$options_usage .= "  --keep    : keep intermediate files which are normally removed\n";
+$options_usage .= "  --only <s>: only search for and align to CM named <s> in CM file\n"; 
+$options_usage .= "              (default CM file includes 'archaea', 'bacteria', 'eukarya')\n";
 
 $options_usage .= "\noptions for running ssu-align in 'preparation' mode to split up a large job:\n";
 $options_usage .= "  --prep-n <n>  : split target seq file into multiple files with <n> seqs each\n";
 $options_usage .= "  --prep-p <n>  : split target seq file into <n> files with equal number of seqs\n";
-$options_usage .= "  --prep-in <f> : in file <f>; lines 1/2 specify prefix/suffix for ssu-align runs\n";
+$options_usage .= "  --prep-in <f> : in file <f>; lines 1,2 specify prefix,suffix for ssu-align runs\n";
 
 $options_usage .= "\noptions for skipping either the 1st (search) stage or 2nd (alignment) stage\n";
 $options_usage .= "  --no-align  : only search target sequence file for hits, skip alignment step\n";
@@ -112,6 +114,7 @@ $opt_takes_arg_H{"-l"}          = 1;  push(@opt_order_A, "-l");           $opt_i
 $opt_takes_arg_H{"-F"}          = 0;  push(@opt_order_A, "-F");           $opt_is_prep_H{"-F"}          = 0;
 $opt_takes_arg_H{"--FF"}        = 0;  push(@opt_order_A, "--FF");         $opt_is_prep_H{"--FF"}        = 0;
 $opt_takes_arg_H{"--keep"}      = 0;  push(@opt_order_A, "--keep");       $opt_is_prep_H{"--keep"}      = 1;
+$opt_takes_arg_H{"--only"}      = 1;  push(@opt_order_A, "--only");       $opt_is_prep_H{"--only"}      = 1;
 $opt_takes_arg_H{"--prep-n"}    = 1;  push(@opt_order_A, "--prep-n");     $opt_is_prep_H{"--prep-n"}   = 0;
 $opt_takes_arg_H{"--prep-p"}    = 1;  push(@opt_order_A, "--prep-p");     $opt_is_prep_H{"--prep-p"}   = 0;
 $opt_takes_arg_H{"--prep-in"}   = 1;  push(@opt_order_A, "--prep-in");    $opt_is_prep_H{"--prep-in"}  = 0;
@@ -148,6 +151,8 @@ my $opt_return = GetOptions
      'l=n'       => \$opt_H{"-l"},
      'F'         => \$opt_H{"-F"},
      'FF'        => \$opt_H{"--FF"},
+     'keep'      => \$opt_H{"--keep"},
+     'only=s'    => \$opt_H{"--only"},
      'prep-n=n'  => \$opt_H{"--prep-n"},
      'prep-p=n'  => \$opt_H{"--prep-p"},
      'prep-in=s' => \$opt_H{"--prep-in"},
@@ -505,6 +510,10 @@ sub create_output_dir {
     $has_ssualign_subdir = 0;
     $ran_command = 0;
     # create output directory
+    if(-f $out_dir) { 
+	printf STDERR ("\nERROR, $out_dir was specified as the output directory, but a file with the same name exists. Delete it and rerun.\n");
+	exit(1);
+    }
     if(-d $out_dir) { 
 	if((! $opt_HR->{"-F"}) && (! $opt_HR->{"--FF"})) { 
 	    printf STDERR ("\nERROR, output directory $out_dir already exists. Delete it or use -F to overwrite it.\n");
@@ -593,7 +602,9 @@ sub process_cm_file {
     
     my($line, $cm_name);
     my %cm_name_exists_H = ();
-    my $found_only_aln_name = 0;
+    my $found_aln_one_name = 0;
+    my $found_only_name = 0;
+    my $cms_read = "";
 
     open(CM, $cm_file) || FileOpenFailure($cm_file, $sum_file, $!, "reading");
     while($line = <CM>) {
@@ -601,22 +612,33 @@ sub process_cm_file {
 	#NAME     archaea
 	if($line =~ /^NAME\s+(\S+)/) { 
 	    $cm_name = $1;
-	    push(@{$indi_cm_name_AR}, $cm_name);
-	    if(exists($cm_name_exists_H{$cm_name})) { 
-		PrintErrorAndExit("ERROR, two CMs in CM file $cm_file have the name $cm_name. Each CM must have a unique name.", $sum_file, 1); 
-	    }
-	    $cm_name_exists_H{$cm_name} = 1;
-	    if($cm_name eq $df_none_name) { 
-		PrintErrorAndExit("ERROR, you can't use a CM with the name $df_none_name, that's reserved for indicating which sequences are not the best-match to any models.", $sum_file, 1); 
-	    }
-	    if(($opt_HR->{"--aln-one"} ne "") && ($cm_name eq $opt_HR->{"--aln-one"})) { 
-		$found_only_aln_name = 1; 
+	    $cms_read .= "\t$cm_name\n";
+	    if(($opt_HR->{"--only"} eq "") || # --only not enabled
+	       ($opt_HR->{"--only"} ne "") && ($cm_name eq $opt_HR->{"--only"})) { #--only enabled and we have a match!
+		push(@{$indi_cm_name_AR}, $cm_name);
+		if(exists($cm_name_exists_H{$cm_name})) { 
+		    PrintErrorAndExit("ERROR, two CMs in CM file $cm_file have the name $cm_name. Each CM must have a unique name.", $sum_file, 1); 
+		}
+		$cm_name_exists_H{$cm_name} = 1;
+		
+		if($cm_name eq $df_none_name) { 
+		    PrintErrorAndExit("ERROR, you can't use a CM with the name $df_none_name, that's reserved for indicating which sequences are not the best-match to any models.", $sum_file, 1); 
+		}
+		if(($opt_HR->{"--aln-one"} ne "") && ($cm_name eq $opt_HR->{"--aln-one"})) { 
+		    $found_aln_one_name = 1; 
+		}
+		if(($opt_HR->{"--only"} ne "") && ($cm_name eq $opt_HR->{"--only"})) { 
+		    $found_only_name = 1; 
+		}
 	    }
 	}
     }
     close(CM);
-    if(($opt_HR->{"--aln-one"} ne "") && (! $found_only_aln_name)) { 
-	PrintErrorAndExit(sprintf("\nERROR, --aln-one %s enabled, but no CM named %s exists in $cm_file.\n", $opt_HR->{"--aln-one"}, $opt_HR->{"--aln-one"}), $sum_file, 1);
+    if(($opt_HR->{"--aln-one"} ne "") && (! $found_aln_one_name)) { 
+	PrintErrorAndExit(sprintf("\nERROR, --aln-one %s enabled, but no CM named %s exists in $cm_file.\nCMs that do exist are:\n$cms_read\n", $opt_HR->{"--aln-one"}, $opt_HR->{"--aln-one"}), $sum_file, 1);
+    }
+    if(($opt_HR->{"--only"} ne "") && (! $found_only_name)) { 
+	PrintErrorAndExit(sprintf("\nERROR, --only %s enabled, but no CM named %s exists in $cm_file.\nCMs that do exist are:\n$cms_read\n", $opt_HR->{"--only"}, $opt_HR->{"--only"}), $sum_file, 1);
     }
     return;
 }									 
@@ -835,8 +857,8 @@ sub prepare_only {
 # $cmsearch:               the cmsearch executable
 # $cm_file:                CM file
 # $target_file:            the target sequence file
-# $out_dir_and_root:           output file root, for naming output files
-# $target_nseq:       number of sequences in target file
+# $out_dir_and_root:       output file root, for naming output files
+# $target_nseq:            number of sequences in target file
 # $indi_cm_name_AR:        ref to array with individual CM names
 # $tab_file_R:             RETURN; name of tab file to return
 # $max_file_name_width_R:  RETURN; num chars in max length file name
@@ -857,6 +879,11 @@ sub search_sequences_with_each_model {
     my($opt_HR, $cmsearch, $cm_file, $target_file, $out_dir_and_root, $target_nseq, $indi_cm_name_AR, $tab_file_R, $max_file_name_width_R, $description_width_R, $sum_file, $log_file) = @_;
 
     my ($i, $cmsearch_opts, $tab_file, $tab_file2print, $alg_flag, $max_file_name_width, $dashes1, $dashes2, $tmp, $command, $command_worked, $cmsearch_outfile);
+
+    # contract check
+    if($opt_HR->{"--only"} ne "") { 
+	if(scalar(@{$indi_cm_name_AR}) != 1) { PrintErrorAndExit("ERROR, --only enabled, but more than 1 CMs read from CM file. This shouldn't happen.", $sum_file, 1); }
+    }
 
     $tab_file          = $out_dir_and_root . ".tab";
     $tab_file2print    = $out_root         . ".tab";
@@ -883,7 +910,8 @@ sub search_sequences_with_each_model {
 
     $cmsearch_opts = " --hmm-cW 1.5 --no-null3 --noalign ";
     my $cmsearch_T = $df_cmsearch_T;
-    if($opt_HR->{"--toponly"}) { $cmsearch_opts .= " --toponly"; }
+    if($opt_HR->{"--toponly"})    { $cmsearch_opts .= " --toponly"; }
+    if($opt_HR->{"--only"} ne "") { $cmsearch_opts .= " --cm-name " . $opt_HR->{"--only"}; }
 
     $command = "$cmsearch $cmsearch_opts -T $cmsearch_T --tab $tab_file $alg_flag $cm_file $target_file > $cmsearch_outfile";
     RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
@@ -907,9 +935,10 @@ sub search_sequences_with_each_model {
 #             scoring hit to each sequence s and classify s as 
 #             belonging to c. Then when we do alignment, for each 
 #             CM we align all of that CM's seqs to it. Each sequence
-#             is classified as belonging to only 1 CM. If only
-#             1 CM exists in the CM file, then all sequences
-#             will automatically be classified to it.
+#             is classified as belonging to only 1 CM. If we
+#             only searched with 1 CM, then all sequences
+#             will automatically be classified to it if a hit
+#             with score above threshold exists to that CM.
 #             
 # Arguments: 
 # $opt_HR:                         reference to the hash of command-line options
@@ -1183,6 +1212,7 @@ sub align_subseqs {
     for($m = 1; $m <= $ncm; $m++) { 
 	$cm_name = $indi_cm_name_AR->[($m-1)];
 	if(($opt_HR->{"--aln-one"} ne "") && ($cm_name ne $opt_HR->{"--aln-one"})) { next; }
+	if(($opt_HR->{"--only"}    ne "") && ($cm_name ne $opt_HR->{"--only"}))    { next; }
 
 	if(exists($new_target_file_per_cm_name_HR->{$cm_name})) { # >= 1 sequences in this set were classified as the current CM
 	    $hits_file      = $new_target_file_per_cm_name_HR->{$cm_name};

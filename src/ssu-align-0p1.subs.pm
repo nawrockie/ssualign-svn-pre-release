@@ -795,12 +795,12 @@ sub PrintSearchAndAlignStatistics {
     PrintStringToFile($sum_file, $print_to_stdout, sprintf("# %-*s  %7s  %8s  %13s  %8s\n", $cm_width, "category",   "of seqs", "of total", "length",         "coverage"));
     PrintStringToFile($sum_file, $print_to_stdout, sprintf("# %-*s  %7s  %8s  %13s  %8s\n", $cm_width, $dashes,      "-------", "--------", "-------------",  "--------"));
     
-    PrintStringToFile($sum_file, $print_to_stdout, sprintf("  %-*s  %7d  %8.4f  %13.2f  %8s\n", 
+    PrintStringToFile($sum_file, $print_to_stdout, sprintf("  %-*s  %7d  %8.4f  %13.2f  %8.4f\n", 
 							   $cm_width, "*input*", 
 							   $target_nseq,
 							   1.0, 
 							   $target_nres / $target_nseq,
-							   "-"));
+							   1.0));
     foreach $cm_name (@{$indi_cm_name_AR}) { 
 	if($nseq_cm_HR->{$cm_name} == 0) { 
 	    PrintStringToFile($sum_file, $print_to_stdout, sprintf("  %-*s  %7d  %8.4f  %13s  %8s\n", 
