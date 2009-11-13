@@ -24,7 +24,7 @@
 # TryPs2Pdf():                     attempt to run 'ps2pdf' to convert ps to pdf file.
 # SwapOrAppendFileSuffix():        given a file name, return a new name with a suffix swapped.
 # RemoveDirPath():                 remove the leading directory path of a filename
-# CheckForModule():                check if a particular module is installed on the system
+# UseModuleIfItExists():           use 'use()' to use a module, if it exists on the system
 # SecondsSinceEpoch():             return number of seconds since the epoch 
 # FileOpenFailure():               called if an open() call fails, print error msg and exit
 # PrintErrorAndExit():             print an error message and call exit to kill the program
@@ -629,24 +629,25 @@ sub RemoveDirPath() {
 
 
 #################################################################
-# Subroutine : CheckForModule()
+# Subroutine : UseModuleIfItExists()
 # Incept:      EPN, Tue Nov 10 17:36:16 2009
 #
-# Purpose:     Check to see if we have a given module installed
-#              on the system.
+# Purpose:     If a module exists on the system, use it (with use())
+#              and return '1', else return '0'.
 #
 # Arguments: 
-#   $module: name of module to check for (ex: "Time::HiRes")
+#   $module: name of module to check for (ex: "Time::HiRes qw(gettimeofday)")
 # 
-# Returns:     '1' if module is installed, '0' if not.
+# Returns:     '1' if module is installed and used, '0' if not.
 #
 ################################################################# 
-sub CheckForModule() { 
+sub UseModuleIfItExists() { 
     my $narg_expected = 1;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, CheckForModule() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, UseModuleIfItExists() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my $module = $_[0];
 
-    eval "require $module";
+    eval "use $module";
+
     if ($@) { return 0; }
     else    { return 1; }
 }
@@ -886,7 +887,7 @@ sub NumberOfDigits
 {
     my $narg_expected = 1;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, NumberOfDigits() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($arr_R) = $_[0];
+    my ($num) = $_[0];
 
     my $ndig = 1; 
     while($num > 10) { $ndig++; $num /= 10.; }

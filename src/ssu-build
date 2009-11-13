@@ -39,10 +39,7 @@ if(! (-e $subs_file)) {
 require $subs_file;
 
 # Start timing, this is done different depending on if Time::HiRes is installed or not
-my $time_hires_installed = CheckForModule("Time::HiRes");
-if($time_hires_installed) { 
-    use Time::HiRes qw(gettimeofday);
-}
+my $time_hires_installed = UseModuleIfItExists("Time::HiRes qw(gettimeofday)");
 my $total_seconds = -1 * SecondsSinceEpoch($time_hires_installed);
 
 my $script_desc    = "build SSU rRNA covariance models";
