@@ -111,7 +111,7 @@ sub PrintBanner {
 #    $sum_file2print:         name of summary file
 #    $log_file2print:         name of log file
 #    $total_time:             total number of seconds, "" to not print timing
-#    $time_hires_installed: '1' if Time:HiRes is installed (we'll print milliseconds)
+#    $time_hires_installed:   '1' if Time:HiRes is installed (we'll print milliseconds)
 #    $out_dir:                output directory where output files were put,
 #                             "" if it is current dir.
 #
@@ -168,7 +168,7 @@ sub PrintTiming {
     my $narg_expected = 5;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_timing() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my ($prefix, $inseconds, $time_hires_installed, $print_to_stdout, $sum_file) = @_;
-    my ($i, $hours, $minutes, $seconds, $thours, $tminutes, $tseconds);
+    my ($i, $hours, $minutes, $seconds, $thours, $tminutes, $tseconds, $ndig_hours);
 
     $hours = int($inseconds / 3600);
     $inseconds -= ($hours * 3600);
