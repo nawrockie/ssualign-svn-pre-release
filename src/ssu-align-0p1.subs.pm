@@ -29,6 +29,7 @@
 # FileOpenFailure():               called if an open() call fails, print error msg and exit
 # PrintErrorAndExit():             print an error message and call exit to kill the program
 # PrintSearchAndAlignStatistics(): print ssu-align summary statistics on search and alignment
+# NumberofDigits():                determine number of digits before decimal point in a number
 #
 use strict;
 use warnings;
@@ -176,13 +177,16 @@ sub PrintTiming {
     $seconds = $inseconds;
     $thours   = sprintf("%02d", $hours);
     $tminutes = sprintf("%02d", $minutes);
+    $ndig_hours = NumberOfDigits($hours);
+    if($ndig_hours < 2) { $ndig_hours = 2; }
+
     if($time_hires_installed) { 
 	$tseconds = sprintf("%05.2f", $seconds);
-	PrintStringToFile($sum_file, $print_to_stdout, sprintf("%s %2s:%2s:%5s\n", $prefix, $thours, $tminutes, $tseconds));
+	PrintStringToFile($sum_file, $print_to_stdout, sprintf("%s %*s:%2s:%5s\n", $prefix, $ndig_hours, $thours, $tminutes, $tseconds));
     }
     else { 
 	$tseconds = sprintf("%02d", $seconds);
-	PrintStringToFile($sum_file, $print_to_stdout, sprintf("%s %2s:%2s:%2s\n", $prefix, $thours, $tminutes, $tseconds));
+	PrintStringToFile($sum_file, $print_to_stdout, sprintf("%s %*s:%2s:%2s\n", $prefix, $ndig_hours, $thours, $tminutes, $tseconds));
     }
 }
 
@@ -864,6 +868,32 @@ sub PrintSearchAndAlignStatistics {
 
     return;
 }
+
+
+#################################################################
+# Subroutine : NumberOfDigits()
+# Incept:      EPN, Fri Nov 13 06:17:25 2009
+# 
+# Purpose:     Return the number of digits in a number before
+#              the decimal point. (ex: 1234.56 would return 4).
+# Arguments:
+# $num:        the number
+# 
+# Returns:     the number of digits before the decimal point
+#
+################################################################# 
+sub NumberOfDigits
+{
+    my $narg_expected = 1;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, NumberOfDigits() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($arr_R) = $_[0];
+
+    my $ndig = 1; 
+    while($num > 10) { $ndig++; $num /= 10.; }
+
+    return $ndig;
+}
+
 
 ####################################################################
 # the next line is critical, a perl module must return a true value

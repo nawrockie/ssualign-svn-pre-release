@@ -751,8 +751,8 @@ sub prepare_only {
     #	PrintErrorAndExit(sprintf("ERROR, --prep-n %d enabled, but there's only %d sequences in the target file.\nNo need to use --prep-n, you're requesting the target file be split into only 1 partition.", $prep_nseq, $target_nseq), $sum_file, 1);
     #}
 
-    $ndig_runs = 1; $tmp = $prep_nproc; while($tmp > 10) { $ndig_runs++; $tmp /= 10.; }
-    $ndig_seqs = 1; $tmp = $prep_nseq;  while($tmp > 10) { $ndig_seqs++; $tmp /= 10.; }
+    $ndig_runs = NumberOfDigits($prep_nproc);
+    $ndig_seqs = NumberOfDigits($prep_nseq);
     my $max_file_name_width = length($shell_script2print);
     $target_subfile_root = $target_file . ".0";
     $target_subfile_root =~ s/^.+\///;  # remove path 
@@ -1425,7 +1425,7 @@ sub seqstat_seq_file_per_seq {
     my ($seqstat, $seqfile, $seqstat_out_file, $total_nres_R, $total_nseq_R, $format_R, $seq_order_AR, $seq_len_HR, $sum_file, $log_file) = @_;
 
     my ($command, $command_worked, $line, $format, $total_nseq, $total_nres);
-    $command = "$seqstat -a $seqfile > $seqstat_out_file";
+    $command = "$seqstat --rna -a $seqfile > $seqstat_out_file";
     RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
 
     # parse seqstat output
