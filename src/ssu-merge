@@ -106,6 +106,7 @@ if(scalar(@ARGV) != 1) {
     exit(1);
 }
 my ($dir) = @ARGV;
+$dir =~ s/\/$//; # remove trailing slash if it exists
 
 my $sum_file       = $dir . "/" . $dir . ".ssu-merge.sum";
 my $sum_file2print = $dir . ".ssu-merge.sum";

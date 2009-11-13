@@ -1,10 +1,10 @@
 # STOCKHOLM 1.0
 #=GF ID archaea
-#=GF AU The original data for this alignment were obtained from the
-#=GF AU Comparative RNA Web Site (CRW; http://www.rna.ccbb.utexas.edu)
-#=GF AU on May 13, 2009. The procedure used to convert the original CRW data
-#=GF AU into this alignment is described in my (Eric Nawrocki's) Ph.D. thesis,
-#=GF AU which is available from http://selab.janelia.org/publications.html.
+#=GF CC The original data for this alignment were obtained from the
+#=GF CC Comparative RNA Web Site (CRW; http://www.rna.ccbb.utexas.edu)
+#=GF CC on May 13, 2009. The procedure used to convert the original CRW data
+#=GF CC into this alignment is described in my (Eric Nawrocki's) Ph.D. thesis,
+#=GF CC which is available from http://selab.janelia.org/publications.html.
 
 00092::Archaeoglobus_fulgidus::X05567_AE000965                ------------AUUCUGGUUGAUCCUGCCAGAGGCCGCUGCUAUCCGGC
 #=GR 00092::Archaeoglobus_fulgidus::X05567_AE000965        SS ...............<<<<<.......>>>>>.<<<<<<<<<<.<<<<<<

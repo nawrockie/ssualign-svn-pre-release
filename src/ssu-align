@@ -228,7 +228,7 @@ if(scalar(@ARGV) != 2) {
     exit(1);
 }
 my ($target_file, $out_root) = @ARGV;
-
+$out_root =~ s/\/$//; # remove trailing slash if it exists
 
 #####################################################
 # Create the output directory and sum and log files #

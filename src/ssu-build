@@ -55,7 +55,6 @@ $options_usage .= "  -d            : command-line argument is a default ssu-alig
 $options_usage .= "  -F            : force; allow overwriting of CM file\n" ,
 $options_usage .= "  -o <s>        : name the CM *file* <s>\n";
 $options_usage .= "  -n <s>        : name the CM <s>\n";
-$options_usage .= "  -1            : output alignment(s) in non-interleaved, 1 line/seq format\n";
 $options_usage .= "  --append <s>  : append this model to CM file <s>\n";
 $options_usage .= "  --key-out <s> : add <s> to all output file names, before the suffix\n";
 
@@ -64,6 +63,7 @@ $options_usage .= "  --trunc <s> : only include consensus columns from <x> to <y
 
 $options_usage .= "\noptions for numbering alignment consensus columns (no model will be built):\n";
 $options_usage .= "  --num <n> : output alignment with consensus columns numbered\n";
+$options_usage .= "  -1        : output alignment(s) in non-interleaved, 1 line/seq format\n";
 
 $options_usage .= "\nexpert options for model construction:\n";
 $options_usage .= "  --gapthresh <x> : set fraction of gaps to allow in a consensus column to <x> (default: 0.8)\n";
@@ -90,17 +90,18 @@ $opt_takes_arg_H{"-d"}          = 0;  push(@opt_order_A, "-d");
 $opt_takes_arg_H{"-F"}          = 0;  push(@opt_order_A, "-F");           
 $opt_takes_arg_H{"-o"}          = 1;  push(@opt_order_A, "-o");           
 $opt_takes_arg_H{"-n"}          = 1;  push(@opt_order_A, "-n");           
-$opt_takes_arg_H{"-1"}          = 0;  push(@opt_order_A, "-1");           
 $opt_takes_arg_H{"--append"}    = 1;  push(@opt_order_A, "--append");
 $opt_takes_arg_H{"--key-out"}   = 1;  push(@opt_order_A, "--key-out");    
 $opt_takes_arg_H{"--trunc"}     = 1;  push(@opt_order_A, "--trunc");
 $opt_takes_arg_H{"--num"}       = 1;  push(@opt_order_A, "--num");
+$opt_takes_arg_H{"-1"}          = 0;  push(@opt_order_A, "-1");           
 $opt_takes_arg_H{"--gapthresh"} = 1;  push(@opt_order_A, "--gapthresh");
 $opt_takes_arg_H{"--rf"}        = 0;  push(@opt_order_A, "--rf");
 $opt_takes_arg_H{"--eent"}      = 0;  push(@opt_order_A, "--eent");
 $opt_takes_arg_H{"--ere"}       = 1;  push(@opt_order_A, "--ere");
 $opt_takes_arg_H{"--ps2pdf"}    = 1;  push(@opt_order_A, "--ps2pdf");
 $opt_takes_arg_H{"--ps-keep"}   = 0;  push(@opt_order_A, "--ps-keep");      
+$opt_takes_arg_H{"--ps-only"}   = 0;  push(@opt_order_A, "--ps-only");      
 
 #set default options
 foreach $opt (keys %opt_takes_arg_H) { 
@@ -118,17 +119,18 @@ my $opt_return = GetOptions
      'F'           => \$opt_H{"-F"},
      'o=s'         => \$opt_H{"-o"},
      'n=s'         => \$opt_H{"-n"},
-     '1'           => \$opt_H{"-1"},
      'append=s'    => \$opt_H{"--append"},
      'key-out=s'   => \$opt_H{"--key-out"},
      'trunc=s'     => \$opt_H{"--trunc"},
      'num'         => \$opt_H{"--num"},
+     '1'           => \$opt_H{"-1"},
      'gapthresh=f' => \$opt_H{"--gapthresh"},
      'rf'          => \$opt_H{"--rf"},
      'eent'        => \$opt_H{"--eent"},
      'ere=f'       => \$opt_H{"--ere"},
      'ps2pdf=s'    => \$opt_H{"--ps2pdf"},
-     'ps-keep'     => \$opt_H{"--ps-keep"});
+     'ps-keep'     => \$opt_H{"--ps-keep"},
+     'ps-only'     => \$opt_H{"--ps-only"});
  
 if($opt_return != 1) { print STDERR "\nERROR, GetOptions() did not return 1, but $opt_return\n"; exit(1); }
 
@@ -193,8 +195,7 @@ if(($opt_H{"--trunc"} ne "") &&
 
 if($opt_H{"--num"}) { 
     # --num is incompatible with all other options except --rf, --key-out, --gapthresh and -1
-    if(($opt_H{"-F"}) || 
-       ($opt_H{"-o"}          ne "") ||
+    if(($opt_H{"-o"}          ne "") ||
        ($opt_H{"-n"}          ne "") ||
        ($opt_H{"--append"}    ne "") ||
        ($opt_H{"--trunc"}     ne "") ||
@@ -202,7 +203,7 @@ if($opt_H{"--num"}) {
        ($opt_H{"--ere"}       ne "") ||
        ($opt_H{"--ps2pdf"})          ||
        ($opt_H{"--ps-keep"})) {
-	printf STDERR ("\nERROR, --num is incompatible with all other options except for --rf, -1, --gapthresh and --key-out.\n"); exit(1);
+	printf STDERR ("\nERROR, --num is incompatible with all other options except for -F, --rf, -1, --gapthresh and --key-out.\n"); exit(1);
     }
 }
 if(($opt_H{"--ere"} ne "") && (! ($opt_H{"--eent"}))) { 
@@ -216,6 +217,9 @@ if(($opt_H{"--rf"}) && (($opt_H{"--gapthresh"}) ne "")) {
 }
 if($opt_H{"--ps-only"} && ($opt_H{"--ps2pdf"} ne "")) { 
     printf STDERR ("\nERROR, --ps-only is incompatible with --ps2pdf\n"); exit(1); 
+}
+if($opt_H{"-1"} && ($opt_H{"--trunc"} eq "" && (! $opt_H{"--num"}))) { 
+    printf STDERR ("\nERROR, -1 only makes sense in combination with --num and/or --trunc\n"); exit(1); 
 }
 
 
@@ -502,7 +506,7 @@ sub run_cmbuild {
     my $extra_opts = "";
 
     if($opt_HR->{"--append"} ne "") { $extra_opts .= " -A "; }
-    if($opt_HR->{"--rf"})           { $extra_opts .= " --rf " . $opt_HR->{"--rf"}; }
+    if($opt_HR->{"--rf"})           { $extra_opts .= " --rf "; }
     if($opt_HR->{"-F"})             { $extra_opts .= " -F"; }
 
     if($opt_HR->{"--eent"})  { $extra_opts .= " --eent"; }
@@ -610,6 +614,7 @@ sub run_alimanip_to_number {
 	$extra_opts .= " --num-rf"; 
 	PrintStringToFile($sum_file, 1, sprintf("#\n# Numbering consensus columns and all columns in alignment file...\n"));
     }
+    if($opt_HR->{"-1"}) { $extra_opts .= " -1"; }
     PrintStringToFile($sum_file, 1, sprintf("#\n"));
     
     my $command = "$alimanip $extra_opts -o $num_aln_file $aln_file";
@@ -677,6 +682,8 @@ sub run_alimanip_to_truncate {
 	$extra_opts = "-g --gapthresh $gapthresh";
 	PrintStringToFile($sum_file, 1, sprintf("#\n# Truncating alignment; defining consensus columns and saving those\n\# between consensus columns $start and $end...\n"));
     }
+    if($opt_HR->{"-1"}) { $extra_opts .= " -1"; }
+
     PrintStringToFile($sum_file, 1, sprintf("#\n"));
     
     my $command = "$alimanip $extra_opts --start-rf $start --end-rf $end -o $trunc_aln_file $aln_file";
@@ -798,4 +805,4 @@ sub run_ssdraw_for_ssu_build {
 
     return 1; #if ssdraw failed we returned 0 above
     }
-				  
+
