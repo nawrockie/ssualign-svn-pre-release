@@ -268,7 +268,7 @@ my $ncm = scalar(@indi_cm_name_A);
 if(($opt_H{"--no-search"}) && ($ncm > 1)) { 
     PrintErrorAndExit("ERROR, the --no-search option only works if the CM file contains exactly 1 CM, $cm_file has $ncm CMs in it.", $sum_file, 1);
 }
-my ($tab_file, $description_width, $search_seconds);
+my ($tab_file, $search_seconds);
 my $max_file_name_width = 0;
 
 if($opt_H{"--prep-n"} || $opt_H{"--prep-p"}) { 
@@ -288,7 +288,7 @@ if($opt_H{"--prep-n"} || $opt_H{"--prep-p"}) {
 if(! $opt_H{"--no-search"}) { 
     $search_seconds = -1 * SecondsSinceEpoch($time_hires_installed);
     search_sequences_with_each_model(\%opt_H, $cmsearch, $cm_file, $target_file, $out_dir_and_root, $target_nseq, 
-				     \@indi_cm_name_A, \$tab_file, \$max_file_name_width, \$description_width, $sum_file, $log_file);
+				     \@indi_cm_name_A, \$tab_file, \$max_file_name_width, $sum_file, $log_file);
     $search_seconds += SecondsSinceEpoch($time_hires_installed);
 }
 
@@ -318,7 +318,7 @@ my ($align_seconds);
 my %cmscores2print_H = ();
 if(! $opt_H{"--no-align"}) {
     $align_seconds = -1 * SecondsSinceEpoch($time_hires_installed);
-    align_subseqs(\%opt_H, $out_dir_and_root, $cmalign, $max_file_name_width, $description_width, $weight, \@indi_cm_name_A, \%new_target_file_per_cm_name_H, \%cmscores2print_H, $sum_file, $log_file); 
+    align_subseqs(\%opt_H, $out_dir_and_root, $cmalign, $max_file_name_width, $weight, \@indi_cm_name_A, \%new_target_file_per_cm_name_H, \%cmscores2print_H, $sum_file, $log_file); 
     $align_seconds += SecondsSinceEpoch($time_hires_installed);
 }
 
@@ -336,7 +336,7 @@ if(! $opt_H{"--no-search"}) {
     PrintStringToFile($sum_file, 1, sprintf("  %-*s  list of CM/HMM scores for each sequence\n", $max_file_name_width, $scores_file2print));
     if($n_nomatch == 0) { UnlinkFile($nomatch_file, $log_file); }
     else { 
-	PrintStringToFile($sum_file, 1, sprintf("  %-*s  list of sequences that don't match any model\n", $max_file_name_width, $nomatch_file2print));
+	PrintStringToFile($sum_file, 1, sprintf("  %-*s  list of seqs that don't match any model\n", $max_file_name_width, $nomatch_file2print));
     }
 }
 
@@ -420,15 +420,16 @@ sub validate_and_setup_ssu_align {
 
     #Make sure the CM file exists
     my $cm_file = "";
-    if($opt_HR->{"-m"} ne "") { # -m <s> invoked, we may need to pass <s> on to child calls if in prep mode, so
-	                        # we need to determine if <s> is the absolute path or a relative path
+    if($opt_HR->{"-m"} ne "") { # -m <s> invoked, determine the absolute path to the CM file, we'll use this
+	                        # this is important if we are in prep mode and need to specify -m to child ssu-align calls
 	if(-e $opt_HR->{"-m"}) { 
-	    my $only_file = RemoveDirPath($opt_HR->{"-m"});
-	    if($opt_HR->{"-m"} eq ((getcwd() . $only_file))) { # user supplied absolute path, use that;
-		$cm_file = $opt_HR->{"-m"}; 
+	    # determine if we already have the absolute path or not
+	    if(-e (getcwd() . "/" . $opt_HR->{"-m"})) { # user did not supply absolute path
+		$cm_file = getcwd() . "/" . $opt_HR->{"-m"};
 	    }
-	    else { # user supplied a relative path from current working dir
-		$cm_file = getcwd() . "/" . $only_file;
+	    else { # user did supply absolute path
+		printf("full path\n");
+		$cm_file = $opt_HR->{"-m"};
 	    }
 	    if(! (-e $cm_file)) { PrintErrorAndExit("ERROR, error processing -m option (cm file: $cm_file), bug in code.\n", $sum_file, 1); }
 	}
@@ -440,10 +441,10 @@ sub validate_and_setup_ssu_align {
 	$cm_file = $ssualigndir . "/ssu-align-0p1.cm";
 	if(!(-e $cm_file))   { PrintErrorAndExit("ERROR, the default CM file $cm_file does not exist.", $sum_file, 1); }
     }
-
+    
     #Make sure the target file exists
     if(!(-e $target_file))   { PrintErrorAndExit("ERROR, target sequence file $target_file does not exist.", $sum_file, 1); }
-
+    
     my ($tmp, $command_worked);
     my $cmsearch   = "ssu-cmsearch";
     my $cmalign    = "ssu-cmalign";
@@ -877,7 +878,6 @@ sub prepare_only {
 # $indi_cm_name_AR:        ref to array with individual CM names
 # $tab_file_R:             RETURN; name of tab file to return
 # $max_file_name_width_R:  RETURN; num chars in max length file name
-# $description_width_R:    RETURN; num chars in description
 # $sum_file:               file to print output file notices to
 # $log_file:               log file
 #
@@ -889,9 +889,9 @@ sub prepare_only {
 # 
 ####################################################################
 sub search_sequences_with_each_model { 
-    my $narg_expected = 12;
+    my $narg_expected = 11;
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, search_sequences_with_each_model() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($opt_HR, $cmsearch, $cm_file, $target_file, $out_dir_and_root, $target_nseq, $indi_cm_name_AR, $tab_file_R, $max_file_name_width_R, $description_width_R, $sum_file, $log_file) = @_;
+    my($opt_HR, $cmsearch, $cm_file, $target_file, $out_dir_and_root, $target_nseq, $indi_cm_name_AR, $tab_file_R, $max_file_name_width_R, $sum_file, $log_file) = @_;
 
     my ($i, $cmsearch_opts, $tab_file, $tab_file2print, $alg_flag, $max_file_name_width, $dashes1, $dashes2, $tmp, $command, $command_worked, $cmsearch_outfile);
 
@@ -909,7 +909,7 @@ sub search_sequences_with_each_model {
 
     # print info on what we just created
     $max_file_name_width  = MaxLengthScalarInArray($indi_cm_name_AR); 
-    $description_width    = $max_file_name_width;
+    my $description_width = $max_file_name_width;
     $description_width   += length("list of sequences to align with  CM");
     if($description_width < length("boundaries/scores of hits defined by HMM(s)")) { $description_width = length("boundaries/scores of hits defined by HMM(s)"); }
 
@@ -936,7 +936,6 @@ sub search_sequences_with_each_model {
 
     $$tab_file_R            = $tab_file;
     $$max_file_name_width_R = $max_file_name_width;
-    $$description_width_R   = $description_width;
     return;
 }
 
@@ -1190,7 +1189,6 @@ sub classify_and_extract_subseqs {
 # $out_dir_and_root:               output directory and output root, concatenated
 # $cmalign:                        cmalign executable
 # $max_file_name_width:            num chars in max length of a file name
-# $description_width:              num chars in description field of output
 # $weight:                         esl-weight executable
 # $indi_cm_name_AR:                reference to array of individual CM names
 # $new_target_file_per_cm_name_HR: reference to hash, key CM name, value target file to align with that CM
@@ -1206,14 +1204,20 @@ sub classify_and_extract_subseqs {
 #  
 ####################################################################
 sub align_subseqs { 
-    my $narg_expected = 11;
+    my $narg_expected = 10;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, align_subseqs() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($opt_HR, $out_dir_and_root, $cmalign, $max_file_name_width, $description_width, $weight, $indi_cm_name_AR, $new_target_file_per_cm_name_HR, $cmscores2print_HR, $sum_file, $log_file) = @_;
+    my ($opt_HR, $out_dir_and_root, $cmalign, $max_file_name_width, $weight, $indi_cm_name_AR, $new_target_file_per_cm_name_HR, $cmscores2print_HR, $sum_file, $log_file) = @_;
 
     my($i, $ncm, $m, $cm_file_name, $cm_name, $hits_file, $align_psecs, $cmalign_out, $cmalign_stk);
     my($cmalign_out2print, $cmalign_stk2print, $fil_cmalign_stk, $fil_cmalign_stk2print, $dashes1, $dashes2);
     my($line, $seq_name, $cmsc, $cmstructsc, $command, $command_worked, $tmp);
     my @el_A = ();
+
+    my $description_width = MaxLengthScalarInArray($indi_cm_name_AR);
+    $description_width += length(" cmalign output");
+    if($description_width < length("list of seqs that don't match any model")) { 
+	$description_width = length("list of seqs that don't match any model");
+    }
 
     $dashes1 = ""; for($i = 0; $i < $max_file_name_width; $i++) { $dashes1 .= "-"; } 
     $dashes2 = ""; for($i = 0; $i < $description_width;   $i++) { $dashes2 .= "-"; } 
