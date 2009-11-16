@@ -31,7 +31,7 @@
 use Getopt::Long;
 use strict;
 use warnings FATAL => 'all';
-
+use Cwd;
 
 #Make sure the SSUALIGNDIR environmental variable is set and the directory exists
 my $ssualigndir = $ENV{'SSUALIGNDIR'};
@@ -63,7 +63,7 @@ my $options_usage  = "where general options are:\n";
 #                  12345678901234567890123456789012345678901234567890123456789012345678901234567890
 $options_usage .= "  -h        : show brief help on version and usage\n";
 $options_usage .= "  -1        : output alignments in non-interleaved, 1 line/seq format\n";
-$options_usage .= "  -m <f>    : use CM file <f> instead of the default CM file\n";
+$options_usage .= "  -m <s>    : use CM file <s> instead of the default CM file\n";
 $options_usage .= "  -b <f>    : set minimum bit score of a surviving subsequence as <f> (default: 100)\n";
 $options_usage .= "  -l <n>    : set minimum length    of a surviving subsequence as <n> (default: 1)\n";
 $options_usage .= "  -F        : force; if <output dir> already exists - empty it and fill it\n";
@@ -75,7 +75,7 @@ $options_usage .= "              (default CM file includes 'archaea', 'bacteria'
 $options_usage .= "\noptions for running ssu-align in 'preparation' mode to split up a large job:\n";
 $options_usage .= "  --prep-n <n>  : split target seq file into multiple files with <n> seqs each\n";
 $options_usage .= "  --prep-p <n>  : split target seq file into <n> files with equal number of seqs\n";
-$options_usage .= "  --prep-in <f> : in file <f>; lines 1,2 specify prefix,suffix for ssu-align runs\n";
+$options_usage .= "  --prep-in <s> : in file <s>; lines 1,2 specify prefix,suffix for ssu-align runs\n";
 
 $options_usage .= "\noptions for skipping either the 1st (search) stage or 2nd (alignment) stage\n";
 $options_usage .= "  --no-align  : only search target sequence file for hits, skip alignment step\n";
@@ -112,9 +112,9 @@ $opt_takes_arg_H{"-F"}          = 0;  push(@opt_order_A, "-F");           $opt_i
 $opt_takes_arg_H{"--FF"}        = 0;  push(@opt_order_A, "--FF");         $opt_is_prep_H{"--FF"}        = 0;
 $opt_takes_arg_H{"--keep"}      = 0;  push(@opt_order_A, "--keep");       $opt_is_prep_H{"--keep"}      = 1;
 $opt_takes_arg_H{"--only"}      = 1;  push(@opt_order_A, "--only");       $opt_is_prep_H{"--only"}      = 1;
-$opt_takes_arg_H{"--prep-n"}    = 1;  push(@opt_order_A, "--prep-n");     $opt_is_prep_H{"--prep-n"}   = 0;
-$opt_takes_arg_H{"--prep-p"}    = 1;  push(@opt_order_A, "--prep-p");     $opt_is_prep_H{"--prep-p"}   = 0;
-$opt_takes_arg_H{"--prep-in"}   = 1;  push(@opt_order_A, "--prep-in");    $opt_is_prep_H{"--prep-in"}  = 0;
+$opt_takes_arg_H{"--prep-n"}    = 1;  push(@opt_order_A, "--prep-n");     $opt_is_prep_H{"--prep-n"}    = 0;
+$opt_takes_arg_H{"--prep-p"}    = 1;  push(@opt_order_A, "--prep-p");     $opt_is_prep_H{"--prep-p"}    = 0;
+$opt_takes_arg_H{"--prep-in"}   = 1;  push(@opt_order_A, "--prep-in");    $opt_is_prep_H{"--prep-in"}   = 0;
 $opt_takes_arg_H{"--no-align"}  = 0;  push(@opt_order_A, "--no-align");   $opt_is_prep_H{"--no-align"}  = 1;
 $opt_takes_arg_H{"--no-search"} = 0;  push(@opt_order_A, "--no-search");  $opt_is_prep_H{"--no-search"} = 1;
 $opt_takes_arg_H{"--no-trunc"}  = 0;  push(@opt_order_A, "--no-trunc");   $opt_is_prep_H{"--no-trunc"}  = 1;
@@ -166,14 +166,6 @@ my $opt_return = GetOptions
 
 if($opt_return != 1) { print STDERR "\nERROR, GetOptions() did not return 1, but $opt_return\n"; exit(1); }
 
-#determine options we'd use for subsequent ssu-align calls on split dataset if we're in prep mode
-my $prep_enabled_options = "";
-foreach $opt (@opt_order_A) { 
-    if($opt_is_prep_H{$opt}) { 
-	if($opt_takes_arg_H{$opt}) { if($opt_H{$opt} ne "") { $prep_enabled_options .= " " . $opt . " " . $opt_H{$opt}; } }
-	else                  	   { if($opt_H{$opt})       { $prep_enabled_options .= " " . $opt; } }
-    }
-}
 
 if ($opt_H{"-h"}) { 
     PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, "");
@@ -280,7 +272,7 @@ my ($tab_file, $description_width, $search_seconds);
 my $max_file_name_width = 0;
 
 if($opt_H{"--prep-n"} || $opt_H{"--prep-p"}) { 
-    prepare_only($target_file, $out_dir, $out_root, \%opt_H, $ssualign, $weight, $cm_file, $prep_enabled_options, $target_nseq, \@indi_cm_name_A, \$max_file_name_width, $sum_file, $log_file);
+    prepare_only($target_file, $out_dir, $out_root, \%opt_H, \%opt_takes_arg_H, \%opt_is_prep_H, \@opt_order_A, $ssualign, $weight, $cm_file, $target_nseq, \@indi_cm_name_A, \$max_file_name_width, $sum_file, $log_file);
     $total_seconds += SecondsSinceEpoch($time_hires_installed);
     PrintConclusion($sum_file, $log_file, $sum_file2print, $log_file2print, $total_seconds, $time_hires_installed, $out_dir);
 
@@ -428,11 +420,23 @@ sub validate_and_setup_ssu_align {
 
     #Make sure the CM file exists
     my $cm_file = "";
-    if($opt_HR->{"-m"} ne "") { 
-	$cm_file = $opt_HR->{"-m"}; 
-	if(!(-e $cm_file))   { PrintErrorAndExit("ERROR, CM file $cm_file, specified with -m does not exist.", $sum_file, 1); }
+    if($opt_HR->{"-m"} ne "") { # -m <s> invoked, we may need to pass <s> on to child calls if in prep mode, so
+	                        # we need to determine if <s> is the absolute path or a relative path
+	if(-e $opt_HR->{"-m"}) { 
+	    my $only_file = RemoveDirPath($opt_HR->{"-m"});
+	    if($opt_HR->{"-m"} eq ((getcwd() . $only_file))) { # user supplied absolute path, use that;
+		$cm_file = $opt_HR->{"-m"}; 
+	    }
+	    else { # user supplied a relative path from current working dir
+		$cm_file = getcwd() . "/" . $only_file;
+	    }
+	    if(! (-e $cm_file)) { PrintErrorAndExit("ERROR, error processing -m option (cm file: $cm_file), bug in code.\n", $sum_file, 1); }
+	}
+	else { #$opt_HR->{"-m"} does not exist
+	    PrintErrorAndExit("ERROR, CM file $cm_file, specified with -m does not exist.", $sum_file, 1); 
+	}
     }
-    else { 
+    else { # -m not invoked, use default CM file
 	$cm_file = $ssualigndir . "/ssu-align-0p1.cm";
 	if(!(-e $cm_file))   { PrintErrorAndExit("ERROR, the default CM file $cm_file does not exist.", $sum_file, 1); }
     }
@@ -664,10 +668,12 @@ sub process_cm_file {
 # $out_dir                  output directory
 # $out_root                 root for output files
 # $opt_HR:                  reference to the hash of command-line options
+# $opt_takes_arg_HR:        reference to the hash specifying if each option takes an arg or not
+# $opt_is_prep_HR:          reference to the hash of options that should be passed to children
+# $opt_order_AR:            order of options for children call
 # $ssualign:                the ssu-align executable command
 # $weight                   esl-weight command
 # $cm_file:                 the CM file 
-# $prep_enabled_options:    options to pass to children jobs
 # $target_nseq:             number of sequences in $target_file
 # $indi_cm_name_AR:         reference to array with names of individual CMs
 # $max_file_name_width_R:   RETURN; maximum length of a file name
@@ -682,9 +688,9 @@ sub process_cm_file {
 # 
 ####################################################################
 sub prepare_only { 
-    my $narg_expected = 13;
+    my $narg_expected = 15;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, prepare_only() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($target_file, $out_dir, $out_root, $opt_HR, $ssualign, $weight, $cm_file, $prep_enabled_options, $target_nseq, $indi_cm_name_AR, $max_file_name_width_R, $sum_file, $log_file) = @_;
+    my($target_file, $out_dir, $out_root, $opt_HR, $opt_takes_arg_HR, $opt_is_prep_HR, $opt_order_AR, $ssualign, $weight, $cm_file, $target_nseq, $indi_cm_name_AR, $max_file_name_width_R, $sum_file, $log_file) = @_;
 
     # Steps we'll perform:
     # 1. read preparation input file (if --prep-in enabled)
@@ -788,6 +794,18 @@ sub prepare_only {
     $target_subfile_root = $target_file . "." . $n;
     $target_subfile_root =~ s/^.+\///;  # remove path 
     $target_subfile      = $out_dir . "/" . $target_subfile_root;
+
+
+    #determine options we'd use for subsequent ssu-align calls on split dataset if we're in prep mode
+    my $prep_enabled_options = "";
+    my $opt;
+    foreach $opt (@{$opt_order_AR}) { 
+	if($opt_is_prep_HR->{$opt}) { 
+	    if($opt eq "-m")                 { if($opt_HR->{"-m"} ne "") { $prep_enabled_options .= " " . $opt . " " . $cm_file; } } #special case, cm file must include full path to the file
+	    elsif($opt_takes_arg_HR->{$opt}) { if($opt_HR->{$opt} ne "") { $prep_enabled_options .= " " . $opt . " " . $opt_HR->{$opt}; } }
+	    else                             { if($opt_HR->{$opt})       { $prep_enabled_options .= " " . $opt; } }
+	}
+    }
 
     open(SUB, ">". $target_subfile) || FileOpenFailure($target_subfile, $sum_file, $!, "writing");
     open(FULL, $target_file) || FileOpenFailure($target_file, $sum_file, $!, "reading");
