@@ -759,8 +759,8 @@ sub PrintErrorAndExit() {
 #             performed to the summary file and stdout.
 #
 # Arguments: 
-# $search_seconds:       seconds required for search
-# $align_seconds:        seconds required for alignment
+# $search_seconds:       seconds required for search, "NA" if search was not performed
+# $align_seconds:        seconds required for alignment, "NA" if alignment was not performed
 # $target_nseq:          number of sequences in input target file
 # $target_nres:          number of residues in input target file
 # $nseq_all_cms:         number of sequences that were best match to any CM
@@ -846,25 +846,29 @@ sub PrintSearchAndAlignStatistics {
     }
     
     if($search_seconds eq "0") { $search_seconds = 1; }
-    if($align_seconds eq "0") { $align_seconds = 1; }
+    if($align_seconds eq "0")  { $align_seconds = 1; }
     PrintStringToFile($sum_file, $print_to_stdout, sprintf("#\n"));
     PrintStringToFile($sum_file, $print_to_stdout, sprintf("#\n"));
     PrintStringToFile($sum_file, $print_to_stdout, sprintf("# Speed statistics:\n"));
     PrintStringToFile($sum_file, $print_to_stdout, sprintf("#\n"));
     PrintStringToFile($sum_file, $print_to_stdout, sprintf("# %-9s  %8s  %7s  %13s  %13s  %8s\n","stage",     "num seqs", "seq/sec", "seq/sec/model", "nucleotides",   "nt/sec"));
     PrintStringToFile($sum_file, $print_to_stdout, sprintf("# %9s  %8s  %7s  %13s  %13s  %8s\n", "---------", "--------", "-------", "-------------", "-------------", "--------"));
-    PrintStringToFile($sum_file, $print_to_stdout, sprintf("  %-9s  %8d  %7.3f  %13.3f  %13d  %8.1f\n", 
-							   "search", $target_nseq, 
-							   ($target_nseq / $search_seconds), 
-							   ($target_nseq / ($search_seconds * scalar(@{$indi_cm_name_AR}))), 
-							   $target_nres, 
-							   $target_nres / $search_seconds));
-    PrintStringToFile($sum_file, $print_to_stdout, sprintf("  %-9s  %8d  %7.3f  %13.3f  %13d  %8.1f\n", 
-							   "alignment", $nseq_all_cms, 
-							   ($nseq_all_cms / $align_seconds), 
-							   ($nseq_all_cms / $align_seconds), 
-							   $nres_aligned_all_cms, 
-							   $nres_aligned_all_cms / $align_seconds));
+    if($search_seconds ne "NA") { 
+	PrintStringToFile($sum_file, $print_to_stdout, sprintf("  %-9s  %8d  %7.3f  %13.3f  %13d  %8.1f\n", 
+							       "search", $target_nseq, 
+							       ($target_nseq / $search_seconds), 
+							       ($target_nseq / ($search_seconds * scalar(@{$indi_cm_name_AR}))), 
+							       $target_nres, 
+							       $target_nres / $search_seconds));
+    }
+    if($align_seconds ne "NA") { 
+	PrintStringToFile($sum_file, $print_to_stdout, sprintf("  %-9s  %8d  %7.3f  %13.3f  %13d  %8.1f\n", 
+							       "alignment", $nseq_all_cms, 
+							       ($nseq_all_cms / $align_seconds), 
+							       ($nseq_all_cms / $align_seconds), 
+							       $nres_aligned_all_cms, 
+							       $nres_aligned_all_cms / $align_seconds));
+    }
     PrintStringToFile($sum_file, $print_to_stdout, sprintf("#\n"));
 
     return;

@@ -268,7 +268,7 @@ my $ncm = scalar(@indi_cm_name_A);
 if(($opt_H{"--no-search"}) && ($ncm > 1)) { 
     PrintErrorAndExit("ERROR, the --no-search option only works if the CM file contains exactly 1 CM, $cm_file has $ncm CMs in it.", $sum_file, 1);
 }
-my ($tab_file, $search_seconds);
+my $tab_file;
 my $max_file_name_width = 0;
 
 if($opt_H{"--prep-n"} || $opt_H{"--prep-p"}) { 
@@ -285,6 +285,8 @@ if($opt_H{"--prep-n"} || $opt_H{"--prep-p"}) {
 ############################################################################
 # Step 1: Define sequence ends (and classify seqs if > 1 CM) with cmsearch #
 ############################################################################
+$max_file_name_width = -1;
+my $search_seconds = "NA"; # if this stays "NA", we'll know not to print search time stats later
 if(! $opt_H{"--no-search"}) { 
     $search_seconds = -1 * SecondsSinceEpoch($time_hires_installed);
     search_sequences_with_each_model(\%opt_H, $cmsearch, $cm_file, $target_file, $out_dir_and_root, $target_nseq, 
@@ -314,7 +316,7 @@ else {
 ###########################
 # Step 3: Align sequences #
 ###########################
-my ($align_seconds);
+my $align_seconds = "NA"; #if this stays "NA", we'll know not to print alignment time stats later
 my %cmscores2print_H = ();
 if(! $opt_H{"--no-align"}) {
     $align_seconds = -1 * SecondsSinceEpoch($time_hires_installed);
@@ -349,7 +351,7 @@ my($target_nseq2, $target_nres2, $nseq_all_cms, $nres_total_all_cms, $nres_align
 my %nseq_cm_H = ();
 my %nres_total_cm_H = ();
 my %nres_aligned_cm_H = ();
-compile_search_and_align_statistics(\@indi_cm_name_A, \@target_order_A, \%target_len_H, \%aligned_len_H, \%bestmatch_cm_H, 
+compile_search_and_align_statistics(\%opt_H, \@indi_cm_name_A, \@target_order_A, \%target_len_H, \%aligned_len_H, \%bestmatch_cm_H, 
 				    \$target_nseq2, \$target_nres2, \$nseq_all_cms, \$nres_total_all_cms, \$nres_aligned_all_cms,
 				    \%nseq_cm_H, \%nres_total_cm_H, \%nres_aligned_cm_H, $sum_file);
 if($target_nseq2 != $target_nseq) { PrintErrorAndExit(sprintf("ERROR, seqstat call and statistics compilation function disagree on number of target sequences (%d != %d).", $target_nseq, $target_nseq2), $sum_file, 1); }
@@ -361,8 +363,8 @@ PrintSearchAndAlignStatistics($search_seconds, $align_seconds, $target_nseq2, $t
 PrintConclusion($sum_file, $log_file, $sum_file2print, $log_file2print, "", $time_hires_installed, $out_dir);
 
 # print 3 different timings: search, alignment, total
-if(! $opt_H{"--no-align"})  { PrintTiming("# CPU time (search):    ", $search_seconds, $time_hires_installed, 1, $sum_file); }
-if(! $opt_H{"--no-search"}) { PrintTiming("# CPU time (alignment): ", $align_seconds,  $time_hires_installed, 1, $sum_file); }
+if(! $opt_H{"--no-search"})  { PrintTiming("# CPU time (search):    ", $search_seconds, $time_hires_installed, 1, $sum_file); }
+if(! $opt_H{"--no-align"}) { PrintTiming("# CPU time (alignment): ", $align_seconds,  $time_hires_installed, 1, $sum_file); }
 $total_seconds += SecondsSinceEpoch($time_hires_installed);
 PrintTiming("# CPU time (total):     ", $total_seconds, $time_hires_installed, 1, $sum_file); 
 PrintStringToFile($sum_file, 1, sprintf("#\n", $out_dir));
@@ -918,7 +920,12 @@ sub search_sequences_with_each_model {
     $dashes1 = ""; for($i = 0; $i < $max_file_name_width; $i++) { $dashes1 .= "-"; } 
     $dashes2 = ""; for($i = 0; $i < $description_width; $i++)   { $dashes2 .= "-"; } 
 
-    PrintStringToFile($sum_file, 1, sprintf("#\n# Stage 1: Determining SSU start/end positions and best-matching models...\n"));
+    if($opt_HR->{"--no-align"}) { 
+	PrintStringToFile($sum_file, 1, sprintf("#\n# Determining SSU start/end positions and best-matching models...\n"));
+    }
+    else { 
+	PrintStringToFile($sum_file, 1, sprintf("#\n# Stage 1: Determining SSU start/end positions and best-matching models...\n"));
+    }
     PrintStringToFile($sum_file, 1, sprintf("#\n"));
     PrintStringToFile($sum_file, 1, sprintf("# %-*s  %-*s\n", $max_file_name_width, "output file name", $description_width, "description"));
     PrintStringToFile($sum_file, 1, sprintf("# %-*s  %-*s\n", $max_file_name_width, $dashes1, $description_width, $dashes2));
@@ -1215,14 +1222,25 @@ sub align_subseqs {
 
     my $description_width = MaxLengthScalarInArray($indi_cm_name_AR);
     $description_width += length(" cmalign output");
-    if($description_width < length("list of seqs that don't match any model")) { 
+    if((! $opt_HR->{"--no-search"}) && ($description_width < length("list of seqs that don't match any model"))) { 
 	$description_width = length("list of seqs that don't match any model");
+    }
+
+    if($max_file_name_width == -1) { # we need to determine it, otherwise (if != -1), it was determined in search_sequences_with_each_model() 
+	if(! $opt_HR->{"--no-search"}) { PrintErrorAndExit("ERROR, max_file_name_width == -1, but --no-search not enabled. Coding error.", $sum_file, 1); }
+	$max_file_name_width  = MaxLengthScalarInArray($indi_cm_name_AR); 
+	$max_file_name_width += length($out_root . "." . ".cmalign");
     }
 
     $dashes1 = ""; for($i = 0; $i < $max_file_name_width; $i++) { $dashes1 .= "-"; } 
     $dashes2 = ""; for($i = 0; $i < $description_width;   $i++) { $dashes2 .= "-"; } 
     PrintStringToFile($sum_file, 1, sprintf("#\n"));
-    PrintStringToFile($sum_file, 1, sprintf("# Stage 2: Aligning each sequence to its best-matching model...\n"));
+    if($opt_HR->{"--no-search"}) { 
+	PrintStringToFile($sum_file, 1, sprintf("# Aligning each sequence...\n"));
+    }
+    else { 
+	PrintStringToFile($sum_file, 1, sprintf("# Stage 2: Aligning each sequence to its best-matching model...\n"));
+    }
     PrintStringToFile($sum_file, 1, sprintf("#\n"));
     PrintStringToFile($sum_file, 1, sprintf("# %-*s  %s\n", $max_file_name_width, "output file name", "description"));
     PrintStringToFile($sum_file, 1, sprintf("# %-*s  %-*s\n", $max_file_name_width, $dashes1, $description_width, $dashes2));
@@ -1386,6 +1404,10 @@ sub print_scores_and_nomatch_files {
 		    # this sequence, output is different, cmsc and structsc are set as '-'
 		    printf SCORES ("  %7d  %-*s  %-*s  %4d  %4d  %7s  %7s  %7.2f", $idx, $max_seq_name_width, $seq_name, $max_cm_name_width, $bestmatch_cm, $start, $end, "-", "-", $whmmsc);
 		}
+		elsif($opt_HR->{"--no-align"}) { 
+		    # special case, no alignment was done, print cmsc and structsc are set as '-'
+		    printf SCORES ("  %7d  %-*s  %-*s  %4d  %4d  %7s  %7s  %7.2f", $idx, $max_seq_name_width, $seq_name, $max_cm_name_width, $bestmatch_cm, $start, $end, "-", "-", $whmmsc);
+		}
 		else { # normal case
 		    ($cmsc, $cmstructsc) = split(/\s+/, $cmscores2print_HR->{$seq_name});
 		    printf SCORES ("  %7d  %-*s  %-*s  %4d  %4d  %7.2f  %7.2f  %7.2f", $idx, $max_seq_name_width, $seq_name, $max_cm_name_width, $bestmatch_cm, $start, $end, $cmsc, $cmstructsc, $whmmsc);
@@ -1499,6 +1521,7 @@ sub seqstat_seq_file_per_seq {
 #             will print these out. 
 #
 # Arguments: 
+# $opt_HR:                 reference to the hash of command-line options
 # $indi_cm_name_AR:        reference to array with CM names, already filled
 # $target_order_AR:        all the target sequence files, already filled
 # $target_len_HR:          full lengths of the target sequences, already filled
@@ -1521,15 +1544,15 @@ sub seqstat_seq_file_per_seq {
 #             
 ####################################################################
 sub compile_search_and_align_statistics { 
-    my $narg_expected = 14;
+    my $narg_expected = 15;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_statistics() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($indi_cm_name_AR, $target_order_AR, $target_len_HR, $aligned_len_HR, $bestmatch_cm_HR, 
+    my ($opt_HR, $indi_cm_name_AR, $target_order_AR, $target_len_HR, $aligned_len_HR, $bestmatch_cm_HR, 
 	$target_nseq_R, $target_nres_R, $nseq_all_cms_R, $nres_total_all_cms_R, $nres_aligned_all_cms_R,
 	$nseq_cm_HR, $nres_total_cm_HR, $nres_aligned_cm_HR, $sum_file) = @_;
 
     my ($cm_name, $target);
     my $target_nseq = scalar(@{$target_order_AR});
-    my $target_nres = SumHashElements ($target_len_HR);
+    my $target_nres = SumHashElements($target_len_HR);
 
     %{$nseq_cm_HR} = ();
     %{$nres_total_cm_HR} = ();
@@ -1546,17 +1569,29 @@ sub compile_search_and_align_statistics {
     }
 
     # compile stats
-    foreach $target (keys %{$bestmatch_cm_HR}) { 
-	if(! exists $target_len_HR->{$target})  { PrintErrorAndExit("ERROR, compiling final stats, can't find $target in hash created after seqstat call.", $sum_file, 1); }
-	if(! exists $aligned_len_HR->{$target}) { PrintErrorAndExit("ERROR, compiling final stats, can't find $target in hash created during subsequence extraction.", $sum_file, 1); }
-
-	$cm_name = $bestmatch_cm_HR->{$target};
-	$nseq_cm_H{$cm_name}++;
-	$nseq_all_cms++;
-	$nres_total_cm_H{$cm_name}   += $target_len_HR->{$target};
-	$nres_total_all_cms          += $target_len_HR->{$target};
-	$nres_aligned_cm_H{$cm_name} += $aligned_len_HR->{$target};
-	$nres_aligned_all_cms        += $aligned_len_HR->{$target};
+    if($opt_HR->{"--no-search"}) { # bestmatch_cm_HR nor aligned_len_HR were not filled, but it's okay b/c we know all we need to know without them
+	if(scalar(@{$indi_cm_name_AR}) != 1) { PrintErrorAndExit(sprintf("ERROR, compiling final stats, --no-search enabled, but %d CMs (should be 1)", scalar(@{$indi_cm_name_AR})), , $sum_file, 1); }
+	$cm_name = $indi_cm_name_AR->[0];
+	$nres_aligned_cm_H{$cm_name} = $target_nres;
+	$nres_total_cm_H{$cm_name}   = $target_nres;
+	$nres_total_all_cms          = $target_nres;
+	$nres_aligned_all_cms        = $target_nres;
+	$nseq_cm_H{$cm_name}         = $target_nseq;
+	$nseq_all_cms                = $target_nseq;
+    }
+    else { 
+	foreach $target (keys %{$bestmatch_cm_HR}) { 
+	    if(! exists $target_len_HR->{$target})  { PrintErrorAndExit("ERROR, compiling final stats, can't find $target in hash created after seqstat call.", $sum_file, 1); }
+	    if(! exists $aligned_len_HR->{$target}) { PrintErrorAndExit("ERROR, compiling final stats, can't find $target in hash created during subsequence extraction.", $sum_file, 1); }
+	    
+	    $cm_name = $bestmatch_cm_HR->{$target};
+	    $nseq_cm_H{$cm_name}++;
+	    $nseq_all_cms++;
+	    $nres_total_cm_H{$cm_name}   += $target_len_HR->{$target};
+	    $nres_total_all_cms          += $target_len_HR->{$target};
+	    $nres_aligned_cm_H{$cm_name} += $aligned_len_HR->{$target};
+	    $nres_aligned_all_cms        += $aligned_len_HR->{$target};
+	}
     }
 
     $$target_nseq_R          = $target_nseq;
