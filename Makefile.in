@@ -69,6 +69,7 @@ INFPROGS = ssu-cmalign\
            ssu-cmsearch
 
 ESLPROGS = ssu-esl-alimanip\
+           ssu-esl-alistat\
 	   ssu-esl-reformat\
 	   ssu-esl-seqstat\
 	   ssu-esl-sfetch\
@@ -77,7 +78,7 @@ ESLPROGS = ssu-esl-alimanip\
 
 # List of the files to be copied to the lib/ directory.
 #
-PERLMODULEFILES = ssu-align-0p1.subs.pm
+PERLMODULEFILES = ssu.pm
 
 SEEDLIBFILES = ssu-align-0p1.cm\
 	       archaea-0p1.cm\
