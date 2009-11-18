@@ -9,6 +9,7 @@
 #
 # List of subroutines in this file:
 #
+# GetGlobals():                    fill a hash with global variables, called by all SSU-ALIGN scripts
 # PrintBanner():                   prints SSU-ALIGN banner given a script description.
 # PrintConclusion():               prints final lines of SSU-ALIGN script output
 # PrintTiming():                   prints run time to stdout and summary file.
@@ -33,6 +34,94 @@
 #
 use strict;
 use warnings;
+
+
+#####################################################################
+# Subroutine: GetGlobals()
+# Incept:     EPN, Wed Nov 18 08:45:53 2009
+# 
+# Purpose:    Define global variables in a hash that is passed in
+#             by reference. This is called early on all SSU-ALIGN 
+#             scripts
+# 
+#             It is possible to change these definitions to suit
+#             one's on local environment. But only do so if you
+#             know what you're doing.
+#
+# Arguments: 
+#    $globals_HR:       reference to the hash to fill with global variables
+#    $ssualigndir:      where the library files (CM file, template file) are 
+#                       determined prior to entering this subroutine by 
+#                       $ENV{"SSUALIGNDIR"} by the caller.
+#
+# Returns:    Nothing.
+# 
+####################################################################
+sub GetGlobals { 
+    my $narg_expected = 2;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, GetGlobals() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($globals_HR, $ssualigndir) = @_;
+
+    # default values, files and parameters
+    $globals_HR->{"VERSION"} = "0.1"; # original value: "0.1"
+    $globals_HR->{"DF_CM_FILE"} = $ssualigndir . "/ssu-align-0p1.cm";
+    $globals_HR->{"DF_TEMPLATE_FILE"} = $ssualigndir . "/ssu-align-0p1.ps";
+    $globals_HR->{"DF_MINBIT"} = 100; # original value: "0.1"
+    $globals_HR->{"DF_MINLEN"} = 1; # original value: "0.1"
+    $globals_HR->{"DF_MXSIZE"} = 4096; # original value: "0.1"
+    $globals_HR->{"DF_CMSEARCH_T"} = -1; # original value: "0.1"
+    $globals_HR->{"DF_CMBUILD_GAPTHRESH"} = 0.80;
+    $globals_HR->{"DF_NO_NAME"} = "<NONE>"; # original value: "0.1"
+    $globals_HR->{"DF_CMSEARCH_OPTS"} = " --hmm-cW 1.5 --no-null3 --noalign ";
+    $globals_HR->{"DF_CMSEARCH_ALG_FLAG"} = "--viterbi";
+    $globals_HR->{"DF_ALIMANIP_PFRACT"} = 0.95;
+    $globals_HR->{"DF_ALIMANIP_PTHRESH"} = 0.95;
+
+    # executable programs
+    $globals_HR->{"cmalign"} = "ssu-cmalign";
+    $globals_HR->{"cmsearch"} = "ssu-cmsearch";
+    $globals_HR->{"esl-alimanip"} = "ssu-esl-alimanip";
+    $globals_HR->{"esl-alistat"} = "ssu-esl-alistat";
+    $globals_HR->{"esl-reformat"} = "ssu-esl-reformat";
+    $globals_HR->{"esl-seqstat"} = "ssu-esl-seqstat";
+    $globals_HR->{"esl-sfetch"} = "ssu-esl-sfetch";
+    $globals_HR->{"esl-ssdraw"} = "ssu-esl-ssdraw";
+    $globals_HR->{"esl-weight"} = "ssu-esl-weight";
+    $globals_HR->{"ps2pdf"} = "ps2pdf";
+    $globals_HR->{"ssu-align"} = "ssu-align";
+
+    return;
+}
+
+
+#####################################################################
+# Subroutine: PrintGlobalsToFile()
+# Incept:     EPN, Wed Nov 18 10:09:45 2009
+# 
+# Purpose:    Print global variables to a file, usually a log file.
+#
+# Arguments: 
+#    $globals_HR:       reference to the hash of global variables
+#    $out_file:         file to append list of global variables to
+#
+# Returns:    Nothing.
+# 
+####################################################################
+sub PrintGlobalsToFile { 
+    my $narg_expected = 2;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, PrintGlobalsToFile() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($globals_HR, $out_file) = @_;
+
+    my @sorted_keys = sort (keys(%{$globals_HR}));
+    my $key;
+    PrintStringToFile($out_file, 0, "\n");
+    foreach $key (@sorted_keys) { 
+	PrintStringToFile($out_file, 0, sprintf("Global hash key: %-20s value: %s\n", $key, $globals_HR->{$key}));
+    }
+    PrintStringToFile($out_file, 0, "\n");
+
+    return;
+}
 
 
 #####################################################################
@@ -75,7 +164,7 @@ sub PrintBanner {
     $script_name =~ s/.+\///;
 
     PrintStringToFile($out_file, $print_to_stdout, sprintf("\# $script_name :: $script_desc\n"));
-    PrintStringToFile($out_file, $print_to_stdout, sprintf("\# SSU-ALIGN 0.1 (October 2009)\n"));
+    PrintStringToFile($out_file, $print_to_stdout, sprintf("\# SSU-ALIGN 0.1 (November 2009)\n"));
     PrintStringToFile($out_file, $print_to_stdout, sprintf("\# Copyright (C) 2009 HHMI Janelia Farm Research Campus\n"));
     PrintStringToFile($out_file, $print_to_stdout, sprintf("\# Freely distributed under the GNU General Public License (GPLv3)\n"));
     PrintStringToFile($out_file, $print_to_stdout, sprintf("\# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n"));
@@ -252,19 +341,22 @@ sub RunExecutable {
     my $output = "";
     my $command_worked = 1;
 
-    my $output_file = "";
+    # if we were going to redirect stderr to stdout, temporarily remove that, we'll add it below
+    $command =~ s/2\>\&1//;
+
     # determine if we're piping output to a file (or /dev/null)
+    my $output_file = "";
     if($command =~ m/\>\s*(\S+)\s*$/) { 
 	$output_file = $1;
     }
 
     # redirect stderr to stdout
-    if($command !~ m/2\>\&1\s*$/) { 
-	$command .= " 2>&1"; 
-    }
+    $command .= " 2>&1"; 
 
     PrintStringToFile($log_file, 0, ("Executing:  " . $command . "\n"));
     $output = `$command`;
+    # handle special case, esl-alistat output has "%" in it, which printf complains about in PrintStringToFile() call below
+    $output =~ s/\%/\%\%/g; 
 
     PrintStringToFile($log_file, 0, ("Returned:   " . ($? >> 8) . "\n"));
 
@@ -367,12 +459,13 @@ sub DetermineNumSeqsFasta {
 # Subroutine: DetermineNumSeqsStockholm()
 # Incept:     EPN, Thu Nov  5 11:44:34 2009
 # 
-# Purpose:    Use esl-seqstat to determine the number of sequences
-#             in a the first alignment of a Stockholm file.
+# Purpose:    Use esl-alistat to determine the number of sequences
+#             and number of alignments in a Stockholm file.
 #
 # Arguments: 
-#   $seqstat:   path and name of ssu-esl-seqstat executable
+#   $alistat:   path and name of ssu-esl-alistat executable
 #   $alifile:   Stockholm sequence file
+#   $sum_file:  sum file 
 #   $log_file:  log file to print commands to
 #   $nseq_AR:   reference to array to fill with num seqs for each
 #               alignment in $alifile
@@ -385,14 +478,16 @@ sub DetermineNumSeqsFasta {
 # 
 ####################################################################
 sub DetermineNumSeqsStockholm { 
-    my $narg_expected = 5;
+    my $narg_expected = 6;
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, DetermineNumSeqsStockholm() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($seqstat, $alifile, $log_file, $nseq_AR, $nali_R) = @_;
+    my($alistat, $alifile, $sum_file, $log_file, $nseq_AR, $nali_R) = @_;
 
     my ($nseq, $command, $line, $command_worked, $output);
-    $command = "$seqstat $alifile";
+    $command = "$alistat $alifile";
     $output = RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
 
+    $nseq = 0;
+    @{$nseq_AR} = ();
     my @tmp_A = split("\n", $output);
     my $nali = 0;
     foreach $line (@tmp_A) { 
@@ -402,7 +497,7 @@ sub DetermineNumSeqsStockholm {
 	    $nali++;
 	}
     }
-    if($nali == 0) { die "\nERROR parsing esl-seqstat output, couldn't determine number of sequences in $alifile.\n" }
+    if($nali == 0) { PrintErrorAndExit("ERROR parsing esl-alistat output, couldn't determine number of sequences in $alifile.", $sum_file, 1); }
 
     $$nali_R = $nali;
     return;
@@ -766,13 +861,12 @@ sub PrintErrorAndExit() {
 # $nseq_all_cms:         number of sequences that were best match to any CM
 # $nres_total_all_cms:   summed length of all target seqs that were best 
 #                        match to any CM
-# $nres_aligned_all_cms: summed length of extracted and aligned target seqs 
-#                        that were best match to any CM
+# $nres_hit_all_cms:     summed length of extracted hits that were best match to any CM
 # $indi_cm_name_AR:      reference to array with CM names
+# $cm_used_for_align_HR: reference to hash telling whether each CM was used for alignment or not
 # $nseq_cm_HR:           number of sequences that were best match to each CM 
 # $nres_total_cm_HR:     summed length of target seqs that were best match to each CM
-# $nres_aligned_cm_HR:   summed length of extracted and aligned target seqs that 
-#                        were best match to each CM
+# $nres_hit_cm_HR:       summed length of extracted hits that were best match to each CM
 # $print_to_stdout:      '1' to also print to stdout (in addition to <$sum_file>)
 # $sum_file:             summary file 
 # 
@@ -781,12 +875,14 @@ sub PrintErrorAndExit() {
 # 
 ####################################################################
 sub PrintSearchAndAlignStatistics { 
-    my $narg_expected = 13;
+    my $narg_expected = 14;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, PrintSearchAndAlignStatistics() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($search_seconds, $align_seconds, $target_nseq, $target_nres, $nseq_all_cms, $nres_total_all_cms, $nres_aligned_all_cms, 
-	$indi_cm_name_AR, $nseq_cm_HR, $nres_total_cm_HR, $nres_aligned_cm_HR, $print_to_stdout, $sum_file) = @_;
+    my ($search_seconds, $align_seconds, $target_nseq, $target_nres, $nseq_all_cms, $nres_total_all_cms, $nres_hit_all_cms, 
+	$indi_cm_name_AR, $cm_used_for_align_HR, $nseq_cm_HR, $nres_total_cm_HR, $nres_hit_cm_HR, $print_to_stdout, $sum_file) = @_;
 
     my ($cm_name, $i);
+    my $nres_aligned_all_cms = 0;
+    my $nseq_aligned_all_cms = 0;
 
     PrintStringToFile($sum_file, $print_to_stdout, sprintf("#\n"));
     PrintStringToFile($sum_file, $print_to_stdout, sprintf("#\n"));
@@ -794,55 +890,66 @@ sub PrintSearchAndAlignStatistics {
     PrintStringToFile($sum_file, $print_to_stdout, sprintf("#\n"));
 
     my $cm_width = MaxLengthScalarInArray($indi_cm_name_AR);
-    if($cm_width < length("*all models*")) { $cm_width = length("*all models*"); }
+    if($cm_width < length("*all-models*")) { $cm_width = length("*all-models*"); }
     my $dashes = ""; for($i = 0; $i < $cm_width; $i++) { $dashes .= "-"; } 
-    PrintStringToFile($sum_file, $print_to_stdout, sprintf("# %-*s  %7s  %8s  %13s  %8s\n", $cm_width, "model or",   "number",  "fraction", "average",        "average"));
-    PrintStringToFile($sum_file, $print_to_stdout, sprintf("# %-*s  %7s  %8s  %13s  %8s\n", $cm_width, "category",   "of seqs", "of total", "length",         "coverage"));
-    PrintStringToFile($sum_file, $print_to_stdout, sprintf("# %-*s  %7s  %8s  %13s  %8s\n", $cm_width, $dashes,      "-------", "--------", "-------------",  "--------"));
+    PrintStringToFile($sum_file, $print_to_stdout, sprintf("# %-*s  %7s  %8s  %13s  %8s  %13s\n", $cm_width, "model or",   "number",  "fraction", "average",        "average",  ""));
+    PrintStringToFile($sum_file, $print_to_stdout, sprintf("# %-*s  %7s  %8s  %13s  %8s  %13s\n", $cm_width, "category",   "of seqs", "of total", "length",         "coverage", "nucleotides"));
+    PrintStringToFile($sum_file, $print_to_stdout, sprintf("# %-*s  %7s  %8s  %13s  %8s  %13s\n", $cm_width, $dashes,      "-------", "--------", "-------------",  "--------", "-------------"));
     
-    PrintStringToFile($sum_file, $print_to_stdout, sprintf("  %-*s  %7d  %8.4f  %13.2f  %8.4f\n", 
+    PrintStringToFile($sum_file, $print_to_stdout, sprintf("  %-*s  %7d  %8.4f  %13.2f  %8.4f  %13d\n", 
 							   $cm_width, "*input*", 
 							   $target_nseq,
 							   1.0, 
 							   $target_nres / $target_nseq,
-							   1.0));
+							   1.0, 
+							   $target_nres));
+    PrintStringToFile($sum_file, $print_to_stdout, "\#\n");
+    
     foreach $cm_name (@{$indi_cm_name_AR}) { 
 	if($nseq_cm_HR->{$cm_name} == 0) { 
-	    PrintStringToFile($sum_file, $print_to_stdout, sprintf("  %-*s  %7d  %8.4f  %13s  %8s\n", 
+	    PrintStringToFile($sum_file, $print_to_stdout, sprintf("  %-*s  %7d  %8.4f  %13s  %8s  %13d\n", 
 								   $cm_width, $cm_name, 
 								   $nseq_cm_HR->{$cm_name},
 								   $nseq_cm_HR->{$cm_name} / $target_nseq,
-								   "-", "-"));
+								   "-", "-", 0));
 	}
 	else { 
-	    PrintStringToFile($sum_file, $print_to_stdout, sprintf("  %-*s  %7d  %8.4f  %13.2f  %8.4f\n", 
+	    PrintStringToFile($sum_file, $print_to_stdout, sprintf("  %-*s  %7d  %8.4f  %13.2f  %8.4f  %13d\n", 
 								   $cm_width, $cm_name, 
 								   $nseq_cm_HR->{$cm_name},
 								   $nseq_cm_HR->{$cm_name} / $target_nseq,
-								   $nres_aligned_cm_HR->{$cm_name} / $nseq_cm_HR->{$cm_name}, 
-								   $nres_aligned_cm_HR->{$cm_name} / $nres_total_cm_HR->{$cm_name}));
+								   $nres_hit_cm_HR->{$cm_name} / $nseq_cm_HR->{$cm_name}, 
+								   $nres_hit_cm_HR->{$cm_name} / $nres_total_cm_HR->{$cm_name}, 
+								   $nres_hit_cm_HR->{$cm_name}));
+	    if($cm_used_for_align_HR->{$cm_name}) { 
+		$nseq_aligned_all_cms += $nseq_cm_HR->{$cm_name}; 
+		$nres_aligned_all_cms += $nres_hit_cm_HR->{$cm_name}; 
+	    }
 	}
     }
     #if($nseq_all_cms == 0) { PrintErrorAndExit("ERROR, no seqs matched to any CM (during stat printing). Program should've exited earlier. Error in code.", $sum_file, 1); }
-    PrintStringToFile($sum_file, $print_to_stdout, sprintf("  %-*s  %7d  %8.4f  %13.2f  %8.4f\n", 
-							   $cm_width, "*all models*", 
+    PrintStringToFile($sum_file, $print_to_stdout, "\#\n");
+    PrintStringToFile($sum_file, $print_to_stdout, sprintf("  %-*s  %7d  %8.4f  %13.2f  %8.4f  %13d\n", 
+							   $cm_width, "*all-models*", 
 							   $nseq_all_cms,
 							   $nseq_all_cms / $target_nseq,
-							   $nres_aligned_all_cms / $nseq_all_cms, 
-							   $nres_aligned_all_cms / $nres_total_all_cms));
+							   $nres_hit_all_cms / $nseq_all_cms, 
+							   $nres_hit_all_cms / $nres_total_all_cms, 
+							   $nres_hit_all_cms));
     if($target_nseq > $nseq_all_cms) { 
-	PrintStringToFile($sum_file, $print_to_stdout, sprintf("  %-*s  %7d  %8.4f  %13.2f  %8s\n", 
-							       $cm_width, "*no models*", 
+	PrintStringToFile($sum_file, $print_to_stdout, sprintf("  %-*s  %7d  %8.4f  %13.2f  %8.4f  %13d\n", 
+							       $cm_width, "*no-models*", 
 							       $target_nseq - $nseq_all_cms,
 							       ($target_nseq - $nseq_all_cms) / $target_nseq,
 							       ($target_nres - $nres_total_all_cms) / ($target_nseq - $nseq_all_cms),
-							       "-"));
+							       0.,
+							       ($target_nres - $nres_total_all_cms)));
     }
     else { 
-	PrintStringToFile($sum_file, $print_to_stdout, sprintf("  %-*s  %7d  %8.4f  %13s  %8s\n", 
-							       $cm_width, "*no models*", 
+	PrintStringToFile($sum_file, $print_to_stdout, sprintf("  %-*s  %7d  %8.4f  %13s  %8s  %13s\n", 
+							       $cm_width, "*no-models*", 
 							       $target_nseq - $nseq_all_cms,
-							       0., "-", "-"));
+							       0., "-", "-", 0));
     }
     
     if($search_seconds eq "0") { $search_seconds = 1; }
@@ -863,9 +970,9 @@ sub PrintSearchAndAlignStatistics {
     }
     if($align_seconds ne "NA") { 
 	PrintStringToFile($sum_file, $print_to_stdout, sprintf("  %-9s  %8d  %7.3f  %13.3f  %13d  %8.1f\n", 
-							       "alignment", $nseq_all_cms, 
-							       ($nseq_all_cms / $align_seconds), 
-							       ($nseq_all_cms / $align_seconds), 
+							       "alignment", $nseq_aligned_all_cms, 
+							       ($nseq_aligned_all_cms / $align_seconds), 
+							       ($nseq_aligned_all_cms / $align_seconds), 
 							       $nres_aligned_all_cms, 
 							       $nres_aligned_all_cms / $align_seconds));
     }

@@ -38,6 +38,10 @@ if(! (-e $subs_file)) {
 }
 require $subs_file;
 
+# get global variables
+our %globals_H = ();
+GetGlobals(\%globals_H, $ssualigndir);
+
 # Start timing, this is done different depending on if Time::HiRes is installed or not
 my $time_hires_installed = UseModuleIfItExists("Time::HiRes qw(gettimeofday)");
 my $total_seconds = -1 * SecondsSinceEpoch($time_hires_installed);
@@ -108,9 +112,6 @@ foreach $opt (keys %opt_takes_arg_H) {
     if($opt_takes_arg_H{$opt}) { $opt_H{$opt} = ""; }
     else                       { $opt_H{$opt} = 0; }
 }
-
-# the only global variables: default values
-my $df_gapthresh = 0.80;
 
 Getopt::Long::Configure ("bundling");
 my $opt_return = GetOptions
@@ -188,7 +189,7 @@ if($opt_H{"--trunc"} ne "") {
 my $do_draw = 0;
 if(($opt_H{"--trunc"} ne "") && 
    ($opt_H{"-d"})            && 
-   (($opt_H{"--gapthresh"} eq "") || ($opt_H{"--gapthresh"} == $df_gapthresh))) 
+   (($opt_H{"--gapthresh"} eq "") || ($opt_H{"--gapthresh"} == $globals_H{"DFCMBUILDGAPTHRESH"}))
 { 
     $do_draw = 1; 
 }
@@ -250,9 +251,9 @@ validate_and_setup_ssu_build($ssualigndir, $aln_file_or_model_name, $key_out, \%
 #########################################
 # Print banner to summary and log files #
 #########################################
-PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 0, "");
-PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 0, "");
-
+PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 0, $sum_file);
+PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 0, $log_file);
+PrintGlobalsToFile(\%globals_H, $log_file);
 
 ###########################
 # Build mode: Do the work #
@@ -261,7 +262,7 @@ my $ssdraw_failed_at_least_once = 0;
 my $ssdraw_worked_at_least_once = 0;
 my $gapthresh = $opt_H{"--gapthresh"};
 my $build_aln_file;
-if($gapthresh eq "")  { $gapthresh = $df_gapthresh; }
+if($gapthresh eq "")  { $gapthresh = $globals_H{"DF_CMBUILD_GAPTHRESH"}; }
 
 if($do_build_mode) 
 { 
@@ -428,8 +429,8 @@ sub validate_and_setup_ssu_build {
 	    }
 	}
 
-	#Validate that ssu-cmbuild exists and is in path
-	$cmbuild = "ssu-cmbuild";
+	#Validate that our cmbuild exists and is in path
+	$cmbuild = $globals_H{"cmbuild"};
 	RunExecutable("$cmbuild -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $cmbuild is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
     }
 
@@ -441,18 +442,18 @@ sub validate_and_setup_ssu_build {
 
     if(($opt_HR->{"--trunc"}) || $do_number_mode) { 
 	# verify that we can run esl-alimanip
-	$alimanip = "ssu-esl-alimanip";
+	$alimanip = $globals_H{"esl-alimanip"};
 	RunExecutable("$alimanip -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $alimanip is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
     }
 
     # if $do_draw (passed in), we'll try to draw a secondary structure diagram showing the part of the model included/excluded by the truncation,
     # if we can find the template file and esl-ssdraw
     if($do_draw) { 
-	$template_file = $ssualigndir . "/ssu-align-0p1.ps";
+	$template_file = $globals_H{"DF_TEMPLATE_FILE"};
 	if(!(-e $template_file)) { $template_file = ""; }
 
 	if($template_file ne "") { 
-	    $ssdraw = "ssu-esl-ssdraw";
+	    $ssdraw = $globals_H{"esl-ssdraw"};
 	    RunExecutable("$ssdraw -h > /dev/null", 0, 0, $log_file, \$command_worked, "WARNING: the command \"$ssdraw -h\" should have successfully completed but it didn't. No structure diagrams will be drawn.");
                                         #0 = don't die if command fails
 	    if(! $command_worked ) { $ssdraw = ""; }
@@ -510,7 +511,7 @@ sub run_cmbuild {
     if($opt_HR->{"-F"})             { $extra_opts .= " -F"; }
 
     if($opt_HR->{"--eent"})  { $extra_opts .= " --eent"; }
-    else                  { $extra_opts .= " --enone"; }
+    else                     { $extra_opts .= " --enone"; }
     if($opt_HR->{"--ere"})   { $extra_opts .= " --ere " . $opt_HR->{"--ere"}; }
 
     if($cm_name ne "") { $extra_opts .= " -n $cm_name"; }
@@ -780,7 +781,7 @@ sub run_ssdraw_for_ssu_build {
     if(! $opt_HR->{"--ps-only"}) { 
 	my $ps2pdf;
 	if($opt_HR->{"--ps2pdf"} ne "") { $ps2pdf = $opt_HR->{"--ps2pdf"}; }
-	else                            { $ps2pdf = "ps2pdf"; }
+	else                            { $ps2pdf = $globals_H{"ps2pdf"}; }
 	my $die_if_fails = 0;
 	my $print_output_upon_failure = 0;
 	my $errmsg = "";

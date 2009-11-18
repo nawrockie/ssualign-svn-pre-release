@@ -34,13 +34,17 @@ if(! (-e $subs_file)) {
 }
 require $subs_file;
 
+# get global variables
+our %globals_H = ();
+GetGlobals(\%globals_H, $ssualigndir);
+
 # Start timing, this is done differently depending on if Time::HiRes is installed or not
 my $time_hires_installed = UseModuleIfItExists("Time::HiRes qw(gettimeofday)");
 my $total_seconds = -1 * SecondsSinceEpoch($time_hires_installed);
 
 my $script_desc    = "draw SSU rRNA secondary structure diagrams";
 my $date           = scalar localtime();
-my $usage          =  "Usage: ssu-draw [options] <directory created by ssu-align (includes >= 1 alignment file(s))>\n";
+my $usage          = "Usage: ssu-draw [options] <directory created by ssu-align (includes >= 1 alignment file(s))>\n";
    $usage         .= "Usage: ssu-draw [options] -a <Stockholm alignment file (must have .stk suffix)>\n";
 my $options_usage  = "where general options are:\n";
 #                           1         2         3         4         5         6         7         8
@@ -210,7 +214,7 @@ close(OUT);
 
 PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, $sum_file);
 PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 0, $log_file);
-
+PrintGlobalsToFile(\%globals_H, $log_file);
 
 ##################################
 # Validate that everything is go #
@@ -330,7 +334,7 @@ sub validate_and_setup_ssu_draw {
 	if(!(-e $cm_file)) { PrintErrorAndExit("ERROR, CM file $cm_file, specified with -m does not exist.", $sum_file, 1); }
     }
     else { # -m not enabled, assume the user used the default CM file:
-	$cm_file = $ssualigndir . "/ssu-align-0p1.cm";
+	$cm_file = $globals_H{"DF_CM_FILE"};
 	if(!(-e $cm_file)) { PrintErrorAndExit("ERROR, the default CM file $cm_file does not exist.\nIf you used a different CM file to create the alignments in $dir, use the -m option.", $sum_file, 1); }
     }
 
@@ -340,12 +344,12 @@ sub validate_and_setup_ssu_draw {
 	if(!(-e $template_file)) { PrintErrorAndExit("ERROR, template postscript file $template_file, specified with -t does not exist.", $sum_file, 1); }
     }
     else { # -t not enabled, assume the user used the default CM file:
-	$template_file = $ssualigndir . "/ssu-align-0p1.ps";
+	$template_file = $globals_H{"DF_TEMPLATE_FILE"};
 	if(!(-e $template_file)) { PrintErrorAndExit("ERROR, the default template file $template_file does not exist.\nIf you want to use a different postscript template file to create the structure diagrams, use the -t option.", $sum_file, 1); }
     }
 
     #Validate that esl-ssdraw exist
-    my $ssdraw = "ssu-esl-ssdraw";
+    my $ssdraw = $globals_H{"esl-ssdraw"};
     my $command_worked;
     RunExecutable("$ssdraw -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $ssdraw is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
 
@@ -588,7 +592,7 @@ sub run_ssdraw_for_ssu_draw {
     if(! $opt_HR->{"--ps-only"}) { 
 	my $ps2pdf;
 	if($opt_HR->{"--ps2pdf"} ne "") { $ps2pdf = $opt_HR->{"--ps2pdf"}; }
-	else                         { $ps2pdf = "ps2pdf"; }
+	else                            { $ps2pdf = $globals_H{"ps2pdf"}; }
 	my $die_if_fails = 0;
 	my $print_output_upon_failure = 0;
 	my $errmsg = "";

@@ -36,6 +36,10 @@ if(! (-e $subs_file)) {
 }
 require $subs_file;
 
+# get global variables
+our %globals_H = ();
+GetGlobals(\%globals_H, $ssualigndir);
+
 # Start timing, this is done different depending on if Time::HiRes is installed or not
 my $time_hires_installed = UseModuleIfItExists("Time::HiRes qw(gettimeofday)");
 my $total_seconds = -1 * SecondsSinceEpoch($time_hires_installed);
@@ -118,10 +122,6 @@ foreach $opt (keys %opt_takes_arg_H) {
     if($opt_takes_arg_H{$opt}) { $opt_H{$opt} = ""; }
     else                       { $opt_H{$opt} = 0; }
 }
-
-# the only global variables: default values
-our $df_pf = 0.95;
-our $df_pt = 0.95;
 
 Getopt::Long::Configure ("bundling");
 my $opt_return = GetOptions
@@ -291,13 +291,14 @@ close(OUT);
 
 PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, $sum_file);
 PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 0, $log_file);
+PrintGlobalsToFile(\%globals_H, $log_file);
 
 ##################################
 # Validate that everything is go #
 ##################################
 my @stk_list_A = ();
-my ($cm_file, $template_file, $alimanip, $ssdraw, $weight, $seqstat, $reformat);
-validate_and_setup_ssu_mask($ssualigndir, $dir, $key_in, \%opt_H, \$cm_file, \$template_file, \$alimanip, \$ssdraw, \$weight, \$seqstat, \$reformat, \@stk_list_A, $log_file, $sum_file);
+my ($cm_file, $template_file, $alimanip, $ssdraw, $weight, $alistat, $reformat);
+validate_and_setup_ssu_mask($ssualigndir, $dir, $key_in, \%opt_H, \$cm_file, \$template_file, \$alimanip, \$ssdraw, \$weight, \$alistat, \$reformat, \@stk_list_A, $log_file, $sum_file);
 my $naln = scalar(@stk_list_A);
 my $aln_file;
 
@@ -354,8 +355,8 @@ if($do_mask_mode)
 
     $pt_opt = $opt_H{"--pt"};
     $pf_opt = $opt_H{"--pf"};
-    if($pt_opt eq "") { $pt_opt = $df_pt; }
-    if($pf_opt eq "") { $pf_opt = $df_pf; }
+    if($pt_opt eq "") { $pt_opt = $globals_H{"DF_ALIMANIP_PTHRESH"; }
+    if($pf_opt eq "") { $pf_opt = $globals_H{"DF_ALIMANIP_PFRACT"; }
 
     for($i = 0; $i < $naln; $i++) { 
 	$aln_file = $stk_list_A[$i];
@@ -365,12 +366,8 @@ if($do_mask_mode)
 	if($opt_H{"--in-mask"} ne "") { # mask the alignment using the --in-mask mask 
 	    my ($mask_worked, $n0, $n1, $inmask_masked_aln_file, $mask_file, $keep_mask, $do_draw, $mask_ok_if_fails);
 
-	    if(!$opt_H{"-a"}) { 
-		PrintErrorAndExit("ERROR, --in-mask requires the -a option.", $sum_file, 1); 
-	    }
-	    if(!(-e $opt_H{"--in-mask"})) { 
-		PrintErrorAndExit("ERROR, the --in-mask file " . $opt_H{"--in-mask"} . " does not exist.", $sum_file, 1); 
-	    }
+	    if(!$opt_H{"-a"}) { PrintErrorAndExit("ERROR, --in-mask requires the -a option.", $sum_file, 1); }
+	    if(!(-e $opt_H{"--in-mask"})) { PrintErrorAndExit("ERROR, the --in-mask file " . $opt_H{"--in-mask"} . " does not exist.", $sum_file, 1); }
 
 	    # first try --mask-rf (to see if the mask is non-gap RF length (instead of full alignment length))
 	    $rfmask2use       = $opt_H{"--in-mask"};
@@ -523,7 +520,7 @@ if($do_filter_mode) {
 
     for($i = 0; $i < $naln; $i++) { 
 	$aln_file = $stk_list_A[$i];
-	filter_alignment($weight, $seqstat, \%opt_H, $filter_root, $aln_file, $key_out, \@stk_suffix_A, $max_width_in, $max_width_fil, \@files_to_unlink_A, $sum_file, $log_file);
+	filter_alignment($weight, $alistat, \%opt_H, $filter_root, $aln_file, $key_out, \@stk_suffix_A, $max_width_in, $max_width_fil, \@files_to_unlink_A, $sum_file, $log_file);
     }
 }    
 
@@ -607,12 +604,8 @@ if($do_remove_seqs_mode)
 	#determine number of sequences in the alignment
 	my $nali = 0;
 	my @nseq_A = ();
-	DetermineNumSeqsStockholm($seqstat, $seqr_aln, $log_file, \@nseq_A, \$nali);
-	if($nali != 1) { 
-	    my $errmsg = "\nERROR, unexpectedly found %d (not 1) alignments in $seqr_aln.\n"; 
-	    PrintStringToFile($sum_file, 0, $errmsg);
-	    die $errmsg; 
-	}
+	DetermineNumSeqsStockholm($alistat, $seqr_aln, $sum_file, $log_file, \@nseq_A, \$nali);
+	if($nali != 1) { PrintErrorAndExit("ERROR, unexpectedly found %d (not 1) alignments in $seqr_aln.", $sum_file, 1); }
 	PrintStringToFile($sum_file, 1, sprintf("  %-*s  %8d\n", $max_width, $seqr_aln, $nseq_A[0]));
     }
     elsif($opt_H{"--seq-k"} ne "") { 
@@ -750,7 +743,7 @@ exit(0);
 # $alimanip_ref:      RETURN; the esl-alimanip command
 # $ssdraw_ref:        RETURN; the esl-ssdraw command
 # $weight_ref:        RETURN; the esl-weight command, only relevant if --filter enabled
-# $seqstat_ref:       RETURN; the esl-seqstat command, only relevant if --filter enabled
+# $alistat_ref:       RETURN; the esl-alistat command, only relevant if --filter enabled
 # $reformat_ref:      RETURN; the esl-reformat command, only relevant if --afa, --only-afa, or --stk2afa enabled
 # $stk_list_arr_ref:  RETURN: ref to array of alignment files to operate on
 # $log_file:          the log file
@@ -766,7 +759,7 @@ exit(0);
 sub validate_and_setup_ssu_mask { 
     my $narg_expected = 14;
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, validate_and_setup_ssu_mask() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($ssualigndir, $dir, $key_in, $opt_HR, $cm_file_ref, $template_file_ref, $alimanip_ref, $ssdraw_ref, $weight_ref, $seqstat_ref, $reformat_ref, $stk_list_arr_ref) = @_;
+    my($ssualigndir, $dir, $key_in, $opt_HR, $cm_file_ref, $template_file_ref, $alimanip_ref, $ssdraw_ref, $weight_ref, $alistat_ref, $reformat_ref, $stk_list_arr_ref) = @_;
 
     #Validate that we can read the CM file
     my $cm_file = "";
@@ -796,49 +789,48 @@ sub validate_and_setup_ssu_mask {
     else { #-m enabled, -t not enabled: with this combo if the default template file exists we'll try to do ssu-align with it,
 	   # if not, then we can still do masking but we won't try to call ssu-draw
 	#check if default template exists:
-	$template_file = "";
-	if(-e ($ssualigndir . "/ssu-align-0p1.ps")) { 
-	    $template_file = $ssualigndir . "/ssu-align-0p1.ps";
+	$template_file = $globals_H{"DF_TEMPLATE_FILE"};
+	if(! (-e $template_file)) { $template_file = ""; }
 	}
     }
     #Validate that esl-alimanip and esl-ssdraw (if we need it) exist
-    my $alimanip = "ssu-esl-alimanip";
+    my $alimanip = $globals_H{"esl-alimanip"};
     my $command_worked;
     RunExecutable("$alimanip -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $alimanip is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
 
     my $ssdraw = "";
     if($template_file ne "") { 
-	$ssdraw = "ssu-esl-ssdraw";
+	$ssdraw = $globals_H{"esl-ssdraw"};
 	RunExecutable("$ssdraw -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $ssdraw is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
     }
 
     #Validate that 'esl-weight' and 'esl-seqstat' exist if --filter enabled.
     my $weight = "";
-    my $seqstat = "";
+    my $alistat = "";
     if($opt_HR->{"--filter"} ne "") { 
-	$weight = "ssu-esl-weight";
+	$weight = $globals_H{"esl-weight"};
 	RunExecutable("$weight -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $weight (required b/c --filter enabled) is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
-	$seqstat = "ssu-esl-seqstat";
-	RunExecutable("$seqstat -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $seqstat (required b/c --filter enabled) is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
+	$alistat = $globals_H{"esl-alistat"};
+	RunExecutable("$alistat -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $alistat (required b/c --seq-r or --seq-k enabled) is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
     }
 
-    #Validate that 'esl-seqstat' works if --seq-r or --seq-k
+    #Validate that 'esl-alistat' works if --seq-r or --seq-k 
     if(($opt_H{"--seq-r"} ne "") || ($opt_H{"--seq-k"})) { 
-	$seqstat = "ssu-esl-seqstat";
-	RunExecutable("$seqstat -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $seqstat (required b/c --seq-r or --seq-k enabled) is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
+	$alistat = $globals_H{"esl-alistat"};
+	RunExecutable("$alistat -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $alistat (required b/c --seq-r or --seq-k enabled) is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
     }	
 
 
     #Validate that 'esl-reformat' works if --afa, --only-afa, or --stk2afa
     my $reformat = "";
     if(($opt_H{"--afa"}) || ($opt_H{"--only-afa"}) || ($opt_H{"--stk2afa"})) { 
-	$reformat = "ssu-esl-reformat";
+	$reformat = $globals_H{"esl-reformat"};
 	RunExecutable("$reformat -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $reformat (required b/c --afa, --only-afa or --stk2afa enabled) is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
     }	
 
     my $naln = 0;
     my $errmsg = "";
-    my ($aln_name, $alist_file);
+    my ($aln_name);
     if($opt_HR->{"-a"}) { # special mode, single command line argument is not a directory, it's an alignment
 	$aln_name = $dir;
 	if(! (-e $aln_name)) { 
@@ -896,7 +888,7 @@ sub validate_and_setup_ssu_mask {
     $$alimanip_ref      = $alimanip;
     $$ssdraw_ref        = $ssdraw;
     $$weight_ref        = $weight;
-    $$seqstat_ref       = $seqstat;
+    $$alistat_ref       = $alistat;
     $$reformat_ref      = $reformat;
     
     return;
@@ -1155,8 +1147,8 @@ sub mask_alignment {
 #             a call to the esl-weight program.
 #
 # Arguments:  
-#   $weight:                path and name of esl-weight/ssu-esl-weight executable
-#   $seqstat:               path and name of esl-weight/ssu-esl-seqstat executable
+#   $weight:                path and name of esl-weight executable
+#   $alistat:               path and name of esl-alistat executable
 #   $opt_HR:                reference to the hash of command-line options
 #   $filter_root:           name for mask-related files, usually 'f'
 #   $aln_file2filter:       name of alignment file to filter, with path
@@ -1174,7 +1166,7 @@ sub mask_alignment {
 sub filter_alignment { 
     my $narg_expected = 12;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, filter_alignment() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($weight, $seqstat, $opt_HR, $filter_root, $aln_file2filter, $key_out, $stk_suffix_AR, $max_width_in, $max_width_fil, $files_to_unlink_AR, $sum_file, $log_file) = @_;
+    my ($weight, $alistat, $opt_HR, $filter_root, $aln_file2filter, $key_out, $stk_suffix_AR, $max_width_in, $max_width_fil, $files_to_unlink_AR, $sum_file, $log_file) = @_;
 
     my($filtered_stk_file, $nseq_input, $nseq_filtered, $filtered_stk_file2print, $command_worked, $filtered_afa_file, $filtered_afa_file2print, $aln_file2filter2print); 
 
@@ -1194,8 +1186,8 @@ sub filter_alignment {
     }    
     my @nseq_A = ();
     my $nali = 0;
-    DetermineNumSeqsStockholm($seqstat, $aln_file2filter, $log_file, \@nseq_A, \$nali);
-    if($nali != 1) { die "\nERROR, unexpectedly found %d (not 1) alignments in $aln_file2filter.\n"; }
+    DetermineNumSeqsStockholm($alistat, $aln_file2filter, $sum_file, $log_file, \@nseq_A, \$nali);
+    if($nali != 1) { PrintErrorAndExit("ERROR, unexpectedly found %d (not 1) alignments in $aln_file2filter.", $sum_file, 1); }
     $nseq_input = $nseq_A[0];
 
     # esl-weight -f --idf 0.75 10.stk
@@ -1204,12 +1196,8 @@ sub filter_alignment {
     $command = "$weight -o $filtered_stk_file -f --idf " . $opt_HR->{"--filter"} . " $aln_file2filter";
     RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
     @nseq_A = ();
-    DetermineNumSeqsStockholm($seqstat, $filtered_stk_file, $log_file, \@nseq_A, \$nali);
-    if($nali != 1) { 
-	my $errmsg = "\nERROR, unexpectedly found %d (not 1) alignments in $filtered_stk_file.\n"; 
-	PrintStringToFile($sum_file, 0, $errmsg);
-	die $errmsg; 
-    }
+    DetermineNumSeqsStockholm($alistat, $filtered_stk_file, $sum_file, $log_file, \@nseq_A, \$nali);
+    if($nali != 1) { PrintErrorAndExit("ERROR, unexpectedly found %d (not 1) alignments in $filtered_stk_file.", $sum_file, 0);  }
 
     $nseq_filtered = $nseq_A[0];
 
@@ -1293,7 +1281,7 @@ sub run_ssdraw_for_ssu_mask {
     if(! $opt_HR->{"--ps-only"}) { 
 	my $ps2pdf;
 	if($opt_HR->{"--ps2pdf"} ne "") { $ps2pdf = $opt_HR->{"--ps2pdf"}; }
-	else                            { $ps2pdf = "ps2pdf"; }
+	else                            { $ps2pdf = $globals_H{"ps2pdf"}; }
 	$die_if_fails = 0;
 	$print_output_upon_failure = 0;
 	my $errmsg = "";
