@@ -33,10 +33,10 @@ if(! (-d $ssualigndir)) {
     printf STDERR ("ERROR, the ssu-align directory specified by your environment variable SSUALIGNDIR does not exist, see the User's Guide Installation section.\n"); 
     exit(1); 
 }    
-#Make sure the SSUALIGNDIR directory includes ssu-align-0p1.subs.pm
-my $subs_file = $ssualigndir . "/ssu-align-0p1.subs.pm";
+#Make sure the SSUALIGNDIR directory includes ssu.pm
+my $subs_file = $ssualigndir . "/ssu.pm";
 if(! (-e $subs_file)) { 
-    printf STDERR ("ERROR, the required perl module ssu-align-0p1.subs.pm is not in the directory specified by your SSUALIGNDIR environment variable.\n"); 
+    printf STDERR ("ERROR, the required perl module ssu.pm is not in the directory specified by your SSUALIGNDIR environment variable.\n"); 
     exit(1); 
 }
 require $subs_file;

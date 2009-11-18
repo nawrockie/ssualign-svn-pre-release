@@ -43,9 +43,9 @@ if(! (-d $ssualigndir)) {
     exit(1); 
 }    
 #Make sure the SSUALIGNDIR has the ssu-align-0p1.subs.pm file
-my $subs_file = $ssualigndir . "/ssu-align-0p1.subs.pm";
+my $subs_file = $ssualigndir . "/ssu.pm";
 if(! (-e $subs_file)) { 
-    printf STDERR ("\nERROR, the required perl module ssu-align-0p1.subs.pm is not in the directory specified by your SSUALIGNDIR environment variable.\n"); 
+    printf STDERR ("\nERROR, the required perl module ssu.pm is not in the directory specified by your SSUALIGNDIR environment variable.\n"); 
     exit(1); 
 }
 require $subs_file;
