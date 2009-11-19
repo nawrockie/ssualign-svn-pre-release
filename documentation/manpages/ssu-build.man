@@ -1,0 +1,295 @@
+.TH "ssu-align" 1 "@RELEASEDATE@" "@PACKAGE@ @RELEASE@" "@PACKAGE@ Manual"
+
+.SH NAME
+.TP 
+ssu-build - build small subunit ribosomal RNA (16s/18s SSU rRNA) covariance models
+
+.SH SYNOPSIS
+.B ssu-build
+.I [options]
+.I alignment-file
+
+.TP
+Build models using default SSU-ALIGN seed alignment:
+.B ssu-build -d 
+.I [options]
+.I seed-name
+
+.SH DESCRIPTION
+
+.PP
+.B ssu-build
+reads an multiple alignment of SSU rRNA sequences from 
+.I alignment-file,
+constructs a covariance model and saves the CM 
+to a file. 
+.PP
+The alignment file must be in Stockholm format, and
+must contain consensus secondary structure annotation.
+
+.PP 
+Alternatively, with the 
+.B -d 
+option, 
+.B ssu-build 
+uses the default SSU-ALIGN seed alignment for family
+.I seed-name 
+as the input alignment. Possible choices for
+.I seed-name 
+are 
+.I archaea, 
+.I bacteria 
+and
+.I eukarya.
+The 
+.B -d
+option is expected to mainly be useful in combination
+with the
+.BI --trunc <s>
+option, which specifies that a subset of the input alignment be used
+to construct a non-full length model of a SSU rRNA, such as within
+positions spanned by a specific set of primers designed to target a
+variable region. (See the description of the
+.BI --trunc <s>
+option below for details on its usage.)
+
+.PP
+When the
+.B -d 
+option is used in combination with the
+.BI --trunc <s>
+option, 
+.B ssu-build
+will create secondary structure diagrams that highlight the specific
+SSU rRNA region that the newly constructed model represents.
+
+.PP
+The 
+.BI --trunc <s>
+option requires the user to know the beginning and ending 
+.I consensus
+position of the desired region. Running
+.B ssu-build
+with the 
+.I --num 
+option will cause it to reformat the input alignment such that its
+consensus columns are numbered to make it easier to determine the
+appropriate column range. Additionally, if 
+.I -d 
+is being used to use one of the default seed alignments, the 
+secondary structure diagrams of the default seed models included in the 
+User's Guide have consensus positions numbered.
+
+
+.PP 
+PARAGRAPH HERE ON EXPERT BUILDING OPTIONS??
+
+.PP
+.B ssu-buid
+uses the program 
+.B cmbuild 
+from the 
+.B INFERNAL
+package to construct CMs. Interested and motivated users can use
+.B cmbuild
+ directly to create models. The version installed with 
+.B SSU-ALIGN
+is actually called 
+.B ssu-cmbuild
+to distinguish it from any versions of the program distributed 
+with 
+.B INFERNAL
+on your system.
+
+.SH OPTIONS
+
+.TP
+.B -h
+Print brief help; includes version number and summary of
+all options.
+
+.TP
+.BI -F
+Allow output directory 
+.I output-root
+to be deleted and
+overwritten. Normally, if the
+.I output-root 
+directory already exists, 
+.B ssu-align 
+exits with an error unless the
+.I -F
+option is set.
+
+.TP
+.BI -b " <x>"
+Set the minimum bit score threshold for stage 1 survival of an HMM hit as
+.I <x>.
+Only hits that meet or exceed this threshold will be aligned in stage 2.
+By default, 
+.I <x>
+is 100 bits. 
+
+.TP
+.BI -l " <n>"
+Set the minimum length threshold for stage 1 survival of
+an HMM hit as
+.I <x>.
+Only hits that meet or exceed this threshold will be aligned in stage 2.
+By default, 
+.I <n>
+is 1.
+
+.TP
+.BI -n " <n>"
+Run in special 
+.I "prep"
+mode. Split 
+.I sequence-file
+into multiple files with
+.I <n>
+sequences each, and create scripts to run 
+.B ssu-align 
+on each of the smaller sequence files and merge the resulting
+alignments into master alignments when they are all finished running. 
+These master alignments will be identical to the alignments that would
+have been created if a single
+.B ssu-align
+run was performed for the complete sequence file.
+
+.TP
+.BI -c " <n>"
+Run in special 
+.I "prep"
+mode. Split 
+.I sequence-file
+into 
+.I <n> 
+files, each with the same number of sequences.
+Also, create scripts to run 
+.B ssu-align 
+on each of the smaller sequence files and merge the resulting
+alignments into master alignments when they are all finished running. 
+These master alignments will be identical to the alignments that would
+have been created if a single
+.B ssu-align
+run was performed for the complete sequence file.
+
+.TP
+.B -s 
+Only perform the search stage (stage 1). Determine
+the best-matching model, define the likely begin
+and end positions for each SSU (sub)sequence, and extract those
+subsequence from 
+.I sequence-file. 
+Do not align each extracted sequence to its best matching model.
+
+.TP
+.B -a 
+Skip the stage 1 search and only perform the alignment stage (stage 2).
+Presume that each full length target sequence in
+.I sequence-file
+is a SSU sequence or subsequence that matches
+to the CM in 
+.I cm-file.
+This is only allowed if
+.I cm-file
+contains exactly 1 CM.
+
+.TP
+.B -u 
+Do not truncate each target sequence to its predicted begin and end
+SSU positions from stage 1. Instead, in stage 2, align each 
+full length sequence from
+.I sequence-file
+to its best matching model from stage 1.
+
+.TP
+.BI -i " <x>"
+After creating alignments in stage 2, filter the alignment based on
+sequence identity so that no two sequences in the filtered alignment
+will share more than
+.I <x>
+fractional identity. If this option is used in prep mode
+(when 
+.B -n
+or 
+.B -c 
+is also used), then each small alignment (those created for the
+split-up sequence file) 
+will be filtered prior to merging to create a master
+alignment. The master alignment will also be filtered.
+However, in this case the master alignments will not necessarily be identical to the
+alignments created with a single run of
+.B ssu-align.
+This is because the sequences that are removed by filtering is order
+dependent, so many filterings of the smaller intermediate alignments
+may remove different sequences than a single filtering of the large master
+alignment.
+
+.TP
+.B -t
+In stage 1, do not search the reverse complement of each sequence,
+only search the top strand (the actual sequence as it appears in
+.I sequence-file).
+Use this option if it is known that none of the input
+sequences are reverse complements of SSU sequences. 
+
+.TP
+.B -w
+In stage 1, use the HMM Forward algorithm instead of the HMM Viterbi
+algorithm for searching for hits. Forward is about two-fold slower,
+but may be more sensitive (i.e. result in more accurate definitions of
+start and end positions) in rare cases.
+
+.TP
+.B -g
+In stage 1, use a globally configured HMM for searching that will only
+find hits to full length SSU sequences.  By default, the
+HMM is configured in local mode which will find matches to SSU
+subsequences and full SSU sequences.
+
+.TP
+.B -d
+Do not append posterior probabilities (alignment confidence estimates)
+to the resulting alignments. By default, these probabilities are
+appended to the output alignments. These probabilities are useful for
+automatically masking out ambiguously aligned regions of the output
+alignments prior to phylogenetic inference as described in the User's
+Guide. This option will accelerate the alignment step by about 50%,
+and result in alignment files that take up about 67% less
+space. However, it should only be used if you know you do not want to
+mask or prune the alignments at a later stage.
+
+.TP
+.B -k
+Do not erase the 
+.I N
+local CM file copies (one for each of the 
+.I N
+CMs in 
+.I cm-file
+) from the 
+.I output-root
+directory after running
+.B ssu-align.
+By default, these CM files, which are temporarily copied to 
+.I output-root
+for convenience during execution of the program are erased
+after the program finishes running.
+
+.TP
+.BI -x " <x>"
+Change the maximum matrix size for the alignment stage to 
+.I <x> 
+Mb. By default 
+.I <x> 
+is 4096 Mb (4 Gb). This option should only used if
+.B ssu-align
+is crashing due to insufficient RAM. The program should tell you if
+this is the case with an informative error message, but may not in all
+cases. It is 
+.I not 
+necessary to decrease 
+.I <x>
+if your computer has less than 4 Gb of RAM. 

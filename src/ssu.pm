@@ -79,6 +79,7 @@ sub GetGlobals {
 
     # executable programs
     $globals_HR->{"cmalign"} = "ssu-cmalign";
+    $globals_HR->{"cmbuild"} = "ssu-cmbuild";
     $globals_HR->{"cmsearch"} = "ssu-cmsearch";
     $globals_HR->{"esl-alimanip"} = "ssu-esl-alimanip";
     $globals_HR->{"esl-alistat"} = "ssu-esl-alistat";

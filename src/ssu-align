@@ -64,16 +64,16 @@ my $usage          = "Usage: ssu-align [-options] <sequence file> <output dir to
 my $options_usage  = "where general options are:\n";
 #                           1         2         3         4         5         6         7         8
 #                  12345678901234567890123456789012345678901234567890123456789012345678901234567890
-$options_usage .= "  -h        : show brief help on version and usage\n";
-$options_usage .= "  -1        : output alignments in non-interleaved, 1 line/seq format\n";
-$options_usage .= "  -m <s>    : use CM file <s> instead of the default CM file\n";
-$options_usage .= "  -b <f>    : set minimum bit score of a surviving subsequence as <f> (default: 100)\n";
-$options_usage .= "  -l <n>    : set minimum length    of a surviving subsequence as <n> (default: 1)\n";
-$options_usage .= "  -F        : force; if <output dir> already exists - empty it and fill it\n";
-$options_usage .= "  --FF      : really force; remove <output dir> and all its subdirectories\n";
-$options_usage .= "  --keep    : keep intermediate files which are normally removed\n";
-$options_usage .= "  --only <s>: only search for and align to CM named <s> in CM file\n"; 
-$options_usage .= "              (default CM file includes 'archaea', 'bacteria', 'eukarya')\n";
+$options_usage .= "  -h         : show brief help on version and usage\n";
+$options_usage .= "  -1         : output alignments in non-interleaved, 1 line/seq format\n";
+$options_usage .= "  -m <s>     : use CM file <s> instead of the default CM file\n";
+$options_usage .= "  -b <f>     : set minimum bit score of a surviving subsequence as <f> (default: 100)\n";
+$options_usage .= "  -l <n>     : set minimum length    of a surviving subsequence as <n> (default: 1)\n";
+$options_usage .= "  -F         : force; if <output dir> already exists - empty it and fill it\n";
+$options_usage .= "  --FF       : really force; remove <output dir> and all its subdirectories\n";
+$options_usage .= "  --keep     : keep intermediate files which are normally removed\n";
+$options_usage .= "  --only <s> : only search for and align to CM named <s> in CM file\n"; 
+$options_usage .= "               (default CM file includes 'archaea', 'bacteria', 'eukarya')\n";
 
 $options_usage .= "\noptions for running ssu-align in 'preparation' mode to split up a large job:\n";
 $options_usage .= "  --prep-n <n>  : split target seq file into multiple files with <n> seqs each\n";
@@ -90,11 +90,11 @@ $options_usage .= "  --forward  : use the HMM forward algorithm for searching, n
 $options_usage .= "  --global   : search with globally configured HMM [default: local]\n";
 
 $options_usage .= "\nexpert options for tuning the alignment stage:\n";
-$options_usage .= "  --no-trunc   : do not truncate seqs to HMM predicted start/end, align full seqs\n";
-$options_usage .= "  --aln-one <s>: only align best-matching sequences to the CM named <s> in CM file\n";
-$options_usage .= "  --filter <f> : filter aln based on seq identity, allow no 2 seqs > <f> identical\n";
-$options_usage .= "  --no-prob    : do not append posterior probabilities to alignments\n";
-$options_usage .= "  --mxsize <f> : increase mx size for cmalign to <f> Mb (default: 4096)\n";
+$options_usage .= "  --no-trunc    : do not truncate seqs to HMM predicted start/end, align full seqs\n";
+$options_usage .= "  --aln-one <s> : only align best-matching sequences to the CM named <s> in CM file\n";
+$options_usage .= "  --filter <f>  : filter aln based on seq identity, allow no 2 seqs > <f> identical\n";
+$options_usage .= "  --no-prob     : do not append posterior probabilities to alignments\n";
+$options_usage .= "  --mxsize <f>  : increase mx size for cmalign to <f> Mb (default: 4096)\n";
 
 
 ###################

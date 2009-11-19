@@ -355,8 +355,8 @@ if($do_mask_mode)
 
     $pt_opt = $opt_H{"--pt"};
     $pf_opt = $opt_H{"--pf"};
-    if($pt_opt eq "") { $pt_opt = $globals_H{"DF_ALIMANIP_PTHRESH"; }
-    if($pf_opt eq "") { $pf_opt = $globals_H{"DF_ALIMANIP_PFRACT"; }
+    if($pt_opt eq "") { $pt_opt = $globals_H{"DF_ALIMANIP_PTHRESH"}; }
+    if($pf_opt eq "") { $pf_opt = $globals_H{"DF_ALIMANIP_PFRACT"}; }
 
     for($i = 0; $i < $naln; $i++) { 
 	$aln_file = $stk_list_A[$i];
@@ -791,8 +791,8 @@ sub validate_and_setup_ssu_mask {
 	#check if default template exists:
 	$template_file = $globals_H{"DF_TEMPLATE_FILE"};
 	if(! (-e $template_file)) { $template_file = ""; }
-	}
     }
+
     #Validate that esl-alimanip and esl-ssdraw (if we need it) exist
     my $alimanip = $globals_H{"esl-alimanip"};
     my $command_worked;

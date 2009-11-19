@@ -9,6 +9,7 @@
 1  exercise  seed-6:ssu-draw   @ssu-draw@ seed-6 
 
 1  exercise  ecoli:ssu-build   @ssu-build@ -F bacteria-0p1.ecoli.stk
+
 1  exercise  ecoli:ssu-align   @ssu-align@ -F -m bacteria-0p1.ecoli.cm seed-6.fa ecoli
 1  exercise  ecoli:ssu-mask    @ssu-mask@ -m bacteria-0p1.ecoli.cm ecoli
 

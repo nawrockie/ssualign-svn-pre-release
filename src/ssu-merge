@@ -51,14 +51,14 @@ my $total_seconds = -1 * SecondsSinceEpoch($time_hires_installed);
 
 my $script_desc    = "merge SSU rRNA alignments";
 my $date           = scalar localtime();
-my $usage          = "Usage: ssu-merge [-options] <dir created by ssu-align --prep-n or --prep-p call>";
+my $usage          = "Usage: ssu-merge [-options] <dir created by ssu-align --prep-n or --prep-p call>\n";
 my $options_usage  = "where general options are:\n";
 #                           1         2         3         4         5         6         7         8
 #                  12345678901234567890123456789012345678901234567890123456789012345678901234567890
-$options_usage .= "  -h          : show brief help on version and usage\n";
-$options_usage .= "  -1          : output alignments in non-interleaved, 1 line/seq format\n";
-$options_usage .= "  -m <s>      : use CM file <f> instead of the default CM file\n";
-$options_usage .= "  -F          : force; allow file clobbering\n";
+$options_usage .= "  -h     : show brief help on version and usage\n";
+$options_usage .= "  -1     : output alignments in non-interleaved, 1 line/seq format\n";
+$options_usage .= "  -m <s> : use CM file <s> instead of the default CM file\n";
+$options_usage .= "  -F     : force; allow file clobbering\n";
 
 
 ###################
@@ -90,7 +90,7 @@ my $opt_return = GetOptions
 if($opt_return != 1) { print STDERR "\nERROR, GetOptions() did not return 1.\n"; exit(1); }
 
 if ($opt_H{"-h"}) { 
-    PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, "");
+    PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, "");
     print $usage . "\n"; 
     print $options_usage; 
     exit(0); 

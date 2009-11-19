@@ -66,8 +66,8 @@ $options_usage .= "\noptions for building a model from a truncated version of th
 $options_usage .= "  --trunc <s> : only include consensus columns from <x> to <y> (where <s> =\"<x>-<y>\")\n";
 
 $options_usage .= "\noptions for numbering alignment consensus columns (no model will be built):\n";
-$options_usage .= "  --num <n> : output alignment with consensus columns numbered\n";
-$options_usage .= "  -1        : output alignment(s) in non-interleaved, 1 line/seq format\n";
+$options_usage .= "  --num : output alignment with consensus columns numbered\n";
+$options_usage .= "  -1    : output alignment(s) in non-interleaved, 1 line/seq format\n";
 
 $options_usage .= "\nexpert options for model construction:\n";
 $options_usage .= "  --gapthresh <x> : set fraction of gaps to allow in a consensus column to <x> (default: 0.8)\n";
@@ -97,7 +97,7 @@ $opt_takes_arg_H{"-n"}          = 1;  push(@opt_order_A, "-n");
 $opt_takes_arg_H{"--append"}    = 1;  push(@opt_order_A, "--append");
 $opt_takes_arg_H{"--key-out"}   = 1;  push(@opt_order_A, "--key-out");    
 $opt_takes_arg_H{"--trunc"}     = 1;  push(@opt_order_A, "--trunc");
-$opt_takes_arg_H{"--num"}       = 1;  push(@opt_order_A, "--num");
+$opt_takes_arg_H{"--num"}       = 0;  push(@opt_order_A, "--num");
 $opt_takes_arg_H{"-1"}          = 0;  push(@opt_order_A, "-1");           
 $opt_takes_arg_H{"--gapthresh"} = 1;  push(@opt_order_A, "--gapthresh");
 $opt_takes_arg_H{"--rf"}        = 0;  push(@opt_order_A, "--rf");
@@ -189,7 +189,7 @@ if($opt_H{"--trunc"} ne "") {
 my $do_draw = 0;
 if(($opt_H{"--trunc"} ne "") && 
    ($opt_H{"-d"})            && 
-   (($opt_H{"--gapthresh"} eq "") || ($opt_H{"--gapthresh"} == $globals_H{"DFCMBUILDGAPTHRESH"}))
+   (($opt_H{"--gapthresh"} eq "") || ($opt_H{"--gapthresh"} == $globals_H{"DFCMBUILDGAPTHRESH"})))
 { 
     $do_draw = 1; 
 }

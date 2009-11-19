@@ -7,6 +7,7 @@
 #
 # EPN, Fri Nov 13 10:18:29 2009
 #
+1  exercise  help:ssu-build        @ssu-build@ -h
 1  exercise  bacseed-5:ssu-build1  @ssu-build@ -F bacseed-5.stk
 1  exercise  bacseed-5:ssu-build2  @ssu-build@ -F --key-out 2 -o my.cm bacseed-5.stk
 1  exercise  bacseed-5:ssu-build3  @ssu-build@ -F --key-out 3 -n bacseed bacseed-5.stk
