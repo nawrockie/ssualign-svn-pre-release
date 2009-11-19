@@ -209,7 +209,7 @@ devcheck:
 	 ./sqc 4 ssu-align.sqc ../src;\
 	 ./sqc 4 ssu-build.sqc ../src;\
 	 ./sqc 4 ssu-draw.sqc ../src;\
-	 ./sqc 4 ssu-mask.sqc ../src;\
+	 ./sqc 4 ssu-mask.sqc ../src;)
 
 # "make install" installs the programs in BINDIR and the CM and postscript templates in LIBDIR
 #

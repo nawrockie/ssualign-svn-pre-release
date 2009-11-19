@@ -254,7 +254,7 @@ my $seqstat_out_file = $out_dir_and_root . ".seqstat";
 my ($target_nres, $target_nseq, $target_format);
 my @target_order_A = ();
 my %target_len_H = ();
-PrintStringToFile($sum_file, 1, sprintf("#\n# Validating input sequence file... "));
+PrintStringToFile($sum_file, 1, sprintf("#\n# Validating input sequence file ... "));
 seqstat_seq_file_per_seq($seqstat, $target_file, $seqstat_out_file, \$target_nres, \$target_nseq, \$target_format, \@target_order_A, \%target_len_H, $sum_file, $log_file); 
 $target_format =~ tr/a-z/A-Z/;
 if($target_format ne "FASTA") { PrintErrorAndExit("ERROR, the target sequence file must be FASTA formatted.", $sum_file, 1); }
@@ -354,6 +354,10 @@ compile_search_and_align_statistics(\%opt_H, \@indi_cm_name_A, \@target_order_A,
 if($target_nseq2 != $target_nseq) { PrintErrorAndExit(sprintf("ERROR, seqstat call and statistics compilation function disagree on number of target sequences (%d != %d).", $target_nseq, $target_nseq2), $sum_file, 1); }
 if($target_nres2 != $target_nres) { PrintErrorAndExit(sprintf("ERROR, seqstat call and statistics compilation function disagree on number of target residues (%d != %d).", $target_nres, $target_nres2), $sum_file, 1); }
 
+#remove esl-sfetch index file we may have created for the target file
+my $ssi_file = $target_file . ".ssi";
+if((-e $ssi_file) && (! $opt_H{"--keep"})) { UnlinkFile($ssi_file, $log_file); }
+
 my %cm_used_for_align_H = ();
 foreach $cm_name (@indi_cm_name_A) { 
     if(($opt_H{"--aln-one"} eq "") || ($cm_name eq $opt_H{"--aln-one"})) { 
@@ -373,10 +377,6 @@ if(! $opt_H{"--no-align"}) { PrintTiming("# CPU time (alignment): ", $align_seco
 $total_seconds += SecondsSinceEpoch($time_hires_installed);
 PrintTiming("# CPU time (total):     ", $total_seconds, $time_hires_installed, 1, $sum_file); 
 PrintStringToFile($sum_file, 1, sprintf("#\n", $out_dir));
-
-#remove esl-sfetch index file we created for the target file
-my $ssi_file = $target_file . ".ssi";
-if((-e $ssi_file) && (! $opt_H{"--keep"})) { UnlinkFile($ssi_file, $log_file); }
 
 # Success! Exit normally
 exit(0); 
@@ -455,19 +455,19 @@ sub validate_and_setup_ssu_align {
     my $weight     = $globals_H{"esl-weight"};
     my $ssualign   = $globals_H{"ssu-align"};
     # check that the required programs are in the PATH
-    RunExecutable("$seqstat -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $seqstat is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
+    RunCommand("$seqstat -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $seqstat is either not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
     if(!($opt_HR->{"--no-search"})) { 
-	RunExecutable("$cmsearch -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $cmsearch is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
-	RunExecutable("$sfetch -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $sfetch is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
+	RunCommand("$cmsearch -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $cmsearch is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
+	RunCommand("$sfetch -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $sfetch is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
     }
     if(!($opt_HR->{"--no-align"})) { 
-	RunExecutable("$cmalign -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $cmalign is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
+	RunCommand("$cmalign -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $cmalign is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
     }
     if($opt_HR->{"--filter"} ne "") { 
-	RunExecutable("$weight -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $weight is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
+	RunCommand("$weight -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $weight is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
     }
     if(($opt_HR->{"--prep-n"} ne "") || ($opt_HR->{"--prep-p"})) { 
-	RunExecutable("$ssualign -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $ssualign is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
+	RunCommand("$ssualign -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $ssualign is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
     }
 
     $$ssualign_R = $ssualign;
@@ -513,6 +513,9 @@ sub create_output_dir {
     $has_subdir = 0;
     $has_ssualign_subdir = 0;
     $ran_command = 0;
+    my $retval = 0;
+    my $status = 0;
+
     # create output directory
     if(-f $out_dir) { 
 	printf STDERR ("\nERROR, $out_dir was specified as the output directory, but a file with the same name exists. Delete it and rerun.\n");
@@ -546,11 +549,15 @@ sub create_output_dir {
 	# if we get here, $out_dir exists, but either it has no subdirectories, or --FF was enabled, or both
 	# remove the contents of the directory with rm -rf and remove the directory
 	$command = "rm -rf $out_dir 2>&1";
-	$output = `$command`; 
-        # Note: we can't use RunExecutable, b/c that requires a output file to write to, which will be put
+	system "$command"; 
+	$status = $?;
+        # Note: we can't use RunCommand, b/c that requires a output file to write to, which will be put
 	# into $out_dir, and since that hasn't been created yet, we can't write to it. Instead if the command
 	# succeeds, we write it to the log file at the end of the function.
-	if($? != 0) { printf STDERR "\nERROR, the command \"rm -rf $out_dir did not successfully complete."; exit(1); }
+	if   (($status&255) != 0) { $retval = ($status&255); }
+	elsif(($status>>8) != 0)  { $retval = ($status>>8);  }
+	else { $retval = $status; }
+	if($retval != 0) { printf STDERR "\nERROR, the command \"rm -rf $out_dir did not successfully complete."; exit(1); }
 	$ran_command = 1;
 	if(-d $out_dir) { printf STDERR "\nERROR, output directory $out_dir still exists after the command \"rmdir $out_dir\".\n"; exit(1); }
     }
@@ -569,8 +576,8 @@ sub create_output_dir {
 
     #if we did a 'rm -rf' command, print that to the log file:
     if($ran_command) { 
-	PrintStringToFile($log_file, 0, ("Executing:  " . $command . "\n"));
-	PrintStringToFile($log_file, 0, ("Output:     " . $output . "\n\n"));
+	PrintStringToFile($log_file, 0, ("Executing:      " . $command . "\n"));
+	PrintStringToFile($log_file, 0, ("Returned:       " . $retval . "\n"));
     }
     return;
 }
@@ -727,7 +734,7 @@ sub prepare_only {
     $shell_script       = $out_dir_and_root . ".sh";
     $shell_script2print = $out_root         . ".sh";
     open(SH, ">" . $shell_script) || FileOpenFailure($shell_script, $sum_file, $!, "writing");
-    #determine number of seqs per file (if --prep-p)
+    #determine number of seqs per file 
     my ($prep_nseq, $prep_nproc);
     if($opt_HR->{"--prep-p"} ne "") { 
 	$prep_nproc = $opt_HR->{"--prep-p"};
@@ -779,11 +786,6 @@ sub prepare_only {
     
     PrintStringToFile($sum_file, 1, sprintf("#\n# Prep mode: Splitting up ssu-align job into %d smaller jobs.\n", $prep_nproc));
     PrintStringToFile($sum_file, 1, sprintf("#\n"));
-    if(($opt_HR->{"--prep-p"} ne "") && ($prep_nproc < ($opt_HR->{"--prep-p"}-1))) { 
-	if($prep_nproc != $target_nseq) { PrintErrorAndExit("ERROR, problem partitioning target FASTA file, coding unknown error in sequence file splitting logic. (Try a different number of processors with --prep-p.)", $sum_file, 1); }
-	PrintStringToFile($sum_file, 1, sprintf("# Note: --prep-p " . $opt_HR->{"--prep-p"} . " was specified, but there are only $target_nseq sequences in the\n\# input file. ssu-align does not split up individual input sequences.\n"));
-	PrintStringToFile($sum_file, 1, sprintf("#\n"));
-    }
     if(($opt_HR->{"--prep-n"} ne "") && (($prep_nproc == 1) && ($target_nseq < $prep_nseq))) { 
 	PrintStringToFile($sum_file, 1, sprintf("# Note: --prep-n " . $opt_HR->{"--prep-n"} . " was specified, but there are only $target_nseq sequences in the\n\# input file. ssu-align does not split up individual input sequences.\n"));
 	PrintStringToFile($sum_file, 1, sprintf("#\n"));
@@ -936,7 +938,7 @@ sub search_sequences_with_each_model {
     if($opt_HR->{"--only"} ne "") { $cmsearch_opts .= " --cm-name " . $opt_HR->{"--only"}; }
 
     $command = "$cmsearch $cmsearch_opts -T $cmsearch_T --tab $tab_file $alg_flag $cm_file $target_file > $cmsearch_outfile";
-    RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
+    RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
     PrintStringToFile($sum_file, 1, sprintf("  %-*s  locations/scores of hits defined by HMM(s)\n", $max_file_name_width, $tab_file2print));
 
     if(! $opt_HR->{"--keep"}) { UnlinkFile($cmsearch_outfile, $log_file); }
@@ -1111,7 +1113,7 @@ sub classify_and_extract_subseqs {
     #if index file exists, remove it and remake it (wasteful, but this is the only way to know for sure that the index was created for this specific file)
     if(-e $index_file) { UnlinkFile($index_file, $log_file); } 
     $command = "$sfetch \-\-index $target_file"; 
-    RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
+    RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
 
     for($m = 0; $m < scalar(@{$indi_cm_name_AR}); $m++) { 
 	$cm_name = $indi_cm_name_AR->[$m];
@@ -1163,7 +1165,7 @@ sub classify_and_extract_subseqs {
 	    if($do_truncate) { $sfetch_options = "-Cf"; }
 	    else             { $sfetch_options = "-f";  }
 	    $command = "$sfetch -o $hits_file $sfetch_options $target_file $sfetch_in_file";
-	    RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
+	    RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
 
 	    if(-e $hits_file) { 
 		if($nwinners > 1) { PrintStringToFile($sum_file, 1, sprintf("  %-*s  %7d sequences to align with $cm_name CM\n", $max_file_name_width, $hits_file2print, scalar(@{$by_cm_name_HA{$cm_name}}))); }
@@ -1272,7 +1274,7 @@ sub align_subseqs {
 	    my $prob_opt = "-p";
 	    if($opt_HR->{"--no-prob"}) { $prob_opt = ""; }
 	    $command = "$cmalign --cm-name $cm_name $prob_opt --mxsize $mxsize --sub -o $cmalign_stk $cm_file $hits_file > $cmalign_out"; 
-	    RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
+	    RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
 	    
 	    #open and parse the cmalign output
 	    open(CMALIGN, $cmalign_out) || FileOpenFailure($cmalign_out, $sum_file, $!, "reading");
@@ -1289,7 +1291,7 @@ sub align_subseqs {
 
 	    if($opt_HR->{"--filter"} ne "") { 
 		$command = "$weight -f --idf " . $opt_HR->{"--filter"} . " $cmalign_stk > $fil_cmalign_stk";
-		RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
+		RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
 		PrintStringToFile($sum_file, 1, sprintf("  %-*s  complete %s alignment\n", $max_file_name_width, $cmalign_stk2print, $cm_name));
 		PrintStringToFile($sum_file, 1, sprintf("  %-*s  filtered %s alignment\n", $max_file_name_width, $fil_cmalign_stk2print, $cm_name));
 	    }
@@ -1467,7 +1469,7 @@ sub seqstat_seq_file_per_seq {
 
     my ($command, $command_worked, $line, $format, $total_nseq, $total_nres);
     $command = "$seqstat --rna -a $seqfile > $seqstat_out_file";
-    RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
+    RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
 
     # parse seqstat output
     my $nseq_read = 0;

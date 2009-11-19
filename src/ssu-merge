@@ -495,11 +495,11 @@ sub validate_and_setup_ssu_merge {
     # check that cmalign is in the PATH
     my ($command, $command_worked);
     my $cmalign    = $globals_H{"cmalign"};
-    RunExecutable("$cmalign -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $cmalign is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
+    RunCommand("$cmalign -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $cmalign is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
 
     # check that esl-alistat in the PATH
     my $alistat = $globals_H{"esl-alistat"};
-    RunExecutable("$alistat -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $alistat is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
+    RunCommand("$alistat -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $alistat is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
 
     # determine which subdirectories in $dir were created by ssu-align
     my %subdir_H = ();
@@ -662,7 +662,7 @@ sub merge_alignments_for_a_cm {
     if($opt_HR->{"-1"}) { $extra_opts = " -1"; }
 
     $command = "$cmalign $extra_opts --cm-name $cm_name --list-merge -o $stk_name $cm_file $list_file 2>&1";
-    RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
+    RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
 
     UnlinkFile($list_file, $log_file);
     return;
@@ -712,12 +712,12 @@ sub concatenate_a_list_of_files {
 
     # create concat file
     $command = "cat $files_to_concat_AR->[0] > $concat_file";
-    RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
+    RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
 
     # add to concat file
     for($i = 1; $i < scalar(@{$files_to_concat_AR}); $i++) { 
 	$command = "cat " . $files_to_concat_AR->[$i] . " >> $concat_file";
-	RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
+	RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
     }
 
     return;

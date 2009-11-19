@@ -14,7 +14,8 @@
 # PrintConclusion():               prints final lines of SSU-ALIGN script output
 # PrintTiming():                   prints run time to stdout and summary file.
 # PrintStringToFile():             prints string to a file and optionally stdout.
-# RunExecutable():                 runs an executable with backticks, returns output.
+# RunCommand():                    runs an executable using system, prints output to log file
+# TempFilename():                  create a name for a temporary file
 # UnlinkFile():                    unlinks a file, and updates log file.
 # DetermineNumSeqsFasta():         determine the number of sequences in a FASTA file.
 # DetermineNumSeqsStockholm():     determine the number of sequences in a Stockholm aln file.
@@ -31,6 +32,7 @@
 # PrintErrorAndExit():             print an error message and call exit to kill the program
 # PrintSearchAndAlignStatistics(): print ssu-align summary statistics on search and alignment
 # NumberofDigits():                determine number of digits before decimal point in a number
+# FindPossiblySharedFile():        given a file, determine if that file exists in cwd or $ENV(SSUALIGNDIR)
 #
 use strict;
 use warnings;
@@ -301,7 +303,7 @@ sub PrintStringToFile {
     my ($filename, $print_to_stdout, $string) = @_;
 
     if($filename ne "") { 
-	open(OUT, ">>" . $filename) || die "ERROR, couldn't open $filename for appending.\n";
+	open(OUT, ">>" . $filename) || die "ERROR, PrintStringToFile() couldn't open $filename for appending.\n";
 	printf OUT $string;
 	close(OUT);
     }
@@ -312,85 +314,189 @@ sub PrintStringToFile {
 
 
 ###########################################################
-# Subroutine: RunExecutable
+# Subroutine: RunCommand
 # Incept: EPN, Fri Oct 30 06:05:37 2009
 #
-# Purpose: Run a command with backticks, capturing its standard
-#          output and standard error. Print command execution
-#          and its output to $log_file. If command returns 
-#          non-zero status, print error message $errmsg to 
-#          STDERR, and exit if $die_if_fails is TRUE. 
+# Purpose: Run a command using the system() command.
+#          A new file is created temporarily for the command's
+#          standard error output (STDERR). An additional temp
+#          file is created for the command's standard output
+#          (STDOUT) unless the command is already handling that.
+#
+#          Unless <$cmd> includes redirection to an output file 
+#          set by caller, we print STDOUT output to $log_file.
+#          STDERR output is always printed to $log_file.
+#
+#          If the command fails (returns non-zero exit status),
+#          we print <$errmsg> to STDERR and to <$log_file>.
+#          If <$die_if_fails> == 1 we then
+#          die, or if not, we set <$returned_zero_R> to 0 
+#          and return. If <$errmsg> is "", we use a generic
+#          one.
+#  
+#          Temp files created here are removed using Perl's
+#          unlink function, but only if we got a zero exit 
+#          status.
+#
+#          If <$cmd> matches /\s+2\s*\>\s*\&\s*1/ (2>&1) to
+#          redirect stderr and output to same place, we 
+#          die in error. Caller shouldn't do that.
 #
 # Arguments:
-#   $command:                   command to execute
+#   $cmd:                       command to execute
 #   $die_if_fails:              '1' to die if command returns non-zero status
 #   $print_output_upon_failure: '1' to print command output to STDERR if it fails
 #   $log_file:                  file to print command and output to
-#   $command_worked_ref:        set to '1' if command works (returns 0), else set to '0'         
+#   $returned_zero_R:           set to '1' if command works (returns 0), else set to '0'         
 #   $errmsg:                    message to print if command returns non-0 exit status
-# 
-# Returns: Output (stdout and stderr) of the command.
+#                               and $die_if_fails==1, if this is "", print generic error.
+#
+# Returns: Nothing.
 #
 ###########################################################
-sub RunExecutable {
+sub RunCommand {
     my $narg_expected = 6;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, RunExecutable() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($command, $die_if_fails, $print_output_upon_failure, $log_file, $command_worked_ref, $errmsg) = @_;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, RunCommand() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($cmd, $die_if_fails, $print_output_upon_failure, $log_file, $returned_zero_R, $errmsg) = @_;
 
-    #contract check
-    if(($die_if_fails) && ($errmsg eq "")) { die "ERROR, misuse of RunExecutable: errmsg is the empty string and die_if_fails is TRUE."; }
-    my $output = "";
-    my $command_worked = 1;
+    my $have_tmp_stdout = 0;
+    my ($stdout_file, $tmp_stderr_file, $line, $returned_zero, $status, $retval);
 
-    # if we were going to redirect stderr to stdout, temporarily remove that, we'll add it below
-    $command =~ s/2\>\&1//;
+    # contract check, $log_file must not be the empty string
+    if($log_file eq "") { PrintErrorAndExit("ERROR, in RunCommand with empty log file.", $log_file, 1); }
+    # contract check, if caller had stderr and output redirected, we die, caller shouldn't do that.
+    if($cmd =~ /\s+2\s*>\s*&\s*1/) { PrintErrorAndExit("ERROR, in RunCommand with illegal substring that matches \"2\>\&1\".", $log_file, 1); }
 
-    # determine if we're piping output to a file (or /dev/null)
-    my $output_file = "";
-    if($command =~ m/\>\s*(\S+)\s*$/) { 
-	$output_file = $1;
+    if($cmd !~ />/) { 
+	# add stdout redirection
+	$stdout_file = TempFilename($log_file);
+	$have_tmp_stdout = 1;
+	$cmd = "$cmd > $stdout_file"
     }
-
-    # redirect stderr to stdout
-    $command .= " 2>&1"; 
-
-    PrintStringToFile($log_file, 0, ("Executing:  " . $command . "\n"));
-    $output = `$command`;
-    # handle special case, esl-alistat output has "%" in it, which printf complains about in PrintStringToFile() call below
-    $output =~ s/\%/\%\%/g; 
-
-    PrintStringToFile($log_file, 0, ("Returned:   " . ($? >> 8) . "\n"));
-
-    if(($? >> 8) != 0) { 
-	if($output_file ne "") { 
-	    my $line;
-	    $output = "";
-	    open(OUTFILE, $output_file) || die "\nERROR, couldn't open recently created output file $output_file for reading.\n";
-	    while($line = <OUTFILE>) { $output .= $line; }
-	    close(OUTFILE);
-	}
-	if($errmsg ne "") { 
-	    if(($output_file ne "") && ($output_file !~ /dev\/null/)) { 
-		PrintStringToFile($log_file, 0, ("Output (in output file $output_file):\n" . $output . "\n\n"));
-	    }
-	    else { 
-		PrintStringToFile($log_file, 0, ("Output:     " . $output . "\n\n"));
-	    }
-	    printf STDERR ("\n$errmsg\n");
-	    PrintStringToFile($log_file, 0, ("\n$errmsg\n"));
-	}
-	if($print_output_upon_failure) { printf STDERR ("Command output: $output\n"); }
-	if($die_if_fails) { exit(1); }
-	$command_worked = 0;
+    elsif($cmd =~ m/\>\s*(\S+)\s*$/) { 
+	$stdout_file = $1;
     }
     else { 
-	PrintStringToFile($log_file, 0, ("Output:     " . $output . "\n\n"));
+	PrintErrorAndExit("ERROR, in RunCommand command: $cmd has output redirection, but unable to parse its output file.", $log_file, 1); 
+    }
+    $tmp_stderr_file = TempFilename($log_file);
+    
+    # add stderr redirection
+    $cmd  = "$cmd  2> $tmp_stderr_file";
+    
+    PrintStringToFile($log_file, 0, ("Executing:      " . $cmd . "\n"));
+    system "$cmd";
+    $status = $?;
+    if(($status&255) != 0) { 
+	$retval = $status&255;
+    }
+    elsif(($status>>8) != 0) { 
+	$retval = $status>>8;
+    }
+    else { $retval = 0; }
+    PrintStringToFile($log_file, 0, ("Returned:       " . $retval . "\n"));
+
+    # get output from $stdout_file and $tmp_stderr_file
+    my $stdout2print = "";
+    if(($retval != 0) || ($have_tmp_stdout)) { # we'll print stdout to log file
+	if($stdout_file ne "/dev/null") { 
+	    open(IN, $stdout_file) || FileOpenFailure($stdout_file, $log_file, $!, "reading");
+	    while($line = <IN>) { $stdout2print .= $line; }
+	    close(IN);
+	}
+	if($stdout2print eq "") { $stdout2print = "***NONE***"; }
+	else                    { $stdout2print = "\n" . $stdout2print; }
+    }
+    my $stderr2print = "";
+    open(IN, $tmp_stderr_file) || FileOpenFailure($tmp_stderr_file, $log_file, $!, "reading");
+    while($line = <IN>) { $stderr2print .= $line; }
+    close(IN);
+    if($stderr2print eq "") { $stderr2print = "***NONE***"; }
+    else                    { $stderr2print = "\n" . $stderr2print; }
+
+    my ($stdout_file_message, $stderr_file_message);
+    if($stdout_file eq "/dev/null") { $stdout_file_message = "sent to /dev/null"; }
+    else                            { $stdout_file_message = "saved in file $stdout_file"; }
+    $stderr_file_message = "saved in file $tmp_stderr_file.";
+
+    if($retval != 0) { 
+	if($errmsg eq "") { $errmsg = "ERROR, the command \(\"$cmd\"\) unexpectedly returned non-zero exit status: $retval."; }
+	if($die_if_fails) { 
+	    PrintStringToFile($log_file, 0, ("Output (STDOUT) ($stdout_file_message): " . $stdout2print . "\n"));
+	    PrintStringToFile($log_file, 0, ("Output (STDERR) ($stderr_file_message): " . $stderr2print . "\n"));
+	}
+	else { 
+	    PrintStringToFile($log_file, 0, ("Output (STDOUT): " . $stdout2print . "\n"));
+	    PrintStringToFile($log_file, 0, ("Output (STDERR): " . $stderr2print . "\n"));
+	}
+	printf STDERR ("\n$errmsg\n");
+	PrintStringToFile($log_file, 0, ("\n$errmsg\n"));
+	if($print_output_upon_failure) { 
+	    printf STDERR ("Output (STDOUT):" . $stdout2print . "\n");
+	    printf STDERR ("Output (STDERR):" . $stderr2print . "\n");
+	}
+	if($die_if_fails) { exit(1); }
+	$returned_zero = 0;
+    }
+    else { 
+	if(! $have_tmp_stdout) { PrintStringToFile($log_file, 0, ("Output (STDOUT) $stdout_file_message.\n")); }
+	else                   { PrintStringToFile($log_file, 0, ("Output (STDOUT): " . $stdout2print . "\n")); }
+	PrintStringToFile($log_file, 0, ("Output (STDERR): " . $stderr2print . "\n\n"));
+	$returned_zero = 1;
     }
 
-    $$command_worked_ref = $command_worked;
-    return $output;
+    # unlink temporary files we created here
+    if($have_tmp_stdout) { 
+	UnlinkFile($stdout_file, $log_file); 
+    }
+    UnlinkFile($tmp_stderr_file, $log_file); 
+    
+    $$returned_zero_R = $returned_zero;
+    return;
 }
 
+
+###########################################################
+# Subroutine: TempFilename()
+# Incept: EPN, Thu Nov 19 13:19:16 2009
+#         Based on Sean Eddy's tempname()
+#         from his sqc script from Easel.
+#
+# Purpose: Return a unique temporary filename.
+#          Sean's (modified) notes:
+#          Uses the pid as part of the temp name to prevent other
+#          processes from clashing. A two-letter code is also added,
+#          so a given process can request up to 676 temp file names
+#          (26*26). An "ssutmp" code is also added to distinguish
+#          these temp files from those made by other programs.
+#          Temporary files are always created in cwd.
+#
+# Arguments:
+# $out_file: file to print error to if we can't open the
+#            file;
+# Returns: Temporary file name. Nothing if unable to get a
+#          name. Prints error message to $out_file and
+#          exits if it can't create the temp file.
+#
+###########################################################
+sub TempFilename {
+    my $narg_expected = 1;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, TempFilename() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($out_file) = $_[0];
+
+    my ($name, $suffix);
+
+    foreach $suffix ("aa".."zz") {
+        $name = "ssutmp".$suffix.$$;
+        if (! (-e $name)) { 
+            open (TMP,">$name") || FileOpenFailure($name, $out_file, 1, "writing");
+            close(TMP);
+            return "$name"; 
+        }
+    }
+    # if we get here we couldn't open any tmp file, exit
+    PrintErrorAndExit("ERROR, unable to create temporary file, 26*26=676 already exist!.", $out_file, 1);
+}
 
 ###########################################################
 # Subroutine: UnlinkFile()
@@ -484,22 +590,28 @@ sub DetermineNumSeqsStockholm {
     my($alistat, $alifile, $sum_file, $log_file, $nseq_AR, $nali_R) = @_;
 
     my ($nseq, $command, $line, $command_worked, $output);
-    $command = "$alistat $alifile";
-    $output = RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
+    my $tmp_alistat_file = TempFilename($log_file);
+    $command = "$alistat $alifile > $tmp_alistat_file";
+    $output = RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
 
     $nseq = 0;
     @{$nseq_AR} = ();
-    my @tmp_A = split("\n", $output);
     my $nali = 0;
-    foreach $line (@tmp_A) { 
+
+    open(IN, $tmp_alistat_file) || FileOpenFailure($tmp_alistat_file, $log_file, $!, "reading");
+    while($line = <IN>) { 
+	chomp $line;
 	if($line =~ /Number of sequences\:\s+(\d+)/) { 
 	    $nseq = $1;
 	    push(@{$nseq_AR}, $nseq);
 	    $nali++;
 	}
     }
-    if($nali == 0) { PrintErrorAndExit("ERROR parsing esl-alistat output, couldn't determine number of sequences in $alifile.", $sum_file, 1); }
+    close(IN);
+    
+    if($nali == 0) { PrintErrorAndExit("ERROR parsing esl-alistat output in file $tmp_alistat_file, couldn't determine number of sequences in $alifile.", $sum_file, 1); }
 
+    UnlinkFile($tmp_alistat_file, $log_file); 
     $$nali_R = $nali;
     return;
 }
@@ -631,7 +743,7 @@ sub SumHashElements
 #   $command_worked_ref:        set to '1' if command works (returns 0), else set to '0'         
 #   $errmsg:                    message to print if command returns non-0 exit status
 # 
-# Returns:     The output of $ps2pdf. $command_worked_ref is filled with
+# Returns:     Nothing. $command_worked_ref is filled with
 #              '1' if command worked (return 0), '0' otherwise.
 #
 ################################################################# 
@@ -648,10 +760,10 @@ sub TryPs2Pdf {
     if($ps2pdf eq "") { $ps2pdf = "ps2pdf"; }
 
     my $command = "$ps2pdf $ps_file $pdf_file";
-    my $output = RunExecutable("$command", $die_if_fails, $print_output_upon_failure, $log_file, \$command_worked, $errmsg);
+    RunCommand("$command", $die_if_fails, $print_output_upon_failure, $log_file, \$command_worked, $errmsg);
 
     $$command_worked_ref = $command_worked;
-    return $output;
+    return;
 }
 
 
@@ -999,6 +1111,39 @@ sub NumberOfDigits
 {
     my $narg_expected = 1;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, NumberOfDigits() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($num) = $_[0];
+
+    my $ndig = 1; 
+    while($num > 10) { $ndig++; $num /= 10.; }
+
+    return $ndig;
+}
+
+
+#################################################################
+# Subroutine : FindPossiblySharedFile()
+# Incept:      EPN, Thu Nov 19 09:45:55 2009
+# 
+# Purpose:     Given a path to a file, determine if that file
+#              exists either with respect to the current
+#              working directory and/or with respect to 
+#              another directory <$other_dir>.
+#
+# Arguments:
+# $file:       name of file, possibly with directory path
+#              as a prefix
+# $other_dir:  second directory in which to look for the file
+# 
+# Returns:     The local path to the file if it does
+#              exist in the current dir, else the full
+#              path to it in <$other_dir>, else if it
+#              doesn't exist in either place, return "".
+#
+################################################################# 
+sub FindPossiblySharedFile
+{
+    my $narg_expected = 2;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, FindPossiblySharedFile() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my ($num) = $_[0];
 
     my $ndig = 1; 

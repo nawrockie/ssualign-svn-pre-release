@@ -431,7 +431,7 @@ sub validate_and_setup_ssu_build {
 
 	#Validate that our cmbuild exists and is in path
 	$cmbuild = $globals_H{"cmbuild"};
-	RunExecutable("$cmbuild -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $cmbuild is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
+	RunCommand("$cmbuild -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $cmbuild is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
     }
 
     my $alimanip = "";
@@ -443,7 +443,7 @@ sub validate_and_setup_ssu_build {
     if(($opt_HR->{"--trunc"}) || $do_number_mode) { 
 	# verify that we can run esl-alimanip
 	$alimanip = $globals_H{"esl-alimanip"};
-	RunExecutable("$alimanip -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $alimanip is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
+	RunCommand("$alimanip -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $alimanip is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
     }
 
     # if $do_draw (passed in), we'll try to draw a secondary structure diagram showing the part of the model included/excluded by the truncation,
@@ -454,7 +454,7 @@ sub validate_and_setup_ssu_build {
 
 	if($template_file ne "") { 
 	    $ssdraw = $globals_H{"esl-ssdraw"};
-	    RunExecutable("$ssdraw -h > /dev/null", 0, 0, $log_file, \$command_worked, "WARNING: the command \"$ssdraw -h\" should have successfully completed but it didn't. No structure diagrams will be drawn.");
+	    RunCommand("$ssdraw -h > /dev/null", 0, 0, $log_file, \$command_worked, "WARNING: the command \"$ssdraw -h\" should have successfully completed but it didn't. No structure diagrams will be drawn.");
                                         #0 = don't die if command fails
 	    if(! $command_worked ) { $ssdraw = ""; }
 	}
@@ -520,10 +520,10 @@ sub run_cmbuild {
     PrintStringToFile($sum_file, 1, sprintf("#\n"));
     
     my $command_worked;
-    my $command = "$cmbuild $extra_opts --gapthresh $gapthresh $cm_file $aln_file";
-    my $output = RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
+    my $cmbuild_output_file = $cm_file . "build";
+    my $command = "$cmbuild $extra_opts --gapthresh $gapthresh $cm_file $aln_file > $cmbuild_output_file";
+    RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
 
-    my @tmpA = split("\n", $output);
     my ($i, $line);
     my $ncm       = 0;
     my @cm_nameA  = ();
@@ -538,7 +538,9 @@ sub run_cmbuild {
     my $max_width_name = length("CM name"); 
     my $max_width_file = length($cm_file);
     if($max_width_file < length("CM file name")) { $max_width_file = length("CM file name"); }
-    foreach $line (@tmpA) { 
+    open(CMBUILD, $cmbuild_output_file) || FileOpenFailure($cmbuild_output_file, $sum_file, $!, "reading");
+    while ($line = <CMBUILD>) { 
+	chomp $line;
 	  ######################################################################################
 	  # Example cmbuild output:
 	  #
@@ -560,6 +562,8 @@ sub run_cmbuild {
 	    $ncm++;
 	}
     }
+    close(CMBUILD);
+    UnlinkFile($cmbuild_output_file, $log_file); 
 
     my $dashes_file = ""; for($i = 0; $i < $max_width_file; $i++) { $dashes_file .= "-"; }
     my $dashes_name = ""; for($i = 0; $i < $max_width_name; $i++) { $dashes_name .= "-"; }
@@ -619,7 +623,7 @@ sub run_alimanip_to_number {
     PrintStringToFile($sum_file, 1, sprintf("#\n"));
     
     my $command = "$alimanip $extra_opts -o $num_aln_file $aln_file";
-    RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
+    RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
 
     my $max_width = length($num_aln_file);
     if($max_width < length("output aln file")) { $max_width = length("output aln file"); }; 
@@ -689,7 +693,7 @@ sub run_alimanip_to_truncate {
     
     my $command = "$alimanip $extra_opts --start-rf $start --end-rf $end -o $trunc_aln_file $aln_file";
     my $command_worked;
-    RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
+    RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
 
     my $max_width = length($trunc_aln_file);
     if($max_width < length("output aln file")) { $max_width = length("output aln file"); }; 
@@ -746,9 +750,17 @@ sub run_ssdraw_for_ssu_build {
     elsif($opt_HR->{"--trunc"} =~ /(\d+)\.+(\d+)/) { $start = $1; $end   = $2; }
 
     #to determine consensus length, grep for the RF lines of the alignment, and overwrite them with 0s and 1s.
-    my ($command_worked, $output);
-    my $command = "grep '^#=GC RF[[:space:]]' $aln_file";
-    $output = RunExecutable("$command", 1, 1, $log_file, \$command_worked, "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.");
+    my ($command_worked, $output, $line);
+    my $tmp_rf_file = $aln_file . ".rf";
+    my $command = "grep '^#=GC RF[[:space:]]' $aln_file > $tmp_rf_file";
+    RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
+
+    open(IN, $tmp_rf_file) || FileOpenFailure($tmp_rf_file, $log_file, $!, "reading");
+    my $output = "";
+    while($line = <IN>) { $output .= $line; }
+    close(IN);
+    UnlinkFile($tmp_rf_file, $log_file); 
+
     $output =~ s/\#=GC RF\s+//g;
     $output =~ s/\n//g;
     $output =~ s/[\.\-\~]//g; #remove gaps ('.', '-', or '~')
@@ -764,7 +776,7 @@ sub run_ssdraw_for_ssu_build {
     close(MASK);
 
     $command = "$ssdraw --mask-col --mask $mask_file $aln_file $template_file $ps_file";
-    $output = RunExecutable("$command", 0, 0, $log_file, \$command_worked, "");
+    $output = RunCommand("$command", 0, 0, $log_file, \$command_worked, "");
                                         #0 = okay if it doesn't work, alert caller by returning 0 though
     UnlinkFile($mask_file, $log_file);
     if(! $command_worked) { return 0;}
