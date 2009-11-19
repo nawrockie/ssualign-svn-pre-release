@@ -232,7 +232,8 @@ my $aln_file;
 #################
 # determine max file name width
 my $max_width_aln = length("alignment file name");
-my ($nec_width, $i, $max_width_draw, $aln_root, $aln_root2print);
+my $max_width_draw = 0;
+my ($nec_width, $i, $aln_root, $aln_root2print);
 my $extra_draw_chars = 0;
 if($opt_H{"--ins"}) { $extra_draw_chars = 3+1; } # +1 is for the '.'
 if($opt_H{"--prob"} || $opt_H{"--dall"} || $opt_H{"--dint"} || $opt_H{"--info"} || $opt_H{"--indi"} || $opt_H{"--cons"}) { 
@@ -242,12 +243,15 @@ if($opt_H{"--struct"}) { $extra_draw_chars = 5+1; }
 
 for($i = 0; $i < $naln; $i++) { 
     $aln_file         = $stk_list_A[$i];
-    $aln_root2print = SwapOrAppendFileSuffix($aln_file, \@stk_suffix_A, "", $opt_H{"-a"}); # if -a, we'll write output dir as well as file name
-    $nec_width = length($aln_root2print) + length($key_out) + length(".stk");
+    $aln_root2print   = SwapOrAppendFileSuffix($aln_file, \@stk_suffix_A, "", $opt_H{"-a"}); # if -a, we'll write output dir as well as file name
+    $nec_width        = length($aln_root2print) + length($key_in) + length(".stk");
     if($max_width_aln < $nec_width) { $max_width_aln = $nec_width; }
+    $nec_width        = length($aln_root2print) + length($key_out) + length(".pdf");
+    if($opt_H{"--ps-only"}) { $nec_width--; }
+    if($max_width_draw < $nec_width) { $max_width_draw = $nec_width; }
 }					     
-$max_width_draw = $max_width_aln + $extra_draw_chars; # ('.stk' and '.pdf' are same len) ($extra_draw_chars is for adding keys, such as 'struct.' to names )
-if($max_width_draw < length("structure diagram file")) { $max_width_draw = length("structure diagram file"); }
+$max_width_draw += $extra_draw_chars; # $extra_draw_chars is for adding keys, such as 'struct.' to names
+if($max_width_draw < (length("structure diagram file"))) { $max_width_draw = length("structure diagram file"); }
 my $dashes_aln = "";  for($i = 0; $i < $max_width_aln; $i++)  { $dashes_aln .= "-"; }
 my $dashes_draw = ""; for($i = 0; $i < $max_width_draw; $i++) { $dashes_draw .= "-"; }
 
@@ -571,16 +575,16 @@ sub run_ssdraw_for_ssu_draw {
 
     if($opt_HR->{"-a"}) { # save diagrams to CWD, print full path to input alignment
 	$aln_file2print = $aln_file;
-	$draw_ps        = SwapOrAppendFileSuffix($aln_file, $stk_suffix_AR, $key_out . $draw_key . ".ps", 0);
+	$draw_ps        = SwapOrAppendFileSuffix($aln_file, $stk_suffix_AR, $draw_key . ".ps", 0);
 	$draw_ps2print  = $draw_ps;
-	$draw_pdf       = SwapOrAppendFileSuffix($aln_file, $stk_suffix_AR, $key_out . $draw_key . ".pdf", 0);
+	$draw_pdf       = SwapOrAppendFileSuffix($aln_file, $stk_suffix_AR, $draw_key . ".pdf", 0);
 	$draw_pdf2print = $draw_pdf;
     }
     else { # save diagrams to same dir as aln
 	$aln_file2print = RemoveDirPath($aln_file);
-	$draw_ps        = SwapOrAppendFileSuffix($aln_file, \@stk_suffix_A, $key_out . $draw_key . ".ps", 1);
+	$draw_ps        = SwapOrAppendFileSuffix($aln_file, \@stk_suffix_A, $draw_key . ".ps", 1);
 	$draw_ps2print  = RemoveDirPath($draw_ps);
-	$draw_pdf       = SwapOrAppendFileSuffix($aln_file, \@stk_suffix_A, $key_out . $draw_key . ".pdf", 1);
+	$draw_pdf       = SwapOrAppendFileSuffix($aln_file, \@stk_suffix_A, $draw_key . ".pdf", 1);
 	$draw_pdf2print = RemoveDirPath($draw_pdf);
     }
 

@@ -254,9 +254,11 @@ my $seqstat_out_file = $out_dir_and_root . ".seqstat";
 my ($target_nres, $target_nseq, $target_format);
 my @target_order_A = ();
 my %target_len_H = ();
+PrintStringToFile($sum_file, 1, sprintf("#\n# Validating input sequence file... "));
 seqstat_seq_file_per_seq($seqstat, $target_file, $seqstat_out_file, \$target_nres, \$target_nseq, \$target_format, \@target_order_A, \%target_len_H, $sum_file, $log_file); 
 $target_format =~ tr/a-z/A-Z/;
 if($target_format ne "FASTA") { PrintErrorAndExit("ERROR, the target sequence file must be FASTA formatted.", $sum_file, 1); }
+PrintStringToFile($sum_file, 1, sprintf("done.\n"));
 
 my (@indi_cm_name_A);
 process_cm_file($out_root, $cm_file, \%opt_H, \@indi_cm_name_A, $sum_file);

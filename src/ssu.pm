@@ -658,7 +658,7 @@ sub TryPs2Pdf {
 
 #################################################################
 # Subroutine : SwapOrAppendFileSuffix
-# Incept:      EPN, Mon Nov  9 14:21:07 2009# 
+# Incept:      EPN, Mon Nov  9 14:21:07 2009
 #
 # Purpose:     Given a file name, possible original suffixes it may 
 #              have (such as '.stk', '.sto'), and a new suffix: 
@@ -673,7 +673,7 @@ sub TryPs2Pdf {
 #   $orig_file:       name of original file
 #   $orig_suffix_AR:  reference to array of original suffixes 
 #   $new_suffix:      new suffix to include in new file
-#   $use_orig_dir: '1' to place new file in same dir as old one
+#   $use_orig_dir:    '1' to place new file in same dir as old one
 #                     '0' to always place new file in CWD.
 # 
 # Returns:     The name of the new file, with $new_suffix appended
