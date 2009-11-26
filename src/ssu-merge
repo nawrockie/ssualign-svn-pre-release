@@ -114,6 +114,15 @@ my $sum_file2print = $dir . ".ssu-merge.sum";
 my $log_file       = $dir . "/" . $dir . ".ssu-merge.log";
 my $log_file2print = $dir . ".ssu-merge.log";
 
+if(-f $dir) { 
+    printf STDERR ("\nERROR, $dir was specified as the directory created by ssu-align, but a file with the same name exists. Are you in the correct dir?\n");
+    exit(1);
+}
+if(! (-d $dir)) { 
+    printf STDERR ("\nERROR, $dir was specified as the directory created by ssu-align, but it does not exist. Are you in the correct dir?\n");
+    exit(1);
+}
+
 # open the summary and log files
 open(OUT, ">" . $sum_file) || die "ERROR, couldn't open file $sum_file for writing";
 close(OUT);
@@ -660,8 +669,9 @@ sub merge_alignments_for_a_cm {
 
     my $extra_opts = "";
     if($opt_HR->{"-1"}) { $extra_opts = " -1"; }
+    my $cmalign_output = $dir . "/" . $cm_name . ".cmalign.merge";
 
-    $command = "$cmalign $extra_opts --cm-name $cm_name --list-merge -o $stk_name $cm_file $list_file 2>&1";
+    $command = "$cmalign $extra_opts --cm-name $cm_name --list-merge -o $stk_name $cm_file $list_file > $cmalign_output";
     RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
 
     UnlinkFile($list_file, $log_file);

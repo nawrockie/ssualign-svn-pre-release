@@ -55,26 +55,33 @@ my $options_usage  = "where general options are:\n";
 #$options_usage .= "  -a            : the command-line argument is a stockholm alignment, not a directory\n";
 $options_usage .= "  -h            : show brief help on version and usage\n";
 $options_usage .= "  -1            : output alignment(s) in non-interleaved, 1 line/seq format\n";
-$options_usage .= "  -m <f>        : CM file <f> created the alignment(s) (with ssu-align -m <f>)\n";
-$options_usage .= "  -t <f>        : for structure diagrams, use template file <f>, not the default\n";
+$options_usage .= "  -m <s>        : CM file <s> created the alignment(s) (with ssu-align -m <f>)\n";
+$options_usage .= "  -t <s>        : for structure diagrams, use template file <s>, not the default\n";
 $options_usage .= "  --afa         : output aligned FASTA (.afa) alignments as well as Stockholm ones\n";
 $options_usage .= "  --only-afa    : only output aligned FASTA (.afa) alignments, no Stockholm ones\n";
-$options_usage .= "  --key-in <s>  : assume <s> is part of input file names, before the suffix\n";
+$options_usage .= "  --key-in <s>  : assume <s> is part of non-mask input file names, before the suffix\n";
 $options_usage .= "  --key-out <s> : add <s> to all output file names, before the suffix\n";
 
-$options_usage .= "\noptions related to masking alignments:\n";
+$options_usage .= "\noptions related to construction of masks for masking alignments:\n";
 $options_usage .= "  --pf <x>        : include columns w/<x> fraction of seqs w/prob >= --pt <y> [df: 0.95]\n";
 $options_usage .= "  --pt <y>        : set probability threshold for --pf as <x> [default=0.95]\n";
 $options_usage .= "  --no-prob       : exclude insert columns only, do not mask based on probabilities\n";
-$options_usage .= "  --gapthresh <x> : only consider columns with <= <x> fraction gaps\n";
-$options_usage .= "  --in-mask <f>   : mask alignment given 1/0s in 1-line mask file <f>, requires -a\n";
+$options_usage .= "  --gapthresh <f> : only consider columns with <= <f> fraction gaps\n";
 $options_usage .= "  --keep          : keep all intermediate files which are normally removed\n";
+
+$options_usage .= "\noptions for using pre-calculated mask files for masking alignments:\n";
+$options_usage .= "    (standard options for --mask-key <s> are \"liberal\", \"cmemit\", \"ggcore\")";
+$options_usage .= "  --mask-file <s> : use single mask in existing file <s> to mask single alignment\n";
+$options_usage .= "  --mask-key  <s> : use existing mask files named <model>.<s>.mask for masking\n";
+
+$options_usage .= "\noptions related to creation of secondary structure diagrams displaying masks\n";
+$options_usage .= "    (diagrams are created only if default models were used for alignment):\n";
 $options_usage .= "  --ps2pdf <s>    : <s> (!= \"ps2pdf\") is the command for converting ps to pdf\n";
 $options_usage .= "  --ps-keep       : if --ps2pdf or ps2pdf is installed, save postscript (& pdf) files\n";
 $options_usage .= "  --ps-only       : only save postscript secondary structure diagrams, no pdfs\n";
 
 $options_usage .= "\noption for filtering alignments based on sequence identity (no masking):\n";
-$options_usage .= "  --filter <x> : remove seqs such that no 2 seqs > <x> identical (1st seq is always kept)\n";
+$options_usage .= "  --filter <f> : remove seqs such that no 2 seqs > <f> identical (1st seq is always kept)\n";
 
 $options_usage .= "\noption for listing sequences in alignment(s) (no masking):\n";
 $options_usage .= "  --list : output list file(s) of sequence names in alignment(s)\n";    
@@ -83,8 +90,8 @@ $options_usage .= "\noptions for converting a Stockholm alignment to aligned fas
 $options_usage .= "  --stk2afa : convert Stockholm alignment(s) to aligned FASTA\n";
 
 $options_usage .= "\noptions for only removing sequences from an alignment, require -a (no masking):\n";
-$options_usage .= "  --seq-r <f> : with -a, remove sequences with names listed in file <f>\n"; 
-$options_usage .= "  --seq-k <f> : with -a, remove all sequences *except* those listed in file <f>\n"; 
+$options_usage .= "  --seq-r <s> : with -a, remove sequences with names listed in file <s>\n"; 
+$options_usage .= "  --seq-k <s> : with -a, remove all sequences *except* those listed in file <s>\n"; 
 
 ###################
 # Process options #
@@ -107,7 +114,8 @@ $opt_takes_arg_H{"--pf"}        = 1;  push(@opt_order_A, "--pf");
 $opt_takes_arg_H{"--pt"}        = 1;  push(@opt_order_A, "--pt");      
 $opt_takes_arg_H{"--no-prob"}   = 0;  push(@opt_order_A, "--no-prob");      
 $opt_takes_arg_H{"--gapthresh"} = 1;  push(@opt_order_A, "--gapthresh");      
-$opt_takes_arg_H{"--in-mask"}   = 1;  push(@opt_order_A, "--in-mask");    
+$opt_takes_arg_H{"--mask-file"} = 1;  push(@opt_order_A, "--mask-file");    
+$opt_takes_arg_H{"--mask-key"}  = 1;  push(@opt_order_A, "--mask-key");    
 $opt_takes_arg_H{"--keep"}      = 0;  push(@opt_order_A, "--keep");
 $opt_takes_arg_H{"--ps2pdf"}    = 1;  push(@opt_order_A, "--ps2pdf");
 $opt_takes_arg_H{"--ps-keep"}   = 0;  push(@opt_order_A, "--ps-keep");      
@@ -139,7 +147,8 @@ my $opt_return = GetOptions
      'pt=s'        => \$opt_H{"--pt"},
      'no-prob'     => \$opt_H{"--no-prob"},
      'gapthresh=s' => \$opt_H{"--gapthresh"},
-     'in-mask'     => \$opt_H{"--in-mask"},
+     'mask-file=s' => \$opt_H{"--mask-file"},
+     'mask-key=s'  => \$opt_H{"--mask-key"},
      'keep'        => \$opt_H{"--keep"},
      'ps2pdf=s'    => \$opt_H{"--ps2pdf"},
      'ps-keep'     => \$opt_H{"--ps-keep"},
@@ -185,9 +194,14 @@ if($opt_H{"--no-prob"})
     $do_mask_mode = 1; 
 }
 if($opt_H{"--gapthresh"} ne "")    { $do_mask_mode = 1; }
-if($opt_H{"--in-mask"} ne "") { 
-    if(!($opt_H{"-a"})) { printf STDERR ("\nERROR, --in-mask requires the -a option.\n"); exit(1); }
-    if($do_mask_mode)   { printf STDERR ("\nERROR, --in-mask is incompatible with --pf, --pt, --no-prob, and --gapthresh.\n"); exit(1); }
+if(($opt_H{"--mask-file"} ne "") && ($opt_H{"--mask-key"} ne "")) {  
+    printf STDERR ("\nERROR, --mask-key and --mask-file are incompatible.\n"); exit(1); 
+}
+if(($opt_H{"--mask-file"} ne "") || ($opt_H{"--mask-key"} ne "")) {  
+    if($do_mask_mode)  { 
+	if($opt_H{"--mask-file"} ne "") { printf STDERR ("\nERROR, --mask-file is incompatible with --pf, --pt, --no-prob, and --gapthresh.\n"); exit(1); }
+	if($opt_H{"--mask-key"} ne "")  { printf STDERR ("\nERROR, --mask-key is incompatible with --pf, --pt, --no-prob, and --gapthresh.\n"); exit(1); }
+    }	   
     $do_mask_mode = 1; 
 }
 
@@ -197,7 +211,7 @@ if($opt_H{"--seq-r"} ne "")  { $do_remove_seqs_mode = 1; }
 if($opt_H{"--seq-k"} ne "")  { $do_remove_seqs_mode = 1; }
 
 if($do_remove_seqs_mode && $do_mask_mode) { 
-    printf STDERR ("\nERROR, --pf, --pt, --gapthresh, --filter, --no-prob and --in-mask are incompatible with --seq-k and --seq-r.\n"); exit(1); 
+    printf STDERR ("\nERROR, --pf, --pt, --gapthresh, --filter, --no-prob, --mask-key, --mask-file are incompatible with --seq-k and --seq-r.\n"); exit(1); 
 }
 if($do_remove_seqs_mode && (! $opt_H{"-a"})) { 
     printf STDERR ("\nERROR,--seq-k and --seq-r require -a. They can only be used on a single alignment.\n"); exit(1); 
@@ -206,7 +220,7 @@ if($do_remove_seqs_mode && (! $opt_H{"-a"})) {
 # Filter options.
 if($opt_H{"--filter"} ne "") { $do_filter_mode = 1; }
 if($do_filter_mode && $do_mask_mode) { 
-    printf STDERR ("\nERROR, --pf, --pt, --gapthresh, --filter, --no-prob and --in-mask are incompatible with --filter.\nFilter first, then mask filtered alignments with a subsequent ssu-mask call\n"); exit(1); 
+    printf STDERR ("\nERROR, --pf, --pt, --gapthresh, --filter, --no-prob, --mask-key and --mask-file are incompatible with --filter.\nFilter first, then mask filtered alignments with a subsequent ssu-mask call\n"); exit(1); 
 }
 if($do_filter_mode && $do_remove_seqs_mode) { 
     printf STDERR ("\nERROR, --seq-k and --seq-r are incompatible with --filter.\n"); exit(1); 
@@ -215,7 +229,7 @@ if($do_filter_mode && $do_remove_seqs_mode) {
 # List sequences options.
 if($opt_H{"--list"})      { $do_list_mode = 1;}
 if($do_list_mode && $do_mask_mode) { 
-    printf STDERR ("\nERROR, --pf, --pt, --gapthresh, --filter, --no-prob and --in-mask are incompatible with --list.\n"); exit(1); 
+    printf STDERR ("\nERROR, --pf, --pt, --gapthresh, --filter, --no-prob, --mask-key and --mask-file are incompatible with --list.\n"); exit(1); 
 }
 if($do_list_mode && $do_remove_seqs_mode) { 
     printf STDERR ("\nERROR, --seq-k and --seq-r are incompatible with --list.\n"); exit(1); 
@@ -228,7 +242,7 @@ if($do_list_mode && $do_filter_mode) {
 if($opt_H{"--stk2afa"})  { $do_stk2afa_mode = 1; }
 
 if($do_stk2afa_mode && $do_mask_mode) { 
-    printf STDERR ("\nERROR, --pf, --pt, --gapthresh, --filter, --no-prob and --in-mask are incompatible with --stk2afa.\n"); exit(1); 
+    printf STDERR ("\nERROR, --pf, --pt, --gapthresh, --filter, --no-prob, --mask-key and --mask-file are incompatible with --stk2afa.\n"); exit(1); 
 }
 if($do_stk2afa_mode && $do_remove_seqs_mode) { 
     printf STDERR ("\nERROR, --stk2afa is incompatible with --seq-k and --seq-r.\n"); exit(1); 
@@ -298,8 +312,9 @@ PrintGlobalsToFile(\%globals_H, $log_file);
 # Validate that everything is go #
 ##################################
 my @stk_list_A = ();
+my @in_mask_list_A = ();
 my ($cm_file, $template_file, $alimanip, $ssdraw, $weight, $alistat, $reformat);
-validate_and_setup_ssu_mask($ssualigndir, $dir, $key_in, \%opt_H, \$cm_file, \$template_file, \$alimanip, \$ssdraw, \$weight, \$alistat, \$reformat, \@stk_list_A, $log_file, $sum_file);
+validate_and_setup_ssu_mask($ssualigndir, $dir, $key_in, \%opt_H, \$cm_file, \$template_file, \$alimanip, \$ssdraw, \$weight, \$alistat, \$reformat, \@stk_list_A, \@in_mask_list_A, $log_file, $sum_file);
 my $naln = scalar(@stk_list_A);
 my $aln_file;
 
@@ -353,6 +368,9 @@ if($do_mask_mode)
     my $do_draw = 0;
     my $ssdraw_worked = 0;
     my ($pt_opt, $pf_opt);
+    my $inmask_mode = 0;
+    my $cur_inmask;
+    if(scalar(@in_mask_list_A) > 0) { $inmask_mode = 1; }
 
     $pt_opt = $opt_H{"--pt"};
     $pf_opt = $opt_H{"--pf"};
@@ -364,14 +382,14 @@ if($do_mask_mode)
 	$aln_root       = SwapOrAppendFileSuffix($aln_file, \@stk_suffix_A, "", 1);
 	$aln_root2print = SwapOrAppendFileSuffix($aln_file, \@stk_suffix_A, "", $opt_H{"-a"});
 	
-	if($opt_H{"--in-mask"} ne "") { # mask the alignment using the --in-mask mask 
+	if($inmask_mode) { 
+            # either --mask-file or --mask-key was enabled and we validated the nec mask files exist in validate_and_setup_ssu_mask()
+	    $cur_inmask = $in_mask_list_A[$i];
+	    if(! -e ($cur_inmask)) { PrintErrorAndExit("ERROR, second pass, mask file $cur_inmask does not exist!.", $sum_file, 1); }
 	    my ($mask_worked, $n0, $n1, $inmask_masked_aln_file, $mask_file, $keep_mask, $do_draw, $mask_ok_if_fails);
 
-	    if(!$opt_H{"-a"}) { PrintErrorAndExit("ERROR, --in-mask requires the -a option.", $sum_file, 1); }
-	    if(!(-e $opt_H{"--in-mask"})) { PrintErrorAndExit("ERROR, the --in-mask file " . $opt_H{"--in-mask"} . " does not exist.", $sum_file, 1); }
-
 	    # first try --mask-rf (to see if the mask is non-gap RF length (instead of full alignment length))
-	    $rfmask2use       = $opt_H{"--in-mask"};
+	    $rfmask2use       = $cur_inmask;
 	    $allmask2use      = "";
 	    $keep_mask        = 0; 
 	    $print_input_aln  = 1;
@@ -387,7 +405,7 @@ if($do_mask_mode)
 		#try --mask-all (to see if the mask is full alignment length)
 		$mask_ok_if_fails = 0;
 		$rfmask2use       = "";
-		$allmask2use      = $opt_H{"--in-mask"};
+		$allmask2use      = $cur_inmask;
 		mask_alignment($alimanip, \%opt_H, $ssdraw, $mask_root, $aln_file, $aln_file, \@stk_suffix_A, $keep_mask, $print_input_aln, 
 			       $mask_opts, "", $allmask2use, $do_draw, $max_width, $mask_ok_if_fails, $template_file, 
 			       \$n0, \$n1, \$inmask_masked_aln_file, \$mask_file, \$ssdraw_worked, \@files_to_unlink_A, $sum_file, $log_file);
@@ -396,7 +414,7 @@ if($do_mask_mode)
 	    if   ($do_draw && $ssdraw_worked)    { $ssdraw_worked_at_least_once = 1; }
 	    elsif($do_draw && (!$ssdraw_worked)) { $ssdraw_failed_at_least_once = 1; }
 	}
-	else {  #--in-mask not enabled
+	else {  # normal mode, neither --mask-file nor --mask-key enabled
 	    my ($cmasked_aln_file, $cmask_file, $pmasked_aln_file, $pmask_file, $gmasked_aln_file, $gmask_file, $pgmasked_aln_file, $pgmask_file);
 	    my ($pgmaskdiff_ps, $pgmaskdiff_ps2print, $pgmaskdiff_pdf, $pgmaskdiff_pdf2print);
 	    my ($cn0, $cn1, $pn0, $pn1, $gn0, $gn1, $pgn0, $pgn1);
@@ -734,21 +752,22 @@ exit(0);
 #               to operate on
 #
 # Arguments: 
-# $ssualigndir:       dir defined by SSUALIGNDIR environment variable 
-# $dir:               the directory we will create files in
-# $key_in:            "" or a key that is included in input file names, just prior to the suffix
-#                     e.g. $key_in = "fookey", $dir = "foodir", aln file is foodir/foodir.archaea.fookey.stk
-# $opt_HR:            reference to the hash of command-line options
-# $cm_file_ref:       RETURN; the path to the CM file, either default CM file or $opt_HR->{"-m"}
-# $template_file_ref: RETURN; the path to the template file, either default template file or $opt_HR->{"-t"}
-# $alimanip_ref:      RETURN; the esl-alimanip command
-# $ssdraw_ref:        RETURN; the esl-ssdraw command
-# $weight_ref:        RETURN; the esl-weight command, only relevant if --filter enabled
-# $alistat_ref:       RETURN; the esl-alistat command, only relevant if --filter enabled
-# $reformat_ref:      RETURN; the esl-reformat command, only relevant if --afa, --only-afa, or --stk2afa enabled
-# $stk_list_arr_ref:  RETURN: ref to array of alignment files to operate on
-# $log_file:          the log file
-# $sum_file:          the summary file
+# $ssualigndir:          dir defined by SSUALIGNDIR environment variable 
+# $dir:                  the directory we will create files in
+# $key_in:               "" or a key that is included in input file names, just prior to the suffix
+#                        e.g. $key_in = "fookey", $dir = "foodir", aln file is foodir/foodir.archaea.fookey.stk
+# $opt_HR:               reference to the hash of command-line options
+# $cm_file_ref:          RETURN; the path to the CM file, either default CM file or $opt_HR->{"-m"}
+# $template_file_ref:    RETURN; the path to the template file, either default template file or $opt_HR->{"-t"}
+# $alimanip_ref:         RETURN; the esl-alimanip command
+# $ssdraw_ref:           RETURN; the esl-ssdraw command
+# $weight_ref:           RETURN; the esl-weight command, only relevant if --filter enabled
+# $alistat_ref:          RETURN; the esl-alistat command, only relevant if --filter enabled
+# $reformat_ref:         RETURN; the esl-reformat command, only relevant if --afa, --only-afa, or --stk2afa enabled
+# $stk_list_arr_ref:     RETURN: ref to array of alignment files to operate on
+# $in_mask_list_arr_ref: RETURN: ref to array of mask files to use, only filled if --mask-file, --mask-key enabled
+# $log_file:             the log file
+# $sum_file:             the summary file
 #
 # Returns:    Nothing, if it returns, everything is valid.
 # 
@@ -758,9 +777,9 @@ exit(0);
 #
 ####################################################################
 sub validate_and_setup_ssu_mask { 
-    my $narg_expected = 14;
+    my $narg_expected = 15;
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, validate_and_setup_ssu_mask() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($ssualigndir, $dir, $key_in, $opt_HR, $cm_file_ref, $template_file_ref, $alimanip_ref, $ssdraw_ref, $weight_ref, $alistat_ref, $reformat_ref, $stk_list_arr_ref) = @_;
+    my($ssualigndir, $dir, $key_in, $opt_HR, $cm_file_ref, $template_file_ref, $alimanip_ref, $ssdraw_ref, $weight_ref, $alistat_ref, $reformat_ref, $stk_list_arr_ref, $in_mask_list_arr_ref, $log_file, $sum_file) = @_;
 
     #Validate that we can read the CM file
     my $cm_file = "";
@@ -772,11 +791,6 @@ sub validate_and_setup_ssu_mask {
 	$cm_file = $ssualigndir . "/ssu-align-0p1.cm";
 	if(!(-e $cm_file)) { PrintErrorAndExit("ERROR, the default CM file $cm_file does not exist.\nIf you used a different CM file to create the alignments in $dir, use the -m option.", $sum_file, 1); }
     }
-
-    #if --in-mask <s> enabled, verify that <s> exists
-    if($opt_HR->{"--in-mask"} ne "") { 
-	if(!(-e $opt_HR->{"--in-mask"})) { PrintErrorAndExit("ERROR, mask file " . $opt_HR->{"--in-mask"} . ", specified with --in-mask does not exist.", $sum_file, 1); }
-    }	
 
     #Validate that we can read the template postscript diagram file, if we can't that's okay but only if a non-default CM has been specified with -m.
     if($opt_HR->{"-t"} ne "") { 
@@ -829,6 +843,7 @@ sub validate_and_setup_ssu_mask {
 	RunCommand("$reformat -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $reformat (required b/c --afa, --only-afa or --stk2afa enabled) is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
     }	
 
+    # Find the alignments we'll mask
     my $naln = 0;
     my $errmsg = "";
     my ($aln_name);
@@ -881,6 +896,63 @@ sub validate_and_setup_ssu_mask {
 		printf STDERR $errmsg;
 	    }
 	    exit(1);
+	}
+    }
+
+    # If --mask-file <s> enabled, make sure the mask file <s> exists either locally (relative to the current working directory)
+    # or in SSUALIGNDIR
+    my $mask_file;
+    if($opt_HR->{"--mask-file"}) { 
+	if($naln != 1) { 
+	    $errmsg = "ERROR, --mask-file only makes sense when masking a single alignment.\n\n";
+	    PrintStringToFile($sum_file, 0, $errmsg);
+	    printf STDERR $errmsg;
+	    $errmsg = "The following alignments were to be masked:\n";
+	    PrintStringToFile($sum_file, 0, $errmsg);
+	    printf STDERR $errmsg;
+	    foreach $aln_name (@{$stk_list_arr_ref}) { 
+		$errmsg = "\t$aln_name\n";
+		PrintStringToFile($sum_file, 0, $errmsg);
+		printf STDERR $errmsg;
+	    }
+	    $errmsg = "Use the -a option if you want to select just one to mask.\n";
+	    PrintStringToFile($sum_file, 0, $errmsg);
+	    exit(1);
+	}
+	$mask_file = FindPossiblySharedFile($opt_HR->{"--mask-file"}, $ssualigndir);
+	if($mask_file eq "") { # file doesn't exist
+	    $mask_file = RemoveDirPath($opt_HR->{"--mask-file"});
+	    PrintErrorAndExit("ERROR, the mask file " . $opt_HR->{"--mask-file"} . " does not exist relative to the current directory.\nAnd $mask_file does not exist in SSUALIGNDIR $ssualigndir.", $sum_file, 1); 
+	}
+	push(@{$in_mask_list_arr_ref}, $opt_HR->{"--mask-file"});
+    }
+
+    # If --mask-key <s> enabled, we should have one mask for each alignment, we make sure below
+    my ($mask_key, $actual_mask_file);
+    if($opt_HR->{"--mask-key"}) { 
+	$mask_key = $opt_HR->{"--mask-key"}; 
+	foreach $aln_name (@{$stk_list_arr_ref}) { 
+	    $mask_file = $aln_name;
+	    # morph aln_name into mask file name
+	    # remove suffix 
+	    if($mask_file =~ m/$key_in.stk$/) { $mask_file =~ s/$key_in\.stk$//; }
+	    else                              { $mask_file =~ s/\.stk$//; }
+	    # remove dir path
+	    $mask_file = RemoveDirPath($mask_file);
+	    # remove "$dir." prefix
+	    $mask_file =~ s/^$dir\.//;
+	    # add mask suffix
+	    $mask_file .= "." . $mask_key . ".mask";
+	    # check if mask file is in cwd or SSUALIGNDIR
+	    $actual_mask_file = FindPossiblySharedFile($mask_file, $ssualigndir);
+	    if($actual_mask_file eq "") {
+		# check if mask file is in output dir $dir
+		$actual_mask_file = FindPossiblySharedFile($mask_file, $dir);
+		if($actual_mask_file eq "") { 
+		    PrintErrorAndExit("ERROR, unable to locate mask file $mask_file for masking alignment $aln_name in the\ncurrent working directory, directory $dir, nor the SSUALIGNDIR $ssualigndir.", $sum_file, 1);
+		}		    
+	    }
+	    push(@{$in_mask_list_arr_ref}, $actual_mask_file);
 	}
     }
 
@@ -1375,15 +1447,15 @@ sub FindPossiblySharedFile
     my $narg_expected = 2;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, FindPossiblySharedFile() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my ($file, $other_dir) = @_;
-
+    
     if(-e $file) { return $file; }
 
     # if other_dir has a "/" at the end, remove it
-    $other_dir =~ s/\///;
+    $other_dir =~ s/\/$//;
 
     $file = $other_dir . "/" . $file;
     if(-e ($file)) { return $file; }
-
+    
     return "";
 }
 

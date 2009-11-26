@@ -400,17 +400,23 @@ sub RunCommand {
     my $stdout2print = "";
     if(($retval != 0) || ($have_tmp_stdout)) { # we'll print stdout to log file
 	if($stdout_file ne "/dev/null") { 
-	    open(IN, $stdout_file) || FileOpenFailure($stdout_file, $log_file, $!, "reading");
-	    while($line = <IN>) { $stdout2print .= $line; }
-	    close(IN);
+	    if(-e $stdout_file) { 
+		open(IN, $stdout_file) || FileOpenFailure($stdout_file, $log_file, $!, "reading");
+		while($line = <IN>) { $stdout2print .= $line; }
+		close(IN);
+	    }
+	    else { $stdout2print = "***UNEXPECTEDLY, THE FILE DOES NOT EXIST***"; }
 	}
 	if($stdout2print eq "") { $stdout2print = "***NONE***"; }
 	else                    { $stdout2print = "\n" . $stdout2print; }
     }
     my $stderr2print = "";
-    open(IN, $tmp_stderr_file) || FileOpenFailure($tmp_stderr_file, $log_file, $!, "reading");
-    while($line = <IN>) { $stderr2print .= $line; }
-    close(IN);
+    if(-e $tmp_stderr_file) { 
+	open(IN, $tmp_stderr_file) || FileOpenFailure($tmp_stderr_file, $log_file, $!, "reading");
+	while($line = <IN>) { $stderr2print .= $line; }
+	close(IN);
+    }
+    else { $stderr2print = "***UNEXPECTEDLY, THE FILE DOES NOT EXIST***"; }
     if($stderr2print eq "") { $stderr2print = "***NONE***"; }
     else                    { $stderr2print = "\n" . $stderr2print; }
 
@@ -447,9 +453,9 @@ sub RunCommand {
 
     # unlink temporary files we created here
     if($have_tmp_stdout) { 
-	UnlinkFile($stdout_file, $log_file); 
+	if(-e $stdout_file) { UnlinkFile($stdout_file, $log_file); }
     }
-    UnlinkFile($tmp_stderr_file, $log_file); 
+    if(-e $tmp_stderr_file) { UnlinkFile($tmp_stderr_file, $log_file); }
     
     $$returned_zero_R = $returned_zero;
     return;
@@ -1119,38 +1125,6 @@ sub NumberOfDigits
     return $ndig;
 }
 
-
-#################################################################
-# Subroutine : FindPossiblySharedFile()
-# Incept:      EPN, Thu Nov 19 09:45:55 2009
-# 
-# Purpose:     Given a path to a file, determine if that file
-#              exists either with respect to the current
-#              working directory and/or with respect to 
-#              another directory <$other_dir>.
-#
-# Arguments:
-# $file:       name of file, possibly with directory path
-#              as a prefix
-# $other_dir:  second directory in which to look for the file
-# 
-# Returns:     The local path to the file if it does
-#              exist in the current dir, else the full
-#              path to it in <$other_dir>, else if it
-#              doesn't exist in either place, return "".
-#
-################################################################# 
-sub FindPossiblySharedFile
-{
-    my $narg_expected = 2;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, FindPossiblySharedFile() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($num) = $_[0];
-
-    my $ndig = 1; 
-    while($num > 10) { $ndig++; $num /= 10.; }
-
-    return $ndig;
-}
 
 
 ####################################################################
