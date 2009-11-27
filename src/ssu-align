@@ -256,6 +256,8 @@ my @target_order_A = ();
 my %target_len_H = ();
 PrintStringToFile($sum_file, 1, sprintf("#\n# Validating input sequence file ... "));
 seqstat_seq_file_per_seq($seqstat, $target_file, $seqstat_out_file, \$target_nres, \$target_nseq, \$target_format, \@target_order_A, \%target_len_H, $sum_file, $log_file); 
+# remove seqstat output
+UnlinkFile($seqstat_out_file, $log_file);
 $target_format =~ tr/a-z/A-Z/;
 if($target_format ne "FASTA") { PrintErrorAndExit("ERROR, the target sequence file must be FASTA formatted.", $sum_file, 1); }
 PrintStringToFile($sum_file, 1, sprintf("done.\n"));
@@ -559,7 +561,7 @@ sub create_output_dir {
 	else { $retval = $status; }
 	if($retval != 0) { printf STDERR "\nERROR, the command \"rm -rf $out_dir did not successfully complete."; exit(1); }
 	$ran_command = 1;
-	if(-d $out_dir) { printf STDERR "\nERROR, output directory $out_dir still exists after the command \"rmdir $out_dir\".\n"; exit(1); }
+	if(-d $out_dir) { printf STDERR "\nERROR, output directory $out_dir still exists after the command \"rm -rf $out_dir\".\n"; exit(1); }
     }
 
     # make the directory 
@@ -666,11 +668,11 @@ sub process_cm_file {
 # 
 #             The target sequence file <$target_file> is partitioned
 #             into > 1 new, smaller fasta files. A shell script named
-#             <$out_dir_and_root.sh> is created that calls 'ssu-align'
+#             <$out_dir_and_root.ssu-align.sh> is created that calls 'ssu-align'
 #             once each for each of the new fasta files. A separate
 #             perl script named <$out_dir_and_root.merge.pl> is
 #             created that is to be run after the alignments in
-#             <$out_dir_and_root.sh> are complete.  This script merges
+#             <$out_dir_and_root.ssu-align.sh> are complete.  This script merges
 #             all the small alignments into one big alignment.
 # 
 # Arguments:  
@@ -731,8 +733,8 @@ sub prepare_only {
 
     $ncm = scalar(@{$indi_cm_name_AR});
 
-    $shell_script       = $out_dir_and_root . ".sh";
-    $shell_script2print = $out_root         . ".sh";
+    $shell_script       = $out_dir_and_root . ".ssu-align.sh";
+    $shell_script2print = $out_root         . ".ssu-align.sh";
     open(SH, ">" . $shell_script) || FileOpenFailure($shell_script, $sum_file, $!, "writing");
     #determine number of seqs per file 
     my ($prep_nseq, $prep_nproc);

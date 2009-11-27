@@ -17,6 +17,7 @@
 # RunCommand():                    runs an executable using system, prints output to log file
 # TempFilename():                  create a name for a temporary file
 # UnlinkFile():                    unlinks a file, and updates log file.
+# RemoveDir():                     removes an empty directory, and updates log file.
 # DetermineNumSeqsFasta():         determine the number of sequences in a FASTA file.
 # DetermineNumSeqsStockholm():     determine the number of sequences in a Stockholm aln file.
 # ArgmaxArray():                   determine the index of the max value scalar in an array
@@ -504,6 +505,7 @@ sub TempFilename {
     PrintErrorAndExit("ERROR, unable to create temporary file, 26*26=676 already exist!.", $out_file, 1);
 }
 
+
 ###########################################################
 # Subroutine: UnlinkFile()
 # Incept: EPN, Wed Nov  4 18:19:29 2009
@@ -527,6 +529,33 @@ sub UnlinkFile {
     PrintStringToFile($log_file, 0, ("done.\n\n"));
     
     return;
+}
+
+
+###########################################################
+# Subroutine: RemoveDir()
+# Incept: EPN, Fri Nov 27 17:55:41 2009
+#
+# Purpose: Remove an empty directory.
+#
+# Returns: '1' if the directory was removed. 
+#          '0' if it was not (possibly b/c it
+#          is not empty).
+#
+###########################################################
+sub RemoveDir {
+    my $narg_expected = 2;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, UnlinkFile() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($dir, $log_file) = @_;
+
+    PrintStringToFile($log_file, 0, ("About to remove presumed empty directory ($dir) with perl's rmdir function ... "));
+    if(! rmdir($dir)) { 
+	PrintStringToFile($log_file, 0, ("ERROR, couldn't remove it (it may not be empty)."));
+	return 0;
+    }
+    # if we get here it was removed 
+    PrintStringToFile($log_file, 0, ("done.\n\n"));
+    return 1;
 }
 
 
