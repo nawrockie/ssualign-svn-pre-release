@@ -795,7 +795,7 @@ sub prepare_only {
     $nseq_total_regurg = 0;
     while($line = <FULL>) { 
 	if($line =~ m/^>/) { 
-	    if($nseq_this_file == $nseq_per_run_A[$n]) {
+	    if($nseq_this_file == $nseq_per_run_A[($n-1)]) {
 		close(SUB); 
 		if($nseq_this_file == 1) { $tmp2print = "seq"; } 
 		else                     { $tmp2print = "seqs"; }
