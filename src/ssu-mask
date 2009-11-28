@@ -1158,7 +1158,7 @@ sub mask_alignment {
     if   ($rfmask_file2use ne "")  { $extra_opts = "--mask-rf $rfmask_file2use";  $mask_file = $rfmask_file2use; }
     elsif($allmask_file2use ne "") { $extra_opts = "--mask-all $allmask_file2use"; $mask_file = $allmask_file2use; }
     else                           { $extra_opts = "--kmask $mask_file"; }
-    if(! $opt_HR->{"--ileaved"})   { $extra_opts .= "-1"; }
+    if(! $opt_HR->{"--ileaved"})   { $extra_opts .= " -1"; }
     $command = "$alimanip $mask_opts $extra_opts -o $masked_stk_file $aln_file2mask";
     my $errmsg = "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.";
     my $die_if_fails = 1;

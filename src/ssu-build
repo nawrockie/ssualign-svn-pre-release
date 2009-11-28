@@ -124,7 +124,7 @@ my $opt_return = GetOptions
      'key-out=s'   => \$opt_H{"--key-out"},
      'trunc=s'     => \$opt_H{"--trunc"},
      'num'         => \$opt_H{"--num"},
-     'ileave'      => \$opt_H{"--ileaved"},
+     'ileaved'     => \$opt_H{"--ileaved"},
      'gapthresh=f' => \$opt_H{"--gapthresh"},
      'rf'          => \$opt_H{"--rf"},
      'eent'        => \$opt_H{"--eent"},

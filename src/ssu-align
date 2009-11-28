@@ -736,38 +736,14 @@ sub prepare_only {
     $shell_script       = $out_dir_and_root . ".ssu-align.sh";
     $shell_script2print = $out_root         . ".ssu-align.sh";
     open(SH, ">" . $shell_script) || FileOpenFailure($shell_script, $sum_file, $!, "writing");
+
     #determine number of seqs per file 
-    my ($prep_nseq, $prep_nproc);
-    if($opt_HR->{"--prep-p"} ne "") { 
-	$prep_nproc = $opt_HR->{"--prep-p"};
-	$prep_nseq  = int($target_nseq / ($prep_nproc)); 
-	$remainder  = $target_nseq - ($prep_nseq * $prep_nproc);
-	if($remainder > 0) { 
-	    $prep_nseq++; 
-	    $prep_nproc = int($target_nseq / ($prep_nseq));
-	    $remainder  = $target_nseq - ($prep_nseq * $prep_nproc);
-	    if($remainder > 0) { $prep_nproc++; }
-	}
-    }
-    elsif($opt_HR->{"--prep-n"} ne "") { 
-	$prep_nseq  = $opt_HR->{"--prep-n"};
-	$prep_nproc = int($target_nseq / ($prep_nseq));
-	$remainder  = $target_nseq - ($prep_nseq * $prep_nproc);
-	if($remainder > 0) { $prep_nproc++; }
-    }
-    else { PrintErrorAndExit("ERROR, in prepare_only but neither --prep-p nor --prep-n enabled on the command-line. This shouldn't happen.", $sum_file, 1); }
+    my @nseq_per_run_A = ();
+    my $nruns = 0;
+    determine_nseq_per_run($opt_HR, $target_nseq, \@nseq_per_run_A, \$nruns, $sum_file);
 
-    # Block that checks if --prep-n and --prep-p unnecessarily used b/c they result in only 1 partition.
-    # I decided it was okay to let the user do this.
-    #if(($opt_HR->{"--prep-p"} ne "") && ($prep_nproc > $target_nseq)) { 
-    #   PrintErrorAndExit(sprintf("ERROR, --prep-p %d enabled, but there's only %d sequences in the target file.", $prep_nproc, $target_nseq), $sum_file, 1);
-    #}
-    #if(($opt_HR->{"--prep-n"} ne "") && ($prep_nproc == 1)) {
-    #	PrintErrorAndExit(sprintf("ERROR, --prep-n %d enabled, but there's only %d sequences in the target file.\nNo need to use --prep-n, you're requesting the target file be split into only 1 partition.", $prep_nseq, $target_nseq), $sum_file, 1);
-    #}
-
-    $ndig_runs = NumberOfDigits($prep_nproc);
-    $ndig_seqs = NumberOfDigits($prep_nseq);
+    $ndig_runs = NumberOfDigits($nruns);
+    $ndig_seqs = NumberOfDigits($nseq_per_run_A[0]);
     my $max_file_name_width = length($shell_script2print);
     $target_subfile_root = $target_file . ".0";
     $target_subfile_root =~ s/^.+\///;  # remove path 
@@ -786,9 +762,9 @@ sub prepare_only {
     $dashes1 = ""; for($i = 0; $i < $max_file_name_width; $i++) { $dashes1 .= "-"; } 
     $dashes2 = ""; for($i = 0; $i < $description_width; $i++)   { $dashes2 .= "-"; } 
     
-    PrintStringToFile($sum_file, 1, sprintf("#\n# Prep mode: Splitting up ssu-align job into %d smaller jobs.\n", $prep_nproc));
+    PrintStringToFile($sum_file, 1, sprintf("#\n# Prep mode: Splitting up ssu-align job into %d smaller jobs.\n", $nruns));
     PrintStringToFile($sum_file, 1, sprintf("#\n"));
-    if(($opt_HR->{"--prep-n"} ne "") && (($prep_nproc == 1) && ($target_nseq < $prep_nseq))) { 
+    if(($opt_HR->{"--prep-n"} ne "") && (($nruns == 1) && ($target_nseq < $nseq_per_run_A[0]))) { 
 	PrintStringToFile($sum_file, 1, sprintf("# Note: --prep-n " . $opt_HR->{"--prep-n"} . " was specified, but there are only $target_nseq sequences in the\n\# input file. ssu-align does not split up individual input sequences.\n"));
 	PrintStringToFile($sum_file, 1, sprintf("#\n"));
     }
@@ -801,7 +777,6 @@ sub prepare_only {
     $target_subfile_root = $target_file . "." . $n;
     $target_subfile_root =~ s/^.+\///;  # remove path 
     $target_subfile      = $out_dir . "/" . $target_subfile_root;
-
 
     #determine options we'd use for subsequent ssu-align calls on split dataset if we're in prep mode
     my $prep_enabled_options = "";
@@ -820,7 +795,7 @@ sub prepare_only {
     $nseq_total_regurg = 0;
     while($line = <FULL>) { 
 	if($line =~ m/^>/) { 
-	    if($nseq_this_file == $prep_nseq) { 
+	    if($nseq_this_file == $nseq_per_run_A[$n]) {
 		close(SUB); 
 		if($nseq_this_file == 1) { $tmp2print = "seq"; } 
 		else                     { $tmp2print = "seqs"; }
@@ -841,23 +816,21 @@ sub prepare_only {
     close(SUB);
     $nseq_total_regurg += $nseq_this_file;
     if($nseq_this_file == 0) { # we opened a new sequence file for output, but didn't output anything to it
-	UnlinkFile($target_subfile, $log_file); 
-	$n--;
+	PrintErrorAndExit("ERROR, splitting up fasta file, final file got 0 sequences.\n");
     }
-    else { 
-	if($nseq_this_file == 1) { $tmp2print = "seq"; } 
-	else                     { $tmp2print = "seqs"; }
-	PrintStringToFile($sum_file, 1, sprintf("  %-*s  partition %*d FASTA sequence file (%*d $tmp2print)\n", $max_file_name_width, $target_subfile_root, $ndig_runs, $n, $ndig_seqs, $nseq_this_file));
-	printf SH ("%s%s%s\n", $prep_prefix, "$ssualign -F $prep_enabled_options $target_subfile_root $out_root." . $n, $prep_suffix);
-	close(SH); 
-    }
+    if($nseq_this_file == 1) { $tmp2print = "seq"; } 
+    else                     { $tmp2print = "seqs"; }
+    PrintStringToFile($sum_file, 1, sprintf("  %-*s  partition %*d FASTA sequence file (%*d $tmp2print)\n", $max_file_name_width, $target_subfile_root, $ndig_runs, $n, $ndig_seqs, $nseq_this_file));
+    printf SH ("%s%s%s\n", $prep_prefix, "$ssualign -F $prep_enabled_options $target_subfile_root $out_root." . $n, $prep_suffix);
+    close(SH); 
+
     if($nseq_total_regurg != $target_nseq) { 
-	PrintErrorAndExit(sprintf("ERROR, problem partitioning target FASTA file $target_file into $prep_nproc files, %d of the %d sequences were copied.", $nseq_total_regurg, $target_nseq), $sum_file, 1);
+	PrintErrorAndExit(sprintf("ERROR, problem partitioning target FASTA file $target_file into $nruns files, %d of the %d sequences were copied.", $nseq_total_regurg, $target_nseq), $sum_file, 1);
     }
-    if($n != $prep_nproc) { 
-	PrintErrorAndExit("ERROR, problem partitioning target FASTA file $target_file into $prep_nproc files, $n files were successfully created.", $sum_file, 1);
+    if($n != $nruns) { 
+	PrintErrorAndExit("ERROR, problem partitioning target FASTA file $target_file into $nruns files, $n files were successfully created.", $sum_file, 1);
     }    
-    PrintStringToFile($sum_file, 1, sprintf("  %-*s  shell script that will run ssu-align %d times\n", $max_file_name_width, $shell_script2print, $prep_nproc));
+    PrintStringToFile($sum_file, 1, sprintf("  %-*s  shell script that will run ssu-align %d times\n", $max_file_name_width, $shell_script2print, $nruns));
     PrintStringToFile($sum_file, 1, sprintf("#\n# To perform the alignments, execute the following 2 commands:\n#\t\"cd $out_dir\"\n#\t\"sh $shell_script2print\"\n"));
     PrintStringToFile($sum_file, 1, sprintf("#\n# When all runs are complete, move into *this directory* and do:\n#\t\"ssu-merge $out_dir\"\n"));
 
@@ -1607,3 +1580,68 @@ sub compile_search_and_align_statistics {
     return;
 }
 
+#####################################################################
+# Subroutine: determine_nseq_per_run()
+# Incept:     EPN, Sat Nov 28 10:15:39 2009
+# 
+# Purpose:    Used only in prep mode, determine the number of sequences
+#             to put on each processor. Currently, the size of each
+#             sequence is irrelevant.
+#
+# Arguments:
+# $opt_HR:          reference to the hash of command-line options
+# $total_nseq:      total number of target sequences
+# $nseq_per_run_AR: number of sequences to use for each run, filled here
+# $nruns_R:         number of runs, filled here
+# $sum_file:        summary file (only to print errors to)
+#
+# Returns:    Nothing. 
+#             
+####################################################################
+sub determine_nseq_per_run {
+    my $narg_expected = 5;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, determine_nseq_per_run() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($opt_HR, $total_nseq, $nseq_per_run_AR, $nruns_R, $sum_file) = @_;
+
+    my $nruns = 0;
+    my $nseq_used = 0;
+    my $remainder = 0;
+    my $nseq_per_run = 0;
+    my $i;
+
+    if($opt_HR->{"--prep-p"} ne "") { 
+	$nruns = $opt_HR->{"--prep-p"};
+	$nseq_per_run = int($total_nseq / ($nruns));
+	$remainder  = $target_nseq - ($nseq_per_run * $nruns);
+	for($i = 0; $i < $remainder; $i++) { 
+	    $nseq_per_run_AR->[$i] = $nseq_per_run + 1;
+	    $nseq_used += $nseq_per_run + 1;
+	}
+	for($i = $remainder; $i < $nruns; $i++) { 
+	    $nseq_per_run_AR->[$i] = $nseq_per_run;
+	    $nseq_used += $nseq_per_run;
+	}
+    }
+    elsif($opt_HR->{"--prep-n"} ne "") { 
+	$nseq_per_run = $opt_HR->{"--prep-n"};
+	$nruns = int($total_nseq / ($nseq_per_run));
+	for($i = 0; $i < $nruns; $i++) { 
+	    $nseq_per_run_AR->[$i] = $nseq_per_run; 
+	    $nseq_used += $nseq_per_run;
+	}
+	$remainder  = $total_nseq - $nseq_used;
+	if($remainder > 0) { 
+	    $nruns++;
+	    $nseq_per_run_AR->[($nruns-1)] = $remainder;
+	    $nseq_used += $remainder;
+	}
+    }
+    else { 
+	PrintErrorAndExit("ERROR, in prepare_only but neither --prep-p nor --prep-n enabled on the command-line. This shouldn't happen.", $sum_file, 1); }
+    if($nseq_used != $total_nseq) { 
+	PrintErrorAndExit("ERROR, coding error involving processing of --prep-p/--prep-n options.", $sum_file, 1); 
+    }
+
+    $$nruns_R = $nruns;
+    return;
+}

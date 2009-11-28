@@ -14,9 +14,9 @@
 1  exercise  bacseed-5:ssu-build4  @ssu-build@ -F --key-out 4 -n bacseed bacseed-5.stk
 1  exercise  bacseed-5:ssu-build5  @ssu-build@ -F --key-out 5 -n newbacseed --append bacseed-5.cm bacseed-5.stk
 1  exercise  bacseed-5:ssu-build6  @ssu-build@ -F --key-out 6 --trunc 322-570 bacseed-5.stk
-1  exercise  bacseed-5:ssu-build7  @ssu-build@ -F --key-out 7 -1 --trunc 322-570 bacseed-5.stk
+1  exercise  bacseed-5:ssu-build7  @ssu-build@ -F --key-out 7 --ileaved --trunc 322-570 bacseed-5.stk
 1  exercise  bacseed-5:ssu-build8  @ssu-build@ -F --key-out 8 --num bacseed-5.stk
-1  exercise  bacseed-5:ssu-build9  @ssu-build@ -F --key-out 9 -1 --num bacseed-5.stk
+1  exercise  bacseed-5:ssu-build9  @ssu-build@ -F --key-out 9 --ileaved --num bacseed-5.stk
 1  exercise  bacseed-5:ssu-build10  @ssu-build@ -F --key-out 10 --gapthresh 0.3 bacseed-5.stk
 1  exercise  bacseed-5:ssu-build11  @ssu-build@ -F --key-out 11 --rf bacseed-5.stk
 1  exercise  bacseed-5:ssu-build12  @ssu-build@ -F --key-out 12 --eent bacseed-5.stk

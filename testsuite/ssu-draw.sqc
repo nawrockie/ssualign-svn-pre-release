@@ -5,7 +5,7 @@
 # EPN, Tue Nov 10 16:16:45 2009
 #
 1  exercise  help:ssu-draw       @ssu-draw@ -h
-1  exercise  seed-15:ssu-align   @ssu-align@ -F seed-15.fa seed-15
+1  exercise  seed-15:ssu-align   @ssu-align@ -F ../tutorial/seed-15.fa seed-15
 1  exercise  seed-15:ssu-mask1   @ssu-mask@ seed-15
 1  exercise  seed-15:ssu-draw1   @ssu-draw@ seed-15
 1  exercise  seed-15:ssu-mask2   @ssu-mask@ --no-prob --key-out noprob seed-15

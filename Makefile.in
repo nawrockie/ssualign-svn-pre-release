@@ -199,18 +199,18 @@ dist:
 # runs a lot). 
 #
 check:
-	(cd testsuite; ./sqc 4 exercises.sqc ../src)
+	(cd testsuite; ../easel/devkit/sqc 4 exercises.sqc ../src)
 
 # "make devcheck" runs an additional set of development sqc exercises 
 # in the test suite, at level 4. This will take a long time.
 #
 devcheck:
 	(cd testsuite;\
-	 ./sqc 4 exercises.sqc ../src;\
-	 ./sqc 4 ssu-align.sqc ../src;\
-	 ./sqc 4 ssu-build.sqc ../src;\
-	 ./sqc 4 ssu-draw.sqc ../src;\
-	 ./sqc 4 ssu-mask.sqc ../src;)
+	 ../easel/devkit/sqc 4 exercises.sqc ../src;\
+	 ../easel/devkit/sqc 4 ssu-align.sqc ../src;\
+	 ../easel/devkit/sqc 4 ssu-build.sqc ../src;\
+	 ../easel/devkit/sqc 4 ssu-draw.sqc ../src;\
+	 ../easel/devkit/sqc 4 ssu-mask.sqc ../src;)
 
 # "make install" installs the programs in BINDIR and the CM and postscript templates in LIBDIR
 #
