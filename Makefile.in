@@ -69,6 +69,7 @@ INFPROGS = ssu-cmalign\
            ssu-cmsearch
 
 ESLPROGS = ssu-esl-alimanip\
+           ssu-esl-alimerge\
            ssu-esl-alistat\
 	   ssu-esl-reformat\
 	   ssu-esl-seqstat\

@@ -85,6 +85,7 @@ sub GetGlobals {
     $globals_HR->{"cmbuild"} = "ssu-cmbuild";
     $globals_HR->{"cmsearch"} = "ssu-cmsearch";
     $globals_HR->{"esl-alimanip"} = "ssu-esl-alimanip";
+    $globals_HR->{"esl-alimerge"} = "ssu-esl-alimerge";
     $globals_HR->{"esl-alistat"} = "ssu-esl-alistat";
     $globals_HR->{"esl-reformat"} = "ssu-esl-reformat";
     $globals_HR->{"esl-seqstat"} = "ssu-esl-seqstat";
