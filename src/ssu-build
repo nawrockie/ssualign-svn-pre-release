@@ -66,8 +66,8 @@ $options_usage .= "\noptions for building a model from a truncated version of th
 $options_usage .= "  --trunc <s> : only include consensus columns from <x> to <y> (where <s> =\"<x>-<y>\")\n";
 
 $options_usage .= "\noptions for numbering alignment consensus columns (no model will be built):\n";
-$options_usage .= "  --num : output alignment with consensus columns numbered\n";
-$options_usage .= "  -1    : output alignment(s) in non-interleaved, 1 line/seq format\n";
+$options_usage .= "  --num     : output alignment with consensus columns numbered\n";
+$options_usage .= "  --ileaved : output alignments in interleaved Stockholm format (not 1 line/seq)\n";
 
 $options_usage .= "\nexpert options for model construction:\n";
 $options_usage .= "  --gapthresh <x> : set fraction of gaps to allow in a consensus column to <x> (default: 0.8)\n";
@@ -98,7 +98,7 @@ $opt_takes_arg_H{"--append"}    = 1;  push(@opt_order_A, "--append");
 $opt_takes_arg_H{"--key-out"}   = 1;  push(@opt_order_A, "--key-out");    
 $opt_takes_arg_H{"--trunc"}     = 1;  push(@opt_order_A, "--trunc");
 $opt_takes_arg_H{"--num"}       = 0;  push(@opt_order_A, "--num");
-$opt_takes_arg_H{"-1"}          = 0;  push(@opt_order_A, "-1");           
+$opt_takes_arg_H{"--ileaved"}   = 0;  push(@opt_order_A, "--ileaved");           
 $opt_takes_arg_H{"--gapthresh"} = 1;  push(@opt_order_A, "--gapthresh");
 $opt_takes_arg_H{"--rf"}        = 0;  push(@opt_order_A, "--rf");
 $opt_takes_arg_H{"--eent"}      = 0;  push(@opt_order_A, "--eent");
@@ -124,7 +124,7 @@ my $opt_return = GetOptions
      'key-out=s'   => \$opt_H{"--key-out"},
      'trunc=s'     => \$opt_H{"--trunc"},
      'num'         => \$opt_H{"--num"},
-     '1'           => \$opt_H{"-1"},
+     'ileave'      => \$opt_H{"--ileaved"},
      'gapthresh=f' => \$opt_H{"--gapthresh"},
      'rf'          => \$opt_H{"--rf"},
      'eent'        => \$opt_H{"--eent"},
@@ -219,8 +219,8 @@ if(($opt_H{"--rf"}) && (($opt_H{"--gapthresh"}) ne "")) {
 if($opt_H{"--ps-only"} && ($opt_H{"--ps2pdf"} ne "")) { 
     printf STDERR ("\nERROR, --ps-only is incompatible with --ps2pdf\n"); exit(1); 
 }
-if($opt_H{"-1"} && ($opt_H{"--trunc"} eq "" && (! $opt_H{"--num"}))) { 
-    printf STDERR ("\nERROR, -1 only makes sense in combination with --num and/or --trunc\n"); exit(1); 
+if($opt_H{"--ileaved"} && ($opt_H{"--trunc"} eq "" && (! $opt_H{"--num"}))) { 
+    printf STDERR ("\nERROR, --ileaved only makes sense in combination with --num and/or --trunc\n"); exit(1); 
 }
 
 
@@ -619,7 +619,7 @@ sub run_alimanip_to_number {
 	$extra_opts .= " --num-rf"; 
 	PrintStringToFile($sum_file, 1, sprintf("#\n# Numbering consensus columns and all columns in alignment file...\n"));
     }
-    if($opt_HR->{"-1"}) { $extra_opts .= " -1"; }
+    if(! $opt_HR->{"--ileaved"}) { $extra_opts .= " -1"; }
     PrintStringToFile($sum_file, 1, sprintf("#\n"));
     
     my $command = "$alimanip $extra_opts -o $num_aln_file $aln_file";
@@ -687,7 +687,7 @@ sub run_alimanip_to_truncate {
 	$extra_opts = "-g --gapthresh $gapthresh";
 	PrintStringToFile($sum_file, 1, sprintf("#\n# Truncating alignment; defining consensus columns and saving those\n\# between consensus columns $start and $end...\n"));
     }
-    if($opt_HR->{"-1"}) { $extra_opts .= " -1"; }
+    if(! $opt_HR->{"--ileaved"}) { $extra_opts .= " -1"; }
 
     PrintStringToFile($sum_file, 1, sprintf("#\n"));
     

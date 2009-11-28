@@ -1034,7 +1034,6 @@ sub PrintSearchAndAlignStatistics {
     my $nseq_aligned_all_cms = 0;
 
     PrintStringToFile($sum_file, $print_to_stdout, sprintf("#\n"));
-    PrintStringToFile($sum_file, $print_to_stdout, sprintf("#\n"));
     PrintStringToFile($sum_file, $print_to_stdout, sprintf("# Summary statistics:\n"));
     PrintStringToFile($sum_file, $print_to_stdout, sprintf("#\n"));
 
@@ -1103,7 +1102,6 @@ sub PrintSearchAndAlignStatistics {
     
     if($search_seconds eq "0") { $search_seconds = 1; }
     if($align_seconds eq "0")  { $align_seconds = 1; }
-    PrintStringToFile($sum_file, $print_to_stdout, sprintf("#\n"));
     PrintStringToFile($sum_file, $print_to_stdout, sprintf("#\n"));
     PrintStringToFile($sum_file, $print_to_stdout, sprintf("# Speed statistics:\n"));
     PrintStringToFile($sum_file, $print_to_stdout, sprintf("#\n"));

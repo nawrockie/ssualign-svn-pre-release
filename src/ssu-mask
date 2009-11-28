@@ -54,9 +54,9 @@ my $options_usage  = "where general options are:\n";
 #                  12345678901234567890123456789012345678901234567890123456789012345678901234567890
 #$options_usage .= "  -a            : the command-line argument is a stockholm alignment, not a directory\n";
 $options_usage .= "  -h            : show brief help on version and usage\n";
-$options_usage .= "  -1            : output alignment(s) in non-interleaved, 1 line/seq format\n";
 $options_usage .= "  -m <s>        : CM file <s> created the alignment(s) (with ssu-align -m <f>)\n";
 $options_usage .= "  -t <s>        : for structure diagrams, use template file <s>, not the default\n";
+$options_usage .= "  --ileaved     : output alignments in interleaved Stockholm format (not 1 line/seq)\n";
 $options_usage .= "  --afa         : output aligned FASTA (.afa) alignments as well as Stockholm ones\n";
 $options_usage .= "  --only-afa    : only output aligned FASTA (.afa) alignments, no Stockholm ones\n";
 $options_usage .= "  --key-in <s>  : assume <s> is part of non-mask input file names, before the suffix\n";
@@ -103,9 +103,9 @@ my $opt;
 
 $opt_takes_arg_H{"-a"}          = 0;  push(@opt_order_A, "-a");           
 $opt_takes_arg_H{"-h"}          = 0;  push(@opt_order_A, "-h");           
-$opt_takes_arg_H{"-1"}          = 0;  push(@opt_order_A, "-1");           
 $opt_takes_arg_H{"-m"}          = 1;  push(@opt_order_A, "-m");           
 $opt_takes_arg_H{"-t"}          = 1;  push(@opt_order_A, "-t");           
+$opt_takes_arg_H{"--ileaved"}   = 0;  push(@opt_order_A, "--ileaved");      
 $opt_takes_arg_H{"--afa"}       = 0;  push(@opt_order_A, "--afa");      
 $opt_takes_arg_H{"--only-afa"}  = 0;  push(@opt_order_A, "--only-afa");      
 $opt_takes_arg_H{"--key-in"}    = 1;  push(@opt_order_A, "--key-in");     
@@ -136,9 +136,9 @@ Getopt::Long::Configure ("bundling");
 my $opt_return = GetOptions
     ('a'           => \$opt_H{"-a"},
      'h'           => \$opt_H{"-h"}, 
-     '1'           => \$opt_H{"-1"},
      'm=s'         => \$opt_H{"-m"},
      't=s'         => \$opt_H{"-t"},
+     'ileaved'     => \$opt_H{"--ileaved"},
      'afa'         => \$opt_H{"--afa"},
      'only-afa'    => \$opt_H{"--only-afa"},
      'key-in=s'    => \$opt_H{"--key-in"},
@@ -1154,10 +1154,11 @@ sub mask_alignment {
     # pmask: $command = "$alimanip --p-rf --pf $opt_HR->{"--pf"} --pt $opt_HR->{"--pt"} -k --kmask $pmask_file -o $pmasked_stk_file $cmasked_stk_file";
     # gmask: $command = "$alimanip --verbose -g --gapthresh $opt_HR->{"--gapthresh"} -k --kmask $gmask_file -o $gmasked_stk_file $cmasked_stk_file";
     # pgmask:$command = "$alimanip -k --mask-rf $pgmask_file -o $pgmasked_stk_file $cmasked_stk_file";
+    $extra_opts = "";
     if   ($rfmask_file2use ne "")  { $extra_opts = "--mask-rf $rfmask_file2use";  $mask_file = $rfmask_file2use; }
     elsif($allmask_file2use ne "") { $extra_opts = "--mask-all $allmask_file2use"; $mask_file = $allmask_file2use; }
     else                           { $extra_opts = "--kmask $mask_file"; }
-    if($opt_HR->{"-1"})            { $extra_opts .= " -1"; }
+    if(! $opt_HR->{"--ileaved"})   { $extra_opts .= "-1"; }
     $command = "$alimanip $mask_opts $extra_opts -o $masked_stk_file $aln_file2mask";
     my $errmsg = "ERROR, the command \(\"$command\"\) unexpectedly returned non-zero exit status.";
     my $die_if_fails = 1;
