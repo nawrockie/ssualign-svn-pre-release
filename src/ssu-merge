@@ -140,7 +140,7 @@ PrintGlobalsToFile(\%globals_H, $log_file);
 ##################################
 # Validate that everything is go #
 ##################################
-my ($alimerge, $alistat, $cm_file, $no_search_enabled, $no_align_enabled, $ssu_align_prep_sum_read, $aln_one_cm);
+my ($alimerge, $cm_file, $no_search_enabled, $no_align_enabled, $ssu_align_prep_sum_read, $aln_one_cm);
 my @subdir_A = ();
 my @score_to_merge_A = ();
 my @sum_to_merge_A = ();
@@ -155,7 +155,7 @@ my @cm_names_A = ();
 
 validate_and_setup_ssu_merge($ssualigndir, \%opt_H, $dir, \@subdir_A, \@score_to_merge_A, \@sum_to_merge_A, \@log_to_merge_A, \@tab_to_merge_A, \@nomatch_to_merge_A, 
 			     \@cmalign_to_merge_AA, \@hits_fa_to_merge_AA, \@hits_list_to_merge_AA, \@stk_to_merge_AA, \@cm_names_A, 
-			     \$alimerge, \$alistat, \$cm_file, \$no_search_enabled, \$no_align_enabled, \$aln_one_cm, $sum_file);
+			     \$alimerge, \$cm_file, \$no_search_enabled, \$no_align_enabled, \$aln_one_cm, $sum_file);
 
 ####################################
 # Merge files including alignments #
@@ -245,7 +245,7 @@ PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9s\n", $max_file_na
 PrintStringToFile($sum_file, 1, sprintf("#\n"));
 
 # merge per-CM files
-my ($nseq_cur, $cur_cm, $nali);
+my ($nseq_cur, $cur_cm, $nali, $alimerge_out_file);
 my @nseq_cur_A = ();
 for($i = 0; $i < scalar(@cm_names_A); $i++) { 
     $nhitsfa   = scalar(@{$hits_fa_to_merge_AA[$i]});
@@ -299,24 +299,23 @@ for($i = 0; $i < scalar(@cm_names_A); $i++) {
 	concatenate_a_list_of_files(\%opt_H, $hitslist_file, \@{$hits_list_to_merge_AA[$i]});
 	PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9d\n", $max_file_name_width, $hitslist_file2print, $max_cm_name_width, $cm_names_A[$i], $nhitslist, $nseq_merged));
     }
-    if($ncmalign != 0) { # make sure the total num seqs in all the alignments is what we expect based on the ssu-align summary files we merged
+    if($ncmalign != 0) { # merge all alignments and cmalign output files
 	# we made sure $ncmalign == $nstk above (unless --no-align enabled, in which case they're both 0)
-	$nseq_merged = 0;
-	for($j = 0; $j < scalar(@{$stk_to_merge_AA[$i]}); $j++) { 
-	    DetermineNumSeqsStockholm($alistat, $stk_to_merge_AA[$i][$j], $sum_file, $log_file, \@nseq_cur_A, \$nali);
-	    if($nali != 1) { PrintErrorAndExit(sprintf("ERROR, stockholm alignment file %s, unexpectedly contains $nali alignments (should be only 1).", $stk_to_merge_AA[$i][$j]), $sum_file, 1); }
-	    $nseq_cur = $nseq_cur_A[0];
-	    if($nseq_cur == 0) { PrintErrorAndExit(sprintf("ERROR, stockholm alignment file %s contains 0 sequences.", $stk_to_merge_AA[$i][$j]), $sum_file, 1); }
-	    $nseq_merged += $nseq_cur;
-	}
-	if($nseq_merged != $summed_nseq_cm_H{$cur_cm}) { 
-	    PrintErrorAndExit(sprintf("ERROR, merged ssu-align summary stats report %d aligned sequences, but %d sequences in all the *stk alignment files.", $summed_nseq_cm_H{$cur_cm}, $nseq_merged), $sum_file, 1); 
-	}
+
 	concatenate_a_list_of_files(\%opt_H, $cmalign_file,  \@{$cmalign_to_merge_AA[$i]});
 	PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9d\n", $max_file_name_width, $cmalign_file2print, $max_cm_name_width, $cm_names_A[$i], $ncmalign, $nseq_merged));
 
-	merge_alignments_for_a_cm($alimerge, \%opt_H, $merged_stk_file, $dir, $cm_names_A[$i], \@{$stk_to_merge_AA[$i]}, $sum_file, $log_file);
+	merge_alignments_for_a_cm($alimerge, \%opt_H, $merged_stk_file, $dir, $cm_names_A[$i], \@{$stk_to_merge_AA[$i]}, \$nseq_merged, \$alimerge_out_file, $sum_file, $log_file);
+
+	# verify that esl-alimerge output detailing number of sequences in each alignment we just merged
+	# matches what we read from the ssu-align summary statistics (it should match, this is just another integrity check)
+	if($nseq_merged != $summed_nseq_cm_H{$cur_cm}) { 
+	    PrintErrorAndExit(sprintf("ERROR, merged ssu-align summary stats report %d aligned sequences, but %d sequences in all the *stk alignment files.", $summed_nseq_cm_H{$cur_cm}, $nseq_merged), $sum_file, 1); 
+	}
+	UnlinkFile($alimerge_out_file, $sum_file);
+
 	PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9d\n", $max_file_name_width, $merged_stk_file2print, $max_cm_name_width, $cm_names_A[$i], $nstk, $nseq_merged));
+	
     }
     PrintStringToFile($sum_file, 1, sprintf("#\n"));
 }
@@ -404,7 +403,6 @@ exit(0);
 #                             first dimension is the corresponding CM's index in the cm file
 # $cm_names_AR:               reference to array of CM names
 # $alimerge_R:                RETURN; esl-alimerge executable command
-# $alistat_R:                 RETURN; esl-alistat executable command
 # $cm_file_R:                 RETURN; the path to the CM file, either default CM file or <s> from -m <s>
 # $no_search_enabled_R:       RETURN; '1' if we examine the ssu-align prep summary file and find that --no-search was used
 # $no_align_enabled_R:        RETURN; '1' if we examine the ssu-align prep summary file and find that --no-align was used
@@ -420,10 +418,10 @@ exit(0);
 #
 ####################################################################
 sub validate_and_setup_ssu_merge { 
-    my $narg_expected = 21;
+    my $narg_expected = 20;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, validate_and_setup_ssu_merge() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my($ssualigndir, $opt_HR, $dir, $subdir_AR, $score_to_merge_AR, $sum_to_merge_AR, $log_to_merge_AR, $tab_to_merge_AR, $nomatch_to_merge_AR, $cmalign_to_merge_AAR, $hits_fa_to_merge_AAR, 
-       $hits_list_to_merge_AAR, $stk_to_merge_AAR, $cm_names_AR, $alimerge_R, $alistat_R, $cm_file_R, $no_search_enabled_R, $no_align_enabled_R, $aln_one_cm_R, $sum_file) = @_;
+       $hits_list_to_merge_AAR, $stk_to_merge_AAR, $cm_names_AR, $alimerge_R, $cm_file_R, $no_search_enabled_R, $no_align_enabled_R, $aln_one_cm_R, $sum_file) = @_;
 
     #Make sure $dir exists
     if(!(-d $dir)) { PrintErrorAndExit("ERROR, directory $dir does not exist.", $sum_file, 1); }
@@ -517,10 +515,6 @@ sub validate_and_setup_ssu_merge {
     my ($command, $command_worked);
     my $alimerge = $globals_H{"esl-alimerge"};
     RunCommand("$alimerge -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $alimerge is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
-
-    # check that esl-alistat in the PATH
-    my $alistat = $globals_H{"esl-alistat"};
-    RunCommand("$alistat -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $alistat is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
 
     # determine which subdirectories in $dir were created by ssu-align
     my %subdir_H = ();
@@ -622,7 +616,6 @@ sub validate_and_setup_ssu_merge {
 	}
     }	
     $$alimerge_R                = $alimerge;
-    $$alistat_R                 = $alistat;
     $$cm_file_R                 = $cm_file;
     $$no_search_enabled_R       = $no_search_enabled;
     $$no_align_enabled_R        = $no_align_enabled;
@@ -640,15 +633,18 @@ sub validate_and_setup_ssu_merge {
 #             merge them with a single call to esl-alimerge.
 #
 # Arguments: 
-# $alimerge:           esl-alimerge executable command
-# $opt_HR:             reference to hash of command line options
-# $stk_name:           name for merged alignment file
-# $dir:                main directory created by ssu-align --prep-* that 
-#                      includes subdirectories with alignments
-# $cm_name:            name of the relevant CM in the CM file
-# $stk_to_merge_AR:    reference to the array of alignments to merge
-# $sum_file:           ssu-merge summary file
-# $log_file:           log file
+# $alimerge:             esl-alimerge executable command
+# $opt_HR:               reference to hash of command line options
+# $stk_name:             name for merged alignment file
+# $dir:                  main directory created by ssu-align --prep-* that 
+#                        includes subdirectories with alignments
+# $cm_name:              name of the relevant CM in the CM file
+# $stk_to_merge_AR:      reference to the array of alignments to merge
+# $nseq_merged_R:        ref to number of sequences merged, filled here
+#                        by parsing esl-alimerge verbose (-v) output.
+# $alimerge_out_file_R:  ref to alimerge output file
+# $sum_file:             ssu-merge summary file
+# $log_file:             log file
 # 
 # Returns:    Nothing, if it returns, everything is valid.
 # 
@@ -657,11 +653,11 @@ sub validate_and_setup_ssu_merge {
 #
 ####################################################################
 sub merge_alignments_for_a_cm { 
-    my $narg_expected = 8;
+    my $narg_expected = 10;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, merge_alignments_for_a_cm() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($alimerge, $opt_HR, $stk_name, $dir, $cm_name, $stk_to_merge_AR, $sum_file, $log_file) = @_;
+    my($alimerge, $opt_HR, $stk_name, $dir, $cm_name, $stk_to_merge_AR, $nseq_merged_R, $alimerge_out_file_R, $sum_file, $log_file) = @_;
 
-    my ($output, $stk, $command, $command_worked);
+    my ($output, $stk, $command, $command_worked, $line);
 
     # create a temporary file with the stk list:
     my $list_file = $dir . "/" . $cm_name . ".merge.list";
@@ -680,15 +676,88 @@ sub merge_alignments_for_a_cm {
 
     my $extra_opts = "";
     if($opt_HR->{"-1"}) { $extra_opts = " --outformat pfam" ; }
-    my $alimerge_output = $dir . "/" . $cm_name . ".alimerge";
+    my $alimerge_out_file = $dir . "/" . $dir . "." .  $cm_name . ".alimerge";
 
-    $command = "$alimerge $extra_opts --list -v -o $stk_name $list_file > $alimerge_output";
+    $command = "$alimerge $extra_opts --list -v -o $stk_name $list_file > $alimerge_out_file";
     RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
 
     UnlinkFile($list_file, $log_file);
+
+    # parse the esl-alimerge output
+    open(ALIMERGE, $alimerge_out_file) || FileOpenFailure($alimerge_out_file, $sum_file, $!, "reading");
+    my $nseq_merged = 0;
+    my $nseq_total = 0;
+    while($line = <ALIMERGE>) { 
+	if($line !~ /^\#/) { 
+	    if($line =~ /\s+(\d+)\s+(\S+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/) { 
+		$nseq_merged += $4;
+		$nseq_total   = $6;
+	    }
+	}
+    }
+    if($nseq_merged != $nseq_total) { 
+	PrintErrorAndExit(sprintf("Error, esl-alimerge output in file $alimerge_out_file is internally inconsistent.\n(%d) seqs merged != (%d) total seqs listed.", $nseq_merged, $nseq_total), $sum_file, 1);
+    }
+
+    $$nseq_merged_R       = $nseq_merged;
+    $$alimerge_out_file_R = $alimerge_out_file;
     return;
 }
 
+
+#####################################################################
+# Subroutine: concatenate_a_list_of_files()
+# Incept:     EPN, Wed Oct 28 17:12:05 2009
+# 
+# Purpose:    Given a list of files to concatenate, do it.
+#
+# Arguments: 
+# $opt_HR:              reference to hash of command line options
+# $concat_file:         the name for the file we want to create
+# $files_to_concat_AR:  reference to the array of files to concatenate
+# 
+# Returns:    Nothing, if it returns, everything is valid.
+# 
+# Exits:      If something goes wrong, this subroutine prints an
+#             error and exits.
+#
+####################################################################
+sub concatenate_a_list_of_files { 
+    my $narg_expected = 3;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, concatenate_a_list_of_files() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my($opt_HR, $concat_file, $files_to_concat_AR) = @_;
+
+    if(scalar(@{$files_to_concat_AR}) == 0) { return; } #if array is empty, just leave
+
+    my ($file, $command, $output, $i, $command_worked);
+
+    # ensure all the files exist
+    foreach $file (@{$files_to_concat_AR}) { 
+	if(! (-e $file)) { PrintErrorAndExit("ERROR, file $file does not exist, (it was to be cat'ed to $concat_file).", $sum_file, 1); }
+    }
+
+    # check if concat file already exists
+    if(-e $concat_file) { 
+	if(! ($opt_HR->{"-F"})) { 
+	    PrintErrorAndExit("ERROR, file $concat_file already exists. Delete it or use -F to overwrite it.", $sum_file, 1); 
+	}
+	else {
+	    UnlinkFile($concat_file, $log_file);
+	}
+    }
+
+    # create concat file
+    $command = "cat $files_to_concat_AR->[0] > $concat_file";
+    RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
+
+    # add to concat file
+    for($i = 1; $i < scalar(@{$files_to_concat_AR}); $i++) { 
+	$command = "cat " . $files_to_concat_AR->[$i] . " >> $concat_file";
+	RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
+    }
+
+    return;
+}
 
 #####################################################################
 # Subroutine: concatenate_a_list_of_files()
@@ -1011,8 +1080,8 @@ sub clean_up_post_merge {
 	$num = $subdir;
 	$num =~ s/.+\.//;
 	$subdir_fa_file = $dir . ".fa." . $num;
-	if($do_actually_remove) { UnlinkFile($subdir_fa_file, $log_file); }
-	else                    { $subdir_fa_file =~ s/^$dir\///; printf CLEANUP ("rm $subdir_fa_file\n"); }
+	if($do_actually_remove) { UnlinkFile(($dir . "/" . $subdir_fa_file), $log_file); }
+	else                    { printf CLEANUP ("rm $subdir_fa_file\n"); }
 	$subdir2rm = $dir . "/" . $subdir;
 
 	if($do_actually_remove) { 
