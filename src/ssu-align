@@ -1531,7 +1531,6 @@ sub compile_search_and_align_statistics {
     my ($cm_name, $target);
     my $target_nseq = scalar(@{$target_order_AR});
     my $target_nres = SumHashElements($target_len_HR);
-    printf("nseq: %d nres: %d\n", scalar(keys(%{$target_len_HR})), $target_nres);
 
     %{$nseq_cm_HR} = ();
     %{$nres_total_cm_HR} = ();
