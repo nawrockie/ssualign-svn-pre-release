@@ -1460,7 +1460,8 @@ sub seqstat_seq_file_per_seq {
 	    $nseq_read++;
 	    $nres_read += $seqlen;
 	    push(@{$seq_order_AR}, $seqname);
-	    $seq_len_HR->{"$seqname"} = $seqlen;
+	    if(exists($seq_len_HR->{$seqname})) { PrintErrorAndExit("ERROR, there are two sequences with the same name ($seqname) in $seqfile.\nAll sequences must have a unique name.", $sum_file, 1); }
+	    $seq_len_HR->{$seqname} = $seqlen;
 	}
 	elsif($line =~ s/^Format\:\s+//) { 
 	    chomp $line; 
@@ -1478,10 +1479,10 @@ sub seqstat_seq_file_per_seq {
     close(SEQSTAT);
 
     # validate what we just parsed
-    if($nseq_read == 0)           { PrintErrorAndExit("ERROR, unable to parse $seqstat output in file $seqstat_out_file,\n0 individual sequence lengths read.", $sum_file, 0); }
-    if($nseq_read != $total_nseq) { PrintErrorAndExit("ERROR, unable to parse $seqstat output in file $seqstat_out_file,\nnumber of individual sequences disagrees with summary output.", $sum_file, 0); }
-    if($nres_read != $total_nres) { PrintErrorAndExit("ERROR, unable to parse $seqstat output in file $seqstat_out_file,\nsummed length of individual sequences disagrees with summary output.", $sum_file, 0); }
-    if($format eq "")             { PrintErrorAndExit("ERROR, unable to parse sequence file format in $seqstat output in file $seqstat_out_file.", $sum_file, 0); }
+    if($nseq_read == 0)           { PrintErrorAndExit("ERROR, unable to parse $seqstat output in file $seqstat_out_file,\n0 individual sequence lengths read.", $sum_file, 1); }
+    if($nseq_read != $total_nseq) { PrintErrorAndExit("ERROR, unable to parse $seqstat output in file $seqstat_out_file,\nnumber of individual sequences disagrees with summary output.", $sum_file, 1); }
+    if($nres_read != $total_nres) { PrintErrorAndExit("ERROR, unable to parse $seqstat output in file $seqstat_out_file,\nsummed length of individual sequences disagrees with summary output.", $sum_file, 1); }
+    if($format eq "")             { PrintErrorAndExit("ERROR, unable to parse sequence file format in $seqstat output in file $seqstat_out_file.", $sum_file, 1); }
 
     $$total_nres_R = $total_nres;
     $$total_nseq_R = $total_nseq;
@@ -1530,6 +1531,7 @@ sub compile_search_and_align_statistics {
     my ($cm_name, $target);
     my $target_nseq = scalar(@{$target_order_AR});
     my $target_nres = SumHashElements($target_len_HR);
+    printf("nseq: %d nres: %d\n", scalar(keys(%{$target_len_HR})), $target_nres);
 
     %{$nseq_cm_HR} = ();
     %{$nres_total_cm_HR} = ();
@@ -1549,10 +1551,10 @@ sub compile_search_and_align_statistics {
     if($opt_HR->{"--no-search"}) { # bestmatch_cm_HR nor hit_len_HR were filled, but it's okay b/c we know all we need to know without them
 	if(scalar(@{$indi_cm_name_AR}) != 1) { PrintErrorAndExit(sprintf("ERROR, compiling final stats, --no-search enabled, but %d CMs (should be 1)", scalar(@{$indi_cm_name_AR})), , $sum_file, 1); }
 	$cm_name = $indi_cm_name_AR->[0];
-	$nres_hit_cm_H{$cm_name} = $target_nres;
+	$nres_hit_cm_H{$cm_name}     = $target_nres;
 	$nres_total_cm_H{$cm_name}   = $target_nres;
 	$nres_total_all_cms          = $target_nres;
-	$nres_hit_all_cms             = $target_nres;
+	$nres_hit_all_cms            = $target_nres;
 	$nseq_cm_H{$cm_name}         = $target_nseq;
 	$nseq_all_cms                = $target_nseq;
     }

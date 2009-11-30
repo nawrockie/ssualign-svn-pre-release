@@ -282,7 +282,7 @@ $dir =~ s/\/$//;
 
 my ($sum_file, $sum_file2print, $log_file, $log_file2print);
 my @files_to_unlink_A = ();
-my @stk_suffix_A = (".stk", ".sto");
+my @stk_suffix_A = (".stk", ".sto", ".stk.gz", ".sto.gz");
 if(! $opt_H{"-a"}) { 
     #validate that $dir exists
     if(!(-d $dir)) { printf STDERR ("\nERROR, directory $dir does not exist.\n"); exit(1); }
@@ -881,6 +881,10 @@ sub validate_and_setup_ssu_mask {
 		push(@{$stk_list_arr_ref}, $aln_name);
 		$naln++; 
 	    }
+	    elsif(-e ($aln_name . ".gz")) {
+		push(@{$stk_list_arr_ref}, ($aln_name . ".gz"));
+		$naln++; 
+	    }
 	}
 	if($naln == 0) { 
 	    $errmsg = "ERROR, found 0 alignments created by ssu-align using the CM file $cm_file\nin directory $dir.\n\n";
@@ -1350,7 +1354,7 @@ sub run_ssdraw_for_ssu_mask {
 	return 0; 
     } 
 
-    # unless --ps-only, try ps2pdf, it's okay if it doesn't work (unless --ps2pdf, in which case its not ok)
+    # unless --ps-only, try ps2pdf, it's okay if it doesn't work (unless --ps2pdf, in which case it's not ok)
     my $keep_ps = 1;
     if(! $opt_HR->{"--ps-only"}) { 
 	my $ps2pdf;

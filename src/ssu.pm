@@ -437,7 +437,6 @@ sub RunCommand {
 	    PrintStringToFile($log_file, 0, ("Output (STDOUT): " . $stdout2print . "\n"));
 	    PrintStringToFile($log_file, 0, ("Output (STDERR): " . $stderr2print . "\n"));
 	}
-	printf STDERR ("\n$errmsg\n");
 	PrintStringToFile($log_file, 0, ("\n$errmsg\n"));
 	if($print_output_upon_failure) { 
 	    printf STDERR ("Output (STDOUT):" . $stdout2print . "\n");
@@ -792,8 +791,7 @@ sub TryPs2Pdf {
     if(! (-e $ps_file)) { die "\nERROR, in TryPs2Pdf(), ps file $ps_file doesn't exist.\n"; }
 
     my $command_worked;
-    # Change the following line to change the default ps2pdf command
-    if($ps2pdf eq "") { $ps2pdf = "ps2pdf"; }
+     if($ps2pdf eq "") { $ps2pdf = "ps2pdf"; }
 
     my $command = "$ps2pdf $ps_file $pdf_file";
     RunCommand("$command", $die_if_fails, $print_output_upon_failure, $log_file, \$command_worked, $errmsg);

@@ -45,7 +45,7 @@ my $total_seconds = -1 * SecondsSinceEpoch($time_hires_installed);
 my $script_desc    = "draw SSU rRNA secondary structure diagrams";
 my $date           = scalar localtime();
 my $usage          = "Usage: ssu-draw [options] <directory created by ssu-align (includes >= 1 alignment file(s))>\n";
-   $usage         .= "Usage: ssu-draw [options] -a <Stockholm alignment file (must have .stk suffix)>\n";
+   $usage         .= "Usage: ssu-draw [options] -a <Stockholm alignment file>\n";
 my $options_usage  = "where general options are:\n";
 #                           1         2         3         4         5         6         7         8
 #                  12345678901234567890123456789012345678901234567890123456789012345678901234567890
@@ -189,7 +189,7 @@ if(scalar(@ARGV) != 1) {
 
 my ($dir) = $ARGV[0];
 $dir =~ s/\/$//;
-my @stk_suffix_A = (".stk", ".sto");
+my @stk_suffix_A = (".stk", ".sto", ".stk.gz", ".sto.gz");
 
 my ($sum_file, $sum_file2print, $log_file, $log_file2print);
 if(! $opt_H{"-a"}) { 
@@ -367,6 +367,7 @@ sub validate_and_setup_ssu_draw {
     my $aln_name = "";
     my $mask_name = "";
     my $errmsg = "";
+    my $found_aln = 0;
     if($opt_HR->{"-a"}) { # special mode, single command line argument is not a directory, it's an alignment
 	$aln_name = $dir;
 	if(! (-e $aln_name)) { 
@@ -406,10 +407,19 @@ sub validate_and_setup_ssu_draw {
 	}
 	close(CM);
 	foreach $name (@names_A) { 
+	    $found_aln = 0;
 	    $aln_name = $dir . "/" . $dir . "." . $name . $key_in . ".stk";
 	    if(-e $aln_name) { 
 		push(@{$stk_list_arr_ref}, $aln_name);
 		$naln++; 
+		$found_aln = 1;
+	    }
+	    elsif(-e ($aln_name . ".gz")) { 
+		push(@{$stk_list_arr_ref}, ($aln_name . ".gz"));
+		$naln++; 
+		$found_aln = 1;
+	    }
+	    if($found_aln) { 
 		if($opt_HR->{"--use-masks"}) { 
 		    $mask_name = $dir . "/" . $dir . "." . $name . $key_in . ".mask";
 		    if(!(-e $mask_name)) { 
