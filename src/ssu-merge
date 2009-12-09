@@ -360,7 +360,7 @@ PrintTiming("# Summed ssu-align CPU time (total):     ", $summed_total_seconds, 
 # Note: this is purposefully done at very end of run so that if any
 # error causes us to exit early, we don't remove original files
 clean_up_post_merge($dir, \%opt_H, \@subdir_A, \@score_to_merge_A, \@sum_to_merge_A, \@log_to_merge_A, \@tab_to_merge_A, \@nomatch_to_merge_A, \@fa_files_A, 
-		    \@cmalign_to_merge_AA, \@hits_fa_to_merge_AA, \@hits_list_to_merge_AA, \@stk_to_merge_AA, \$aln_one_cm, $sum_file);
+		    \@cmalign_to_merge_AA, \@hits_fa_to_merge_AA, \@hits_list_to_merge_AA, \@stk_to_merge_AA, $sum_file, $log_file);
 
 
 $total_seconds += SecondsSinceEpoch($time_hires_installed);
@@ -1046,7 +1046,7 @@ sub clean_up_post_merge {
 
 	if($do_actually_remove) { 
 	    if(! -d $subdir2rm) { PrintErrorAndExit("ERROR, subdirectory $subdir2rm unexpectedly does not exist during cleanup.", $sum_file, 1); }
-	    if(! RemoveDir($subdir2rm, $sum_file)) { 
+	    if(! UnlinkDir($subdir2rm, $sum_file)) { 
 		if(! $printed_error) { PrintStringToFile($sum_file, 1, sprintf("\n")); }
 		PrintStringToFile($sum_file, 1, sprintf("# Unable to remove directory \"$subdir2rm\". It may contain files not created by ssu-align.\n"));
 		$printed_error = 1;

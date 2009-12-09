@@ -10,7 +10,7 @@
 # Builds a CM from an input stockholm alignment using cmbuild parameters 
 # that are recommended for building SSU CMs. Optionally, with --num, 
 # the alignment is only processed, by defining and numbering consensus columns 
-# and exiting. With -t <s>, where <s> = "<x>-<y>", the alignment is first 
+# and exiting. With --trunc <s>, where <s> = "<x>-<y>", the alignment is first 
 # truncated, by removing columns that come before consensus column <x> and
 # <y>, and then the truncated aligment is used to build the model.
 #
@@ -162,24 +162,24 @@ if($opt_H{"--trunc"} ne "") {
     #check if the -t argument is valid
     if($opt_H{"--trunc"} =~ /(\d+)\-(\d+)/) { 
 	if($1 > $2) { 
-	    printf STDERR ("\nERROR, formatting of the -t argument " . $opt_H{"--trunc"} . " is invalid.\nFirst number must be less than the second; such as \"-t 822-930\"\n"); 
+	    printf STDERR ("\nERROR, formatting of the --trunc argument " . $opt_H{"--trunc"} . " is invalid.\nFirst number must be less than the second; such as \"-t 822-930\"\n"); 
 	    exit(1);
 	}
     }
     elsif($opt_H{"--trunc"} =~ /(\d+)\:(\d+)/) { 
 	if($1 > $2) { 
-	    printf STDERR ("\nERROR, formatting of the -t argument " . $opt_H{"--trunc"} . " is invalid.\nFirst number must be less than the second; such as \"-t 822:930\"\n");
+	    printf STDERR ("\nERROR, formatting of the --trunc argument " . $opt_H{"--trunc"} . " is invalid.\nFirst number must be less than the second; such as \"-t 822:930\"\n");
 	    exit(1);
 	}
     }
     elsif($opt_H{"--trunc"} =~ /(\d+)\.+(\d+)/) { 
 	if($1 > $2) { 
-	    printf STDERR ("\nERROR, formatting of the -t argument " . $opt_H{"--trunc"} . " is invalid.\nFirst number must be less than the second; such as \"-t 822..930\"\n");
+	    printf STDERR ("\nERROR, formatting of the --trunc argument " . $opt_H{"--trunc"} . " is invalid.\nFirst number must be less than the second; such as \"-t 822..930\"\n");
 	    exit(1);
 	}
     }
     else { 
-	printf STDERR ("\nERROR, formatting of the -t argument " . $opt_H{"--trunc"} . " is invalid.\nIt must include two integers separated by a \"-\"; such as \"-t 822-930\"\n");
+	printf STDERR ("\nERROR, formatting of the --trunc argument " . $opt_H{"--trunc"} . " is invalid.\nIt must include two integers separated by a \"-\"; such as \"-t 822-930\"\n");
 	exit(1);
     }
 }
@@ -385,7 +385,7 @@ sub validate_and_setup_ssu_build {
 	elsif($opt_HR->{"--trunc"} =~ /(\d+)\:(\d+)/)  { $start = $1; $end   = $2; }
 	elsif($opt_HR->{"--trunc"} =~ /(\d+)\.+(\d+)/) { $start = $1; $end   = $2; }
 	else { 
-	    printf STDERR ("\nERROR, formatting of the -t argument " . $opt_H{"--trunc"} . " is invalid.\nIt must include two integers separated by a \"-\"; such as \"-t 822-930\"\n");
+	    printf STDERR ("\nERROR, formatting of the --trunc argument " . $opt_H{"--trunc"} . " is invalid.\nIt must include two integers separated by a \"-\"; such as \"-t 822-930\"\n");
 	    exit(1);
 	}
 	$root .= "." . $start . "-" . $end;
@@ -674,7 +674,7 @@ sub run_alimanip_to_truncate {
     elsif($opt_HR->{"--trunc"} =~ /(\d+)\:(\d+)/)  { $start = $1; $end   = $2; }
     elsif($opt_HR->{"--trunc"} =~ /(\d+)\.+(\d+)/) { $start = $1; $end   = $2; }
     else { 
-	PrintErrorAndExit("ERROR, formatting of the -t argument " . $opt_H{"--trunc"} . " is invalid.\nIt must include two integers separated by a \"-\"; such as \"-t 822-930\"", $sum_file, 1);
+	PrintErrorAndExit("ERROR, formatting of the --trunc argument " . $opt_H{"--trunc"} . " is invalid.\nIt must include two integers separated by a \"-\"; such as \"-t 822-930\"", $sum_file, 1);
 	exit(1);
     }
 
@@ -756,7 +756,7 @@ sub run_ssdraw_for_ssu_build {
     RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
 
     open(IN, $tmp_rf_file) || FileOpenFailure($tmp_rf_file, $log_file, $!, "reading");
-    my $output = "";
+    $output = "";
     while($line = <IN>) { $output .= $line; }
     close(IN);
     UnlinkFile($tmp_rf_file, $log_file); 

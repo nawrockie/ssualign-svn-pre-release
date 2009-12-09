@@ -17,7 +17,7 @@
 # RunCommand():                    runs an executable using system, prints output to log file
 # TempFilename():                  create a name for a temporary file
 # UnlinkFile():                    unlinks a file, and updates log file.
-# RemoveDir():                     removes an empty directory, and updates log file.
+# UnlinkDir():                     removes an empty directory, and updates log file.
 # DetermineNumSeqsFasta():         determine the number of sequences in a FASTA file.
 # DetermineNumSeqsStockholm():     determine the number of sequences in a Stockholm aln file.
 # ArgmaxArray():                   determine the index of the max value scalar in an array
@@ -533,7 +533,7 @@ sub UnlinkFile {
 
 
 ###########################################################
-# Subroutine: RemoveDir()
+# Subroutine: UnlinkDir()
 # Incept: EPN, Fri Nov 27 17:55:41 2009
 #
 # Purpose: Remove an empty directory.
@@ -543,9 +543,9 @@ sub UnlinkFile {
 #          is not empty).
 #
 ###########################################################
-sub RemoveDir {
+sub UnlinkDir {
     my $narg_expected = 2;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, UnlinkFile() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, UnlinkDir() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my ($dir, $log_file) = @_;
 
     PrintStringToFile($log_file, 0, ("About to remove presumed empty directory ($dir) with perl's rmdir function ... "));

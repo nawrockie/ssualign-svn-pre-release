@@ -244,7 +244,7 @@ if($opt_H{"--struct"}) { $extra_draw_chars = 5+1; }
 for($i = 0; $i < $naln; $i++) { 
     $aln_file         = $stk_list_A[$i];
     $aln_root2print   = SwapOrAppendFileSuffix($aln_file, \@stk_suffix_A, "", $opt_H{"-a"}); # if -a, we'll write output dir as well as file name
-    $nec_width        = length($aln_root2print) + length($key_in) + length(".stk");
+    $nec_width        = length(RemoveDirPath($aln_file)) + length($key_in);
     if($max_width_aln < $nec_width) { $max_width_aln = $nec_width; }
     $nec_width        = length($aln_root2print) + length($key_out) + length(".pdf");
     if($opt_H{"--ps-only"}) { $nec_width--; }
@@ -619,10 +619,10 @@ sub run_ssdraw_for_ssu_draw {
 	if($command_worked) { 
 	    PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s\n", $max_width_aln, $aln_file2print, $max_width_draw, $draw_pdf2print));
 	    $nfiles_created++;
-	}
-	# if --ps-keep is not enabled and we successfully have the pdf ($command_worked above), remove the ps below
-	if(! $opt_HR->{"--ps-keep"}) { 
-	    $keep_ps = 0;
+	    # if --ps-keep is not enabled and we successfully have the pdf ($command_worked above), remove the ps below
+	    if(! $opt_HR->{"--ps-keep"}) { 
+		$keep_ps = 0;
+	    }
 	}
     }
     if($keep_ps) { # $keep_ps is set to 0 only if we successfully make a pdf above and --ps-keep was not enabled
