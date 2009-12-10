@@ -1,7 +1,7 @@
 #################################################################
 # SSU-ALIGN
 # top level Makefile: installation, documentation
-# CVS $Id: Makefile.in 2581 2008-09-18 13:37:59Z eddys $
+# CVS $Id: Makefile.in 3099 2009-12-10 20:10:00Z nawrockie $
 #################################################################
 # @LICENSE@
 #################################################################
@@ -97,16 +97,19 @@ PSLIBFILES = ssu-align-0p1.ps\
 # all: if we don't have precompiled binaries, compiles all packages, 
 #      and moves the supported executables into binaries/ subdirectory.
 #
-#all: core 
+#all: core $(RIGFILTERS)
 all: core 
 
 core:
-	(cd easel;        make CC="$(CC)" CFLAGS="$(CFLAGS)"; make ssu)
-	(cd infernal/src; make CC="$(CC)" CFLAGS="$(CFLAGS)"; make ssu)
-#
-# we don't need to cd src; and make, because the src/ execs are perl scripts.
-#	(cd src;          make CC="$(CC)" CFLAGS="$(CFLAGS)"; make)
-#	(cd testsuite;    make CC="$(CC)" CFLAGS="$(CFLAGS)")
+	cd easel;        make CC="$(CC)" CFLAGS="$(CFLAGS)"; make ssu
+	cd infernal/hmmer;        make hmmer_lib
+# OLD (when hmmernal2 h3 branch was being used by infernal)
+#	cd hmmer;        ./configure CC="$(CC)" CFLAGS="$(CFLAGS)"; make          
+	cd infernal/src; make CC="$(CC)" CFLAGS="$(CFLAGS)"; make ssu
+# we dont' need to cd src and make, because the src/ execs are perl scripts.
+#	cd src;          make CC="$(CC)" CFLAGS="$(CFLAGS)"; make module
+# eventually, once testsuite gets off the ground
+#	cd testsuite;    make CC="$(CC)" CFLAGS="$(CFLAGS)"
 
 # dist: build a new distribution directory in ssu-align-$RELEASE
 #
@@ -133,6 +136,7 @@ dist:
 	#
 	(cd ../${BASENAME}-${RELEASE};          autoconf)
 	(cd ../${BASENAME}-${RELEASE}/easel;    autoconf)
+	(cd ../${BASENAME}-${RELEASE}/infernal/hmmer;    autoconf)
 	(cd ../${BASENAME}-${RELEASE}/infernal; autoconf)
 	#
 	# We'll need a basic Makefiles for some steps; later
@@ -187,6 +191,8 @@ dist:
 	-rm -rf ../${BASENAME}-${RELEASE}/SUBPACKAGES
 	-rm -rf ../${BASENAME}-${RELEASE}/00WISHLIST
 	(cd ../${BASENAME}-${RELEASE}/easel; make implode)
+	(cd ../${BASENAME}-${RELEASE}/infernal/hmmer; make implode)
+	(cd ../${BASENAME}-${RELEASE}/infernal/; make implode)
 	(cd ../${BASENAME}-${RELEASE}/;      make distclean)
 	#
 	# Packaging commands
@@ -206,11 +212,11 @@ check:
 #
 devcheck:
 	(cd testsuite;\
-	 ../easel/devkit/sqc 4 exercises.sqc ../src;\
-	 ../easel/devkit/sqc 4 ssu-align.sqc ../src;\
-	 ../easel/devkit/sqc 4 ssu-build.sqc ../src;\
-	 ../easel/devkit/sqc 4 ssu-draw.sqc ../src;\
-	 ../easel/devkit/sqc 4 ssu-mask.sqc ../src;)
+ 	 ../easel/devkit/sqc 4 exercises.sqc ../src;\
+ 	 ../easel/devkit/sqc 4 ssu-align.sqc ../src;\
+ 	 ../easel/devkit/sqc 4 ssu-build.sqc ../src;\
+ 	 ../easel/devkit/sqc 4 ssu-draw.sqc ../src;\
+ 	 ../easel/devkit/sqc 4 ssu-mask.sqc ../src;)
 
 # "make install" installs the programs in BINDIR and the CM and postscript templates in LIBDIR
 #
@@ -298,11 +304,12 @@ setpaths:
 #              and binaries.
 clean:
 	-rm -f *.o *~ Makefile.bak core TAGS gmon.out
-	(cd infernal/testsuite;      make clean)
+	(cd infernal/testsuite;               make clean)
 	(if cd documentation/userguide; then make clean; fi)
 	(cd src;                     make clean)
 	(cd infernal/src;            make clean)
 	(cd easel;                   make clean)
+	(cd infernal/hmmer;          make clean)
 
 # "make distclean" leaves a pristine source distribution.
 #
@@ -314,5 +321,7 @@ distclean:
 	(if cd documentation/userguide; then make distclean; fi)
 	(cd src;                     make distclean)
 	(cd easel;                   make distclean)
+	(cd infernal/hmmer;          make distclean)
 	(cd infernal/src;            make distclean)
 	-rm Makefile
+
