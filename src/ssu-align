@@ -1246,11 +1246,13 @@ sub align_subseqs {
 	    
 	    my $mxsize = $globals_H{"DF_MXSIZE"};
 	    if($opt_HR->{"--mxsize"} ne "") { $mxsize = $opt_HR->{"--mxsize"}; }
-	    my $prob_opt = "-p";
-	    my $format_opt = "-1";
-	    if($opt_HR->{"--no-prob"}) { $prob_opt = ""; }
-	    if($opt_HR->{"--ileaved"}) { $format_opt = ""; }
-	    $command = "$cmalign --cm-name $cm_name $format_opt $prob_opt --mxsize $mxsize --sub -o $cmalign_stk $cm_file $hits_file > $cmalign_out"; 
+	    my $prob_opt = "";
+	    my $format_opt = "";
+	    my $cmalign_opts = $globals_H{"DF_CMALIGN_OPTS"}; # "--no-null3" by default
+
+	    if($opt_HR->{"--no-prob"}) { $prob_opt = "--no-prob"; }
+	    if($opt_HR->{"--ileaved"}) { $format_opt = "--ileaved"; }
+	    $command = "$cmalign --cm-name $cm_name $format_opt $prob_opt --mxsize $mxsize $cmalign_opts -o $cmalign_stk $cm_file $hits_file > $cmalign_out"; 
 	    RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
 	    
 	    #open and parse the cmalign output

@@ -77,6 +77,7 @@ sub GetGlobals {
     $globals_HR->{"DF_NO_NAME"} = "<NONE>"; # original value: "0.1"
     $globals_HR->{"DF_CMSEARCH_OPTS"} = " --hmm-cW 1.5 --no-null3 --noalign ";
     $globals_HR->{"DF_CMSEARCH_ALG_FLAG"} = "--viterbi";
+    $globals_HR->{"DF_CMALIGN_OPTS"} = " --no-null3 --sub ";
     $globals_HR->{"DF_ALIMANIP_PFRACT"} = 0.95;
     $globals_HR->{"DF_ALIMANIP_PTHRESH"} = 0.95;
 
