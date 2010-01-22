@@ -347,20 +347,20 @@ sub PrintStringToFile {
 #
 # Arguments:
 #   $cmd:                       command to execute
+#   $key:                       string to add to temp file names
 #   $die_if_fails:              '1' to die if command returns non-zero status
 #   $print_output_upon_failure: '1' to print command output to STDERR if it fails
 #   $log_file:                  file to print command and output to
 #   $returned_zero_R:           set to '1' if command works (returns 0), else set to '0'         
 #   $errmsg:                    message to print if command returns non-0 exit status
 #                               and $die_if_fails==1, if this is "", print generic error.
-#
 # Returns: Nothing.
 #
 ###########################################################
 sub RunCommand {
-    my $narg_expected = 6;
+    my $narg_expected = 7;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, RunCommand() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($cmd, $die_if_fails, $print_output_upon_failure, $log_file, $returned_zero_R, $errmsg) = @_;
+    my ($cmd, $key, $die_if_fails, $print_output_upon_failure, $log_file, $returned_zero_R, $errmsg) = @_;
 
     my $have_tmp_stdout = 0;
     my ($stdout_file, $tmp_stderr_file, $line, $returned_zero, $status, $retval);
@@ -372,7 +372,7 @@ sub RunCommand {
 
     if($cmd !~ />/) { 
 	# add stdout redirection
-	$stdout_file = TempFilename($log_file);
+	$stdout_file = TempFilename($log_file, $key . "out");
 	$have_tmp_stdout = 1;
 	$cmd = "$cmd > $stdout_file"
     }
@@ -382,7 +382,7 @@ sub RunCommand {
     else { 
 	PrintErrorAndExit("ERROR, in RunCommand command: $cmd has output redirection, but unable to parse its output file.", $log_file, 1); 
     }
-    $tmp_stderr_file = TempFilename($log_file);
+    $tmp_stderr_file = TempFilename($log_file, $key . "err");
     
     # add stderr redirection
     $cmd  = "$cmd  2> $tmp_stderr_file";
@@ -404,9 +404,11 @@ sub RunCommand {
     if(($retval != 0) || ($have_tmp_stdout)) { # we'll print stdout to log file
 	if($stdout_file ne "/dev/null") { 
 	    if(-e $stdout_file) { 
-		open(IN, $stdout_file) || FileOpenFailure($stdout_file, $log_file, $!, "reading");
-		while($line = <IN>) { $stdout2print .= $line; }
-		close(IN);
+		if(open(IN, $stdout_file)) { 
+		    while($line = <IN>) { $stdout2print .= $line; }
+		    close(IN);
+		}
+		else { $stdout2print = "***UNEXPECTEDLY, THE FILE DOES NOT EXIST***"; }
 	    }
 	    else { $stdout2print = "***UNEXPECTEDLY, THE FILE DOES NOT EXIST***"; }
 	}
@@ -415,9 +417,11 @@ sub RunCommand {
     }
     my $stderr2print = "";
     if(-e $tmp_stderr_file) { 
-	open(IN, $tmp_stderr_file) || FileOpenFailure($tmp_stderr_file, $log_file, $!, "reading");
-	while($line = <IN>) { $stderr2print .= $line; }
-	close(IN);
+	if(open(IN, $tmp_stderr_file)) { 
+	    while($line = <IN>) { $stderr2print .= $line; }
+	    close(IN);
+	}
+	else { $stderr2print = "***UNEXPECTEDLY, THE FILE DOES NOT EXIST***"; }
     }
     else { $stderr2print = "***UNEXPECTEDLY, THE FILE DOES NOT EXIST***"; }
     if($stderr2print eq "") { $stderr2print = "***NONE***"; }
@@ -471,6 +475,7 @@ sub RunCommand {
 #         from his sqc script from Easel.
 #
 # Purpose: Return a unique temporary filename.
+#
 #          Sean's (modified) notes:
 #          Uses the pid as part of the temp name to prevent other
 #          processes from clashing. A two-letter code is also added,
@@ -479,6 +484,11 @@ sub RunCommand {
 #          these temp files from those made by other programs.
 #          Temporary files are always created in cwd.
 #
+#          Additionally, a (hopefully unique) string "$key"
+#          that gets passed in is included in the file name after
+#          "ssutmp" as an additional safeguard against creating 
+#          two file with identical names. 
+# 
 # Arguments:
 # $out_file: file to print error to if we can't open the
 #            file;
@@ -488,14 +498,14 @@ sub RunCommand {
 #
 ###########################################################
 sub TempFilename {
-    my $narg_expected = 1;
+    my $narg_expected = 2;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, TempFilename() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($out_file) = $_[0];
+    my ($out_file, $key) = @_;
 
     my ($name, $suffix);
 
     foreach $suffix ("aa".."zz") {
-        $name = "ssutmp".$suffix.$$;
+        $name = "ssutmp".$key.$suffix.$$;
         if (! (-e $name)) { 
             open (TMP,">$name") || FileOpenFailure($name, $out_file, 1, "writing");
             close(TMP);
@@ -523,9 +533,14 @@ sub UnlinkFile {
     my ($file, $log_file) = @_;
 
     PrintStringToFile($log_file, 0, ("About to remove file ($file) with perl's unlink function ... "));
+    if(! -e $file) { 
+	PrintStringToFile($log_file, 0, ("(doesn't exist!).\n\n"));
+	return;
+    }
     if(! unlink($file)) { 
 	PrintStringToFile($log_file, 0, ("ERROR, couldn't unlink it."));
-	die "\nERROR, couldn't remove file $file with unlink function.\n";
+	# EPN, Thu Jan 21 10:59:06 2010 Decided not to die in this case.
+	# die "\nERROR, couldn't remove file $file with unlink function.\n";
     }
     PrintStringToFile($log_file, 0, ("done.\n\n"));
     
@@ -608,6 +623,7 @@ sub DetermineNumSeqsFasta {
 # Arguments: 
 #   $alistat:   path and name of ssu-esl-alistat executable
 #   $alifile:   Stockholm sequence file
+#   $key:       string to add to temp file name
 #   $sum_file:  sum file 
 #   $log_file:  log file to print commands to
 #   $nseq_AR:   reference to array to fill with num seqs for each
@@ -621,14 +637,14 @@ sub DetermineNumSeqsFasta {
 # 
 ####################################################################
 sub DetermineNumSeqsStockholm { 
-    my $narg_expected = 6;
+    my $narg_expected = 7;
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, DetermineNumSeqsStockholm() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($alistat, $alifile, $sum_file, $log_file, $nseq_AR, $nali_R) = @_;
+    my($alistat, $alifile, $key, $sum_file, $log_file, $nseq_AR, $nali_R) = @_;
 
     my ($nseq, $command, $line, $command_worked, $output);
-    my $tmp_alistat_file = TempFilename($log_file);
+    my $tmp_alistat_file = TempFilename($log_file, $key);
     $command = "$alistat $alifile > $tmp_alistat_file";
-    $output = RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
+    $output = RunCommand("$command", $key, 1, 1, $log_file, \$command_worked, "");
 
     $nseq = 0;
     @{$nseq_AR} = ();
@@ -773,6 +789,7 @@ sub SumHashElements
 #   $ps2pdf:                    command to execute, if "", use 'ps2pdf'
 #   $ps_file:                   postscript file
 #   $pdf_file:                  pdf file to create
+#   $key:                       string for temp file name
 #   $die_if_fails:              '1' to die if command returns non-zero status
 #   $print_output_upon_failure: '1' to print command output to STDERR if it fails
 #   $log_file:                  file to print command and output to
@@ -784,9 +801,9 @@ sub SumHashElements
 #
 ################################################################# 
 sub TryPs2Pdf {
-    my $narg_expected = 8;
+    my $narg_expected = 9;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, TryPs2Pdf() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($ps2pdf, $ps_file, $pdf_file, $die_if_fails, $print_output_upon_failure, $log_file, $command_worked_ref, $errmsg) = @_;
+    my ($ps2pdf, $ps_file, $pdf_file, $key, $die_if_fails, $print_output_upon_failure, $log_file, $command_worked_ref, $errmsg) = @_;
 
     # contract check
     if(! (-e $ps_file)) { die "\nERROR, in TryPs2Pdf(), ps file $ps_file doesn't exist.\n"; }
@@ -795,7 +812,7 @@ sub TryPs2Pdf {
      if($ps2pdf eq "") { $ps2pdf = "ps2pdf"; }
 
     my $command = "$ps2pdf $ps_file $pdf_file";
-    RunCommand("$command", $die_if_fails, $print_output_upon_failure, $log_file, \$command_worked, $errmsg);
+    RunCommand("$command", $key, $die_if_fails, $print_output_upon_failure, $log_file, \$command_worked, $errmsg);
 
     $$command_worked_ref = $command_worked;
     return;

@@ -44,6 +44,7 @@ require $subs_file;
 # get global variables
 our %globals_H = ();
 GetGlobals(\%globals_H, $ssualigndir);
+my $tfilectr = 0;
 
 # Start timing, this is done different depending on if Time::HiRes is installed or not
 my $time_hires_installed = UseModuleIfItExists("Time::HiRes qw(gettimeofday)");
@@ -522,7 +523,7 @@ sub validate_and_setup_ssu_merge {
     # check that cmalign is in the PATH
     my ($command, $command_worked);
     my $alimerge = $globals_H{"esl-alimerge"};
-    RunCommand("$alimerge -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $alimerge is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
+    RunCommand("$alimerge -h > /dev/null", $tfilectr++, 1, 0, $log_file, \$command_worked, "ERROR, the required executable $alimerge is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
 
     # determine which subdirectories in $dir were created by ssu-align
     my %subdir_H = ();
@@ -693,7 +694,7 @@ sub merge_alignments_for_a_cm {
     my $alimerge_out_file = $dir . "/" . $dir . "." .  $cm_name . ".alimerge";
 
     $command = "$alimerge $rfonly_opt $format_opt --list -v -o $stk_name $list_file > $alimerge_out_file";
-    RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
+    RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
 
     UnlinkFile($list_file, $log_file);
 
@@ -762,12 +763,12 @@ sub concatenate_a_list_of_files {
 
     # create concat file
     $command = "cat $files_to_concat_AR->[0] > $concat_file";
-    RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
+    RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
 
     # add to concat file
     for($i = 1; $i < scalar(@{$files_to_concat_AR}); $i++) { 
 	$command = "cat " . $files_to_concat_AR->[$i] . " >> $concat_file";
-	RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
+	RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
     }
 
     return;
@@ -1046,9 +1047,9 @@ sub clean_up_post_merge {
 
 	if($do_actually_remove) { 
 	    if(! -d $subdir2rm) { PrintErrorAndExit("ERROR, subdirectory $subdir2rm unexpectedly does not exist during cleanup.", $sum_file, 1); }
-	    if(! UnlinkDir($subdir2rm, $sum_file)) { 
+	    if(! UnlinkDir($subdir2rm, $log_file)) { 
 		if(! $printed_error) { PrintStringToFile($sum_file, 1, sprintf("\n")); }
-		PrintStringToFile($sum_file, 1, sprintf("# Unable to remove directory \"$subdir2rm\". It may contain files not created by ssu-align.\n"));
+		PrintStringToFile($log_file, 1, sprintf("# Unable to remove directory \"$subdir2rm\". It may contain files not created by ssu-align.\n"));
 		$printed_error = 1;
 	    }
 	}

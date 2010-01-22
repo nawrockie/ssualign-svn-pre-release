@@ -41,6 +41,7 @@ require $subs_file;
 # get global variables
 our %globals_H = ();
 GetGlobals(\%globals_H, $ssualigndir);
+my $tfilectr = 0;
 
 # Start timing, this is done different depending on if Time::HiRes is installed or not
 my $time_hires_installed = UseModuleIfItExists("Time::HiRes qw(gettimeofday)");
@@ -431,7 +432,7 @@ sub validate_and_setup_ssu_build {
 
 	#Validate that our cmbuild exists and is in path
 	$cmbuild = $globals_H{"cmbuild"};
-	RunCommand("$cmbuild -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $cmbuild is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
+	RunCommand("$cmbuild -h > /dev/null", $tfilectr++, 1, 0, $log_file, \$command_worked, "ERROR, the required executable $cmbuild is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
     }
 
     my $alimanip = "";
@@ -443,7 +444,7 @@ sub validate_and_setup_ssu_build {
     if(($opt_HR->{"--trunc"}) || $do_number_mode) { 
 	# verify that we can run esl-alimanip
 	$alimanip = $globals_H{"esl-alimanip"};
-	RunCommand("$alimanip -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $alimanip is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
+	RunCommand("$alimanip -h > /dev/null", $tfilectr++, 1, 0, $log_file, \$command_worked, "ERROR, the required executable $alimanip is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
     }
 
     # if $do_draw (passed in), we'll try to draw a secondary structure diagram showing the part of the model included/excluded by the truncation,
@@ -454,7 +455,7 @@ sub validate_and_setup_ssu_build {
 
 	if($template_file ne "") { 
 	    $ssdraw = $globals_H{"esl-ssdraw"};
-	    RunCommand("$ssdraw -h > /dev/null", 0, 0, $log_file, \$command_worked, "WARNING: the command \"$ssdraw -h\" should have successfully completed but it didn't. No structure diagrams will be drawn.");
+	    RunCommand("$ssdraw -h > /dev/null", $tfilectr++, 0, 0, $log_file, \$command_worked, "WARNING: the command \"$ssdraw -h\" should have successfully completed but it didn't. No structure diagrams will be drawn.");
                                         #0 = don't die if command fails
 	    if(! $command_worked ) { $ssdraw = ""; }
 	}
@@ -522,7 +523,7 @@ sub run_cmbuild {
     my $command_worked;
     my $cmbuild_output_file = $cm_file . "build";
     my $command = "$cmbuild $extra_opts --gapthresh $gapthresh $cm_file $aln_file > $cmbuild_output_file";
-    RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
+    RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
 
     my ($i, $line);
     my $ncm       = 0;
@@ -623,7 +624,7 @@ sub run_alimanip_to_number {
     PrintStringToFile($sum_file, 1, sprintf("#\n"));
     
     my $command = "$alimanip $extra_opts -o $num_aln_file $aln_file";
-    RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
+    RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
 
     my $max_width = length($num_aln_file);
     if($max_width < length("output aln file")) { $max_width = length("output aln file"); }; 
@@ -693,7 +694,7 @@ sub run_alimanip_to_truncate {
     
     my $command = "$alimanip $extra_opts --start-rf $start --end-rf $end -o $trunc_aln_file $aln_file";
     my $command_worked;
-    RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
+    RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
 
     my $max_width = length($trunc_aln_file);
     if($max_width < length("output aln file")) { $max_width = length("output aln file"); }; 
@@ -753,7 +754,7 @@ sub run_ssdraw_for_ssu_build {
     my ($command_worked, $output, $line);
     my $tmp_rf_file = $aln_file . ".rf";
     my $command = "grep '^#=GC RF[[:space:]]' $aln_file > $tmp_rf_file";
-    RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
+    RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
 
     open(IN, $tmp_rf_file) || FileOpenFailure($tmp_rf_file, $log_file, $!, "reading");
     $output = "";
@@ -776,7 +777,7 @@ sub run_ssdraw_for_ssu_build {
     close(MASK);
 
     $command = "$ssdraw --mask-col --mask $mask_file $aln_file $template_file $ps_file";
-    $output = RunCommand("$command", 0, 0, $log_file, \$command_worked, "");
+    $output = RunCommand("$command", $tfilectr++, 0, 0, $log_file, \$command_worked, "");
                                         #0 = okay if it doesn't work, alert caller by returning 0 though
     UnlinkFile($mask_file, $log_file);
     if(! $command_worked) { return 0;}
@@ -801,7 +802,7 @@ sub run_ssdraw_for_ssu_build {
 	    $die_if_fails = 1; 
 	    $errmsg = "ERROR, --ps2pdf " . $opt_HR->{"--ps2pdf"} . " was enabled, but command $command did not work."; 
 	}
-	TryPs2Pdf($ps2pdf, $ps_file, $pdf_file, $die_if_fails, $print_output_upon_failure, $log_file, \$command_worked, $errmsg);
+	TryPs2Pdf($ps2pdf, $ps_file, $pdf_file, $tfilectr++, $die_if_fails, $print_output_upon_failure, $log_file, \$command_worked, $errmsg);
 
 	if($command_worked) { 
 	    PrintStringToFile($sum_file, 1, sprintf("  %-*s\n", $max_width, $pdf_file));

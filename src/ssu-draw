@@ -37,6 +37,7 @@ require $subs_file;
 # get global variables
 our %globals_H = ();
 GetGlobals(\%globals_H, $ssualigndir);
+my $tfilectr = 0;
 
 # Start timing, this is done differently depending on if Time::HiRes is installed or not
 my $time_hires_installed = UseModuleIfItExists("Time::HiRes qw(gettimeofday)");
@@ -355,7 +356,7 @@ sub validate_and_setup_ssu_draw {
     #Validate that esl-ssdraw exist
     my $ssdraw = $globals_H{"esl-ssdraw"};
     my $command_worked;
-    RunCommand("$ssdraw -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $ssdraw is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
+    RunCommand("$ssdraw -h > /dev/null", $tfilectr++, 1, 0, $log_file, \$command_worked, "ERROR, the required executable $ssdraw is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
 
     if($opt_HR->{"--in-mask"} ne "") { 
 	if(!(-e $opt_HR->{"--in-mask"})) { 
@@ -599,7 +600,7 @@ sub run_ssdraw_for_ssu_draw {
     }
 
     my $command = "$ssdraw $ssdraw_opts $aln_file $template_file $draw_ps";
-    RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
+    RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
 
     # unless --ps-only, try ps2pdf, it's okay if it doesn't work (unless --ps2pdf, in which case its not ok)
     my $keep_ps = 1;
@@ -614,7 +615,7 @@ sub run_ssdraw_for_ssu_draw {
 	    $die_if_fails = 1; 
 	    $errmsg = "ERROR, --ps2pdf " . $opt_HR->{"--ps2pdf"} . " was enabled, but command $command did not work."; 
 	}
-	TryPs2Pdf($ps2pdf, $draw_ps, $draw_pdf, $die_if_fails, $print_output_upon_failure, $log_file, \$command_worked, $errmsg);
+	TryPs2Pdf($ps2pdf, $draw_ps, $draw_pdf, $tfilectr++, $die_if_fails, $print_output_upon_failure, $log_file, \$command_worked, $errmsg);
 	
 	if($command_worked) { 
 	    PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s\n", $max_width_aln, $aln_file2print, $max_width_draw, $draw_pdf2print));

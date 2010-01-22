@@ -40,6 +40,7 @@ require $subs_file;
 # get global variables
 our %globals_H = ();
 GetGlobals(\%globals_H, $ssualigndir);
+my $tfilectr = 0;
 
 # Start timing, this is done different depending on if Time::HiRes is installed or not
 my $time_hires_installed = UseModuleIfItExists("Time::HiRes qw(gettimeofday)");
@@ -581,7 +582,7 @@ if($do_list_mode)
 	    $list_file2print = RemoveDirPath($list_file);
 	}
 	$command = "$alimanip --list $list_file $aln_file"; 
-	RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
+	RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
 
 	my $nseq = get_num_lines_in_file($list_file, $sum_file);
 	
@@ -618,7 +619,7 @@ if($do_remove_seqs_mode)
 	    PrintErrorAndExit("ERROR, the --seq-r file " . $opt_H{"--seq-r"} . " does not exist.", $sum_file, 1); 
 	}
 	$command = "$alimanip -o $seqr_aln --seq-r " . $opt_H{"--seq-r"} . " $aln_file";
-	RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
+	RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
 	
 	#determine number of sequences in the alignment
 	my $nali = 0;
@@ -633,7 +634,7 @@ if($do_remove_seqs_mode)
 	    PrintErrorAndExit("ERROR, the --seq-k file " . $opt_H{"--seq-k"} . " does not exist.", $sum_file, 1); 
 	}
 	$command = "$alimanip -o $seqk_aln --seq-k " . $opt_H{"--seq-k"} . " $aln_file";
-	RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
+	RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
 
 	#determine number of sequences in alignment (just number of sequences in the --seq-klist file) 
 	my $nseq = get_num_lines_in_file($opt_H{"--seq-k"}, $sum_file);
@@ -679,7 +680,7 @@ if($do_stk2afa_mode)
 	    $afa_file2print = RemoveDirPath($afa_file);
 	}
 	$command = "$reformat -o $afa_file --informat stockholm afa $aln_file"; 
-	RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
+	RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
 
 	PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s\n", $max_width_aln, $aln_file2print, $max_width_afa, $afa_file2print));
     }
@@ -811,12 +812,12 @@ sub validate_and_setup_ssu_mask {
     #Validate that esl-alimanip and esl-ssdraw (if we need it) exist
     my $alimanip = $globals_H{"esl-alimanip"};
     my $command_worked;
-    RunCommand("$alimanip -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $alimanip is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
+    RunCommand("$alimanip -h > /dev/null", $tfilectr++, 1, 0, $log_file, \$command_worked, "ERROR, the required executable $alimanip is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
 
     my $ssdraw = "";
     if($template_file ne "") { 
 	$ssdraw = $globals_H{"esl-ssdraw"};
-	RunCommand("$ssdraw -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $ssdraw is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
+	RunCommand("$ssdraw -h > /dev/null", $tfilectr++, 1, 0, $log_file, \$command_worked, "ERROR, the required executable $ssdraw is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
     }
 
     #Validate that 'esl-weight' and 'esl-seqstat' exist if --filter enabled.
@@ -824,15 +825,15 @@ sub validate_and_setup_ssu_mask {
     my $alistat = "";
     if($opt_HR->{"--filter"} ne "") { 
 	$weight = $globals_H{"esl-weight"};
-	RunCommand("$weight -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $weight (required b/c --filter enabled) is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
+	RunCommand("$weight -h > /dev/null", $tfilectr++, 1, 0, $log_file, \$command_worked, "ERROR, the required executable $weight (required b/c --filter enabled) is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
 	$alistat = $globals_H{"esl-alistat"};
-	RunCommand("$alistat -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $alistat (required b/c --seq-r or --seq-k enabled) is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
+	RunCommand("$alistat -h > /dev/null", $tfilectr++, 1, 0, $log_file, \$command_worked, "ERROR, the required executable $alistat (required b/c --seq-r or --seq-k enabled) is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
     }
 
     #Validate that 'esl-alistat' works if --seq-r or --seq-k 
     if(($opt_H{"--seq-r"} ne "") || ($opt_H{"--seq-k"})) { 
 	$alistat = $globals_H{"esl-alistat"};
-	RunCommand("$alistat -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $alistat (required b/c --seq-r or --seq-k enabled) is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
+	RunCommand("$alistat -h > /dev/null", $tfilectr++, 1, 0, $log_file, \$command_worked, "ERROR, the required executable $alistat (required b/c --seq-r or --seq-k enabled) is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
     }	
 
 
@@ -840,7 +841,7 @@ sub validate_and_setup_ssu_mask {
     my $reformat = "";
     if(($opt_H{"--afa"}) || ($opt_H{"--only-afa"}) || ($opt_H{"--stk2afa"})) { 
 	$reformat = $globals_H{"esl-reformat"};
-	RunCommand("$reformat -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $reformat (required b/c --afa, --only-afa or --stk2afa enabled) is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
+	RunCommand("$reformat -h > /dev/null", $tfilectr++, 1, 0, $log_file, \$command_worked, "ERROR, the required executable $reformat (required b/c --afa, --only-afa or --stk2afa enabled) is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
     }	
 
     # Find the alignments we'll mask
@@ -1170,7 +1171,7 @@ sub mask_alignment {
 	$errmsg = "";
 	$die_if_fails = 0;
     }
-    RunCommand("$command", $die_if_fails, $die_if_fails, $log_file, \$command_worked, $errmsg);
+    RunCommand("$command", $tfilectr++, $die_if_fails, $die_if_fails, $log_file, \$command_worked, $errmsg);
     if(! $command_worked) { return 0; } #if (! $mask_ok_if_fails), RunCommand will cause death if (! $command_worked)
 
     summarize_mask($mask_file, \$n0, \$n1, $sum_file); 
@@ -1199,7 +1200,7 @@ sub mask_alignment {
 
 	if(($opt_HR->{"--afa"}) || ($opt_HR->{"--only-afa"})) { # convert stk to afa
 	    $command = "$reformat -o $masked_afa_file --informat stockholm afa $masked_stk_file"; 
-	    RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
+	    RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
 	    PrintStringToFile($sum_file, 1, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $masked_afa_file2print, "output", "aln", $n1, "-", "-"));
 	}
     }
@@ -1264,7 +1265,7 @@ sub filter_alignment {
     }    
     my @nseq_A = ();
     my $nali = 0;
-    DetermineNumSeqsStockholm($alistat, $aln_file2filter, $sum_file, $log_file, \@nseq_A, \$nali);
+    DetermineNumSeqsStockholm($alistat, $aln_file2filter, $tfilectr++, $sum_file, $log_file, \@nseq_A, \$nali);
     if($nali != 1) { PrintErrorAndExit("ERROR, unexpectedly found %d (not 1) alignments in $aln_file2filter.", $sum_file, 1); }
     $nseq_input = $nseq_A[0];
 
@@ -1272,7 +1273,7 @@ sub filter_alignment {
     if($opt_HR->{"--filter"} < 0.) { PrintErrorAndExit(sprintf("ERROR, with --filter <f>, <f> must be between 0.0 and 1.0, you entered %.4f.\n", $opt_HR->{"--filter"}), $sum_file, 1); }
     if($opt_HR->{"--filter"} > 1.) { PrintErrorAndExit(sprintf("ERROR, with --filter <f>, <f> must be between 0.0 and 1.0, you entered %.4f.\n", $opt_HR->{"--filter"}), $sum_file, 1); }
     $command = "$weight -o $filtered_stk_file -f --idf " . $opt_HR->{"--filter"} . " $aln_file2filter";
-    RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
+    RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
     @nseq_A = ();
     DetermineNumSeqsStockholm($alistat, $filtered_stk_file, $sum_file, $log_file, \@nseq_A, \$nali);
     if($nali != 1) { PrintErrorAndExit("ERROR, unexpectedly found %d (not 1) alignments in $filtered_stk_file.", $sum_file, 0);  }
@@ -1288,7 +1289,7 @@ sub filter_alignment {
 
     if(($opt_HR->{"--afa"}) || ($opt_HR->{"--only-afa"})){ 
 	$command = "$reformat -o $filtered_afa_file --informat stockholm afa $filtered_stk_file"; 
-	RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
+	RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
 	PrintStringToFile($sum_file, 1, sprintf("  %-*s  %8d  %-*s  %8d\n", $max_width_in, $aln_file2filter2print, $nseq_input, $max_width_fil, $filtered_afa_file2print, $nseq_filtered));
     }
     return 1;
@@ -1348,7 +1349,7 @@ sub run_ssdraw_for_ssu_mask {
     my $command = "$ssdraw $ssdraw_opts $aln_file $template_file $draw_ps";
     my $die_if_fails = 0;
     my $print_output_upon_failure = 0;
-    RunCommand("$command", $die_if_fails, $print_output_upon_failure, $log_file, \$command_worked, "");
+    RunCommand("$command", $tfilectr++, $die_if_fails, $print_output_upon_failure, $log_file, \$command_worked, "");
 
     if(! $command_worked) { # it didn't work, don't exit just alert caller by returning 0
 	return 0; 
@@ -1367,7 +1368,7 @@ sub run_ssdraw_for_ssu_mask {
 	    $die_if_fails = 1; 
 	    $errmsg = "ERROR, --ps2pdf " . $opt_HR->{"--ps2pdf"} . " was enabled, but command $command did not work."; 
 	}
-	TryPs2Pdf($ps2pdf, $draw_ps, $draw_pdf, $die_if_fails, $print_output_upon_failure, $log_file, \$command_worked, $errmsg);
+	TryPs2Pdf($ps2pdf, $draw_ps, $draw_pdf, $tfilectr++, $die_if_fails, $print_output_upon_failure, $log_file, \$command_worked, $errmsg);
 	
 	if($command_worked) { 
 	    if($do_column_breakdown) { 
