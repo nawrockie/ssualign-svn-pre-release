@@ -53,6 +53,7 @@ require $subs_file;
 # get global variables
 our %globals_H = ();
 GetGlobals(\%globals_H, $ssualigndir);
+my $tfilectr = 0;
 
 # Start timing, this is done differently depending on if Time::HiRes is installed or not
 my $time_hires_installed = UseModuleIfItExists("Time::HiRes qw(gettimeofday)");
@@ -457,19 +458,19 @@ sub validate_and_setup_ssu_align {
     my $weight     = $globals_H{"esl-weight"};
     my $ssualign   = $globals_H{"ssu-align"};
     # check that the required programs are in the PATH
-    RunCommand("$seqstat -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $seqstat is either not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
+    RunCommand("$seqstat -h > /dev/null", $tfilectr++, 1, 0, $log_file, \$command_worked, "ERROR, the required executable $seqstat is either not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
     if(!($opt_HR->{"--no-search"})) { 
-	RunCommand("$cmsearch -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $cmsearch is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
-	RunCommand("$sfetch -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $sfetch is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
+	RunCommand("$cmsearch -h > /dev/null", $tfilectr++, 1, 0, $log_file, \$command_worked, "ERROR, the required executable $cmsearch is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
+	RunCommand("$sfetch -h > /dev/null", $tfilectr++, 1, 0, $log_file, \$command_worked, "ERROR, the required executable $sfetch is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
     }
     if(!($opt_HR->{"--no-align"})) { 
-	RunCommand("$cmalign -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $cmalign is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
+	RunCommand("$cmalign -h > /dev/null", $tfilectr++, 1, 0, $log_file, \$command_worked, "ERROR, the required executable $cmalign is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
     }
     if($opt_HR->{"--filter"} ne "") { 
-	RunCommand("$weight -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $weight is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
+	RunCommand("$weight -h > /dev/null", $tfilectr, 1, 0, $log_file, \$command_worked, "ERROR, the required executable $weight is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
     }
     if(($opt_HR->{"--prep-n"} ne "") || ($opt_HR->{"--prep-p"})) { 
-	RunCommand("$ssualign -h > /dev/null", 1, 0, $log_file, \$command_worked, "ERROR, the required executable $ssualign is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
+	RunCommand("$ssualign -h > /dev/null", $tfilectr, 1, 0, $log_file, \$command_worked, "ERROR, the required executable $ssualign is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
     }
 
     $$ssualign_R = $ssualign;
@@ -913,7 +914,7 @@ sub search_sequences_with_each_model {
     if($opt_HR->{"--only"} ne "") { $cmsearch_opts .= " --cm-name " . $opt_HR->{"--only"}; }
 
     $command = "$cmsearch $cmsearch_opts -T $cmsearch_T --tab $tab_file $alg_flag $cm_file $target_file > $cmsearch_outfile";
-    RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
+    RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
     PrintStringToFile($sum_file, 1, sprintf("  %-*s  locations/scores of hits defined by HMM(s)\n", $max_file_name_width, $tab_file2print));
 
     if(! $opt_HR->{"--keep"}) { UnlinkFile($cmsearch_outfile, $log_file); }
@@ -1088,7 +1089,7 @@ sub classify_and_extract_subseqs {
     #if index file exists, remove it and remake it (wasteful, but this is the only way to know for sure that the index was created for this specific file)
     if(-e $index_file) { UnlinkFile($index_file, $log_file); } 
     $command = "$sfetch \-\-index $target_file"; 
-    RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
+    RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
 
     for($m = 0; $m < scalar(@{$indi_cm_name_AR}); $m++) { 
 	$cm_name = $indi_cm_name_AR->[$m];
@@ -1140,7 +1141,7 @@ sub classify_and_extract_subseqs {
 	    if($do_truncate) { $sfetch_options = "-Cf"; }
 	    else             { $sfetch_options = "-f";  }
 	    $command = "$sfetch -o $hits_file $sfetch_options $target_file $sfetch_in_file";
-	    RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
+	    RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
 
 	    if(-e $hits_file) { 
 		if($nwinners > 1) { PrintStringToFile($sum_file, 1, sprintf("  %-*s  %7d sequences to align with $cm_name CM\n", $max_file_name_width, $hits_file2print, scalar(@{$by_cm_name_HA{$cm_name}}))); }
@@ -1192,15 +1193,15 @@ sub align_subseqs {
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, align_subseqs() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my ($opt_HR, $out_dir_and_root, $cmalign, $max_file_name_width, $weight, $indi_cm_name_AR, $new_target_file_per_cm_name_HR, $cmscores2print_HR, $sum_file, $log_file) = @_;
 
-    my($i, $ncm, $m, $cm_file_name, $cm_name, $hits_file, $align_psecs, $cmalign_out, $cmalign_stk);
-    my($cmalign_out2print, $cmalign_stk2print, $fil_cmalign_stk, $fil_cmalign_stk2print, $dashes1, $dashes2);
+    my($i, $ncm, $m, $cm_file_name, $cm_name, $hits_file, $align_psecs, $cmalign_out, $cmalign_stk, $cmalign_ifile);
+    my($cmalign_out2print, $cmalign_stk2print, $fil_cmalign_stk, $fil_cmalign_stk2print, $cmalign_ifile2print, $dashes1, $dashes2);
     my($line, $seq_name, $cmsc, $cmstructsc, $command, $command_worked, $tmp);
     my @el_A = ();
 
     my $description_width = MaxLengthScalarInArray($indi_cm_name_AR);
     $description_width += length(" cmalign output");
     if((! $opt_HR->{"--no-search"}) && ($description_width < length("list of seqs that don't match any model"))) { 
-	$description_width = length("list of seqs that don't match any model");
+	if(length("list of seqs that don't match any model") > $description_width) { $description_width = length("list of seqs that don't match any model"); }
     }
 
     if($max_file_name_width == -1) { # we need to determine it, otherwise (if != -1), it was determined in search_sequences_with_each_model() 
@@ -1231,8 +1232,10 @@ sub align_subseqs {
 	if(exists($new_target_file_per_cm_name_HR->{$cm_name})) { # >= 1 sequences in this set were classified as the current CM
 	    $hits_file      = $new_target_file_per_cm_name_HR->{$cm_name};
 	    
-	    $cmalign_out       = $out_dir_and_root . "." . $cm_name . ".cmalign";
-	    $cmalign_out2print = $out_root     . "." . $cm_name . ".cmalign";
+	    $cmalign_out         = $out_dir_and_root . "." . $cm_name . ".cmalign";
+	    $cmalign_out2print   = $out_root     . "." . $cm_name . ".cmalign";
+	    $cmalign_ifile       = $out_dir_and_root . "." . $cm_name . ".ifile";
+	    $cmalign_ifile2print = $out_root     . "." . $cm_name . ".ifile";
 	    if($opt_HR->{"--filter"} ne "") { 
 		$cmalign_stk           = $out_dir_and_root . "." . $cm_name . ".nf.stk";
 		$cmalign_stk2print     = $out_root         . "." . $cm_name . ".nf.stk";
@@ -1252,8 +1255,8 @@ sub align_subseqs {
 
 	    if($opt_HR->{"--no-prob"}) { $prob_opt = "--no-prob"; }
 	    if($opt_HR->{"--ileaved"}) { $format_opt = "--ileaved"; }
-	    $command = "$cmalign --cm-name $cm_name $format_opt $prob_opt --mxsize $mxsize $cmalign_opts -o $cmalign_stk $cm_file $hits_file > $cmalign_out"; 
-	    RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
+	    $command = "$cmalign --cm-name $cm_name $format_opt $prob_opt --mxsize $mxsize $cmalign_opts --ifile $cmalign_ifile -o $cmalign_stk $cm_file $hits_file > $cmalign_out"; 
+	    RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
 	    
 	    #open and parse the cmalign output
 	    open(CMALIGN, $cmalign_out) || FileOpenFailure($cmalign_out, $sum_file, $!, "reading");
@@ -1270,7 +1273,7 @@ sub align_subseqs {
 
 	    if($opt_HR->{"--filter"} ne "") { 
 		$command = "$weight -f --idf " . $opt_HR->{"--filter"} . " $cmalign_stk > $fil_cmalign_stk";
-		RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
+		RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
 		PrintStringToFile($sum_file, 1, sprintf("  %-*s  complete %s alignment\n", $max_file_name_width, $cmalign_stk2print, $cm_name));
 		PrintStringToFile($sum_file, 1, sprintf("  %-*s  filtered %s alignment\n", $max_file_name_width, $fil_cmalign_stk2print, $cm_name));
 	    }
@@ -1278,6 +1281,7 @@ sub align_subseqs {
 		PrintStringToFile($sum_file, 1, sprintf("  %-*s  %s alignment\n", $max_file_name_width, $cmalign_stk2print, $cm_name));
 	    }
 	    PrintStringToFile($sum_file, 1, sprintf("  %-*s  %s cmalign output\n", $max_file_name_width, $cmalign_out2print, $cm_name));
+	    PrintStringToFile($sum_file, 1, sprintf("  %-*s  %s insert info\n",    $max_file_name_width, $cmalign_ifile2print, $cm_name));
 	}
     }
     return;
@@ -1448,7 +1452,7 @@ sub seqstat_seq_file_per_seq {
 
     my ($command, $command_worked, $line, $format, $total_nseq, $total_nres);
     $command = "$seqstat --rna -a $seqfile > $seqstat_out_file";
-    RunCommand("$command", 1, 1, $log_file, \$command_worked, "");
+    RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
 
     # parse seqstat output
     my $nseq_read = 0;
