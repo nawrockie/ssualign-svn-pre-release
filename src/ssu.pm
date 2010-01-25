@@ -78,23 +78,24 @@ sub GetGlobals {
     $globals_HR->{"DF_CMSEARCH_OPTS"} = " --hmm-cW 1.5 --no-null3 --noalign ";
     $globals_HR->{"DF_CMSEARCH_ALG_FLAG"} = "--viterbi";
     $globals_HR->{"DF_CMALIGN_OPTS"} = " --no-null3 --sub ";
-    $globals_HR->{"DF_ALIMANIP_PFRACT"} = 0.95;
-    $globals_HR->{"DF_ALIMANIP_PTHRESH"} = 0.95;
+    $globals_HR->{"DF_ALIMASK_PFRACT"} = 0.95;
+    $globals_HR->{"DF_ALIMASK_PTHRESH"} = 0.95;
 
     # executable programs
-    $globals_HR->{"cmalign"} = "ssu-cmalign";
-    $globals_HR->{"cmbuild"} = "ssu-cmbuild";
-    $globals_HR->{"cmsearch"} = "ssu-cmsearch";
+    $globals_HR->{"cmalign"}      = "ssu-cmalign";
+    $globals_HR->{"cmbuild"}      = "ssu-cmbuild";
+    $globals_HR->{"cmsearch"}     = "ssu-cmsearch";
     $globals_HR->{"esl-alimanip"} = "ssu-esl-alimanip";
+    $globals_HR->{"esl-alimask"}  = "ssu-esl-alimask";
     $globals_HR->{"esl-alimerge"} = "ssu-esl-alimerge";
-    $globals_HR->{"esl-alistat"} = "ssu-esl-alistat";
+    $globals_HR->{"esl-alistat"}  = "ssu-esl-alistat";
     $globals_HR->{"esl-reformat"} = "ssu-esl-reformat";
-    $globals_HR->{"esl-seqstat"} = "ssu-esl-seqstat";
-    $globals_HR->{"esl-sfetch"} = "ssu-esl-sfetch";
-    $globals_HR->{"esl-ssdraw"} = "ssu-esl-ssdraw";
-    $globals_HR->{"esl-weight"} = "ssu-esl-weight";
-    $globals_HR->{"ps2pdf"} = "ps2pdf";
-    $globals_HR->{"ssu-align"} = "ssu-align";
+    $globals_HR->{"esl-seqstat"}  = "ssu-esl-seqstat";
+    $globals_HR->{"esl-sfetch"}   = "ssu-esl-sfetch";
+    $globals_HR->{"esl-ssdraw"}   = "ssu-esl-ssdraw";
+    $globals_HR->{"esl-weight"}   = "ssu-esl-weight";
+    $globals_HR->{"ps2pdf"}       = "ps2pdf";
+    $globals_HR->{"ssu-align"}    = "ssu-align";
 
     return;
 }

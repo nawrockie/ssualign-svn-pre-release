@@ -53,6 +53,7 @@ my $options_usage  = "where general options are:\n";
 $options_usage .= "  -h            : show brief help on version and usage\n";
 $options_usage .= "  -m <f>        : CM file <f> created the alignment(s) (with ssu-align -m <f>)\n";
 $options_usage .= "  -t <f>        : use template file <f>, not the default template file\n";
+$options_usage .= "  -i            : -i used with ssu-align, alignments are interleaved\n";
 $options_usage .= "  --key-in <s>  : assume <s> is part of input file names, before the suffix\n";
 $options_usage .= "  --key-out <s> : add <s> to all output file names, before the suffix\n";
 $options_usage .= "  --use-masks   : draw masks from ssu-mask created '.mask' files in the aln dir\n";
@@ -61,17 +62,20 @@ $options_usage .= "  --ps2pdf <s>  : <s> (!= \"ps2pdf\") is the command for conv
 $options_usage .= "  --ps-keep     : if --ps2pdf or ps2pdf is installed, save postscript (& pdf) files\n";
 $options_usage .= "  --ps-only     : only save postscript secondary structure diagrams, no pdfs\n";
 $options_usage .= "\noptions for 1-page alignment summary diagrams (by default, all are drawn):\n";
-$options_usage .= "  --no-aln : do not create multi-page pdf with all alignment stats\n";
-$options_usage .= "  --prob   : draw average posterior probability per column (save as *.prob.pdf)\n";
-$options_usage .= "  --ins    : draw frequency of insertions per column (save as *.ins.pdf)\n";
-$options_usage .= "  --dall   : draw frequency of deletions per column (save as *.dall.pdf)\n";
-$options_usage .= "  --dint   : draw frequency of internal deletions per column (save as *.dint.pdf)\n";
-$options_usage .= "  --info   : draw sequence information content per position (save as *.info.pdf)\n";
-$options_usage .= "  --struct : draw structural information content per position (save as *.struct.pdf)\n";
+$options_usage .= "  --no-aln  : do not create multi-page pdf with all alignment stats\n";
+$options_usage .= "  --prob    : draw average posterior probability per column (save as *.prob.pdf)\n";
+$options_usage .= "  --ins     : draw frequency of insertions per column (save as *.ins.pdf)\n";
+$options_usage .= "  --dall    : draw frequency of deletions per column (save as *.dall.pdf)\n";
+$options_usage .= "  --dint    : draw frequency of internal deletions per column (save as *.dint.pdf)\n";
+$options_usage .= "  --span    : draw fraction of seqs that span each position (save as *.span.pdf)\n";
+$options_usage .= "  --info    : draw sequence information content per position (save as *.info.pdf)\n";
+$options_usage .= "  --mutinfo : draw mutual information per position (save as *.mutinfo.pdf)\n";
 $options_usage .= "\noptions for structure diagrams for individual sequences:\n";
-$options_usage .= "  --indi    : draw sequence and probability diagrams for all aligned sequences\n";
-$options_usage .= "  --no-prob : with --indi, omit probability diagrams\n";
-$options_usage .= "  --cons    : draw consensus sequence/structure only (save as *.cons.pdf)\n";
+$options_usage .= "  (warning: --indi-all will generate very large .ps/.pdf files for large alignments)\n";
+$options_usage .= "  --indi-all      : draw sequence and probability diagrams for all aligned sequences\n";
+$options_usage .= "  --indi-list <s> : draw sequence and probability diagrams for sequences listed in <s>\n";
+$options_usage .= "  --no-prob       : with --indi-list or --indi-all, omit probability diagrams\n";
+$options_usage .= "  --cons          : draw consensus sequence/structure only (save as *.cons.pdf)\n";
 $options_usage .= "\noptions for omitting parts of the diagrams:\n";
 $options_usage .= "  --no-leg  : do not draw legends\n";
 $options_usage .= "  --no-head : do not draw headers\n";
@@ -89,6 +93,7 @@ $opt_takes_arg_H{"-a"}          = 0;  push(@opt_order_A, "-a");
 $opt_takes_arg_H{"-h"}          = 0;  push(@opt_order_A, "-h");           
 $opt_takes_arg_H{"-m"}          = 1;  push(@opt_order_A, "-m");           
 $opt_takes_arg_H{"-t"}          = 1;  push(@opt_order_A, "-t");           
+$opt_takes_arg_H{"-i"}          = 1;  push(@opt_order_A, "-i");     
 $opt_takes_arg_H{"--key-in"}    = 1;  push(@opt_order_A, "--key-in");     
 $opt_takes_arg_H{"--key-out"}   = 1;  push(@opt_order_A, "--key-out");    
 $opt_takes_arg_H{"--use-masks"} = 0;  push(@opt_order_A, "--use-masks");  
@@ -101,9 +106,11 @@ $opt_takes_arg_H{"--prob"}      = 0;  push(@opt_order_A, "--prob");
 $opt_takes_arg_H{"--ins"}       = 0;  push(@opt_order_A, "--ins");        
 $opt_takes_arg_H{"--dall"}      = 0;  push(@opt_order_A, "--dall");       
 $opt_takes_arg_H{"--dint"}      = 0;  push(@opt_order_A, "--dint");       
+$opt_takes_arg_H{"--span"}      = 0;  push(@opt_order_A, "--span");       
 $opt_takes_arg_H{"--info"}      = 0;  push(@opt_order_A, "--info");       
-$opt_takes_arg_H{"--struct"}    = 0;  push(@opt_order_A, "--struct");     
-$opt_takes_arg_H{"--indi"}      = 0;  push(@opt_order_A, "--indi");       
+$opt_takes_arg_H{"--mutinfo"}   = 0;  push(@opt_order_A, "--mutinfo");     
+$opt_takes_arg_H{"--indi-list"} = 1;  push(@opt_order_A, "--indi-list");       
+$opt_takes_arg_H{"--indi-all"}  = 0;  push(@opt_order_A, "--indi-all");       
 $opt_takes_arg_H{"--no-prob"}   = 0;  push(@opt_order_A, "--no-prob");    
 $opt_takes_arg_H{"--cons"}      = 0;  push(@opt_order_A, "--cons");       
 $opt_takes_arg_H{"--no-leg"}    = 0;  push(@opt_order_A, "--no-leg");     
@@ -118,30 +125,33 @@ foreach $opt (keys %opt_takes_arg_H) {
 
 Getopt::Long::Configure ("bundling");
 my $opt_return = GetOptions
-    ('a'         => \$opt_H{"-a"},
-     'h'         => \$opt_H{"-h"}, 
-     'm=s'       => \$opt_H{"-m"},
-     't=s'       => \$opt_H{"-t"},
-     'key-in=s'  => \$opt_H{"--key-in"},
-     'key-out=s' => \$opt_H{"--key-out"},
-     'use-masks' => \$opt_H{"--use-masks"},
-     'in-mask=s' => \$opt_H{"--in-mask"},
-     'ps2pdf=s'  => \$opt_H{"--ps2pdf"},
-     'ps-keep'   => \$opt_H{"--ps-keep"},
-     'ps-only'   => \$opt_H{"--ps-only"},
-     'no-aln'    => \$opt_H{"--no-aln"},
-     'prob'      => \$opt_H{"--prob"},
-     'ins'       => \$opt_H{"--ins"},
-     'dall'      => \$opt_H{"--dall"},
-     'dint'      => \$opt_H{"--dint"},
-     'info'      => \$opt_H{"--info"},
-     'struct'    => \$opt_H{"--struct"},
-     'indi'      => \$opt_H{"--indi"},
-     'no-prob'   => \$opt_H{"--no-prob"},
-     'cons'      => \$opt_H{"--cons"},
-     'no-leg'    => \$opt_H{"--no-leg"},
-     'no-head'   => \$opt_H{"--no-head"},
-     'no-foot'   => \$opt_H{"--no-foot"});
+    ('a'           => \$opt_H{"-a"},
+     'h'           => \$opt_H{"-h"}, 
+     'm=s'         => \$opt_H{"-m"},
+     't=s'         => \$opt_H{"-t"},
+     'i'           => \$opt_H{"-i"},
+     'key-in=s'    => \$opt_H{"--key-in"},
+     'key-out=s'   => \$opt_H{"--key-out"},
+     'use-masks'   => \$opt_H{"--use-masks"},
+     'in-mask=s'   => \$opt_H{"--in-mask"},
+     'ps2pdf=s'    => \$opt_H{"--ps2pdf"},
+     'ps-keep'     => \$opt_H{"--ps-keep"},
+     'ps-only'     => \$opt_H{"--ps-only"},
+     'no-aln'      => \$opt_H{"--no-aln"},
+     'prob'        => \$opt_H{"--prob"},
+     'ins'         => \$opt_H{"--ins"},
+     'dall'        => \$opt_H{"--dall"},
+     'dint'        => \$opt_H{"--dint"},
+     'span'        => \$opt_H{"--span"},
+     'info'        => \$opt_H{"--info"},
+     'mutinfo'     => \$opt_H{"--mutinfo"},
+     'indi-list=s' => \$opt_H{"--indi-list"},
+     'indi-all'    => \$opt_H{"--indi-all"},
+     'no-prob'     => \$opt_H{"--no-prob"},
+     'cons'        => \$opt_H{"--cons"},
+     'no-leg'      => \$opt_H{"--no-leg"},
+     'no-head'     => \$opt_H{"--no-head"},
+     'no-foot'     => \$opt_H{"--no-foot"});
 
 if($opt_return != 1) { print STDERR "\nERROR, GetOptions() did not return 1, but $opt_return\n"; exit(1); }
 
@@ -164,16 +174,22 @@ if($opt_H{"--use-masks"} && ($opt_H{"--in-mask"} ne "")) {
 if(($opt_H{"--in-mask"} ne "") && ($opt_H{"-a"} == 0)) { 
     printf STDERR ("\nERROR, --in-mask requires the -a option.\n"); exit(1);
 }    
-if(($opt_H{"--no-prob"}) && (!($opt_H{"--indi"}))) {
-    printf STDERR ("\nERROR, --no-prob only makes sense in combination with --indi.\n"); exit(1);
+if(($opt_H{"--no-prob"}) && ($opt_H{"--indi-list"} eq "") && (! $opt_H{"--indi-all"})) {
+    printf STDERR ("\nERROR, --no-prob only makes sense in combination with --indi-list or --indi-all.\n"); exit(1);
+}    
+if(($opt_H{"--indi-list"} ne "") && ($opt_H{"--indi-all"})) {
+    printf STDERR ("\nERROR, --indi-list is incompatible with --indi-all.\n"); exit(1);
+}    
+if(($opt_H{"--indi-list"} ne "") && (! $opt_H{"-a"})) { 
+    printf STDERR ("\nERROR, --indi-list requires -a, it only works on a single alignment file.\n"); exit(1);
 }    
 if($opt_H{"--ps-only"} && ($opt_H{"--ps2pdf"} ne "")) { 
     printf STDERR ("\nERROR, --ps-only is incompatible with --ps2pdf\n"); exit(1); 
 }
 if(($opt_H{"--no-aln"}) && 
-   (! (($opt_H{"--prob"}) || ($opt_H{"--ins"}) || ($opt_H{"--dall"}) || ($opt_H{"--dint"}) || ($opt_H{"--info"}) || ($opt_H{"--struct"}) ||
-       ($opt_H{"--indi"}) ||($opt_H{"--cons"})))) { 
-    printf STDERR ("\nERROR, --no-aln only makes sense if used in combination with at least one of: --prob, --ins, --dall, --dint, --info, --struct, --indi, --cons.\n"); 
+   (! (($opt_H{"--prob"}) || ($opt_H{"--ins"}) || ($opt_H{"--dall"}) || ($opt_H{"--dint"}) || ($opt_H{"--span"}) || ($opt_H{"--info"}) || ($opt_H{"--mutinfo"}) ||
+       ($opt_H{"--indi-list"} ne "") || ($opt_H{"--indi-all"}) || ($opt_H{"--cons"})))) { 
+    printf STDERR ("\nERROR, --no-aln only makes sense if used in combination with at least one of: --prob, --ins, --dall, --dint, --span, --info, --mutinfo, --indi-list, --indi-all, --cons.\n"); 
     exit(1);
 }
 
@@ -237,30 +253,30 @@ my $max_width_draw = 0;
 my ($nec_width, $i, $aln_root, $aln_root2print);
 my $extra_draw_chars = 0;
 if($opt_H{"--ins"}) { $extra_draw_chars = 3+1; } # +1 is for the '.'
-if($opt_H{"--prob"} || $opt_H{"--dall"} || $opt_H{"--dint"} || $opt_H{"--info"} || $opt_H{"--indi"} || $opt_H{"--cons"}) { 
+if($opt_H{"--prob"} || $opt_H{"--dall"} || $opt_H{"--dint"} || $opt_H{"--span"} || $opt_H{"--info"} || ($opt_H{"--indi-list"} ne "") || $opt_H{"--indi-all"} || $opt_H{"--cons"}) { 
     $extra_draw_chars = 4+1; 
 }
-if($opt_H{"--struct"}) { $extra_draw_chars = 5+1; }
+if($opt_H{"--mutinfo"}) { $extra_draw_chars = 6+1; }
 
 for($i = 0; $i < $naln; $i++) { 
     $aln_file         = $stk_list_A[$i];
     $aln_root2print   = SwapOrAppendFileSuffix($aln_file, \@stk_suffix_A, "", $opt_H{"-a"}); # if -a, we'll write output dir as well as file name
-    $nec_width        = length(RemoveDirPath($aln_file)) + length($key_in);
+    if($opt_H{"-a"}) { $nec_width = length($aln_file) + length($key_in); }
+    else             { $nec_width = length(RemoveDirPath($aln_file)) + length($key_in); }
     if($max_width_aln < $nec_width) { $max_width_aln = $nec_width; }
     $nec_width        = length($aln_root2print) + length($key_out) + length(".pdf");
     if($opt_H{"--ps-only"}) { $nec_width--; }
     if($max_width_draw < $nec_width) { $max_width_draw = $nec_width; }
 }					     
-$max_width_draw += $extra_draw_chars; # $extra_draw_chars is for adding keys, such as 'struct.' to names
+$max_width_draw += $extra_draw_chars; # $extra_draw_chars is for adding keys, such as 'mutinfo.' to names
 if($max_width_draw < (length("structure diagram file"))) { $max_width_draw = length("structure diagram file"); }
 my $dashes_aln = "";  for($i = 0; $i < $max_width_aln; $i++)  { $dashes_aln .= "-"; }
 my $dashes_draw = ""; for($i = 0; $i < $max_width_draw; $i++) { $dashes_draw .= "-"; }
 
 PrintStringToFile($sum_file, 1, sprintf("#\n# Drawing secondary structure diagrams...\n"));
 PrintStringToFile($sum_file, 1, sprintf("#\n"));
-PrintStringToFile($sum_file, 1, sprintf("# %-*s  %-*s\n", $max_width_aln, "alignment file name", $max_width_draw, "structure diagram file"));
-PrintStringToFile($sum_file, 1, sprintf("# %-*s  %-*s\n", $max_width_aln, $dashes_aln, $max_width_draw, $dashes_draw));
-
+PrintStringToFile($sum_file, 1, sprintf("# %-*s  %-*s  %7s\n", $max_width_aln, "alignment file name", $max_width_draw, "structure diagram file", "# pages"));
+PrintStringToFile($sum_file, 1, sprintf("# %-*s  %-*s  %7s\n", $max_width_aln, $dashes_aln, $max_width_draw, $dashes_draw, "-------"));
 
 #######################
 # Create the drawings #
@@ -489,7 +505,7 @@ sub draw_alignment {
 
     # Default multi-page align call, or not if --no-aln enabled
     if(! ($opt_HR->{"--no-aln"})) { 
-	$draw_opts = "--prob --ins --dall --dint --struct"; 
+	$draw_opts = "--prob --ins --dall --dint --span --mutinfo"; 
 	$draw_key = $key_out; #this will be "" unless --key-out was enabled
 	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts), $aln_file, $stk_suffix_AR, $template_file, 
 		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $sum_file, $log_file);
@@ -518,26 +534,35 @@ sub draw_alignment {
 	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts), $aln_file, $stk_suffix_AR, $template_file, 
 		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $sum_file, $log_file);
     }
+    if($opt_HR->{"--span"}) { 
+	$draw_opts = "-q --span"; 
+	$draw_key = $key_out . ".span";
+	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts), $aln_file, $stk_suffix_AR, $template_file, 
+		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $sum_file, $log_file);
+    }
     if($opt_HR->{"--info"}) { 
 	$draw_opts = ""; 
 	$draw_key = $key_out . ".info";
 	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts), $aln_file, $stk_suffix_AR, $template_file, 
 		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $sum_file, $log_file);
     }
-    if($opt_HR->{"--struct"}) { 
-	$draw_opts = "--struct"; 
-	$draw_key = $key_out . ".struct";
+    if($opt_HR->{"--mutinfo"}) { 
+	$draw_opts = "--mutinfo"; 
+	$draw_key = $key_out . ".mutinfo";
 	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts), $aln_file, $stk_suffix_AR, $template_file, 
 		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $sum_file, $log_file);
     }
-    if($opt_HR->{"--indi"}) { 
-	if($opt_HR->{"--no-prob"}) { 
-	    $draw_opts = "--indi --all"; 
-	}
-	else { 
-	    $draw_opts = "--indi --all --prob"; 
-	}
-	$draw_key = $key_out . "indi.";
+    if($opt_HR->{"--indi-all"}) { 
+	$draw_opts = "--indi --all ";
+	if(! $opt_HR->{"--no-prob"}) { $draw_opts .= " --prob"; }
+	$draw_key = $key_out . ".indiall";
+	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts), $aln_file, $stk_suffix_AR, $template_file, 
+		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $sum_file, $log_file);
+    }
+    if($opt_HR->{"--indi-list"}) { 
+	$draw_opts = "--indi --list " . $opt_HR->{"--indi-list"}; 
+	if(! $opt_HR->{"--no-prob"}) { $draw_opts .= " --prob"; }
+	$draw_key = $key_out . ".indi";
 	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts), $aln_file, $stk_suffix_AR, $template_file, 
 		   $draw_key, $max_width_aln, $max_width_draw, $opt_HR, $sum_file, $log_file);
     }
@@ -599,8 +624,16 @@ sub run_ssdraw_for_ssu_draw {
 	$draw_pdf2print = RemoveDirPath($draw_pdf);
     }
 
-    my $command = "$ssdraw $ssdraw_opts $aln_file $template_file $draw_ps";
+    my $small_opt = "";
+    if((! $opt_HR->{"-i"}) && (! $opt_HR->{"--indi-all"})) { $small_opt = "--small "; }
+
+    my $ssdraw_output_file = SwapOrAppendFileSuffix($aln_file, \@stk_suffix_A, ".ssdraw", 0);
+    my $command = "$ssdraw $ssdraw_opts " . $small_opt . "$aln_file $template_file $draw_ps > $ssdraw_output_file";
     RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
+
+    # parse the alimask output 
+    my $npages;
+    parse_ssdraw_output($ssdraw_output_file, \$npages, $sum_file, $log_file);
 
     # unless --ps-only, try ps2pdf, it's okay if it doesn't work (unless --ps2pdf, in which case its not ok)
     my $keep_ps = 1;
@@ -618,7 +651,7 @@ sub run_ssdraw_for_ssu_draw {
 	TryPs2Pdf($ps2pdf, $draw_ps, $draw_pdf, $tfilectr++, $die_if_fails, $print_output_upon_failure, $log_file, \$command_worked, $errmsg);
 	
 	if($command_worked) { 
-	    PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s\n", $max_width_aln, $aln_file2print, $max_width_draw, $draw_pdf2print));
+	    PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d\n", $max_width_aln, $aln_file2print, $max_width_draw, $draw_pdf2print, $npages));
 	    $nfiles_created++;
 	    # if --ps-keep is not enabled and we successfully have the pdf ($command_worked above), remove the ps below
 	    if(! $opt_HR->{"--ps-keep"}) { 
@@ -627,7 +660,7 @@ sub run_ssdraw_for_ssu_draw {
 	}
     }
     if($keep_ps) { # $keep_ps is set to 0 only if we successfully make a pdf above and --ps-keep was not enabled
-	PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s\n", $max_width_aln, $aln_file2print, $max_width_draw, $draw_ps2print));
+	PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d\n", $max_width_aln, $aln_file2print, $max_width_draw, $draw_ps2print, $npages));
 	$nfiles_created++;
     }
     else { 
@@ -635,4 +668,46 @@ sub run_ssdraw_for_ssu_draw {
     }
 
     return $nfiles_created;
+}
+
+
+#################################################################
+# Subroutine : parse_ssdraw_output
+# Incept:      EPN, Sat Jan 23 11:00:15 2010
+# 
+# Purpose:     Given the name of a file with output from 
+#              esl-ssdraw, parse it to get the number of pages.
+#
+# Arguments:
+# $file:        name of esl-alimask output file
+# $npages_R:    RETURN: number of pages in output file
+# $sum_file:    sum file, for errors
+# $log_file:    log file, for outputting commands
+# 
+# Returns:     Nothing, it it returns everything is valid and
+#              relevant return values have been set.
+#
+################################################################# 
+sub parse_ssdraw_output
+{
+    my $narg_expected = 4;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, parse_ssdraw_file() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($file, $npages_R, $sum_file, $log_file) = @_;
+    
+    open(IN, $file) || FileOpenFailure($file, $log_file, $!, "reading");
+
+    my ($npages, $line);
+    my $nlines = 0;
+    while($line = <IN>) { 
+	chomp $line;
+	if($line =~ m/^\# (\d+) page postscript/) { 
+	    $npages = $1;
+	    $nlines++;
+	}
+    }
+    if($nlines == 0) { PrintErrorAndExit("ERROR, expected a line defining number of pages in ssu-esl-ssdraw output file $file, but didn't read one.", $sum_file, 1); }
+
+    $$npages_R = $npages;
+
+    return;
 }

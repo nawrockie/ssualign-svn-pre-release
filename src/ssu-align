@@ -69,9 +69,9 @@ $options_usage .= "  -h         : show brief help on version and usage\n";
 $options_usage .= "  -m <s>     : use CM file <s> instead of the default CM file\n";
 $options_usage .= "  -b <f>     : set minimum bit score of a surviving subsequence as <f> (default: 100)\n";
 $options_usage .= "  -l <n>     : set minimum length    of a surviving subsequence as <n> (default: 1)\n";
+$options_usage .= "  -i         : output alignments in interleaved Stockholm format (not 1 line/seq)\n";
 $options_usage .= "  -F         : force; if <output dir> already exists - empty it and fill it\n";
 $options_usage .= "  --FF       : really force; remove <output dir> and all its subdirectories\n";
-$options_usage .= "  --ileaved  : output alignments in interleaved Stockholm format (not 1 line/seq)\n";
 $options_usage .= "  --keep     : keep intermediate files which are normally removed\n";
 $options_usage .= "  --only <s> : only search for and align to CM named <s> in CM file\n"; 
 $options_usage .= "               (default CM file includes 'archaea', 'bacteria', 'eukarya')\n";
@@ -111,9 +111,9 @@ $opt_takes_arg_H{"-h"}          = 0;  push(@opt_order_A, "-h");           $opt_i
 $opt_takes_arg_H{"-m"}          = 1;  push(@opt_order_A, "-m");           $opt_is_prep_H{"-m"}          = 1;
 $opt_takes_arg_H{"-b"}          = 1;  push(@opt_order_A, "-b");           $opt_is_prep_H{"-b"}          = 1;
 $opt_takes_arg_H{"-l"}          = 1;  push(@opt_order_A, "-l");           $opt_is_prep_H{"-l"}          = 1;
+$opt_takes_arg_H{"-i"}          = 0;  push(@opt_order_A, "-i");           $opt_is_prep_H{"-i"}          = 1;
 $opt_takes_arg_H{"-F"}          = 0;  push(@opt_order_A, "-F");           $opt_is_prep_H{"-F"}          = 0;
 $opt_takes_arg_H{"--FF"}        = 0;  push(@opt_order_A, "--FF");         $opt_is_prep_H{"--FF"}        = 0;
-$opt_takes_arg_H{"--ileaved"}   = 0;  push(@opt_order_A, "--ileaved");    $opt_is_prep_H{"--ileaved"}   = 0;
 $opt_takes_arg_H{"--keep"}      = 0;  push(@opt_order_A, "--keep");       $opt_is_prep_H{"--keep"}      = 1;
 $opt_takes_arg_H{"--only"}      = 1;  push(@opt_order_A, "--only");       $opt_is_prep_H{"--only"}      = 1;
 $opt_takes_arg_H{"--prep-n"}    = 1;  push(@opt_order_A, "--prep-n");     $opt_is_prep_H{"--prep-n"}    = 0;
@@ -142,9 +142,9 @@ my $opt_return = GetOptions
      'm=s'       => \$opt_H{"-m"},
      'b=f'       => \$opt_H{"-b"},
      'l=n'       => \$opt_H{"-l"},
+     'i'         => \$opt_H{"-i"},
      'F'         => \$opt_H{"-F"},
      'FF'        => \$opt_H{"--FF"},
-     'ileaved'   => \$opt_H{"--ileaved"},
      'keep'      => \$opt_H{"--keep"},
      'only=s'    => \$opt_H{"--only"},
      'prep-n=n'  => \$opt_H{"--prep-n"},
@@ -175,11 +175,11 @@ if ($opt_H{"-h"}) {
 # Check for incompatible option combinations.
 if(($opt_H{"--no-align"}) && 
    (($opt_H{"--filter"} ne "")   ||
-    ($opt_H{"--ileaved"})        ||
+    ($opt_H{"-i"})               ||
     ($opt_H{"--no-prob"})        ||
     ($opt_H{"--aln-one"} ne "")  ||
     ($opt_H{"--mxsize"}))) { 
-    printf STDERR ("\nERROR, --no-align is incompatible with alignment-specific options: --ileaved,--filter,--no-prob, --aln-one and --mxsize.\n"); exit(1); 
+    printf STDERR ("\nERROR, --no-align is incompatible with alignment-specific options: -i,--filter,--no-prob, --aln-one and --mxsize.\n"); exit(1); 
 }
 
 if(($opt_H{"--no-search"}) && 
@@ -1250,12 +1250,12 @@ sub align_subseqs {
 	    my $mxsize = $globals_H{"DF_MXSIZE"};
 	    if($opt_HR->{"--mxsize"} ne "") { $mxsize = $opt_HR->{"--mxsize"}; }
 	    my $prob_opt = "";
-	    my $format_opt = "";
+	    my $ileaved_opt = "";
 	    my $cmalign_opts = $globals_H{"DF_CMALIGN_OPTS"}; # "--no-null3" by default
 
 	    if($opt_HR->{"--no-prob"}) { $prob_opt = "--no-prob"; }
-	    if($opt_HR->{"--ileaved"}) { $format_opt = "--ileaved"; }
-	    $command = "$cmalign --cm-name $cm_name $format_opt $prob_opt --mxsize $mxsize $cmalign_opts --ifile $cmalign_ifile -o $cmalign_stk $cm_file $hits_file > $cmalign_out"; 
+	    if($opt_HR->{"-i"})        { $ileaved_opt = "--ileaved"; }
+	    $command = "$cmalign --cm-name $cm_name $ileaved_opt $prob_opt --mxsize $mxsize $cmalign_opts --ifile $cmalign_ifile -o $cmalign_stk $cm_file $hits_file > $cmalign_out"; 
 	    RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
 	    
 	    #open and parse the cmalign output

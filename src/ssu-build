@@ -56,7 +56,7 @@ my $options_usage  = "where general options are:\n";
 #                           1         2         3         4         5         6         7         8
 #                  12345678901234567890123456789012345678901234567890123456789012345678901234567890
 $options_usage .= "  -h            : show brief help on version and usage\n";
-$options_usage .= "  -d            : command-line argument is a default ssu-align-0.1 seed alnment\n";
+$options_usage .= "  -d            : command-line argument is a default ssu-align-0.1 seed alignment\n";
 $options_usage .= "  -F            : force; allow overwriting of CM file\n" ,
 $options_usage .= "  -o <s>        : name the CM *file* <s>\n";
 $options_usage .= "  -n <s>        : name the CM <s>\n";
@@ -67,12 +67,15 @@ $options_usage .= "\noptions for building a model from a truncated version of th
 $options_usage .= "  --trunc <s> : only include consensus columns from <x> to <y> (where <s> =\"<x>-<y>\")\n";
 
 $options_usage .= "\noptions for numbering alignment consensus columns (no model will be built):\n";
-$options_usage .= "  --num     : output alignment with consensus columns numbered\n";
-$options_usage .= "  --ileaved : output alignments in interleaved Stockholm format (not 1 line/seq)\n";
+$options_usage .= "  --num : output alignment with consensus columns numbered\n";
+$options_usage .= "  -i    : output alignment in interleaved Stockholm (not 1 line/seq)\n";
+
+$options_usage .= "\noptions for defining consensus columns:\n";
+$options_usage .= "  (if -d is enabled: --rf is default, otherwise: --gapthresh is default)\n";
+$options_usage .= "  --rf            : use consensus column (#=GC RF) annotation in alignment\n";
+$options_usage .= "  --gapthresh <x> : define consensus columns as those with gap frequency <= <x> [df: 0.8]\n";
 
 $options_usage .= "\nexpert options for model construction:\n";
-$options_usage .= "  --gapthresh <x> : set fraction of gaps to allow in a consensus column to <x> (default: 0.8)\n";
-$options_usage .= "  --rf            : use consensus column (#=GC RF) annotation in alignment\n";
 $options_usage .= "  --eent          : use 'entropy weighting' method to achieve target relative entropy\n";
 $options_usage .= "  --ere <x>       : with --eent, set target relative entropy as <x>\n";
 
@@ -99,7 +102,7 @@ $opt_takes_arg_H{"--append"}    = 1;  push(@opt_order_A, "--append");
 $opt_takes_arg_H{"--key-out"}   = 1;  push(@opt_order_A, "--key-out");    
 $opt_takes_arg_H{"--trunc"}     = 1;  push(@opt_order_A, "--trunc");
 $opt_takes_arg_H{"--num"}       = 0;  push(@opt_order_A, "--num");
-$opt_takes_arg_H{"--ileaved"}   = 0;  push(@opt_order_A, "--ileaved");           
+$opt_takes_arg_H{"-i"}          = 0;  push(@opt_order_A, "-i");           
 $opt_takes_arg_H{"--gapthresh"} = 1;  push(@opt_order_A, "--gapthresh");
 $opt_takes_arg_H{"--rf"}        = 0;  push(@opt_order_A, "--rf");
 $opt_takes_arg_H{"--eent"}      = 0;  push(@opt_order_A, "--eent");
@@ -125,7 +128,7 @@ my $opt_return = GetOptions
      'key-out=s'   => \$opt_H{"--key-out"},
      'trunc=s'     => \$opt_H{"--trunc"},
      'num'         => \$opt_H{"--num"},
-     'ileaved'     => \$opt_H{"--ileaved"},
+     'i'           => \$opt_H{"-i"},
      'gapthresh=f' => \$opt_H{"--gapthresh"},
      'rf'          => \$opt_H{"--rf"},
      'eent'        => \$opt_H{"--eent"},
@@ -145,7 +148,6 @@ if ($opt_H{"-h"}) {
 
 my $key_out = "";
 if($opt_H{"--key-out"}  ne "") { $key_out   = "." . $opt_H{"--key-out"};  }
-
 
 ##############################################################################
 # Determine the "mode" to run and check for incompatible option combinations.#
@@ -220,10 +222,9 @@ if(($opt_H{"--rf"}) && (($opt_H{"--gapthresh"}) ne "")) {
 if($opt_H{"--ps-only"} && ($opt_H{"--ps2pdf"} ne "")) { 
     printf STDERR ("\nERROR, --ps-only is incompatible with --ps2pdf\n"); exit(1); 
 }
-if($opt_H{"--ileaved"} && ($opt_H{"--trunc"} eq "" && (! $opt_H{"--num"}))) { 
-    printf STDERR ("\nERROR, --ileaved only makes sense in combination with --num and/or --trunc\n"); exit(1); 
+if($opt_H{"-i"} && ($opt_H{"--trunc"} eq "" && (! $opt_H{"--num"}))) { 
+    printf STDERR ("\nERROR, -i only makes sense in combination with --num and/or --trunc\n"); exit(1); 
 }
-
 
 #############################################################
 # Process command-line arguments and print banner to stdout #
@@ -244,9 +245,9 @@ PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, 
 ##################################################################
 # Validate that everything is go and determine output file names #
 ##################################################################
-my ($aln_file, $cmbuild, $cm_file, $cm_name, $alimanip, $ssdraw, $template_file, $num_aln_file, $trunc_aln_file, $sum_file, $log_file, $ps_file, $pdf_file);
+my ($aln_file, $cmbuild, $cm_file, $cm_name, $alimanip, $alimask, $ssdraw, $template_file, $num_aln_file, $trunc_aln_file, $sum_file, $log_file, $ps_file, $pdf_file);
 validate_and_setup_ssu_build($ssualigndir, $aln_file_or_model_name, $key_out, \%opt_H, $do_build_mode, $do_number_mode, $do_draw, 
-			     \$aln_file, \$cmbuild, \$cm_file, \$cm_name, \$alimanip, \$ssdraw, \$template_file, \$ps_file, \$pdf_file, \$num_aln_file, \$trunc_aln_file, \$sum_file, \$log_file);
+			     \$aln_file, \$cmbuild, \$cm_file, \$cm_name, \$alimanip, \$alimask, \$ssdraw, \$template_file, \$ps_file, \$pdf_file, \$num_aln_file, \$trunc_aln_file, \$sum_file, \$log_file);
 
 
 #########################################
@@ -263,21 +264,35 @@ my $ssdraw_failed_at_least_once = 0;
 my $ssdraw_worked_at_least_once = 0;
 my $gapthresh = $opt_H{"--gapthresh"};
 my $build_aln_file;
+my $tmp_new_rf_aln_file = "";
+my $aln_file_with_rf = $aln_file;
+my $ssdraw_worked;
 if($gapthresh eq "")  { $gapthresh = $globals_H{"DF_CMBUILD_GAPTHRESH"}; }
 
+# Preliminary step: create a new, temporary alignment file with RF based on gapthresh, if nec. 
+# We do this if:
+# 1. we're outputting an alignment: TRUE if (--num || --trunc)
+# 2. we're defining RF (consensus columns) based on gap frequency, not using predefined RF: TRUE if ((! -d && ! --rf) || (-d && --gapthresh))
+if(($do_number_mode || $opt_H{"--trunc"} ne "") &&     # condition 1 above
+   (((! $opt_H{"-d"}) && (! $opt_H{"--rf"})) || (($opt_H{"-d"}) && ($opt_H{"--gapthresh"} ne "")))) { # condition 2 above
+    $tmp_new_rf_aln_file = $aln_file . ".newrf";
+    run_alimanip_to_define_rf_based_on_gapfreq($alimanip, $aln_file, $tmp_new_rf_aln_file, $gapthresh, $sum_file, $log_file);
+    $aln_file_with_rf = $tmp_new_rf_aln_file;
+}
+    
 if($do_build_mode) 
 { 
     if($opt_H{"--trunc"} ne "") { 
-	run_alimanip_to_truncate($alimanip, $aln_file, $trunc_aln_file, $gapthresh, \%opt_H, $sum_file, $log_file);
-	$build_aln_file = $trunc_aln_file
+ 	run_alimask_to_truncate($alimask, $aln_file_with_rf, $trunc_aln_file, $gapthresh, \%opt_H, $sum_file, $log_file);
+	$build_aln_file = $trunc_aln_file;
     }	
     else { 
 	$build_aln_file = $aln_file;
     }
     run_cmbuild($cmbuild, $build_aln_file, $cm_file, $cm_name, $gapthresh, \%opt_H, $sum_file, $log_file);
 
-    if($do_draw) { 
-	my $ret_val = run_ssdraw_for_ssu_build($ssdraw, $template_file, $aln_file, $ps_file, $pdf_file, \%opt_H, $sum_file, $log_file);
+    if($do_draw) { #this is only true if --trunc not enabled, -d enabled, and gapthresh is appropriately set
+	$ssdraw_worked = run_ssdraw_for_ssu_build($ssdraw, $template_file, $aln_file, $ps_file, $pdf_file, \%opt_H, $sum_file, $log_file);
     }
 }    
 
@@ -287,13 +302,15 @@ if($do_build_mode)
 ############################
 if($do_number_mode) 
 { 
-    run_alimanip_to_number($alimanip, $aln_file, $num_aln_file, $gapthresh, \%opt_H, $sum_file, $log_file);
+    run_alimanip_to_number($alimanip, $aln_file_with_rf, $num_aln_file, \%opt_H, $sum_file, $log_file);
 }
 
 
 ############
 # Conclude #
 ############
+#if($tmp_new_rf_aln_file ne "") { UnlinkFile($tmp_new_rf_aln_file, $log_file); }
+
 $total_seconds += SecondsSinceEpoch($time_hires_installed);
 PrintConclusion($sum_file, $log_file, $sum_file, $log_file, $total_seconds, $time_hires_installed, "");
 
@@ -332,8 +349,9 @@ exit(0);
 # $cmbuild_ref:        RETURN; the cmbuild command
 # $cm_file_ref:        RETURN; the path to the CM file we'll write to
 # $cm_name_ref:        RETURN; the name for the CM (will be empty string if we want cmbuild auto naming)
-# $alimanip_ref:       RETURN; the esl-alimanip command (only nec if building truncated model)
-# $ssdraw_ref:         RETURN; the esl-ssdraw command (only nec if building truncated model)
+# $alimanip_ref:       RETURN; the esl-alimanip command 
+# $alimask_ref:        RETURN; the esl-alimask command 
+# $ssdraw_ref:         RETURN; the esl-ssdraw command 
 # $template_file_ref:  RETURN; the path to the template file for ssdraw (only nec if building truncated model)
 # $ps_file_ref:        RETURN; the postscript file we may or may not create
 # $pdf_file_ref:       RETURN; the pdf file we may or may not create
@@ -350,10 +368,10 @@ exit(0);
 #
 ####################################################################
 sub validate_and_setup_ssu_build { 
-    my $narg_expected = 20;
+    my $narg_expected = 21;
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, validate_and_setup_ssu_build() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my($ssualigndir, $aln_file_or_model_name, $key_out, $opt_HR, $do_build_mode, $do_number_mode, $do_draw, $aln_file_ref, $cmbuild_ref, 
-       $cm_file_ref, $cm_name_ref, $alimanip_ref, $ssdraw_ref, $template_file_ref, $ps_file_ref, $pdf_file_ref, $num_aln_file_ref, $trunc_aln_file_ref, $sum_file_ref, $log_file_ref) = @_;
+       $cm_file_ref, $cm_name_ref, $alimanip_ref, $alimask_ref, $ssdraw_ref, $template_file_ref, $ps_file_ref, $pdf_file_ref, $num_aln_file_ref, $trunc_aln_file_ref, $sum_file_ref, $log_file_ref) = @_;
 
     my ($aln_file, $root, $command_worked);
 
@@ -436,16 +454,18 @@ sub validate_and_setup_ssu_build {
     }
 
     my $alimanip = "";
+    my $alimask = "";
     my $ssdraw = "";
     my $template_file = "";
     my $ps_file = "";
     my $pdf_file = "";
 
-    if(($opt_HR->{"--trunc"}) || $do_number_mode) { 
-	# verify that we can run esl-alimanip
-	$alimanip = $globals_H{"esl-alimanip"};
-	RunCommand("$alimanip -h > /dev/null", $tfilectr++, 1, 0, $log_file, \$command_worked, "ERROR, the required executable $alimanip is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
-    }
+    # verify that we can run esl-alimanip
+    $alimanip = $globals_H{"esl-alimanip"};
+    RunCommand("$alimanip -h > /dev/null", $tfilectr++, 1, 0, $log_file, \$command_worked, "ERROR, the required executable $alimanip is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");
+    # verify that we can run esl-alimask
+    $alimask = $globals_H{"esl-alimask"};
+    RunCommand("$alimask -h > /dev/null", $tfilectr++, 1, 0, $log_file, \$command_worked, "ERROR, the required executable $alimask is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");
 
     # if $do_draw (passed in), we'll try to draw a secondary structure diagram showing the part of the model included/excluded by the truncation,
     # if we can find the template file and esl-ssdraw
@@ -468,6 +488,7 @@ sub validate_and_setup_ssu_build {
     $$cm_file_ref        = $cm_file;
     $$cm_name_ref        = $cm_name;
     $$alimanip_ref       = $alimanip;
+    $$alimask_ref        = $alimask;
     $$ssdraw_ref         = $ssdraw;
     $$template_file_ref  = $template_file;
     $$ps_file_ref        = $ps_file;
@@ -508,12 +529,22 @@ sub run_cmbuild {
     my $extra_opts = "";
 
     if($opt_HR->{"--append"} ne "") { $extra_opts .= " -A "; }
-    if($opt_HR->{"--rf"})           { $extra_opts .= " --rf "; }
     if($opt_HR->{"-F"})             { $extra_opts .= " -F"; }
 
     if($opt_HR->{"--eent"})  { $extra_opts .= " --eent"; }
     else                     { $extra_opts .= " --enone"; }
     if($opt_HR->{"--ere"})   { $extra_opts .= " --ere " . $opt_HR->{"--ere"}; }
+
+    # determine whether to use --rf or --gapthresh, it varies depending on if -d was enabled or not
+    if($opt_HR->{"-d"}) { # default is to use --rf 
+	if($opt_HR->{"--gapthresh"} ne "") { $extra_opts .= " --gapthresh " . $opt_HR->{"--gapthresh"};  }
+	else                               { $extra_opts .= " --rf"; }
+    }
+    else { # -d not enabled, default, is to use --gapthresh 
+	if($opt_HR->{"--rf"}) { $extra_opts .= " --rf"; }
+	else                  { $extra_opts .= " --gapthresh $gapthresh"; } 
+        # use $gapthresh instead of looking up in opt_HR, b/c it's been set to default value above if not set on command line
+    }
 
     if($cm_name ne "") { $extra_opts .= " -n $cm_name"; }
     
@@ -522,7 +553,7 @@ sub run_cmbuild {
     
     my $command_worked;
     my $cmbuild_output_file = $cm_file . "build";
-    my $command = "$cmbuild $extra_opts --gapthresh $gapthresh $cm_file $aln_file > $cmbuild_output_file";
+    my $command = "$cmbuild $extra_opts $cm_file $aln_file > $cmbuild_output_file";
     RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
 
     my ($i, $line);
@@ -593,7 +624,6 @@ sub run_cmbuild {
 #   $alimanip:         path and name of esl-alimanip/ssu-esl-alimanip executable
 #   $aln_file:         path and name of alignment file we want to number
 #   $num_aln_file:     path and name of the numbered alignment file we'll create here
-#   $gapthresh:        gap threshold to use when building the model
 #   $opt_HR:           reference to the hash of command-line options
 #   $sum_file:         file to print output file notices to
 #   $log_file:         file to print commands to
@@ -602,25 +632,16 @@ sub run_cmbuild {
 # 
 ####################################################################
 sub run_alimanip_to_number {
-    my $narg_expected = 7;
+    my $narg_expected = 6;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, run_alimanip_to_number() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($alimanip, $aln_file, $num_aln_file, $gapthresh, $opt_HR, $sum_file, $log_file) = @_;
+    my ($alimanip, $aln_file, $num_aln_file, $opt_HR, $sum_file, $log_file) = @_;
 
     my $command_worked;
-    my $extra_opts = "";
-    if(!($opt_HR->{"--rf"})) { # if --rf enabled, we don't redefine consensus columns
-	$extra_opts .= " -g --gapthresh $gapthresh";
-    }
+    my $extra_opts = "--num-rf";
 
-    if($opt_HR->{"--num"} && (! $opt_HR->{"--rf"})) { 
-	$extra_opts .= " --num-rf"; 
-	PrintStringToFile($sum_file, 1, sprintf("#\n# Defining and numbering consensus columns and all columns in alignment file...\n"));
-    }
-    if($opt_HR->{"--num"} && ($opt_HR->{"--rf"})) { 
-	$extra_opts .= " --num-rf"; 
-	PrintStringToFile($sum_file, 1, sprintf("#\n# Numbering consensus columns and all columns in alignment file...\n"));
-    }
-    if(! $opt_HR->{"--ileaved"}) { $extra_opts .= " -1"; }
+    PrintStringToFile($sum_file, 1, sprintf("#\n# Numbering consensus columns in alignment file...\n"));
+
+    if(! $opt_HR->{"-i"}) { $extra_opts .= " -1"; }
     PrintStringToFile($sum_file, 1, sprintf("#\n"));
     
     my $command = "$alimanip $extra_opts -o $num_aln_file $aln_file";
@@ -638,18 +659,51 @@ sub run_alimanip_to_number {
     return;
 }
 
-
 #####################################################################
-# Subroutine: run_alimanip_to_truncate()
-# Incept:     EPN, Fri Oct 16 16:20:17 2009
+# Subroutine: run_alimanip_to_define_rf_based_on_gapfreq()
+# Incept:     EPN, Sun Jan 24 07:59:32 2010
 # 
 # Purpose:    Run esl-alimanip/ssu-esl-alimanip on an alignment file 
-#             to remove leading and trailing columns of the alignment
-#             as specified by range <x>..<y> for consensus alignment columns 
-#             <x> and <y> (with -t <s>, where <s> = "<x>-<y>").
+#             to define the RF annotation within it based on gap
+#             frequencies.
 #
 # Arguments:  
-#   $alimanip:           path and name of esl-alimanip/ssu-esl-alimanip executable
+#   $alimanip:         path and name of esl-alimanip/ssu-esl-alimanip executable
+#   $aln_file:         path and name of alignment file we want to number
+#   $rf_aln_file:       path and name of the newly RF'ed alignment file we'll create here
+#   $gapthresh:        gap threshold to use when building the model
+#   $sum_file:         file to print output file notices to
+#   $log_file:           file to print commands to 
+# 
+# Returns:  Nothing, if it returns, everything is valid.
+# 
+####################################################################
+sub run_alimanip_to_define_rf_based_on_gapfreq {
+    my $narg_expected = 6;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, run_alimanip_to_define_rf_based_on_gapfreq() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($alimanip, $aln_file, $rf_aln_file, $gapthresh, $sum_file, $log_file) = @_;
+
+    my $command_worked;
+    
+    PrintStringToFile($sum_file, 1, sprintf("#\n# Defining consensus columns based on gap frequency in alignment file...\n"));
+
+    my $command = "$alimanip -g --gapthresh $gapthresh -o $rf_aln_file $aln_file";
+    RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
+
+    return;
+}
+
+#####################################################################
+# Subroutine: run_alimask_to_truncate()
+# Incept:     EPN, Fri Oct 16 16:20:17 2009
+# 
+# Purpose:    Run esl-alimask/ssu-esl-alimask on an alignment file 
+#             to remove leading and trailing columns of the alignment
+#             as specified by range <x>..<y> for consensus alignment columns 
+#             <x> and <y> (with -t <msafile> <s>, where <s> = "<x>-<y>").
+#
+# Arguments:  
+#   $alimask:            path and name of esl-alimanip/ssu-esl-alimanip executable
 #   $aln_file:           path and name of alignment file to build CM from
 #   $trunc_aln_file:     path and name of truncated alignment file we'll create
 #   $gapthresh:          gap threshold to use when building the model
@@ -660,14 +714,14 @@ sub run_alimanip_to_number {
 # Returns:  Nothing, if it returns, everything is valid.
 # 
 ####################################################################
-sub run_alimanip_to_truncate {
+sub run_alimask_to_truncate {
     my $narg_expected = 7;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, run_alimanip_to_truncate() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($alimanip, $aln_file, $trunc_aln_file, $gapthresh, $opt_HR, $sum_file, $log_file) = @_;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, run_alimask_to_truncate() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($alimask, $aln_file, $trunc_aln_file, $gapthresh, $opt_HR, $sum_file, $log_file) = @_;
 
     # sanity check
     if($opt_H{"--trunc"} eq "") { 
-	PrintErrorAndExit("ERROR, run_alimanip_to_truncate() entered, but -t option argument is the empty string. This shouldn't happen.", $sum_file, 1);
+	PrintErrorAndExit("ERROR, run_alimask_to_truncate() entered, but -t option argument is the empty string. This shouldn't happen.", $sum_file, 1);
     }
     #determine start and end positions:
     my ($start, $end);
@@ -680,19 +734,18 @@ sub run_alimanip_to_truncate {
     }
 
     my $extra_opts = "";
-    if($opt_HR->{"--rf"}) { 
-	# extra_opts remain empty (we checked for incompatible option combo of --rf and --gapthresh already)
+    # determine how the RF annotation was decided, varies depending on if -d was enabled or not
+    if(($opt_HR->{"--rf"}) || (($opt_HR->{"-d"}) && ($opt_HR->{"--gapthresh"} eq ""))) { # provided RF annotation will be used
 	PrintStringToFile($sum_file, 1, sprintf("#\n# Truncating alignment; saving only columns between predefined consensus\n\# columns $start and $end...\n"));
     }
     else { 
-	$extra_opts = "-g --gapthresh $gapthresh";
-	PrintStringToFile($sum_file, 1, sprintf("#\n# Truncating alignment; defining consensus columns and saving those\n\# between consensus columns $start and $end...\n"));
+	PrintStringToFile($sum_file, 1, sprintf("#\n# Truncating alignment; defining consensus columns and saving those\n\# between gap frequency determined consensus columns $start and $end...\n"));
     }
-    if(! $opt_HR->{"--ileaved"}) { $extra_opts .= " -1"; }
+    if(! $opt_HR->{"-i"}) { $extra_opts .= " --outformat pfam "; }
 
     PrintStringToFile($sum_file, 1, sprintf("#\n"));
     
-    my $command = "$alimanip $extra_opts --start-rf $start --end-rf $end -o $trunc_aln_file $aln_file";
+    my $command = "$alimask $extra_opts --t-rf -o $trunc_aln_file -t $aln_file " . $opt_HR->{"--trunc"};
     my $command_worked;
     RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
 
@@ -717,7 +770,7 @@ sub run_alimanip_to_truncate {
 #             Try to convert the postscript to pdf.
 #
 # Arguments:
-#   $ssdraw:              path and name of esl-alimanip/ssu-esl-alimanip executable
+#   $ssdraw:              path and name of esl-ssdraw/ssu-esl-ssdraw executable
 #   $template_file:       name of template file to use
 #   $aln_file:            alignment file to draw
 #   $ps_file:             output name for ps file
@@ -779,7 +832,7 @@ sub run_ssdraw_for_ssu_build {
     $command = "$ssdraw --mask-col --mask $mask_file $aln_file $template_file $ps_file";
     $output = RunCommand("$command", $tfilectr++, 0, 0, $log_file, \$command_worked, "");
                                         #0 = okay if it doesn't work, alert caller by returning 0 though
-    UnlinkFile($mask_file, $log_file);
+    #UnlinkFile($mask_file, $log_file);
     if(! $command_worked) { return 0;}
     PrintStringToFile($sum_file, 1, sprintf("#\n"));
 
@@ -818,5 +871,5 @@ sub run_ssdraw_for_ssu_build {
     else { UnlinkFile($ps_file, $log_file); }
 
     return 1; #if ssdraw failed we returned 0 above
-    }
+}
 
