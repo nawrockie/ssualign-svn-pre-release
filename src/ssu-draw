@@ -45,8 +45,8 @@ my $total_seconds = -1 * SecondsSinceEpoch($time_hires_installed);
 
 my $script_desc    = "draw SSU rRNA secondary structure diagrams";
 my $date           = scalar localtime();
-my $usage          = "Usage: ssu-draw [options] <directory created by ssu-align (includes >= 1 alignment file(s))>\n";
-   $usage         .= "Usage: ssu-draw [options] -a <Stockholm alignment file>\n";
+my $usage          = "Usage: ssu-draw [-options] <directory created by ssu-align (includes >= 1 alignment file(s))>\n";
+   $usage         .= "Usage: ssu-draw [-options] -a <Stockholm alignment file>\n";
 my $options_usage  = "where general options are:\n";
 #                           1         2         3         4         5         6         7         8
 #                  12345678901234567890123456789012345678901234567890123456789012345678901234567890

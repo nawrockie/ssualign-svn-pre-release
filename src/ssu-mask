@@ -49,8 +49,8 @@ my $total_seconds = -1 * SecondsSinceEpoch($time_hires_installed);
 
 my $script_desc    = "mask SSU rRNA alignments";
 my $date           = scalar localtime();
-my $usage          = "Usage: ssu-mask [options] <directory created by ssu-align (includes >= 1 alignment file(s))>\n";
-   $usage         .= "Usage: ssu-mask [options] -a <Stockholm alignment file>\n";
+my $usage          = "Usage: ssu-mask [-options] <directory created by ssu-align (includes >= 1 alignment file(s))>\n";
+   $usage         .= "Usage: ssu-mask [-options] -a <Stockholm alignment file>\n";
 my $options_usage  = "where general options are:\n";
 #                           1         2         3         4         5         6         7         8
 #                  12345678901234567890123456789012345678901234567890123456789012345678901234567890
@@ -61,6 +61,7 @@ $options_usage .= "  -t <s>        : for structure diagrams, use template file <
 $options_usage .= "  -i            : -i used with ssu-align, alignments are interleaved\n";
 $options_usage .= "  --afa         : output aligned FASTA (.afa) alignments as well as Stockholm ones\n";
 $options_usage .= "  --only-afa    : only output aligned FASTA (.afa) alignments, no Stockholm ones\n";
+$options_usage .= "  --dna         : output alignments as DNA, default is RNA (even if input is DNA)\n";
 $options_usage .= "  --key-in <s>  : assume <s> is part of non-mask input file names, before the suffix\n";
 $options_usage .= "  --key-out <s> : add <s> to all output file names, before the suffix\n";
 
@@ -110,6 +111,7 @@ $opt_takes_arg_H{"-t"}          = 1;  push(@opt_order_A, "-t");
 $opt_takes_arg_H{"-i"}          = 0;  push(@opt_order_A, "-i");      
 $opt_takes_arg_H{"--afa"}       = 0;  push(@opt_order_A, "--afa");      
 $opt_takes_arg_H{"--only-afa"}  = 0;  push(@opt_order_A, "--only-afa");      
+$opt_takes_arg_H{"--dna"}       = 0;  push(@opt_order_A, "--dna");
 $opt_takes_arg_H{"--key-in"}    = 1;  push(@opt_order_A, "--key-in");     
 $opt_takes_arg_H{"--key-out"}   = 1;  push(@opt_order_A, "--key-out");    
 $opt_takes_arg_H{"--pf"}        = 1;  push(@opt_order_A, "--pf");      
@@ -143,6 +145,7 @@ my $opt_return = GetOptions
      'i'           => \$opt_H{"-i"},
      'afa'         => \$opt_H{"--afa"},
      'only-afa'    => \$opt_H{"--only-afa"},
+     'dna'         => \$opt_H{"--dna"},
      'key-in=s'    => \$opt_H{"--key-in"},
      'key-out=s'   => \$opt_H{"--key-out"},
      'pf=s'        => \$opt_H{"--pf"},
@@ -1043,10 +1046,9 @@ sub mask_alignment {
     $do_pmask = 0;
     $do_gmask = 0;
     $do_rfismask = 0;
-    $alimask_opts = "";
-    if(! $opt_HR->{"-i"}) {
-	$alimask_opts = "--small --rna "; 
-    }
+    if($opt_HR->{"--dna"}) { $alimask_opts = "--dna "; }
+    else                   { $alimask_opts = "--rna "; }
+    if(! $opt_HR->{"-i"})  { $alimask_opts .= "--small "; }
     if(! $opt_HR->{"--no-prob"})       { 
 	if($opt_HR->{"--pf"} eq "") { $pf_opt = $globals_H{"DF_ALIMASK_PFRACT"}; }
 	else                        { $pf_opt = $opt_HR->{"--pf"}; }
@@ -1060,15 +1062,15 @@ sub mask_alignment {
 	$do_gmask = 1; 
     } 
     if($do_pmask && $do_gmask) { 
-	$alimask_opts .= "  --fmask-rf $fmask_file --gmask-rf $gmask_file --pmask-rf $pmask_file";
+	$alimask_opts .= " --fmask-rf $fmask_file --gmask-rf $gmask_file --pmask-rf $pmask_file";
     }
     elsif((! $do_pmask) && (! $do_gmask)) { 
         # if --no-prob and ! --gapthesh, we mask by removing all insert columns, and that's it
 	$do_rfismask = 1;
-	$alimask_opts .= "  --fmask-all $fmask_file";
+	$alimask_opts .= " --fmask-all $fmask_file";
     }
     else { 
-	$alimask_opts .= "  --fmask-rf $fmask_file";
+	$alimask_opts .= " --fmask-rf $fmask_file";
     }
 
     # run esl-alimask

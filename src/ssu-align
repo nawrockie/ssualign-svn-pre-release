@@ -4,7 +4,7 @@
 # Eric Nawrocki
 # EPN, Wed Oct 29 10:12:05 2008
 #
-# Usage: ssu-align [options] <target database sequence file name> <output root for output files>
+# Usage: ssu-align [-options] <target database sequence file name> <output root for output files>
 #             
 # Synopsis:
 #
@@ -72,7 +72,10 @@ $options_usage .= "  -l <n>     : set minimum length    of a surviving subsequen
 $options_usage .= "  -i         : output alignments in interleaved Stockholm format (not 1 line/seq)\n";
 $options_usage .= "  -F         : force; if <output dir> already exists - empty it and fill it\n";
 $options_usage .= "  --FF       : really force; remove <output dir> and all its subdirectories\n";
+$options_usage .= "  --dna      : output alignments as DNA, default is RNA (even if input is DNA)\n";
 $options_usage .= "  --keep     : keep intermediate files which are normally removed\n";
+$options_usage .= "  --rfonly   : discard inserts, only keep consensus (non-gap RF) columns in alignments\n";
+$options_usage .= "               (alignments will be fixed width but won't include all target residues)\n";
 $options_usage .= "  --only <s> : only search for and align to CM named <s> in CM file\n"; 
 $options_usage .= "               (default CM file includes 'archaea', 'bacteria', 'eukarya')\n";
 
@@ -114,7 +117,9 @@ $opt_takes_arg_H{"-l"}          = 1;  push(@opt_order_A, "-l");           $opt_i
 $opt_takes_arg_H{"-i"}          = 0;  push(@opt_order_A, "-i");           $opt_is_prep_H{"-i"}          = 1;
 $opt_takes_arg_H{"-F"}          = 0;  push(@opt_order_A, "-F");           $opt_is_prep_H{"-F"}          = 0;
 $opt_takes_arg_H{"--FF"}        = 0;  push(@opt_order_A, "--FF");         $opt_is_prep_H{"--FF"}        = 0;
+$opt_takes_arg_H{"--dna"}       = 0;  push(@opt_order_A, "--dna");        $opt_is_prep_H{"--dna"}       = 1;
 $opt_takes_arg_H{"--keep"}      = 0;  push(@opt_order_A, "--keep");       $opt_is_prep_H{"--keep"}      = 1;
+$opt_takes_arg_H{"--rfonly"}    = 0;  push(@opt_order_A, "--rfonly");     $opt_is_prep_H{"--rfonly"}    = 1;
 $opt_takes_arg_H{"--only"}      = 1;  push(@opt_order_A, "--only");       $opt_is_prep_H{"--only"}      = 1;
 $opt_takes_arg_H{"--prep-n"}    = 1;  push(@opt_order_A, "--prep-n");     $opt_is_prep_H{"--prep-n"}    = 0;
 $opt_takes_arg_H{"--prep-p"}    = 1;  push(@opt_order_A, "--prep-p");     $opt_is_prep_H{"--prep-p"}    = 0;
@@ -145,6 +150,8 @@ my $opt_return = GetOptions
      'i'         => \$opt_H{"-i"},
      'F'         => \$opt_H{"-F"},
      'FF'        => \$opt_H{"--FF"},
+     'dna'       => \$opt_H{"--dna"},
+     'rfonly'    => \$opt_H{"--rfonly"},
      'keep'      => \$opt_H{"--keep"},
      'only=s'    => \$opt_H{"--only"},
      'prep-n=n'  => \$opt_H{"--prep-n"},
@@ -191,7 +198,6 @@ if(($opt_H{"--no-search"}) &&
     ($opt_H{"--global"}))) {
     printf STDERR ("\nERROR, --no-search is incompatible with search-specific options: -b,-l,--toponly,--no-trunc,--forward, and --global.\n"); exit(1); 
 }
-
 if(($opt_H{"--prep-n"} ne "") && ($opt_H{"--prep-p"} ne "")) { 
     printf STDERR ("\nERROR, --prep-n and --prep-p are incompatible, choose one or the other.\n"); exit(1);
 }    
@@ -1251,11 +1257,15 @@ sub align_subseqs {
 	    if($opt_HR->{"--mxsize"} ne "") { $mxsize = $opt_HR->{"--mxsize"}; }
 	    my $prob_opt = "";
 	    my $ileaved_opt = "";
+	    my $abc_opt = "";
+	    my $rfonly_opt = "";
 	    my $cmalign_opts = $globals_H{"DF_CMALIGN_OPTS"}; # "--no-null3" by default
 
 	    if($opt_HR->{"--no-prob"}) { $prob_opt = "--no-prob"; }
 	    if($opt_HR->{"-i"})        { $ileaved_opt = "--ileaved"; }
-	    $command = "$cmalign --cm-name $cm_name $ileaved_opt $prob_opt --mxsize $mxsize $cmalign_opts --ifile $cmalign_ifile -o $cmalign_stk $cm_file $hits_file > $cmalign_out"; 
+	    if($opt_HR->{"--dna"})     { $abc_opt = "--dna"; }
+	    if($opt_HR->{"--rfonly"})  { $rfonly_opt = "--matchonly"; }
+	    $command = "$cmalign --cm-name $cm_name $ileaved_opt $abc_opt $rfonly_opt $prob_opt --mxsize $mxsize $cmalign_opts --ifile $cmalign_ifile -o $cmalign_stk $cm_file $hits_file > $cmalign_out"; 
 	    RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
 	    
 	    #open and parse the cmalign output

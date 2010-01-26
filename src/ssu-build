@@ -49,8 +49,8 @@ my $total_seconds = -1 * SecondsSinceEpoch($time_hires_installed);
 
 my $script_desc    = "build SSU rRNA covariance models";
 my $date           = scalar localtime();
-my $usage          = "Usage: ssu-build [options] <Stockholm alignment file to build CM from>\n";
-   $usage         .= "Usage: ssu-build [options] -d <name of default ssu-align-0.1 seed alignment>\n";
+my $usage          = "Usage: ssu-build [-options] <Stockholm alignment file to build CM from>\n";
+   $usage         .= "Usage: ssu-build [-options] -d <name of default ssu-align-0.1 seed alignment>\n";
    $usage         .= "                                  ('archaea' or 'bacteria' or 'eukarya')\n";
 my $options_usage  = "where general options are:\n";
 #                           1         2         3         4         5         6         7         8

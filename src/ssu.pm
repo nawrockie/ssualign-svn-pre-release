@@ -371,6 +371,9 @@ sub RunCommand {
     # contract check, if caller had stderr and output redirected, we die, caller shouldn't do that.
     if($cmd =~ /\s+2\s*>\s*&\s*1/) { PrintErrorAndExit("ERROR, in RunCommand with illegal substring that matches \"2\>\&1\".", $log_file, 1); }
 
+    # replace multi-spaces due to blank options from caller with single spaces, solely so $log_file output doesn't contain odd looking commands
+    $cmd =~ s/\s+/ /g;
+
     if($cmd !~ />/) { 
 	# add stdout redirection
 	$stdout_file = TempFilename($log_file, $key . "out");
