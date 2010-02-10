@@ -166,16 +166,13 @@ sub PrintBanner {
 	else                  	      { if($opt_HR->{$opt})       { $enabled_options .= " " . $opt; } }
     }
 
-    $script_call =~ s/^\.+\///;
-    $script_name = $script_call;
-    $script_name =~ s/.+\///;
-
     PrintStringToFile($out_file, $print_to_stdout, sprintf("\# $script_name :: $script_desc\n"));
     PrintStringToFile($out_file, $print_to_stdout, sprintf("\# SSU-ALIGN 0.1 (November 2009)\n"));
     PrintStringToFile($out_file, $print_to_stdout, sprintf("\# Copyright (C) 2009 HHMI Janelia Farm Research Campus\n"));
     PrintStringToFile($out_file, $print_to_stdout, sprintf("\# Freely distributed under the GNU General Public License (GPLv3)\n"));
     PrintStringToFile($out_file, $print_to_stdout, sprintf("\# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n"));
-    PrintStringToFile($out_file, $print_to_stdout, sprintf("%-10s %s ", "# command:", $script_call . $enabled_options));
+    PrintStringToFile($out_file, $print_to_stdout, sprintf("%-10s %s ", "# command:", $script_name . $enabled_options));
+#    PrintStringToFile($out_file, $print_to_stdout, sprintf("%-10s %s ", "# command:", $script_call . $enabled_options));
     for($i = 0; $i < (scalar(@{$argv_R}) - 1); $i++) { 
 	PrintStringToFile($out_file, $print_to_stdout, sprintf("%s ", $argv_R->[$i]));
     }

@@ -1,12 +1,38 @@
+% begin ignore
+%
+% archaea-0p1.ps:
+% An esl-ssdraw postscript template file for drawing
+% archaeal SSU rRNA secondary structure diagrams.
+% The input alignment must be of consensus length (nongap RF length)
+% of 1508. This corresponds to the SSU-ALIGN v0.1 archaeal
+% seed alignment derived from Robin Gutell and colleagues'
+% Comparative RNA Website (CRW) [http://www.rna.ccbb.utexas.edu/]
+% as described in Eric Nawrocki's PhD Thesis "Structural RNA
+% Homology Search and Alignment Using Covariance Models" 2009,
+% availabe from: [http://selab.janelia.org/publications.html].
+%
+% setup defaults
+/Helvetica findfont 8.00 scalefont setfont
+0.00 0.00 0.00 1.00 setcmykcolor
+1.00 setlinewidth
+% end ignore
+
 % begin modelname
 % archaea
 % end modelname
 
+% begin legend
+% 1508 24. -24. 24
+% end legend
+
 % begin scale
-0.58 0.58 scale
+0.57 0.57 scale
 % end scale
 
 % begin regurgitate
+/Helvetica findfont 16.84 scalefont setfont
+(created by the SSU-ALIGN package (http://selab.janelia.org/software.html)) 472.00 70.00 moveto show
+(structure diagram derived from CRW database (http://www.rna.ccbb.utexas.edu/)) 426.00 50.00 moveto show
 /Helvetica findfont 8.00 scalefont setfont
 0.00 0.00 0.00 1.00 setcmykcolor
 (5') 449.39 699.21 moveto show
@@ -22,9 +48,12 @@
 805.09 1200.21 820.09 1200.21 newpath moveto lineto stroke
 % end regurgitate
 
-% begin text hundreds
+% begin ignore
+% reset 8.0 fontsize
 /Helvetica findfont 8.00 scalefont setfont
-0.00 0.00 0.00 1.00 setcmykcolor
+% end ignore
+
+% begin text positiontext
 (100) 251.40 392.63 moveto show
 (200) 159.49 199.91 moveto show
 (300) 122.05 450.64 moveto show
@@ -40,11 +69,9 @@
 (1300) 753.22 683.51 moveto show
 (1400) 513.19 485.81 moveto show
 (1500) 596.59 649.92 moveto show
-% end text hundreds
+% end text positiontext
 
-% begin lines ticks
-2.00 setlinewidth
-0.00 0.00 0.00 1.00 setcmykcolor
+% begin lines positionticks
 502.54 741.32 505.45 734.41 newpath moveto lineto stroke
 446.84 763.79 444.95 771.05 newpath moveto lineto stroke
 385.37 713.82 389.96 707.88 newpath moveto lineto stroke
@@ -195,11 +222,9 @@
 634.09 701.21 634.09 708.71 newpath moveto lineto stroke
 642.09 675.21 642.09 667.71 newpath moveto lineto stroke
 589.09 652.32 596.59 652.32 newpath moveto lineto stroke
-% end lines ticks
+% end lines positionticks
 
 % begin lines bpconnects
-1.00 setlinewidth
-0.00 0.00 0.00 0.50 setcmykcolor
 448.79 753.32 450.19 747.90 newpath moveto lineto stroke
 456.54 755.32 457.93 749.90 newpath moveto lineto stroke
 464.28 757.32 465.68 751.90 newpath moveto lineto stroke
@@ -674,8 +699,6 @@
 % end lines bpconnects
 
 % begin text residues
-/Helvetica findfont 8.00 scalefont setfont
-0.00 0.00 0.00 1.00 setcmykcolor
 (A) 449.39 714.21 moveto show
 (U) 449.39 722.21 moveto show
 (U) 449.39 730.21 moveto show
@@ -685,6 +708,7 @@
 (G) 472.83 744.52 moveto show
 (U) 480.57 746.52 moveto show
 (U) 488.44 740.54 moveto show
+% residue 10 on the next line
 (G) 498.38 741.09 moveto show
 (A) 505.73 747.80 moveto show
 (U) 506.93 757.72 moveto show
@@ -695,6 +719,7 @@
 (C) 467.83 763.89 moveto show
 (C) 460.08 761.89 moveto show
 (G) 452.34 759.89 moveto show
+% residue 20 on the next line
 (G) 444.59 757.89 moveto show
 (A) 437.79 756.11 moveto show
 (G) 431.20 752.29 moveto show
@@ -705,6 +730,7 @@
 (C) 399.54 727.85 moveto show
 (U) 393.20 722.96 moveto show
 (G) 386.87 718.08 moveto show
+% residue 30 on the next line
 (C) 380.54 713.19 moveto show
 (U) 374.21 708.30 moveto show
 (A) 368.39 695.31 moveto show
@@ -715,6 +741,7 @@
 (G) 327.28 674.46 moveto show
 (G) 321.02 669.48 moveto show
 (U) 314.76 664.49 moveto show
+% residue 40 on the next line
 (C) 308.50 659.51 moveto show
 (C) 302.09 654.53 moveto show
 (G) 301.09 607.21 moveto show
@@ -725,6 +752,7 @@
 (A) 308.36 583.25 moveto show
 (G) 301.09 581.21 moveto show
 (C) 301.09 573.21 moveto show
+% residue 50 on the next line
 (C) 301.09 565.21 moveto show
 (A) 308.19 562.11 moveto show
 (U) 301.09 557.21 moveto show
@@ -735,6 +763,7 @@
 (G) 324.09 501.21 moveto show
 (U) 332.09 501.21 moveto show
 (C) 340.09 501.21 moveto show
+% residue 60 on the next line
 (G) 342.89 509.21 moveto show
 (A) 351.09 509.21 moveto show
 (G) 352.09 501.21 moveto show
@@ -745,6 +774,7 @@
 (C) 392.09 501.21 moveto show
 (C) 400.09 501.21 moveto show
 (G) 408.09 501.21 moveto show
+% residue 70 on the next line
 (C) 416.09 501.21 moveto show
 (U) 424.02 502.82 moveto show
 (U) 432.24 496.15 moveto show
@@ -755,6 +785,7 @@
 (G) 400.09 481.21 moveto show
 (G) 392.09 481.21 moveto show
 (G) 384.09 481.21 moveto show
+% residue 80 on the next line
 (G) 376.09 481.21 moveto show
 (C) 368.09 481.21 moveto show
 (G) 360.09 481.21 moveto show
@@ -765,6 +796,7 @@
 (G) 318.49 469.11 moveto show
 (G) 310.29 458.41 moveto show
 (A) 299.79 450.01 moveto show
+% residue 90 on the next line
 (C) 287.59 444.51 moveto show
 (G) 274.29 442.11 moveto show
 (G) 260.89 443.01 moveto show
@@ -775,6 +807,7 @@
 (G) 248.49 423.61 moveto show
 (U) 249.69 415.01 moveto show
 (A) 247.29 406.71 moveto show
+% residue 100 on the next line
 (A) 241.69 400.11 moveto show
 (C) 234.89 396.41 moveto show
 (A) 225.09 396.21 moveto show
@@ -785,6 +818,7 @@
 (G) 225.09 356.21 moveto show
 (C) 225.09 348.21 moveto show
 (C) 225.09 340.21 moveto show
+% residue 110 on the next line
 (A) 232.09 338.21 moveto show
 (A) 232.19 330.11 moveto show
 (C) 225.09 328.21 moveto show
@@ -795,6 +829,7 @@
 (C) 225.09 292.21 moveto show
 (C) 225.09 284.21 moveto show
 (U) 225.09 276.21 moveto show
+% residue 120 on the next line
 (C) 225.09 268.21 moveto show
 (G) 225.09 260.21 moveto show
 (G) 225.09 252.21 moveto show
@@ -805,6 +840,7 @@
 (G) 254.09 233.21 moveto show
 (G) 262.09 233.21 moveto show
 (G) 268.27 238.69 moveto show
+% residue 130 on the next line
 (A) 275.79 241.69 moveto show
 (U) 283.89 242.01 moveto show
 (A) 291.62 239.58 moveto show
@@ -815,6 +851,7 @@
 (C) 330.09 234.21 moveto show
 (G) 338.09 234.21 moveto show
 (G) 346.09 234.21 moveto show
+% residue 140 on the next line
 (G) 355.09 234.81 moveto show
 (A) 362.09 228.51 moveto show
 (A) 362.09 219.11 moveto show
@@ -825,6 +862,7 @@
 (G) 322.09 214.21 moveto show
 (G) 314.09 214.21 moveto show
 (G) 306.09 214.21 moveto show
+% residue 150 on the next line
 (C) 298.09 214.21 moveto show
 (U) 294.24 206.66 moveto show
 (A) 287.91 201.93 moveto show
@@ -835,6 +873,7 @@
 (C) 254.09 213.21 moveto show
 (C) 246.09 213.21 moveto show
 (C) 238.09 213.21 moveto show
+% residue 160 on the next line
 (A) 236.94 202.13 moveto show
 (U) 235.20 192.15 moveto show
 (A) 232.81 182.31 moveto show
@@ -845,6 +884,7 @@
 (A) 226.09 139.21 moveto show
 (U) 226.09 131.21 moveto show
 (G) 226.09 123.21 moveto show
+% residue 170 on the next line
 (G) 226.09 115.21 moveto show
 (G) 226.09 107.28 moveto show
 (U) 233.09 100.71 moveto show
@@ -855,6 +895,7 @@
 (G) 221.09 65.21 moveto show
 (A) 211.09 65.21 moveto show
 (A) 204.09 70.21 moveto show
+% residue 180 on the next line
 (U) 202.09 80.21 moveto show
 (G) 206.09 88.21 moveto show
 (G) 206.09 96.21 moveto show
@@ -865,6 +906,7 @@
 (U) 206.09 139.21 moveto show
 (C) 206.09 147.21 moveto show
 (C) 206.09 155.21 moveto show
+% residue 190 on the next line
 (C) 206.09 163.21 moveto show
 (C) 201.56 169.53 moveto show
 (G) 197.96 176.03 moveto show
@@ -875,6 +917,7 @@
 (G) 192.09 212.21 moveto show
 (C) 184.09 212.21 moveto show
 (G) 176.09 212.21 moveto show
+% residue 200 on the next line
 (C) 168.09 212.21 moveto show
 (C) 160.09 212.21 moveto show
 (G) 152.09 212.21 moveto show
@@ -885,6 +928,7 @@
 (A) 114.09 207.21 moveto show
 (U) 106.09 210.21 moveto show
 (U) 102.09 217.21 moveto show
+% residue 210 on the next line
 (C) 102.09 227.21 moveto show
 (G) 106.09 234.21 moveto show
 (C) 114.09 237.21 moveto show
@@ -895,6 +939,7 @@
 (C) 152.09 232.21 moveto show
 (G) 160.09 232.21 moveto show
 (G) 168.09 232.21 moveto show
+% residue 220 on the next line
 (C) 176.09 232.21 moveto show
 (G) 184.09 232.21 moveto show
 (C) 192.09 232.21 moveto show
@@ -905,6 +950,7 @@
 (G) 205.09 268.21 moveto show
 (A) 205.09 276.21 moveto show
 (G) 205.09 284.21 moveto show
+% residue 230 on the next line
 (G) 205.09 292.21 moveto show
 (A) 200.19 301.01 moveto show
 (U) 200.19 311.21 moveto show
@@ -915,6 +961,7 @@
 (C) 205.09 356.21 moveto show
 (U) 205.09 364.21 moveto show
 (G) 205.09 372.21 moveto show
+% residue 240 on the next line
 (C) 205.09 380.21 moveto show
 (G) 205.09 388.21 moveto show
 (G) 205.09 396.21 moveto show
@@ -925,6 +972,7 @@
 (U) 180.49 369.51 moveto show
 (U) 172.72 373.66 moveto show
 (A) 166.99 361.21 moveto show
+% residue 250 on the next line
 (G) 155.16 354.14 moveto show
 (G) 149.50 348.48 moveto show
 (U) 143.85 342.83 moveto show
@@ -935,6 +983,7 @@
 (G) 120.85 320.83 moveto show
 (G) 115.19 315.17 moveto show
 (U) 109.53 309.51 moveto show
+% residue 260 on the next line
 (G) 103.88 303.85 moveto show
 (G) 98.22 298.20 moveto show
 (G) 92.56 292.54 moveto show
@@ -945,6 +994,7 @@
 (C) 61.89 289.31 moveto show
 (G) 63.09 298.71 moveto show
 (G) 69.49 305.61 moveto show
+% residue 270 on the next line
 (C) 78.42 306.68 moveto show
 (C) 84.08 312.34 moveto show
 (C) 89.73 318.00 moveto show
@@ -955,6 +1005,7 @@
 (A) 118.02 346.28 moveto show
 (G) 129.71 356.97 moveto show
 (C) 135.36 362.62 moveto show
+% residue 280 on the next line
 (C) 141.02 368.28 moveto show
 (G) 135.19 375.41 moveto show
 (A) 134.69 383.41 moveto show
@@ -965,6 +1016,7 @@
 (C) 170.71 398.97 moveto show
 (G) 176.36 404.62 moveto show
 (G) 182.02 410.28 moveto show
+% residue 290 on the next line
 (U) 187.19 417.11 moveto show
 (A) 193.99 423.81 moveto show
 (C) 201.95 429.11 moveto show
@@ -975,6 +1027,7 @@
 (C) 160.67 448.42 moveto show
 (G) 153.39 451.73 moveto show
 (U) 146.10 455.04 moveto show
+% residue 300 on the next line
 (G) 138.59 459.31 moveto show
 (A) 135.39 467.41 moveto show
 (G) 139.09 475.31 moveto show
@@ -985,6 +1038,7 @@
 (G) 176.23 463.31 moveto show
 (G) 178.99 471.01 moveto show
 (A) 186.79 471.01 moveto show
+% residue 310 on the next line
 (G) 191.99 464.11 moveto show
 (C) 188.38 457.24 moveto show
 (C) 195.66 453.93 moveto show
@@ -995,6 +1049,7 @@
 (G) 234.02 461.28 moveto show
 (A) 227.69 470.71 moveto show
 (U) 222.32 479.37 moveto show
+% residue 320 on the next line
 (G) 214.45 480.78 moveto show
 (G) 206.58 482.19 moveto show
 (A) 198.70 483.61 moveto show
@@ -1005,6 +1060,7 @@
 (G) 161.09 484.21 moveto show
 (A) 156.09 490.21 moveto show
 (G) 155.09 497.21 moveto show
+% residue 330 on the next line
 (A) 156.09 505.21 moveto show
 (C) 160.09 511.21 moveto show
 (A) 166.09 515.21 moveto show
@@ -1015,6 +1071,7 @@
 (U) 202.23 503.29 moveto show
 (C) 210.11 501.88 moveto show
 (C) 217.98 500.47 moveto show
+% residue 340 on the next line
 (A) 225.86 499.05 moveto show
 (G) 229.09 508.21 moveto show
 (G) 230.02 517.14 moveto show
@@ -1025,6 +1082,7 @@
 (A) 205.79 549.81 moveto show
 (C) 212.49 556.41 moveto show
 (G) 221.89 555.81 moveto show
+% residue 350 on the next line
 (G) 227.19 548.25 moveto show
 (G) 232.85 542.59 moveto show
 (G) 238.50 536.94 moveto show
@@ -1035,6 +1093,7 @@
 (G) 281.09 541.21 moveto show
 (C) 281.09 549.21 moveto show
 (A) 281.09 557.21 moveto show
+% residue 360 on the next line
 (G) 281.09 565.21 moveto show
 (G) 281.09 573.21 moveto show
 (C) 281.09 581.21 moveto show
@@ -1045,6 +1104,7 @@
 (A) 281.09 632.21 moveto show
 (A) 281.09 640.21 moveto show
 (C) 281.09 648.21 moveto show
+% residue 370 on the next line
 (C) 274.09 648.21 moveto show
 (U) 271.49 641.21 moveto show
 (C) 266.09 648.21 moveto show
@@ -1055,6 +1115,7 @@
 (A) 233.09 640.21 moveto show
 (U) 230.09 648.21 moveto show
 (G) 222.09 648.21 moveto show
+% residue 380 on the next line
 (C) 214.09 648.21 moveto show
 (G) 206.09 648.21 moveto show
 (C) 198.09 648.21 moveto show
@@ -1065,6 +1126,7 @@
 (G) 198.09 668.21 moveto show
 (C) 206.09 668.21 moveto show
 (G) 214.09 668.21 moveto show
+% residue 390 on the next line
 (C) 222.09 668.21 moveto show
 (G) 230.09 668.21 moveto show
 (A) 240.09 672.21 moveto show
@@ -1075,6 +1137,7 @@
 (G) 283.09 669.21 moveto show
 (G) 289.79 670.18 moveto show
 (G) 296.05 675.16 moveto show
+% residue 400 on the next line
 (A) 302.31 680.14 moveto show
 (C) 308.57 685.12 moveto show
 (C) 314.82 690.11 moveto show
@@ -1085,6 +1148,7 @@
 (G) 332.43 711.40 moveto show
 (U) 324.26 711.11 moveto show
 (G) 315.09 710.21 moveto show
+% residue 410 on the next line
 (C) 307.09 710.21 moveto show
 (C) 299.09 710.21 moveto show
 (A) 291.09 710.21 moveto show
@@ -1095,6 +1159,7 @@
 (A) 251.09 709.21 moveto show
 (U) 244.09 713.21 moveto show
 (A) 242.09 720.21 moveto show
+% residue 420 on the next line
 (U) 244.09 727.21 moveto show
 (A) 251.09 731.21 moveto show
 (G) 259.09 730.21 moveto show
@@ -1105,6 +1170,7 @@
 (G) 299.09 730.21 moveto show
 (G) 307.09 730.21 moveto show
 (C) 315.09 730.21 moveto show
+% residue 430 on the next line
 (U) 309.02 737.14 moveto show
 (U) 303.36 742.80 moveto show
 (U) 297.71 748.45 moveto show
@@ -1115,6 +1181,7 @@
 (C) 268.90 776.75 moveto show
 (A) 263.16 782.32 moveto show
 (G) 257.42 787.89 moveto show
+% residue 440 on the next line
 (U) 251.68 793.47 moveto show
 (G) 243.06 795.45 moveto show
 (U) 237.01 802.03 moveto show
@@ -1125,6 +1192,7 @@
 (A) 263.31 816.46 moveto show
 (G) 265.61 807.82 moveto show
 (C) 271.35 802.24 moveto show
+% residue 450 on the next line
 (U) 277.09 796.67 moveto show
 (G) 282.83 791.10 moveto show
 (G) 288.57 785.53 moveto show
@@ -1135,6 +1203,7 @@
 (A) 317.50 756.94 moveto show
 (U) 323.16 751.28 moveto show
 (A) 328.69 746.01 moveto show
+% residue 460 on the next line
 (A) 334.39 741.51 moveto show
 (G) 341.09 741.21 moveto show
 (G) 341.09 749.21 moveto show
@@ -1145,6 +1214,7 @@
 (G) 332.26 777.70 moveto show
 (G) 325.07 776.97 moveto show
 (C) 318.55 780.91 moveto show
+% residue 470 on the next line
 (A) 317.07 789.71 moveto show
 (A) 319.55 797.52 moveto show
 (G) 326.08 802.46 moveto show
@@ -1155,6 +1225,7 @@
 (G) 341.09 822.21 moveto show
 (U) 334.36 829.17 moveto show
 (G) 329.83 838.01 moveto show
+% residue 480 on the next line
 (C) 328.00 847.78 moveto show
 (C) 329.02 857.66 moveto show
 (A) 332.81 866.84 moveto show
@@ -1165,6 +1236,7 @@
 (C) 353.21 899.67 moveto show
 (C) 358.90 893.15 moveto show
 (G) 359.09 883.21 moveto show
+% residue 490 on the next line
 (C) 359.09 875.21 moveto show
 (G) 366.23 871.41 moveto show
 (G) 371.82 865.27 moveto show
@@ -1175,6 +1247,7 @@
 (A) 367.79 827.16 moveto show
 (C) 361.09 822.21 moveto show
 (C) 361.09 814.21 moveto show
+% residue 500 on the next line
 (G) 361.09 806.21 moveto show
 (G) 361.09 798.21 moveto show
 (C) 361.09 781.21 moveto show
@@ -1185,6 +1258,7 @@
 (C) 361.09 741.21 moveto show
 (G) 360.09 732.21 moveto show
 (A) 361.98 724.13 moveto show
+% residue 510 on the next line
 (G) 368.32 729.02 moveto show
 (U) 374.65 733.91 moveto show
 (G) 380.98 738.80 moveto show
@@ -1195,6 +1269,7 @@
 (C) 412.65 763.24 moveto show
 (C) 418.98 768.13 moveto show
 (G) 413.42 776.31 moveto show
+% residue 520 on the next line
 (C) 409.57 785.11 moveto show
 (U) 407.37 794.47 moveto show
 (A) 406.90 804.06 moveto show
@@ -1205,6 +1280,7 @@
 (U) 428.99 844.95 moveto show
 (G) 437.28 849.81 moveto show
 (G) 446.09 852.21 moveto show
+% residue 530 on the next line
 (G) 446.09 860.21 moveto show
 (C) 446.09 868.21 moveto show
 (C) 446.59 879.81 moveto show
@@ -1215,6 +1291,7 @@
 (G) 413.69 909.31 moveto show
 (C) 410.59 916.71 moveto show
 (G) 405.36 923.02 moveto show
+% residue 540 on the next line
 (U) 398.80 927.61 moveto show
 (C) 392.25 932.19 moveto show
 (C) 385.69 936.78 moveto show
@@ -1225,6 +1302,7 @@
 (C) 357.82 956.54 moveto show
 (C) 351.24 961.10 moveto show
 (G) 342.68 964.13 moveto show
+% residue 550 on the next line
 (G) 334.09 968.21 moveto show
 (C) 326.09 968.21 moveto show
 (C) 318.09 968.21 moveto show
@@ -1235,6 +1313,7 @@
 (A) 279.09 960.21 moveto show
 (A) 276.09 968.21 moveto show
 (G) 268.09 968.21 moveto show
+% residue 560 on the next line
 (U) 255.09 968.21 moveto show
 (C) 247.09 968.21 moveto show
 (C) 239.09 968.21 moveto show
@@ -1245,6 +1324,7 @@
 (U) 199.09 968.21 moveto show
 (G) 191.09 968.21 moveto show
 (A) 191.52 960.20 moveto show
+% residue 570 on the next line
 (A) 185.39 954.54 moveto show
 (A) 176.98 954.76 moveto show
 (U) 171.10 960.79 moveto show
@@ -1255,6 +1335,7 @@
 (C) 139.09 969.21 moveto show
 (G) 131.09 969.21 moveto show
 (G) 123.09 969.21 moveto show
+% residue 580 on the next line
 (C) 114.46 966.77 moveto show
 (U) 106.38 970.78 moveto show
 (U) 103.10 979.18 moveto show
@@ -1265,6 +1346,7 @@
 (G) 139.09 989.21 moveto show
 (G) 147.09 989.21 moveto show
 (G) 155.09 989.21 moveto show
+% residue 590 on the next line
 (G) 163.09 989.21 moveto show
 (G) 171.09 989.21 moveto show
 (G) 173.88 997.17 moveto show
@@ -1275,6 +1357,7 @@
 (C) 207.09 988.21 moveto show
 (G) 215.09 988.21 moveto show
 (G) 223.09 988.21 moveto show
+% residue 600 on the next line
 (G) 231.09 988.21 moveto show
 (G) 239.09 988.21 moveto show
 (G) 247.09 988.21 moveto show
@@ -1285,6 +1368,7 @@
 (U) 276.09 988.21 moveto show
 (G) 286.09 988.21 moveto show
 (C) 294.09 988.21 moveto show
+% residue 610 on the next line
 (C) 302.09 988.21 moveto show
 (G) 310.09 988.21 moveto show
 (G) 318.09 988.21 moveto show
@@ -1295,6 +1379,7 @@
 (G) 335.71 1012.48 moveto show
 (G) 342.09 1018.21 moveto show
 (G) 342.09 1026.21 moveto show
+% residue 620 on the next line
 (A) 342.09 1034.21 moveto show
 (C) 342.09 1043.21 moveto show
 (C) 342.09 1051.21 moveto show
@@ -1305,6 +1390,7 @@
 (G) 335.96 1088.30 moveto show
 (A) 335.99 1096.19 moveto show
 (G) 342.09 1101.21 moveto show
+% residue 630 on the next line
 (G) 342.09 1109.21 moveto show
 (C) 342.09 1117.21 moveto show
 (C) 342.09 1125.21 moveto show
@@ -1315,6 +1401,7 @@
 (G) 326.09 1155.21 moveto show
 (U) 317.19 1151.54 moveto show
 (A) 308.92 1151.55 moveto show
+% residue 640 on the next line
 (C) 302.09 1155.21 moveto show
 (U) 294.09 1155.21 moveto show
 (C) 286.09 1155.21 moveto show
@@ -1325,6 +1412,7 @@
 (G) 246.09 1155.21 moveto show
 (G) 238.09 1150.41 moveto show
 (U) 228.89 1148.61 moveto show
+% residue 650 on the next line
 (A) 219.69 1150.41 moveto show
 (G) 212.09 1155.21 moveto show
 (G) 204.09 1155.21 moveto show
@@ -1335,6 +1423,7 @@
 (A) 174.99 1169.81 moveto show
 (A) 179.99 1176.51 moveto show
 (A) 188.09 1178.71 moveto show
+% residue 660 on the next line
 (U) 196.09 1175.21 moveto show
 (C) 204.09 1175.21 moveto show
 (C) 212.09 1175.21 moveto show
@@ -1345,6 +1434,7 @@
 (A) 241.59 1193.01 moveto show
 (U) 246.09 1184.91 moveto show
 (C) 246.09 1175.21 moveto show
+% residue 670 on the next line
 (C) 254.09 1175.21 moveto show
 (C) 262.09 1175.21 moveto show
 (G) 270.09 1175.21 moveto show
@@ -1355,6 +1445,7 @@
 (G) 309.96 1177.98 moveto show
 (A) 318.12 1177.99 moveto show
 (C) 326.09 1175.21 moveto show
+% residue 680 on the next line
 (C) 334.09 1175.21 moveto show
 (A) 341.39 1180.01 moveto show
 (C) 347.39 1185.41 moveto show
@@ -1365,6 +1456,7 @@
 (G) 381.49 1180.11 moveto show
 (G) 387.09 1175.21 moveto show
 (C) 395.09 1175.21 moveto show
+% residue 690 on the next line
 (G) 405.49 1176.71 moveto show
 (A) 413.19 1170.21 moveto show
 (A) 413.19 1160.01 moveto show
@@ -1375,6 +1467,7 @@
 (C) 362.09 1149.21 moveto show
 (C) 362.09 1141.21 moveto show
 (C) 362.09 1133.21 moveto show
+% residue 700 on the next line
 (G) 362.09 1125.21 moveto show
 (G) 362.09 1117.21 moveto show
 (C) 362.09 1109.21 moveto show
@@ -1385,6 +1478,7 @@
 (A) 362.09 1067.21 moveto show
 (C) 362.09 1059.21 moveto show
 (G) 362.09 1051.21 moveto show
+% residue 710 on the next line
 (G) 362.09 1043.21 moveto show
 (G) 369.09 1039.21 moveto show
 (U) 362.09 1034.21 moveto show
@@ -1395,6 +1489,7 @@
 (C) 366.08 987.52 moveto show
 (G) 362.63 977.54 moveto show
 (G) 369.20 972.99 moveto show
+% residue 720 on the next line
 (U) 375.78 968.43 moveto show
 (G) 384.58 962.25 moveto show
 (A) 391.67 965.87 moveto show
@@ -1405,6 +1500,7 @@
 (C) 416.82 939.40 moveto show
 (G) 423.74 936.61 moveto show
 (A) 425.45 946.83 moveto show
+% residue 730 on the next line
 (A) 430.05 956.20 moveto show
 (A) 437.12 963.88 moveto show
 (G) 446.09 969.21 moveto show
@@ -1415,6 +1511,7 @@
 (G) 446.09 1009.21 moveto show
 (G) 438.48 1009.71 moveto show
 (G) 434.12 1015.90 moveto show
+% residue 740 on the next line
 (A) 436.16 1023.19 moveto show
 (G) 445.09 1026.21 moveto show
 (C) 445.09 1034.21 moveto show
@@ -1425,6 +1522,7 @@
 (C) 446.09 1073.21 moveto show
 (G) 446.09 1081.21 moveto show
 (G) 446.09 1089.21 moveto show
+% residue 750 on the next line
 (A) 440.09 1096.21 moveto show
 (U) 438.09 1105.21 moveto show
 (U) 440.09 1114.21 moveto show
@@ -1435,6 +1533,7 @@
 (A) 474.09 1105.21 moveto show
 (C) 472.09 1096.21 moveto show
 (C) 466.09 1089.21 moveto show
+% residue 760 on the next line
 (C) 466.09 1081.21 moveto show
 (G) 466.09 1073.21 moveto show
 (G) 466.09 1065.21 moveto show
@@ -1445,6 +1544,7 @@
 (U) 465.09 1026.21 moveto show
 (C) 466.09 1009.21 moveto show
 (C) 466.09 1001.21 moveto show
+% residue 770 on the next line
 (U) 466.09 993.21 moveto show
 (G) 466.09 985.21 moveto show
 (G) 466.09 977.21 moveto show
@@ -1455,6 +1555,7 @@
 (A) 497.54 956.46 moveto show
 (A) 501.35 947.63 moveto show
 (A) 502.15 938.03 moveto show
+% residue 780 on the next line
 (C) 499.86 928.68 moveto show
 (G) 494.71 920.55 moveto show
 (A) 487.24 914.48 moveto show
@@ -1465,6 +1566,7 @@
 (G) 498.09 903.21 moveto show
 (G) 506.09 903.21 moveto show
 (C) 514.09 903.21 moveto show
+% residue 790 on the next line
 (U) 522.13 904.15 moveto show
 (A) 529.87 906.54 moveto show
 (G) 537.07 910.33 moveto show
@@ -1475,6 +1577,7 @@
 (U) 565.54 938.42 moveto show
 (G) 571.24 944.04 moveto show
 (C) 576.93 949.66 moveto show
+% residue 800 on the next line
 (G) 582.63 955.27 moveto show
 (C) 588.32 960.89 moveto show
 (G) 594.02 966.51 moveto show
@@ -1485,6 +1588,7 @@
 (U) 623.10 991.52 moveto show
 (C) 630.12 988.20 moveto show
 (G) 633.41 981.17 moveto show
+% residue 810 on the next line
 (A) 631.45 973.66 moveto show
 (G) 625.15 969.13 moveto show
 (C) 619.46 963.51 moveto show
@@ -1495,6 +1599,7 @@
 (G) 590.98 935.42 moveto show
 (C) 585.28 929.80 moveto show
 (A) 579.59 924.18 moveto show
+% residue 820 on the next line
 (G) 573.89 918.56 moveto show
 (U) 568.20 912.95 moveto show
 (G) 562.50 907.33 moveto show
@@ -1505,6 +1610,7 @@
 (A) 561.76 878.54 moveto show
 (G) 562.16 871.28 moveto show
 (G) 567.82 865.62 moveto show
+% residue 830 on the next line
 (G) 575.09 859.21 moveto show
 (A) 577.09 850.21 moveto show
 (A) 568.09 843.21 moveto show
@@ -1515,6 +1621,7 @@
 (U) 532.46 858.92 moveto show
 (U) 525.53 862.86 moveto show
 (A) 519.90 868.52 moveto show
+% residue 840 on the next line
 (A) 515.99 875.47 moveto show
 (G) 514.09 883.21 moveto show
 (C) 506.09 883.21 moveto show
@@ -1525,6 +1632,7 @@
 (C) 466.09 877.21 moveto show
 (G) 466.09 868.21 moveto show
 (C) 466.09 860.21 moveto show
+% residue 850 on the next line
 (C) 466.09 852.21 moveto show
 (U) 468.10 844.24 moveto show
 (G) 480.98 824.21 moveto show
@@ -1535,6 +1643,7 @@
 (G) 508.22 842.63 moveto show
 (U) 515.96 842.82 moveto show
 (A) 522.86 839.29 moveto show
+% residue 860 on the next line
 (C) 527.26 832.91 moveto show
 (G) 528.09 825.21 moveto show
 (G) 536.09 825.21 moveto show
@@ -1545,6 +1654,7 @@
 (A) 568.39 810.81 moveto show
 (A) 561.39 804.51 moveto show
 (G) 552.09 805.21 moveto show
+% residue 870 on the next line
 (G) 544.09 805.21 moveto show
 (C) 536.09 805.21 moveto show
 (U) 528.09 805.21 moveto show
@@ -1555,6 +1665,7 @@
 (C) 497.19 804.38 moveto show
 (U) 489.19 804.29 moveto show
 (U) 481.20 804.21 moveto show
+% residue 880 on the next line
 (A) 482.22 796.76 moveto show
 (A) 485.77 790.09 moveto show
 (A) 491.18 784.81 moveto show
@@ -1565,6 +1676,7 @@
 (U) 531.43 774.16 moveto show
 (U) 541.09 773.21 moveto show
 (G) 549.09 773.21 moveto show
+% residue 890 on the next line
 (G) 559.09 773.21 moveto show
 (C) 567.09 773.21 moveto show
 (G) 575.09 773.21 moveto show
@@ -1575,6 +1687,7 @@
 (A) 609.09 773.21 moveto show
 (G) 617.09 773.21 moveto show
 (C) 625.09 773.21 moveto show
+% residue 900 on the next line
 (A) 633.09 773.21 moveto show
 (C) 640.83 780.14 moveto show
 (C) 647.29 780.17 moveto show
@@ -1585,6 +1698,7 @@
 (C) 690.64 782.92 moveto show
 (G) 697.45 787.13 moveto show
 (G) 704.25 791.33 moveto show
+% residue 910 on the next line
 (G) 711.06 795.53 moveto show
 (U) 717.87 799.74 moveto show
 (G) 740.09 813.21 moveto show
@@ -1595,6 +1709,7 @@
 (C) 740.09 853.21 moveto show
 (U) 740.09 861.21 moveto show
 (G) 740.09 869.21 moveto show
+% residue 920 on the next line
 (C) 740.09 877.21 moveto show
 (G) 740.09 885.21 moveto show
 (G) 740.09 894.21 moveto show
@@ -1605,6 +1720,7 @@
 (A) 709.06 901.21 moveto show
 (U) 704.16 908.14 moveto show
 (U) 698.50 902.48 moveto show
+% residue 930 on the next line
 (G) 692.85 896.83 moveto show
 (G) 687.19 891.17 moveto show
 (A) 686.39 882.01 moveto show
@@ -1615,6 +1731,7 @@
 (A) 654.59 889.41 moveto show
 (C) 657.09 899.21 moveto show
 (G) 664.39 903.81 moveto show
+% residue 940 on the next line
 (C) 673.05 905.31 moveto show
 (C) 678.71 910.97 moveto show
 (G) 684.36 916.62 moveto show
@@ -1625,6 +1742,7 @@
 (U) 701.76 950.04 moveto show
 (C) 709.15 953.20 moveto show
 (U) 717.15 953.98 moveto show
+% residue 950 on the next line
 (C) 725.02 952.29 moveto show
 (A) 731.98 949.28 moveto show
 (C) 740.09 943.21 moveto show
@@ -1635,6 +1753,7 @@
 (G) 740.09 983.21 moveto show
 (G) 740.09 991.21 moveto show
 (C) 729.99 988.19 moveto show
+% residue 960 on the next line
 (G) 719.52 990.05 moveto show
 (A) 711.03 996.46 moveto show
 (C) 706.35 1005.02 moveto show
@@ -1645,6 +1764,7 @@
 (A) 673.59 1027.98 moveto show
 (G) 667.04 1031.57 moveto show
 (G) 660.49 1037.16 moveto show
+% residue 970 on the next line
 (A) 652.10 1036.65 moveto show
 (U) 644.00 1038.78 moveto show
 (G) 636.97 1043.32 moveto show
@@ -1655,6 +1775,7 @@
 (U) 615.26 1075.42 moveto show
 (C) 608.76 1080.08 moveto show
 (A) 602.26 1084.75 moveto show
+% residue 980 on the next line
 (G) 595.76 1090.42 moveto show
 (G) 589.27 1094.08 moveto show
 (C) 580.07 1093.67 moveto show
@@ -1665,6 +1786,7 @@
 (G) 588.88 1122.50 moveto show
 (A) 596.12 1118.00 moveto show
 (C) 600.93 1110.33 moveto show
+% residue 990 on the next line
 (C) 607.43 1105.66 moveto show
 (U) 613.93 1101.00 moveto show
 (U) 620.43 1096.33 moveto show
@@ -1675,6 +1797,7 @@
 (G) 667.99 1074.21 moveto show
 (A) 678.94 1059.57 moveto show
 (C) 678.52 1048.95 moveto show
+% residue 1000 on the next line
 (G) 685.07 1044.36 moveto show
 (U) 691.62 1039.76 moveto show
 (G) 698.18 1035.17 moveto show
@@ -1685,6 +1808,7 @@
 (G) 732.15 1013.75 moveto show
 (A) 739.29 1011.36 moveto show
 (G) 740.09 1019.21 moveto show
+% residue 1010 on the next line
 (G) 740.09 1027.21 moveto show
 (A) 733.69 1032.71 moveto show
 (G) 740.09 1037.21 moveto show
@@ -1695,6 +1819,7 @@
 (A) 732.09 1071.21 moveto show
 (U) 740.09 1072.21 moveto show
 (G) 740.09 1080.21 moveto show
+% residue 1020 on the next line
 (G) 740.09 1093.21 moveto show
 (C) 740.09 1101.21 moveto show
 (C) 740.09 1109.21 moveto show
@@ -1705,6 +1830,7 @@
 (U) 738.09 1151.21 moveto show
 (C) 738.09 1159.31 moveto show
 (A) 738.09 1167.31 moveto show
+% residue 1030 on the next line
 (G) 732.09 1177.21 moveto show
 (C) 724.09 1177.21 moveto show
 (U) 716.09 1177.21 moveto show
@@ -1715,6 +1841,7 @@
 (C) 681.09 1167.21 moveto show
 (C) 681.09 1159.21 moveto show
 (G) 681.94 1149.98 moveto show
+% residue 1040 on the next line
 (U) 675.70 1143.16 moveto show
 (G) 666.45 1143.18 moveto show
 (A) 660.23 1150.01 moveto show
@@ -1725,6 +1852,7 @@
 (U) 661.32 1200.46 moveto show
 (C) 661.09 1212.21 moveto show
 (C) 661.09 1220.21 moveto show
+% residue 1050 on the next line
 (U) 661.09 1228.21 moveto show
 (G) 661.09 1236.21 moveto show
 (U) 657.84 1244.14 moveto show
@@ -1735,6 +1863,7 @@
 (U) 684.34 1244.08 moveto show
 (C) 681.09 1236.21 moveto show
 (A) 681.09 1228.21 moveto show
+% residue 1060 on the next line
 (G) 681.09 1220.21 moveto show
 (G) 681.09 1212.21 moveto show
 (C) 687.65 1209.76 moveto show
@@ -1745,6 +1874,7 @@
 (A) 716.09 1197.21 moveto show
 (G) 724.09 1197.21 moveto show
 (C) 732.09 1197.21 moveto show
+% residue 1070 on the next line
 (G) 735.88 1206.65 moveto show
 (A) 742.47 1211.61 moveto show
 (G) 750.55 1213.20 moveto show
@@ -1755,6 +1885,7 @@
 (G) 784.09 1197.21 moveto show
 (C) 792.09 1197.21 moveto show
 (G) 799.09 1197.21 moveto show
+% residue 1080 on the next line
 (C) 820.09 1197.21 moveto show
 (C) 828.09 1197.21 moveto show
 (C) 836.09 1197.21 moveto show
@@ -1765,6 +1896,7 @@
 (U) 876.42 1200.92 moveto show
 (U) 885.54 1202.22 moveto show
 (G) 894.67 1200.95 moveto show
+% residue 1090 on the next line
 (C) 903.09 1197.21 moveto show
 (C) 911.09 1197.21 moveto show
 (A) 912.69 1204.79 moveto show
@@ -1775,6 +1907,7 @@
 (C) 947.09 1197.21 moveto show
 (A) 955.09 1197.21 moveto show
 (C) 963.09 1197.21 moveto show
+% residue 1100 on the next line
 (C) 971.09 1197.21 moveto show
 (C) 979.09 1197.21 moveto show
 (U) 987.43 1197.22 moveto show
@@ -1785,6 +1918,7 @@
 (G) 971.09 1177.21 moveto show
 (G) 963.09 1177.21 moveto show
 (U) 955.09 1177.21 moveto show
+% residue 1110 on the next line
 (G) 947.09 1177.21 moveto show
 (G) 943.08 1170.44 moveto show
 (G) 938.09 1177.21 moveto show
@@ -1795,6 +1929,7 @@
 (C) 896.88 1172.16 moveto show
 (A) 889.46 1169.54 moveto show
 (C) 881.59 1169.56 moveto show
+% residue 1120 on the next line
 (A) 874.18 1172.22 moveto show
 (C) 868.09 1177.21 moveto show
 (U) 860.09 1177.21 moveto show
@@ -1805,6 +1940,7 @@
 (G) 820.09 1177.21 moveto show
 (G) 820.19 1161.38 moveto show
 (A) 819.84 1147.29 moveto show
+% residue 1130 on the next line
 (C) 819.09 1133.21 moveto show
 (U) 819.09 1125.21 moveto show
 (G) 819.09 1117.21 moveto show
@@ -1815,6 +1951,7 @@
 (C) 819.09 1077.21 moveto show
 (G) 822.35 1067.84 moveto show
 (C) 818.24 1058.86 moveto show
+% residue 1140 on the next line
 (U) 809.06 1055.21 moveto show
 (A) 799.90 1058.90 moveto show
 (A) 795.83 1067.89 moveto show
@@ -1825,6 +1962,7 @@
 (G) 799.09 1109.21 moveto show
 (A) 799.09 1117.21 moveto show
 (G) 799.09 1125.21 moveto show
+% residue 1150 on the next line
 (G) 799.09 1133.21 moveto show
 (A) 795.41 1141.71 moveto show
 (A) 793.48 1150.61 moveto show
@@ -1835,6 +1973,7 @@
 (C) 784.09 1177.21 moveto show
 (G) 776.09 1177.21 moveto show
 (G) 768.09 1177.21 moveto show
+% residue 1160 on the next line
 (G) 761.29 1174.61 moveto show
 (C) 761.09 1167.31 moveto show
 (A) 761.09 1159.31 moveto show
@@ -1845,6 +1984,7 @@
 (C) 760.09 1119.21 moveto show
 (A) 766.49 1116.31 moveto show
 (G) 760.09 1109.21 moveto show
+% residue 1170 on the next line
 (G) 760.09 1101.21 moveto show
 (U) 760.09 1093.21 moveto show
 (C) 767.79 1095.11 moveto show
@@ -1855,6 +1995,7 @@
 (U) 760.09 1061.21 moveto show
 (G) 760.09 1053.21 moveto show
 (C) 760.09 1045.21 moveto show
+% residue 1180 on the next line
 (C) 760.09 1037.21 moveto show
 (C) 760.09 1027.21 moveto show
 (C) 760.09 1019.21 moveto show
@@ -1865,6 +2006,7 @@
 (C) 760.09 991.21 moveto show
 (C) 760.09 983.21 moveto show
 (C) 760.09 975.21 moveto show
+% residue 1190 on the next line
 (C) 760.09 967.21 moveto show
 (C) 760.09 959.21 moveto show
 (G) 760.09 951.21 moveto show
@@ -1875,6 +2017,7 @@
 (A) 760.09 902.21 moveto show
 (C) 760.09 894.21 moveto show
 (A) 767.09 887.21 moveto show
+% residue 1200 on the next line
 (C) 760.09 885.21 moveto show
 (G) 760.09 877.21 moveto show
 (C) 760.09 869.21 moveto show
@@ -1885,6 +2028,7 @@
 (U) 760.09 829.21 moveto show
 (A) 760.09 821.21 moveto show
 (C) 760.09 813.21 moveto show
+% residue 1210 on the next line
 (A) 769.41 813.50 moveto show
 (A) 777.90 811.71 moveto show
 (U) 785.90 809.25 moveto show
@@ -1895,6 +2039,7 @@
 (G) 819.46 821.57 moveto show
 (G) 825.82 826.43 moveto show
 (G) 832.18 831.28 moveto show
+% residue 1220 on the next line
 (A) 831.49 839.57 moveto show
 (C) 833.77 848.22 moveto show
 (A) 839.61 854.55 moveto show
@@ -1905,6 +2050,7 @@
 (G) 877.67 864.89 moveto show
 (U) 879.37 873.92 moveto show
 (U) 886.55 879.10 moveto show
+% residue 1230 on the next line
 (G) 895.69 877.89 moveto show
 (C) 901.83 883.01 moveto show
 (G) 899.09 891.46 moveto show
@@ -1915,6 +2061,7 @@
 (C) 933.67 906.89 moveto show
 (G) 941.29 911.19 moveto show
 (A) 949.22 909.88 moveto show
+% residue 1240 on the next line
 (A) 954.02 903.53 moveto show
 (A) 952.93 895.54 moveto show
 (G) 945.87 891.04 moveto show
@@ -1925,6 +2072,7 @@
 (A) 922.72 864.47 moveto show
 (G) 914.64 867.65 moveto show
 (C) 908.49 862.53 moveto show
+% residue 1250 on the next line
 (U) 912.17 854.35 moveto show
 (A) 909.69 846.68 moveto show
 (A) 903.65 841.34 moveto show
@@ -1935,6 +2083,7 @@
 (C) 879.67 829.99 moveto show
 (U) 877.51 820.48 moveto show
 (A) 871.22 813.02 moveto show
+% residue 1260 on the next line
 (A) 862.21 809.29 moveto show
 (A) 852.49 810.11 moveto show
 (C) 844.31 815.38 moveto show
@@ -1945,6 +2094,7 @@
 (U) 812.52 791.11 moveto show
 (C) 806.16 786.26 moveto show
 (G) 808.67 778.16 moveto show
+% residue 1270 on the next line
 (U) 809.22 769.63 moveto show
 (A) 807.53 761.24 moveto show
 (G) 803.70 753.59 moveto show
@@ -1955,6 +2105,7 @@
 (G) 791.91 725.62 moveto show
 (A) 794.08 717.92 moveto show
 (U) 792.73 708.89 moveto show
+% residue 1280 on the next line
 (C) 794.87 701.18 moveto show
 (G) 797.01 693.47 moveto show
 (A) 799.15 685.76 moveto show
@@ -1965,6 +2116,7 @@
 (U) 815.09 650.21 moveto show
 (G) 818.09 642.21 moveto show
 (C) 817.09 633.21 moveto show
+% residue 1290 on the next line
 (A) 811.09 626.21 moveto show
 (A) 802.09 623.21 moveto show
 (C) 794.09 626.21 moveto show
@@ -1975,6 +2127,7 @@
 (C) 784.16 664.99 moveto show
 (C) 782.02 672.70 moveto show
 (U) 779.88 680.41 moveto show
+% residue 1300 on the next line
 (C) 777.74 688.12 moveto show
 (G) 775.60 695.83 moveto show
 (U) 773.45 703.53 moveto show
@@ -1985,6 +2138,7 @@
 (C) 754.25 737.73 moveto show
 (U) 744.35 743.54 moveto show
 (G) 736.49 751.90 moveto show
+% residue 1310 on the next line
 (G) 731.31 762.14 moveto show
 (A) 729.08 773.42 moveto show
 (A) 728.38 782.72 moveto show
@@ -1995,6 +2149,7 @@
 (U) 705.98 760.08 moveto show
 (A) 709.73 753.34 moveto show
 (G) 712.35 746.09 moveto show
+% residue 1320 on the next line
 (U) 713.79 738.51 moveto show
 (A) 714.00 730.80 moveto show
 (A) 712.73 723.25 moveto show
@@ -2005,6 +2160,7 @@
 (G) 732.88 688.70 moveto show
 (U) 736.91 681.79 moveto show
 (G) 740.94 674.88 moveto show
+% residue 1330 on the next line
 (U) 748.20 670.62 moveto show
 (C) 751.97 663.02 moveto show
 (A) 750.99 653.85 moveto show
@@ -2015,6 +2171,7 @@
 (C) 723.67 664.80 moveto show
 (G) 719.64 671.71 moveto show
 (C) 715.61 678.62 moveto show
+% residue 1340 on the next line
 (G) 711.58 685.53 moveto show
 (C) 707.55 692.44 moveto show
 (G) 703.51 699.35 moveto show
@@ -2025,6 +2182,7 @@
 (A) 676.83 727.15 moveto show
 (U) 671.49 733.01 moveto show
 (A) 666.70 739.33 moveto show
+% residue 1350 on the next line
 (C) 662.52 746.07 moveto show
 (G) 659.09 753.21 moveto show
 (U) 651.09 753.21 moveto show
@@ -2035,6 +2193,7 @@
 (G) 625.09 753.21 moveto show
 (C) 617.09 753.21 moveto show
 (U) 609.09 753.21 moveto show
+% residue 1360 on the next line
 (C) 601.09 753.21 moveto show
 (C) 593.09 753.21 moveto show
 (U) 585.09 753.21 moveto show
@@ -2045,6 +2204,7 @@
 (C) 549.09 753.21 moveto show
 (A) 541.09 753.21 moveto show
 (C) 536.79 745.21 moveto show
+% residue 1370 on the next line
 (A) 536.79 736.21 moveto show
 (C) 536.79 727.21 moveto show
 (C) 536.79 718.21 moveto show
@@ -2055,6 +2215,7 @@
 (G) 538.09 673.21 moveto show
 (U) 535.09 664.21 moveto show
 (C) 538.09 655.21 moveto show
+% residue 1380 on the next line
 (A) 533.79 646.21 moveto show
 (A) 538.09 637.21 moveto show
 (A) 538.09 629.21 moveto show
@@ -2065,6 +2226,7 @@
 (C) 538.09 589.21 moveto show
 (C) 538.09 581.21 moveto show
 (G) 534.09 573.21 moveto show
+% residue 1390 on the next line
 (A) 534.09 565.21 moveto show
 (G) 538.09 557.21 moveto show
 (U) 538.09 549.21 moveto show
@@ -2075,6 +2237,7 @@
 (U) 538.09 509.21 moveto show
 (C) 538.09 501.21 moveto show
 (C) 538.09 493.21 moveto show
+% residue 1400 on the next line
 (G) 538.09 485.21 moveto show
 (G) 538.09 477.21 moveto show
 (A) 538.09 469.21 moveto show
@@ -2085,6 +2248,7 @@
 (G) 538.09 429.21 moveto show
 (C) 538.09 421.21 moveto show
 (C) 538.09 413.21 moveto show
+% residue 1410 on the next line
 (C) 538.09 405.21 moveto show
 (U) 538.09 397.21 moveto show
 (G) 538.09 389.21 moveto show
@@ -2095,6 +2259,7 @@
 (C) 538.09 349.21 moveto show
 (A) 535.64 340.52 moveto show
 (U) 539.69 332.45 moveto show
+% residue 1420 on the next line
 (U) 548.12 329.20 moveto show
 (U) 556.53 332.48 moveto show
 (C) 560.54 340.58 moveto show
@@ -2105,6 +2270,7 @@
 (C) 558.09 381.21 moveto show
 (C) 558.09 389.21 moveto show
 (A) 558.09 397.21 moveto show
+% residue 1430 on the next line
 (G) 558.09 405.21 moveto show
 (G) 558.09 413.21 moveto show
 (G) 558.09 421.21 moveto show
@@ -2115,6 +2281,7 @@
 (A) 558.09 461.21 moveto show
 (U) 558.09 469.21 moveto show
 (C) 558.09 477.21 moveto show
+% residue 1440 on the next line
 (U) 558.09 485.21 moveto show
 (G) 558.09 493.21 moveto show
 (G) 558.09 501.21 moveto show
@@ -2125,6 +2292,7 @@
 (C) 558.09 541.21 moveto show
 (G) 558.09 549.21 moveto show
 (C) 558.09 557.21 moveto show
+% residue 1450 on the next line
 (G) 562.09 565.21 moveto show
 (A) 562.09 573.21 moveto show
 (G) 558.09 581.21 moveto show
@@ -2135,6 +2303,7 @@
 (G) 558.09 621.21 moveto show
 (U) 558.09 629.21 moveto show
 (U) 558.09 637.21 moveto show
+% residue 1460 on the next line
 (A) 564.09 643.21 moveto show
 (A) 564.09 651.21 moveto show
 (G) 558.09 655.21 moveto show
@@ -2145,6 +2314,7 @@
 (A) 564.69 693.21 moveto show
 (A) 558.09 700.21 moveto show
 (C) 558.09 708.21 moveto show
+% residue 1470 on the next line
 (A) 567.09 708.21 moveto show
 (A) 576.09 708.21 moveto show
 (G) 583.09 713.21 moveto show
@@ -2155,6 +2325,7 @@
 (C) 607.09 695.21 moveto show
 (C) 615.09 695.21 moveto show
 (G) 623.09 695.21 moveto show
+% residue 1480 on the next line
 (U) 631.09 695.21 moveto show
 (A) 639.09 695.21 moveto show
 (G) 647.09 695.21 moveto show
@@ -2165,6 +2336,7 @@
 (A) 665.16 673.51 moveto show
 (C) 655.09 675.21 moveto show
 (C) 647.09 675.21 moveto show
+% residue 1490 on the next line
 (U) 639.09 675.21 moveto show
 (G) 631.09 675.21 moveto show
 (C) 623.09 675.21 moveto show
@@ -2175,6 +2347,7 @@
 (G) 583.09 675.21 moveto show
 (G) 583.09 666.21 moveto show
 (A) 583.09 657.77 moveto show
+% residue 1500 on the next line
 (U) 583.09 649.32 moveto show
 (C) 583.09 640.88 moveto show
 (A) 583.09 632.43 moveto show
@@ -2187,18 +2360,43 @@
 % end text residues
 
 % begin ignore
-grestore
 showpage
 % end ignore
+% begin ignore
+%
+% bacteria-0p1.ps:
+% An esl-ssdraw postscript template file for drawing
+% bacterial SSU rRNA secondary structure diagrams.
+% The input alignment must be of consensus length (nongap RF length)
+% of 1582. This corresponds to the SSU-ALIGN v0.1 bacterial
+% seed alignment derived from Robin Gutell and colleagues'
+% Comparative RNA Website (CRW) [http://www.rna.ccbb.utexas.edu/]
+% as described in Eric Nawrocki's PhD Thesis "Structural RNA
+% Homology Search and Alignment Using Covariance Models" 2009,
+% availabe from: [http://selab.janelia.org/publications.html].
+%
+% setup defaults
+/Helvetica findfont 8.00 scalefont setfont
+0.00 0.00 0.00 1.00 setcmykcolor
+1.00 setlinewidth
+% end ignore
+
 % begin modelname
 % bacteria
 % end modelname
 
+% begin legend
+% 1582 24. -24. 24
+% end legend
+
 % begin scale 
-0.58 0.58 scale
+0.57 0.57 scale
 % end scale 
 
 % begin regurgitate
+/Helvetica findfont 16.84 scalefont setfont
+(created by the SSU-ALIGN package (http://selab.janelia.org/software.html)) 472.00 70.00 moveto show
+(structure diagram derived from CRW database (http://www.rna.ccbb.utexas.edu/)) 426.00 50.00 moveto show
 /Helvetica findfont 12.00 scalefont setfont
 0.00 0.00 0.00 1.00 setcmykcolor
 (5') 455.91 650.21 moveto show
@@ -2214,9 +2412,12 @@ showpage
 798.61 1200.21 811.61 1200.21 newpath moveto lineto stroke
 % end regurgitate
 
-% begin text hundreds
+% begin ignore
+% reset 8.0 fontsize
 /Helvetica findfont 8.00 scalefont setfont
-0.00 0.00 0.00 1.00 setcmykcolor
+% end ignore
+
+% begin text positiontext
 (100) 398.81 484.91 moveto show
 (200) 207.90 49.63 moveto show
 (300) 134.92 416.77 moveto show
@@ -2232,11 +2433,9 @@ showpage
 (1300) 914.67 937.47 moveto show
 (1400) 696.78 666.31 moveto show
 (1500) 579.11 409.41 moveto show
-% end text hundreds
+% end text positiontext
 
-% begin lines ticks
-2.00 setlinewidth
-0.00 0.00 0.00 1.00 setcmykcolor
+% begin lines positionticks
 455.91 744.25 448.41 744.34 newpath moveto lineto stroke
 509.89 777.92 512.13 785.08 newpath moveto lineto stroke
 436.04 759.01 440.55 753.02 newpath moveto lineto stroke
@@ -2395,11 +2594,9 @@ showpage
 652.61 691.21 652.61 683.71 newpath moveto lineto stroke
 599.70 667.55 607.20 667.54 newpath moveto lineto stroke
 599.62 578.77 607.12 578.76 newpath moveto lineto stroke
-% end lines ticks
+% end lines positionticks
 
 % begin lines bpconnects
-1.00 setlinewidth
-0.00 0.00 0.00 0.50 setcmykcolor
 455.31 764.32 456.71 758.90 newpath moveto lineto stroke
 463.05 766.32 464.46 760.90 newpath moveto lineto stroke
 470.80 768.33 472.20 762.90 newpath moveto lineto stroke
@@ -2883,8 +3080,6 @@ showpage
 % end lines bpconnects
 
 % begin text residues
-/Helvetica findfont 8.00 scalefont setfont
-0.00 0.00 0.00 1.00 setcmykcolor
 (U) 455.91 669.21 moveto show
 (U) 455.91 677.21 moveto show
 (U) 455.91 685.21 moveto show
@@ -2894,6 +3089,7 @@ showpage
 (U) 455.91 717.21 moveto show
 (G) 455.91 725.21 moveto show
 (G) 455.91 733.21 moveto show
+% residue 10 on the next line
 (A) 455.91 741.21 moveto show
 (G) 456.11 749.53 moveto show
 (A) 463.86 751.53 moveto show
@@ -2904,6 +3100,7 @@ showpage
 (G) 504.91 752.11 moveto show
 (A) 512.31 759.21 moveto show
 (U) 513.62 769.67 moveto show
+% residue 20 on the next line
 (C) 505.99 772.06 moveto show
 (C) 498.35 774.45 moveto show
 (U) 490.21 776.71 moveto show
@@ -2914,6 +3111,7 @@ showpage
 (C) 451.11 768.89 moveto show
 (A) 444.31 767.11 moveto show
 (G) 437.63 763.22 moveto show
+% residue 30 on the next line
 (G) 431.24 758.41 moveto show
 (A) 424.85 753.60 moveto show
 (U) 418.46 748.78 moveto show
@@ -2924,6 +3122,7 @@ showpage
 (G) 391.46 727.78 moveto show
 (C) 385.07 722.97 moveto show
 (U) 378.68 718.15 moveto show
+% residue 40 on the next line
 (G) 374.91 706.31 moveto show
 (G) 360.63 705.22 moveto show
 (C) 354.24 700.41 moveto show
@@ -2934,6 +3133,7 @@ showpage
 (U) 320.63 674.22 moveto show
 (G) 314.24 669.41 moveto show
 (C) 313.61 620.21 moveto show
+% residue 50 on the next line
 (U) 319.61 615.21 moveto show
 (U) 313.61 609.21 moveto show
 (A) 319.41 606.70 moveto show
@@ -2944,6 +3144,7 @@ showpage
 (A) 320.71 578.11 moveto show
 (U) 313.61 573.21 moveto show
 (G) 313.61 565.21 moveto show
+% residue 60 on the next line
 (C) 313.61 557.21 moveto show
 (A) 324.91 546.31 moveto show
 (A) 332.71 532.81 moveto show
@@ -2954,6 +3155,7 @@ showpage
 (A) 362.41 525.21 moveto show
 (A) 365.61 517.21 moveto show
 (C) 373.61 517.21 moveto show
+% residue 70 on the next line
 (G) 381.61 517.21 moveto show
 (G) 393.61 517.21 moveto show
 (U) 401.61 517.21 moveto show
@@ -2964,6 +3166,7 @@ showpage
 (A) 438.77 517.21 moveto show
 (A) 446.77 517.21 moveto show
 (A) 454.77 517.21 moveto show
+% residue 80 on the next line
 (A) 462.77 517.21 moveto show
 (G) 470.77 517.21 moveto show
 (G) 478.77 517.21 moveto show
@@ -2974,6 +3177,7 @@ showpage
 (C) 508.78 503.13 moveto show
 (G) 503.00 497.29 moveto show
 (G) 494.77 497.21 moveto show
+% residue 90 on the next line
 (U) 486.77 497.21 moveto show
 (C) 478.77 497.21 moveto show
 (C) 470.77 497.21 moveto show
@@ -2984,6 +3188,7 @@ showpage
 (G) 430.77 492.21 moveto show
 (A) 422.77 492.21 moveto show
 (G) 414.77 497.21 moveto show
+% residue 100 on the next line
 (A) 401.61 497.21 moveto show
 (C) 393.61 497.21 moveto show
 (G) 387.61 492.21 moveto show
@@ -2994,6 +3199,7 @@ showpage
 (G) 344.61 497.21 moveto show
 (C) 336.61 497.21 moveto show
 (G) 331.01 485.11 moveto show
+% residue 110 on the next line
 (G) 322.81 474.41 moveto show
 (A) 312.31 466.01 moveto show
 (C) 300.11 460.51 moveto show
@@ -3004,6 +3210,7 @@ showpage
 (G) 249.37 451.83 moveto show
 (A) 256.51 446.91 moveto show
 (G) 261.01 439.61 moveto show
+% residue 120 on the next line
 (U) 262.21 431.01 moveto show
 (A) 261.81 421.71 moveto show
 (A) 255.21 417.11 moveto show
@@ -3014,6 +3221,7 @@ showpage
 (U) 237.61 388.21 moveto show
 (G) 237.61 380.21 moveto show
 (G) 237.61 372.21 moveto show
+% residue 130 on the next line
 (G) 237.61 364.21 moveto show
 (U) 237.61 356.21 moveto show
 (A) 244.61 344.21 moveto show
@@ -3024,6 +3232,7 @@ showpage
 (G) 247.01 317.11 moveto show
 (C) 244.21 308.41 moveto show
 (C) 236.61 303.21 moveto show
+% residue 140 on the next line
 (C) 236.61 295.21 moveto show
 (U) 236.61 287.21 moveto show
 (U) 236.61 279.21 moveto show
@@ -3034,6 +3243,7 @@ showpage
 (G) 248.57 245.21 moveto show
 (G) 256.57 245.21 moveto show
 (G) 264.57 245.21 moveto show
+% residue 150 on the next line
 (G) 272.57 245.21 moveto show
 (G) 278.87 250.75 moveto show
 (A) 286.79 253.78 moveto show
@@ -3044,6 +3254,7 @@ showpage
 (C) 325.61 245.21 moveto show
 (C) 333.61 245.21 moveto show
 (C) 341.61 245.21 moveto show
+% residue 160 on the next line
 (U) 349.61 245.21 moveto show
 (G) 357.61 245.21 moveto show
 (G) 366.61 245.81 moveto show
@@ -3054,6 +3265,7 @@ showpage
 (G) 349.61 225.21 moveto show
 (G) 341.61 225.21 moveto show
 (G) 333.61 225.21 moveto show
+% residue 170 on the next line
 (G) 325.61 225.21 moveto show
 (G) 317.61 225.21 moveto show
 (C) 309.61 225.21 moveto show
@@ -3064,6 +3276,7 @@ showpage
 (A) 275.85 217.05 moveto show
 (C) 272.57 225.21 moveto show
 (C) 264.57 225.21 moveto show
+% residue 180 on the next line
 (G) 256.57 225.21 moveto show
 (C) 248.57 225.21 moveto show
 (A) 247.76 213.98 moveto show
@@ -3074,6 +3287,7 @@ showpage
 (A) 236.61 158.22 moveto show
 (C) 236.61 150.22 moveto show
 (C) 236.61 142.22 moveto show
+% residue 190 on the next line
 (A) 236.61 134.22 moveto show
 (C) 236.61 126.22 moveto show
 (G) 236.61 118.22 moveto show
@@ -3084,6 +3298,7 @@ showpage
 (C) 236.61 78.29 moveto show
 (G) 236.40 69.52 moveto show
 (C) 230.81 60.34 moveto show
+% residue 200 on the next line
 (A) 222.21 60.24 moveto show
 (U) 216.83 69.39 moveto show
 (G) 216.61 78.29 moveto show
@@ -3094,6 +3309,7 @@ showpage
 (U) 216.61 118.22 moveto show
 (G) 216.61 126.22 moveto show
 (U) 216.61 134.22 moveto show
+% residue 210 on the next line
 (G) 216.61 142.22 moveto show
 (G) 216.61 150.22 moveto show
 (U) 216.61 158.22 moveto show
@@ -3104,6 +3320,7 @@ showpage
 (A) 204.11 212.64 moveto show
 (G) 203.61 223.21 moveto show
 (A) 195.61 223.21 moveto show
+% residue 220 on the next line
 (A) 187.61 223.21 moveto show
 (G) 179.61 223.21 moveto show
 (G) 171.61 223.21 moveto show
@@ -3114,6 +3331,7 @@ showpage
 (C) 140.61 223.21 moveto show
 (U) 132.61 223.21 moveto show
 (U) 126.61 229.88 moveto show
+% residue 230 on the next line
 (U) 126.61 236.54 moveto show
 (A) 132.61 243.21 moveto show
 (G) 140.61 243.21 moveto show
@@ -3124,6 +3342,7 @@ showpage
 (U) 187.61 243.21 moveto show
 (U) 195.61 243.21 moveto show
 (C) 203.61 243.21 moveto show
+% residue 240 on the next line
 (G) 213.21 247.01 moveto show
 (C) 216.61 255.21 moveto show
 (U) 216.61 263.21 moveto show
@@ -3134,6 +3353,7 @@ showpage
 (G) 216.61 303.21 moveto show
 (A) 211.71 312.01 moveto show
 (U) 211.71 322.21 moveto show
+% residue 250 on the next line
 (G) 218.61 330.21 moveto show
 (A) 218.61 338.21 moveto show
 (G) 217.61 356.21 moveto show
@@ -3144,6 +3364,7 @@ showpage
 (C) 217.61 396.21 moveto show
 (G) 217.61 404.21 moveto show
 (U) 217.61 412.21 moveto show
+% residue 260 on the next line
 (C) 208.68 412.14 moveto show
 (C) 203.02 406.48 moveto show
 (C) 197.37 400.83 moveto show
@@ -3154,6 +3375,7 @@ showpage
 (G) 167.68 370.14 moveto show
 (C) 162.02 364.48 moveto show
 (U) 156.37 358.83 moveto show
+% residue 270 on the next line
 (A) 158.01 351.81 moveto show
 (G) 152.31 346.11 moveto show
 (U) 144.68 348.14 moveto show
@@ -3164,6 +3386,7 @@ showpage
 (G) 116.40 319.85 moveto show
 (G) 110.74 314.20 moveto show
 (G) 105.08 308.54 moveto show
+% residue 280 on the next line
 (G) 103.41 300.31 moveto show
 (U) 96.51 293.91 moveto show
 (A) 87.11 292.71 moveto show
@@ -3174,6 +3397,7 @@ showpage
 (C) 90.94 322.68 moveto show
 (C) 96.60 328.34 moveto show
 (C) 102.25 334.00 moveto show
+% residue 290 on the next line
 (A) 107.91 339.65 moveto show
 (C) 113.57 345.31 moveto show
 (C) 119.23 350.97 moveto show
@@ -3184,6 +3408,7 @@ showpage
 (C) 153.54 384.28 moveto show
 (G) 147.71 391.41 moveto show
 (A) 147.21 399.41 moveto show
+% residue 300 on the next line
 (C) 151.01 406.41 moveto show
 (G) 158.01 410.41 moveto show
 (A) 166.01 410.21 moveto show
@@ -3194,6 +3419,7 @@ showpage
 (U) 199.71 433.11 moveto show
 (A) 206.51 439.81 moveto show
 (G) 214.48 445.10 moveto show
+% residue 310 on the next line
 (C) 207.19 448.41 moveto show
 (C) 199.91 451.71 moveto show
 (G) 192.62 455.02 moveto show
@@ -3204,6 +3430,7 @@ showpage
 (G) 151.11 475.31 moveto show
 (A) 147.91 483.41 moveto show
 (G) 151.61 491.31 moveto show
+% residue 320 on the next line
 (A) 160.61 494.21 moveto show
 (G) 166.88 489.23 moveto show
 (G) 174.17 485.93 moveto show
@@ -3214,6 +3441,7 @@ showpage
 (U) 204.51 480.11 moveto show
 (C) 200.88 473.23 moveto show
 (G) 208.17 469.93 moveto show
+% residue 330 on the next line
 (G) 215.46 466.62 moveto show
 (C) 222.74 463.32 moveto show
 (C) 235.23 465.97 moveto show
@@ -3224,6 +3452,7 @@ showpage
 (U) 227.00 496.75 moveto show
 (G) 219.12 498.14 moveto show
 (G) 211.24 499.53 moveto show
+% residue 340 on the next line
 (G) 203.36 500.92 moveto show
 (A) 195.48 502.31 moveto show
 (C) 188.57 498.21 moveto show
@@ -3234,6 +3463,7 @@ showpage
 (A) 166.88 521.58 moveto show
 (C) 171.62 527.99 moveto show
 (A) 178.73 531.62 moveto show
+% residue 350 on the next line
 (C) 186.70 531.70 moveto show
 (G) 193.88 528.22 moveto show
 (G) 198.96 522.00 moveto show
@@ -3244,6 +3474,7 @@ showpage
 (G) 238.35 515.06 moveto show
 (A) 241.61 524.21 moveto show
 (C) 242.54 533.14 moveto show
+% residue 360 on the next line
 (U) 236.88 538.80 moveto show
 (C) 231.23 544.45 moveto show
 (C) 225.57 550.11 moveto show
@@ -3254,6 +3485,7 @@ showpage
 (G) 239.71 564.25 moveto show
 (G) 245.37 558.59 moveto show
 (A) 251.02 552.94 moveto show
+% residue 370 on the next line
 (G) 256.68 547.28 moveto show
 (G) 264.61 552.21 moveto show
 (C) 273.61 556.21 moveto show
@@ -3264,6 +3496,7 @@ showpage
 (G) 293.61 582.21 moveto show
 (U) 293.61 590.21 moveto show
 (G) 293.61 598.21 moveto show
+% residue 380 on the next line
 (G) 293.61 609.21 moveto show
 (G) 293.61 620.21 moveto show
 (G) 293.85 627.99 moveto show
@@ -3274,6 +3507,7 @@ showpage
 (U) 287.01 659.21 moveto show
 (U) 284.01 652.21 moveto show
 (G) 278.61 659.21 moveto show
+% residue 390 on the next line
 (C) 270.61 659.21 moveto show
 (A) 262.61 659.21 moveto show
 (C) 259.61 651.21 moveto show
@@ -3284,6 +3518,7 @@ showpage
 (G) 226.61 659.21 moveto show
 (G) 218.61 659.21 moveto show
 (C) 210.61 659.21 moveto show
+% residue 400 on the next line
 (G) 201.71 658.21 moveto show
 (A) 194.71 664.51 moveto show
 (A) 194.71 673.91 moveto show
@@ -3294,6 +3529,7 @@ showpage
 (U) 234.61 679.21 moveto show
 (G) 242.61 679.21 moveto show
 (A) 252.61 683.21 moveto show
+% residue 410 on the next line
 (U) 262.61 679.21 moveto show
 (G) 270.61 679.21 moveto show
 (C) 278.61 679.21 moveto show
@@ -3304,6 +3540,7 @@ showpage
 (A) 309.61 698.21 moveto show
 (C) 316.65 697.13 moveto show
 (G) 323.03 701.94 moveto show
+% residue 420 on the next line
 (C) 329.42 706.75 moveto show
 (C) 335.81 711.57 moveto show
 (G) 342.20 716.38 moveto show
@@ -3314,6 +3551,7 @@ showpage
 (A) 314.61 720.21 moveto show
 (G) 306.61 720.21 moveto show
 (G) 298.61 720.21 moveto show
+% residue 430 on the next line
 (G) 295.21 712.81 moveto show
 (A) 289.61 707.41 moveto show
 (U) 282.41 704.61 moveto show
@@ -3324,6 +3562,7 @@ showpage
 (G) 250.61 720.21 moveto show
 (C) 242.61 720.21 moveto show
 (C) 234.61 720.21 moveto show
+% residue 440 on the next line
 (U) 225.21 718.81 moveto show
 (U) 218.21 725.11 moveto show
 (C) 218.21 734.51 moveto show
@@ -3334,6 +3573,7 @@ showpage
 (U) 258.61 740.21 moveto show
 (G) 263.51 746.31 moveto show
 (U) 270.41 750.71 moveto show
+% residue 450 on the next line
 (A) 278.51 752.21 moveto show
 (A) 286.61 750.71 moveto show
 (A) 293.51 746.31 moveto show
@@ -3344,6 +3584,7 @@ showpage
 (U) 315.54 748.14 moveto show
 (U) 310.88 752.80 moveto show
 (U) 305.23 758.45 moveto show
+% residue 460 on the next line
 (C) 298.57 765.11 moveto show
 (A) 292.54 771.14 moveto show
 (U) 286.88 776.80 moveto show
@@ -3354,6 +3595,7 @@ showpage
 (G) 255.29 798.21 moveto show
 (A) 247.13 802.12 moveto show
 (A) 242.12 809.65 moveto show
+% residue 470 on the next line
 (G) 242.01 818.61 moveto show
 (A) 233.58 814.99 moveto show
 (A) 224.32 815.62 moveto show
@@ -3364,6 +3606,7 @@ showpage
 (C) 208.88 851.80 moveto show
 (A) 203.23 857.45 moveto show
 (A) 197.57 863.11 moveto show
+% residue 480 on the next line
 (G) 191.91 868.77 moveto show
 (G) 186.25 874.42 moveto show
 (G) 180.60 880.08 moveto show
@@ -3374,6 +3617,7 @@ showpage
 (A) 163.60 911.20 moveto show
 (A) 171.04 914.62 moveto show
 (A) 178.92 912.37 moveto show
+% residue 490 on the next line
 (G) 183.43 905.54 moveto show
 (G) 189.08 899.88 moveto show
 (C) 194.74 894.22 moveto show
@@ -3384,6 +3628,7 @@ showpage
 (G) 223.02 865.94 moveto show
 (C) 228.68 860.28 moveto show
 (A) 235.51 861.11 moveto show
+% residue 500 on the next line
 (U) 243.31 859.41 moveto show
 (U) 249.91 855.01 moveto show
 (G) 254.51 848.51 moveto show
@@ -3394,6 +3639,7 @@ showpage
 (U) 277.42 829.30 moveto show
 (A) 280.13 821.55 moveto show
 (C) 278.40 813.57 moveto show
+% residue 510 on the next line
 (C) 284.05 807.91 moveto show
 (U) 289.71 802.25 moveto show
 (G) 295.37 796.59 moveto show
@@ -3404,6 +3650,7 @@ showpage
 (A) 324.02 767.94 moveto show
 (G) 332.02 760.48 moveto show
 (A) 336.21 753.01 moveto show
+% residue 520 on the next line
 (A) 342.91 748.51 moveto show
 (G) 347.61 752.21 moveto show
 (C) 347.61 760.21 moveto show
@@ -3414,6 +3661,7 @@ showpage
 (G) 330.61 787.21 moveto show
 (C) 324.61 793.81 moveto show
 (U) 325.71 800.41 moveto show
+% residue 530 on the next line
 (A) 332.41 802.71 moveto show
 (A) 339.91 801.21 moveto show
 (C) 347.61 801.21 moveto show
@@ -3424,6 +3672,7 @@ showpage
 (U) 339.04 839.40 moveto show
 (G) 333.51 848.15 moveto show
 (C) 331.61 858.32 moveto show
+% residue 540 on the next line
 (C) 333.60 868.48 moveto show
 (A) 339.19 877.19 moveto show
 (G) 347.61 883.21 moveto show
@@ -3434,6 +3683,7 @@ showpage
 (C) 367.61 900.21 moveto show
 (G) 367.61 891.21 moveto show
 (C) 367.61 883.21 moveto show
+% residue 550 on the next line
 (G) 374.89 879.43 moveto show
 (G) 380.65 873.61 moveto show
 (U) 384.34 866.30 moveto show
@@ -3444,6 +3694,7 @@ showpage
 (C) 367.61 833.21 moveto show
 (G) 367.61 825.21 moveto show
 (U) 367.61 817.21 moveto show
+% residue 560 on the next line
 (A) 367.61 809.21 moveto show
 (G) 367.61 801.21 moveto show
 (G) 367.61 784.21 moveto show
@@ -3454,6 +3705,7 @@ showpage
 (A) 366.61 743.21 moveto show
 (A) 366.65 734.13 moveto show
 (G) 373.03 738.94 moveto show
+% residue 570 on the next line
 (C) 379.42 743.75 moveto show
 (G) 385.81 748.57 moveto show
 (U) 392.20 753.38 moveto show
@@ -3464,6 +3716,7 @@ showpage
 (C) 425.59 779.20 moveto show
 (G) 419.51 786.72 moveto show
 (G) 414.92 795.45 moveto show
+% residue 580 on the next line
 (A) 412.14 804.91 moveto show
 (A) 411.28 814.73 moveto show
 (U) 412.37 824.52 moveto show
@@ -3474,6 +3727,7 @@ showpage
 (G) 443.11 860.58 moveto show
 (G) 452.61 863.21 moveto show
 (G) 452.61 871.21 moveto show
+% residue 590 on the next line
 (C) 452.61 879.21 moveto show
 (G) 453.11 888.81 moveto show
 (U) 444.31 890.51 moveto show
@@ -3484,6 +3738,7 @@ showpage
 (G) 418.11 926.71 moveto show
 (G) 411.87 934.02 moveto show
 (C) 405.32 938.61 moveto show
+% residue 600 on the next line
 (G) 398.77 943.20 moveto show
 (C) 392.21 947.78 moveto show
 (G) 383.56 947.35 moveto show
@@ -3494,6 +3749,7 @@ showpage
 (C) 357.77 972.20 moveto show
 (G) 348.00 974.70 moveto show
 (G) 339.61 979.21 moveto show
+% residue 610 on the next line
 (U) 331.61 979.21 moveto show
 (U) 323.61 979.21 moveto show
 (U) 315.61 979.21 moveto show
@@ -3504,6 +3760,7 @@ showpage
 (A) 281.61 979.21 moveto show
 (G) 273.61 979.21 moveto show
 (U) 260.61 979.21 moveto show
+% residue 620 on the next line
 (C) 252.61 979.21 moveto show
 (A) 244.61 979.21 moveto show
 (G) 236.61 979.21 moveto show
@@ -3514,6 +3771,7 @@ showpage
 (G) 196.61 979.21 moveto show
 (A) 196.20 971.38 moveto show
 (A) 190.46 965.95 moveto show
+% residue 630 on the next line
 (A) 182.56 966.00 moveto show
 (G) 176.89 971.51 moveto show
 (C) 176.61 979.41 moveto show
@@ -3524,6 +3782,7 @@ showpage
 (G) 136.61 979.21 moveto show
 (G) 128.61 979.21 moveto show
 (C) 119.91 977.41 moveto show
+% residue 640 on the next line
 (U) 111.61 980.81 moveto show
 (C) 108.31 989.41 moveto show
 (A) 111.61 998.01 moveto show
@@ -3534,6 +3793,7 @@ showpage
 (U) 152.61 999.21 moveto show
 (G) 160.61 999.21 moveto show
 (G) 168.61 999.21 moveto show
+% residue 650 on the next line
 (A) 176.61 999.41 moveto show
 (A) 182.53 1005.41 moveto show
 (C) 190.88 1005.30 moveto show
@@ -3544,6 +3804,7 @@ showpage
 (U) 228.61 999.21 moveto show
 (U) 236.61 999.21 moveto show
 (U) 244.61 999.21 moveto show
+% residue 660 on the next line
 (G) 252.61 999.21 moveto show
 (A) 260.61 999.21 moveto show
 (A) 262.61 1007.41 moveto show
@@ -3554,6 +3815,7 @@ showpage
 (G) 299.61 999.21 moveto show
 (C) 307.61 999.21 moveto show
 (A) 315.61 999.21 moveto show
+% residue 670 on the next line
 (A) 323.61 999.21 moveto show
 (A) 331.61 999.21 moveto show
 (C) 339.61 999.21 moveto show
@@ -3564,6 +3826,7 @@ showpage
 (G) 348.61 1037.21 moveto show
 (U) 348.61 1045.21 moveto show
 (G) 348.61 1056.21 moveto show
+% residue 680 on the next line
 (C) 348.61 1065.21 moveto show
 (G) 348.61 1073.21 moveto show
 (G) 348.61 1081.21 moveto show
@@ -3574,6 +3837,7 @@ showpage
 (G) 348.61 1115.21 moveto show
 (G) 348.61 1123.21 moveto show
 (A) 348.61 1131.21 moveto show
+% residue 690 on the next line
 (A) 348.61 1139.21 moveto show
 (G) 348.61 1147.21 moveto show
 (G) 348.61 1155.21 moveto show
@@ -3584,6 +3848,7 @@ showpage
 (A) 316.61 1165.21 moveto show
 (U) 308.61 1169.21 moveto show
 (U) 300.61 1169.21 moveto show
+% residue 700 on the next line
 (C) 292.61 1169.21 moveto show
 (C) 284.61 1169.21 moveto show
 (U) 276.61 1169.21 moveto show
@@ -3594,6 +3859,7 @@ showpage
 (U) 235.68 1160.21 moveto show
 (A) 226.02 1162.58 moveto show
 (G) 218.61 1169.21 moveto show
+% residue 710 on the next line
 (C) 210.61 1169.21 moveto show
 (G) 202.61 1169.21 moveto show
 (G) 194.61 1166.51 moveto show
@@ -3604,6 +3870,7 @@ showpage
 (A) 194.61 1192.71 moveto show
 (U) 202.61 1189.21 moveto show
 (G) 210.61 1189.21 moveto show
+% residue 720 on the next line
 (C) 218.61 1189.21 moveto show
 (G) 219.29 1197.51 moveto show
 (U) 223.89 1204.61 moveto show
@@ -3614,6 +3881,7 @@ showpage
 (A) 252.61 1189.21 moveto show
 (U) 260.61 1189.21 moveto show
 (C) 268.61 1189.21 moveto show
+% residue 730 on the next line
 (A) 276.61 1189.21 moveto show
 (G) 284.61 1189.21 moveto show
 (G) 292.61 1189.21 moveto show
@@ -3624,6 +3892,7 @@ showpage
 (A) 332.61 1189.21 moveto show
 (C) 340.61 1189.21 moveto show
 (A) 347.91 1194.01 moveto show
+% residue 740 on the next line
 (C) 353.91 1199.41 moveto show
 (C) 361.21 1199.61 moveto show
 (G) 368.41 1194.41 moveto show
@@ -3634,6 +3903,7 @@ showpage
 (C) 401.61 1189.21 moveto show
 (G) 409.43 1188.83 moveto show
 (A) 414.85 1183.15 moveto show
+% residue 750 on the next line
 (A) 414.86 1175.30 moveto show
 (G) 409.45 1169.60 moveto show
 (G) 401.61 1169.21 moveto show
@@ -3644,6 +3914,7 @@ showpage
 (C) 368.61 1147.21 moveto show
 (U) 368.61 1139.21 moveto show
 (U) 368.61 1131.21 moveto show
+% residue 760 on the next line
 (C) 368.61 1123.21 moveto show
 (U) 368.61 1115.21 moveto show
 (G) 373.70 1106.84 moveto show
@@ -3654,6 +3925,7 @@ showpage
 (G) 368.61 1065.21 moveto show
 (A) 375.61 1060.71 moveto show
 (U) 368.61 1056.21 moveto show
+% residue 770 on the next line
 (A) 375.61 1050.21 moveto show
 (A) 368.61 1045.21 moveto show
 (C) 368.61 1037.21 moveto show
@@ -3664,6 +3936,7 @@ showpage
 (G) 369.24 988.58 moveto show
 (C) 375.79 983.99 moveto show
 (U) 382.35 979.40 moveto show
+% residue 780 on the next line
 (G) 390.35 971.40 moveto show
 (A) 397.72 976.29 moveto show
 (G) 404.42 972.07 moveto show
@@ -3674,6 +3947,7 @@ showpage
 (G) 429.61 946.11 moveto show
 (A) 430.01 954.81 moveto show
 (A) 433.21 963.01 moveto show
+% residue 790 on the next line
 (A) 439.01 969.61 moveto show
 (G) 446.61 974.21 moveto show
 (C) 446.61 982.21 moveto show
@@ -3684,6 +3958,7 @@ showpage
 (G) 438.43 1014.98 moveto show
 (G) 434.57 1022.23 moveto show
 (A) 438.46 1029.46 moveto show
+% residue 800 on the next line
 (G) 446.61 1030.21 moveto show
 (C) 446.61 1038.21 moveto show
 (A) 441.49 1045.35 moveto show
@@ -3694,6 +3969,7 @@ showpage
 (G) 446.61 1086.21 moveto show
 (G) 446.61 1094.21 moveto show
 (A) 440.61 1101.21 moveto show
+% residue 810 on the next line
 (U) 438.61 1110.21 moveto show
 (U) 440.61 1119.21 moveto show
 (A) 447.61 1126.21 moveto show
@@ -3704,6 +3980,7 @@ showpage
 (C) 472.61 1101.21 moveto show
 (C) 466.61 1094.21 moveto show
 (C) 466.61 1086.21 moveto show
+% residue 820 on the next line
 (U) 466.61 1078.21 moveto show
 (G) 466.61 1070.21 moveto show
 (G) 471.73 1063.07 moveto show
@@ -3714,6 +3991,7 @@ showpage
 (C) 466.61 1014.21 moveto show
 (C) 466.61 1006.21 moveto show
 (A) 466.61 998.21 moveto show
+% residue 830 on the next line
 (C) 466.61 990.21 moveto show
 (G) 466.61 982.21 moveto show
 (C) 466.61 974.21 moveto show
@@ -3724,6 +4002,7 @@ showpage
 (A) 502.01 958.21 moveto show
 (A) 503.71 949.81 moveto show
 (C) 502.51 941.21 moveto show
+% residue 840 on the next line
 (G) 498.81 933.51 moveto show
 (A) 492.81 927.31 moveto show
 (U) 485.11 923.41 moveto show
@@ -3734,6 +4013,7 @@ showpage
 (A) 512.61 914.21 moveto show
 (C) 520.61 914.21 moveto show
 (U) 528.08 914.68 moveto show
+% residue 850 on the next line
 (A) 535.44 916.05 moveto show
 (G) 542.54 918.28 moveto show
 (G) 548.20 923.94 moveto show
@@ -3744,6 +4024,7 @@ showpage
 (G) 576.48 952.22 moveto show
 (G) 582.14 957.88 moveto show
 (G) 587.79 963.54 moveto show
+% residue 860 on the next line
 (G) 593.45 969.19 moveto show
 (G) 599.45 975.19 moveto show
 (C) 603.87 982.23 moveto show
@@ -3754,6 +4035,7 @@ showpage
 (A) 635.08 985.60 moveto show
 (A) 632.69 977.54 moveto show
 (C) 627.69 970.54 moveto show
+% residue 870 on the next line
 (G) 620.69 965.54 moveto show
 (C) 613.59 961.05 moveto show
 (C) 607.59 955.05 moveto show
@@ -3764,6 +4046,7 @@ showpage
 (G) 579.31 926.77 moveto show
 (U) 573.65 921.11 moveto show
 (G) 567.99 915.45 moveto show
+% residue 880 on the next line
 (C) 562.34 909.80 moveto show
 (C) 556.68 904.14 moveto show
 (G) 563.21 900.51 moveto show
@@ -3774,6 +4057,7 @@ showpage
 (U) 585.51 869.41 moveto show
 (A) 588.01 858.01 moveto show
 (A) 577.41 851.41 moveto show
+% residue 890 on the next line
 (C) 571.01 852.81 moveto show
 (G) 564.20 861.48 moveto show
 (C) 558.54 867.14 moveto show
@@ -3784,6 +4068,7 @@ showpage
 (A) 525.78 888.13 moveto show
 (G) 520.61 894.21 moveto show
 (U) 512.61 894.21 moveto show
+% residue 900 on the next line
 (A) 504.61 894.21 moveto show
 (U) 496.61 894.21 moveto show
 (U) 488.61 894.21 moveto show
@@ -3794,6 +4079,7 @@ showpage
 (C) 472.61 863.21 moveto show
 (U) 473.01 854.81 moveto show
 (G) 480.61 836.21 moveto show
+% residue 910 on the next line
 (G) 488.61 836.21 moveto show
 (G) 496.61 836.21 moveto show
 (G) 498.61 844.21 moveto show
@@ -3804,6 +4090,7 @@ showpage
 (C) 532.61 844.21 moveto show
 (G) 534.61 836.21 moveto show
 (C) 542.61 836.21 moveto show
+% residue 920 on the next line
 (C) 550.61 836.21 moveto show
 (C) 558.61 836.21 moveto show
 (G) 567.91 837.51 moveto show
@@ -3814,6 +4101,7 @@ showpage
 (G) 550.61 816.21 moveto show
 (G) 542.61 816.21 moveto show
 (U) 534.61 816.21 moveto show
+% residue 930 on the next line
 (G) 527.61 810.21 moveto show
 (A) 519.61 807.21 moveto show
 (A) 511.61 807.21 moveto show
@@ -3824,6 +4112,7 @@ showpage
 (A) 483.61 807.91 moveto show
 (A) 490.21 802.91 moveto show
 (A) 497.31 799.71 moveto show
+% residue 940 on the next line
 (G) 504.33 793.54 moveto show
 (G) 511.97 791.14 moveto show
 (A) 519.60 788.75 moveto show
@@ -3834,6 +4123,7 @@ showpage
 (A) 565.61 784.21 moveto show
 (C) 573.61 784.21 moveto show
 (G) 581.61 784.21 moveto show
+% residue 950 on the next line
 (G) 586.81 790.61 moveto show
 (G) 591.61 784.21 moveto show
 (G) 599.61 784.21 moveto show
@@ -3844,6 +4134,7 @@ showpage
 (G) 639.61 784.21 moveto show
 (C) 648.61 789.21 moveto show
 (A) 653.61 784.21 moveto show
+% residue 960 on the next line
 (C) 661.61 784.21 moveto show
 (A) 669.61 787.21 moveto show
 (A) 677.61 788.21 moveto show
@@ -3854,6 +4145,7 @@ showpage
 (U) 711.40 805.72 moveto show
 (G) 732.61 820.21 moveto show
 (G) 732.61 828.21 moveto show
+% residue 970 on the next line
 (A) 732.61 836.21 moveto show
 (G) 732.61 844.21 moveto show
 (C) 732.61 852.21 moveto show
@@ -3864,6 +4156,7 @@ showpage
 (G) 732.61 892.21 moveto show
 (G) 732.61 902.21 moveto show
 (U) 732.61 910.21 moveto show
+% residue 980 on the next line
 (U) 725.42 906.86 moveto show
 (U) 720.05 901.89 moveto show
 (A) 711.76 900.71 moveto show
@@ -3874,6 +4167,7 @@ showpage
 (G) 679.71 888.17 moveto show
 (A) 678.92 878.30 moveto show
 (U) 672.82 870.36 moveto show
+% residue 990 on the next line
 (G) 663.42 866.93 moveto show
 (C) 653.64 869.07 moveto show
 (A) 646.54 876.13 moveto show
@@ -3884,6 +4178,7 @@ showpage
 (G) 671.23 907.97 moveto show
 (A) 676.88 913.62 moveto show
 (A) 682.54 919.28 moveto show
+% residue 1000 on the next line
 (G) 681.17 928.11 moveto show
 (A) 682.68 936.91 moveto show
 (A) 686.91 944.78 moveto show
@@ -3894,6 +4189,7 @@ showpage
 (A) 724.82 947.02 moveto show
 (C) 732.61 942.21 moveto show
 (C) 732.61 950.21 moveto show
+% residue 1010 on the next line
 (A) 732.61 958.21 moveto show
 (G) 732.61 966.21 moveto show
 (G) 732.61 974.21 moveto show
@@ -3904,6 +4200,7 @@ showpage
 (G) 719.51 976.41 moveto show
 (A) 713.21 979.51 moveto show
 (C) 706.61 985.51 moveto show
+% residue 1020 on the next line
 (A) 706.54 994.14 moveto show
 (U) 700.88 999.80 moveto show
 (G) 695.23 1005.45 moveto show
@@ -3914,6 +4211,7 @@ showpage
 (G) 666.94 1033.74 moveto show
 (G) 661.28 1039.39 moveto show
 (A) 654.39 1037.10 moveto show
+% residue 1030 on the next line
 (A) 646.03 1036.09 moveto show
 (U) 636.61 1036.21 moveto show
 (C) 628.61 1036.21 moveto show
@@ -3924,6 +4222,7 @@ showpage
 (A) 588.61 1036.21 moveto show
 (G) 579.38 1035.36 moveto show
 (A) 572.57 1041.60 moveto show
+% residue 1040 on the next line
 (G) 572.58 1050.84 moveto show
 (A) 579.41 1057.07 moveto show
 (U) 588.61 1056.21 moveto show
@@ -3934,6 +4233,7 @@ showpage
 (G) 628.61 1056.21 moveto show
 (A) 636.61 1056.21 moveto show
 (G) 644.24 1056.56 moveto show
+% residue 1050 on the next line
 (U) 653.61 1062.21 moveto show
 (G) 653.61 1070.21 moveto show
 (C) 653.61 1078.21 moveto show
@@ -3944,6 +4244,7 @@ showpage
 (C) 671.26 1101.38 moveto show
 (G) 675.24 1094.23 moveto show
 (G) 673.61 1086.21 moveto show
+% residue 1060 on the next line
 (G) 673.61 1078.21 moveto show
 (A) 673.61 1070.21 moveto show
 (A) 673.61 1062.21 moveto show
@@ -3954,6 +4255,7 @@ showpage
 (G) 698.05 1030.91 moveto show
 (G) 703.71 1025.25 moveto show
 (C) 709.37 1019.59 moveto show
+% residue 1070 on the next line
 (A) 715.02 1013.94 moveto show
 (C) 720.68 1008.28 moveto show
 (A) 731.61 1010.21 moveto show
@@ -3964,6 +4266,7 @@ showpage
 (C) 732.61 1044.21 moveto show
 (U) 732.61 1052.21 moveto show
 (G) 732.61 1060.21 moveto show
+% residue 1080 on the next line
 (C) 724.61 1061.21 moveto show
 (A) 724.61 1070.21 moveto show
 (U) 732.61 1072.21 moveto show
@@ -3974,6 +4277,7 @@ showpage
 (G) 732.61 1120.21 moveto show
 (U) 732.61 1128.21 moveto show
 (C) 732.61 1136.21 moveto show
+% residue 1090 on the next line
 (G) 732.61 1144.21 moveto show
 (U) 729.61 1152.21 moveto show
 (C) 729.61 1160.21 moveto show
@@ -3984,6 +4288,7 @@ showpage
 (C) 700.61 1178.21 moveto show
 (G) 692.61 1178.21 moveto show
 (U) 684.61 1178.21 moveto show
+% residue 1100 on the next line
 (G) 673.61 1176.21 moveto show
 (U) 673.61 1168.21 moveto show
 (C) 673.61 1160.21 moveto show
@@ -3994,6 +4299,7 @@ showpage
 (G) 653.61 1160.21 moveto show
 (A) 653.61 1168.21 moveto show
 (U) 653.61 1176.21 moveto show
+% residue 1110 on the next line
 (G) 653.61 1188.41 moveto show
 (U) 653.61 1199.61 moveto show
 (U) 653.61 1212.21 moveto show
@@ -4004,6 +4310,7 @@ showpage
 (U) 652.60 1252.35 moveto show
 (A) 659.38 1257.52 moveto show
 (A) 667.89 1257.50 moveto show
+% residue 1120 on the next line
 (G) 674.65 1252.31 moveto show
 (U) 676.85 1244.08 moveto show
 (C) 673.61 1236.21 moveto show
@@ -4014,6 +4321,7 @@ showpage
 (A) 685.81 1204.91 moveto show
 (A) 684.61 1198.21 moveto show
 (C) 692.61 1198.21 moveto show
+% residue 1130 on the next line
 (G) 700.61 1198.21 moveto show
 (A) 708.61 1198.21 moveto show
 (G) 716.61 1198.21 moveto show
@@ -4024,6 +4332,7 @@ showpage
 (A) 750.51 1209.51 moveto show
 (C) 756.71 1204.51 moveto show
 (C) 760.61 1197.21 moveto show
+% residue 1140 on the next line
 (C) 768.61 1197.21 moveto show
 (U) 776.61 1197.21 moveto show
 (U) 784.61 1197.21 moveto show
@@ -4034,6 +4343,7 @@ showpage
 (U) 835.61 1197.21 moveto show
 (U) 843.61 1197.21 moveto show
 (A) 851.61 1197.21 moveto show
+% residue 1150 on the next line
 (G) 859.61 1197.21 moveto show
 (U) 864.38 1204.72 moveto show
 (U) 872.62 1207.66 moveto show
@@ -4044,6 +4354,7 @@ showpage
 (G) 905.61 1202.21 moveto show
 (C) 911.61 1197.21 moveto show
 (A) 919.61 1197.21 moveto show
+% residue 1160 on the next line
 (G) 927.61 1197.21 moveto show
 (G) 941.61 1197.21 moveto show
 (C) 949.61 1197.21 moveto show
@@ -4054,6 +4365,7 @@ showpage
 (A) 980.77 1182.51 moveto show
 (G) 974.50 1177.20 moveto show
 (G) 965.61 1177.21 moveto show
+% residue 1170 on the next line
 (G) 957.61 1177.21 moveto show
 (G) 949.61 1177.21 moveto show
 (U) 942.61 1177.21 moveto show
@@ -4064,6 +4376,7 @@ showpage
 (G) 893.61 1177.21 moveto show
 (G) 885.61 1177.21 moveto show
 (C) 883.50 1169.28 moveto show
+% residue 1180 on the next line
 (A) 876.77 1164.40 moveto show
 (C) 868.46 1164.41 moveto show
 (U) 861.74 1169.30 moveto show
@@ -4074,6 +4387,7 @@ showpage
 (G) 827.61 1177.21 moveto show
 (G) 819.61 1177.21 moveto show
 (A) 811.61 1177.21 moveto show
+% residue 1190 on the next line
 (G) 815.16 1165.13 moveto show
 (A) 815.18 1152.41 moveto show
 (C) 811.61 1140.21 moveto show
@@ -4084,6 +4398,7 @@ showpage
 (G) 811.61 1100.21 moveto show
 (G) 811.61 1092.21 moveto show
 (U) 811.61 1084.21 moveto show
+% residue 1200 on the next line
 (G) 813.64 1075.87 moveto show
 (A) 809.64 1068.27 moveto show
 (C) 801.61 1065.22 moveto show
@@ -4094,6 +4409,7 @@ showpage
 (C) 791.61 1100.21 moveto show
 (G) 791.61 1108.21 moveto show
 (G) 791.61 1116.21 moveto show
+% residue 1210 on the next line
 (A) 791.61 1124.21 moveto show
 (G) 791.61 1132.21 moveto show
 (G) 791.61 1140.21 moveto show
@@ -4104,6 +4420,7 @@ showpage
 (U) 792.61 1177.21 moveto show
 (G) 784.61 1177.21 moveto show
 (G) 776.61 1177.21 moveto show
+% residue 1220 on the next line
 (G) 768.61 1177.21 moveto show
 (G) 760.61 1177.21 moveto show
 (A) 754.81 1175.61 moveto show
@@ -4114,6 +4431,7 @@ showpage
 (G) 752.61 1136.21 moveto show
 (U) 752.61 1128.21 moveto show
 (C) 752.61 1120.21 moveto show
+% residue 1230 on the next line
 (A) 759.01 1115.31 moveto show
 (A) 752.61 1110.21 moveto show
 (G) 752.61 1102.21 moveto show
@@ -4124,6 +4442,7 @@ showpage
 (C) 752.61 1080.21 moveto show
 (A) 752.61 1072.21 moveto show
 (U) 752.61 1060.21 moveto show
+% residue 1240 on the next line
 (G) 752.61 1052.21 moveto show
 (G) 752.61 1044.21 moveto show
 (C) 752.61 1036.21 moveto show
@@ -4134,6 +4453,7 @@ showpage
 (A) 764.92 998.81 moveto show
 (U) 758.33 993.01 moveto show
 (G) 752.61 990.21 moveto show
+% residue 1250 on the next line
 (U) 752.61 982.21 moveto show
 (C) 752.61 974.21 moveto show
 (C) 752.61 966.21 moveto show
@@ -4144,6 +4464,7 @@ showpage
 (C) 759.41 926.21 moveto show
 (U) 757.61 917.31 moveto show
 (A) 752.61 910.21 moveto show
+% residue 1260 on the next line
 (C) 752.61 902.21 moveto show
 (A) 758.91 896.81 moveto show
 (C) 752.61 892.21 moveto show
@@ -4154,6 +4475,7 @@ showpage
 (G) 752.61 852.21 moveto show
 (C) 752.61 844.21 moveto show
 (U) 752.61 836.21 moveto show
+% residue 1270 on the next line
 (A) 752.61 828.21 moveto show
 (C) 752.61 820.21 moveto show
 (A) 760.55 820.95 moveto show
@@ -4164,6 +4486,7 @@ showpage
 (C) 798.43 822.79 moveto show
 (C) 804.85 827.59 moveto show
 (G) 811.26 832.38 moveto show
+% residue 1280 on the next line
 (G) 817.66 837.17 moveto show
 (U) 824.07 841.96 moveto show
 (A) 823.01 850.57 moveto show
@@ -4174,6 +4497,7 @@ showpage
 (G) 856.22 865.99 moveto show
 (G) 862.63 870.78 moveto show
 (G) 869.04 875.58 moveto show
+% residue 1290 on the next line
 (C) 872.16 884.32 moveto show
 (A) 878.40 888.68 moveto show
 (G) 887.38 889.29 moveto show
@@ -4184,6 +4508,7 @@ showpage
 (A) 912.84 908.30 moveto show
 (C) 919.24 913.10 moveto show
 (C) 925.65 917.89 moveto show
+% residue 1300 on the next line
 (G) 932.60 924.58 moveto show
 (C) 942.21 923.80 moveto show
 (G) 947.98 916.08 moveto show
@@ -4194,6 +4519,7 @@ showpage
 (G) 926.49 883.39 moveto show
 (G) 921.84 876.29 moveto show
 (A) 913.24 873.47 moveto show
+% residue 1310 on the next line
 (G) 905.77 878.05 moveto show
 (C) 899.36 873.27 moveto show
 (U) 903.69 865.35 moveto show
@@ -4204,6 +4530,7 @@ showpage
 (C) 874.60 854.76 moveto show
 (C) 868.20 849.97 moveto show
 (A) 867.52 841.94 moveto show
+% residue 1320 on the next line
 (A) 867.52 832.94 moveto show
 (A) 861.65 828.05 moveto show
 (A) 854.23 825.48 moveto show
@@ -4214,6 +4541,7 @@ showpage
 (G) 816.82 811.57 moveto show
 (G) 810.42 806.78 moveto show
 (U) 804.01 801.99 moveto show
+% residue 1330 on the next line
 (C) 797.60 797.20 moveto show
 (U) 799.61 789.21 moveto show
 (C) 799.61 781.21 moveto show
@@ -4224,6 +4552,7 @@ showpage
 (C) 777.22 747.97 moveto show
 (G) 783.27 741.38 moveto show
 (G) 785.48 733.69 moveto show
+% residue 1340 on the next line
 (A) 787.68 726.00 moveto show
 (U) 785.76 716.75 moveto show
 (U) 788.39 709.18 moveto show
@@ -4234,6 +4563,7 @@ showpage
 (U) 799.09 670.64 moveto show
 (C) 801.23 662.93 moveto show
 (U) 808.61 658.21 moveto show
+% residue 1350 on the next line
 (G) 811.61 650.21 moveto show
 (C) 810.61 641.21 moveto show
 (A) 804.61 634.21 moveto show
@@ -4244,6 +4574,7 @@ showpage
 (G) 781.96 657.58 moveto show
 (A) 779.82 665.28 moveto show
 (C) 777.68 672.99 moveto show
+% residue 1360 on the next line
 (U) 775.54 680.70 moveto show
 (C) 773.40 688.41 moveto show
 (C) 771.26 696.12 moveto show
@@ -4254,6 +4585,7 @@ showpage
 (A) 756.36 733.66 moveto show
 (G) 758.00 742.45 moveto show
 (U) 747.61 745.21 moveto show
+% residue 1370 on the next line
 (C) 738.61 751.21 moveto show
 (G) 730.61 758.21 moveto show
 (G) 725.61 767.21 moveto show
@@ -4264,6 +4596,7 @@ showpage
 (G) 701.48 776.10 moveto show
 (C) 694.67 771.90 moveto show
 (U) 700.53 766.52 moveto show
+% residue 1380 on the next line
 (A) 705.59 759.95 moveto show
 (G) 709.40 752.59 moveto show
 (U) 711.82 744.66 moveto show
@@ -4274,6 +4607,7 @@ showpage
 (G) 724.14 707.26 moveto show
 (C) 728.08 700.30 moveto show
 (A) 732.02 693.34 moveto show
+% residue 1390 on the next line
 (G) 735.97 686.37 moveto show
 (A) 740.78 679.90 moveto show
 (U) 750.30 675.87 moveto show
@@ -4284,6 +4618,7 @@ showpage
 (C) 732.68 643.84 moveto show
 (A) 724.26 649.62 moveto show
 (U) 720.17 658.97 moveto show
+% residue 1400 on the next line
 (G) 721.64 669.07 moveto show
 (C) 718.56 676.51 moveto show
 (U) 714.63 683.48 moveto show
@@ -4294,6 +4629,7 @@ showpage
 (U) 694.91 718.28 moveto show
 (G) 687.61 722.18 moveto show
 (A) 680.76 727.46 moveto show
+% residue 1410 on the next line
 (A) 674.93 733.85 moveto show
 (U) 670.30 741.15 moveto show
 (A) 667.01 749.15 moveto show
@@ -4304,6 +4640,7 @@ showpage
 (C) 646.54 750.23 moveto show
 (C) 641.08 755.07 moveto show
 (C) 639.61 764.21 moveto show
+% residue 1420 on the next line
 (G) 631.61 764.21 moveto show
 (G) 623.61 764.21 moveto show
 (G) 615.61 764.21 moveto show
@@ -4314,6 +4651,7 @@ showpage
 (G) 573.61 764.21 moveto show
 (U) 565.61 764.21 moveto show
 (A) 560.81 757.81 moveto show
+% residue 1430 on the next line
 (C) 555.61 764.21 moveto show
 (A) 547.61 764.21 moveto show
 (C) 543.31 756.21 moveto show
@@ -4324,6 +4662,7 @@ showpage
 (C) 545.61 705.21 moveto show
 (C) 542.31 696.21 moveto show
 (C) 545.61 688.21 moveto show
+% residue 1440 on the next line
 (G) 545.61 679.21 moveto show
 (U) 542.61 671.21 moveto show
 (C) 545.61 663.21 moveto show
@@ -4334,6 +4673,7 @@ showpage
 (C) 545.61 624.21 moveto show
 (A) 545.61 616.21 moveto show
 (U) 545.61 608.21 moveto show
+% residue 1450 on the next line
 (G) 545.61 600.21 moveto show
 (G) 545.61 592.21 moveto show
 (G) 541.61 584.21 moveto show
@@ -4344,6 +4684,7 @@ showpage
 (G) 545.61 544.21 moveto show
 (G) 545.61 536.21 moveto show
 (U) 545.61 528.21 moveto show
+% residue 1460 on the next line
 (A) 545.61 520.21 moveto show
 (A) 545.61 512.21 moveto show
 (U) 545.61 504.21 moveto show
@@ -4354,6 +4695,7 @@ showpage
 (G) 535.09 466.19 moveto show
 (A) 535.09 457.23 moveto show
 (A) 538.83 449.07 moveto show
+% residue 1470 on the next line
 (G) 545.61 443.21 moveto show
 (U) 545.61 435.21 moveto show
 (C) 545.61 427.21 moveto show
@@ -4364,6 +4706,7 @@ showpage
 (G) 545.61 392.19 moveto show
 (C) 545.61 384.19 moveto show
 (C) 545.61 376.19 moveto show
+% residue 1480 on the next line
 (U) 545.61 368.19 moveto show
 (A) 537.51 365.55 moveto show
 (A) 537.36 357.24 moveto show
@@ -4374,6 +4717,7 @@ showpage
 (U) 546.36 319.83 moveto show
 (A) 555.84 316.80 moveto show
 (A) 564.84 319.80 moveto show
+% residue 1490 on the next line
 (U) 565.76 327.45 moveto show
 (G) 565.61 336.19 moveto show
 (G) 565.61 344.19 moveto show
@@ -4384,6 +4728,7 @@ showpage
 (G) 565.61 384.19 moveto show
 (A) 565.61 392.19 moveto show
 (G) 565.61 403.21 moveto show
+% residue 1500 on the next line
 (C) 565.61 411.21 moveto show
 (C) 565.61 419.21 moveto show
 (G) 565.61 427.21 moveto show
@@ -4394,6 +4739,7 @@ showpage
 (A) 572.21 472.04 moveto show
 (G) 565.61 480.21 moveto show
 (G) 565.61 488.21 moveto show
+% residue 1510 on the next line
 (U) 565.61 496.21 moveto show
 (A) 565.61 504.21 moveto show
 (G) 565.61 512.21 moveto show
@@ -4404,6 +4750,7 @@ showpage
 (G) 565.61 552.21 moveto show
 (G) 565.61 560.21 moveto show
 (U) 565.61 568.21 moveto show
+% residue 1520 on the next line
 (G) 569.61 576.21 moveto show
 (A) 569.61 584.21 moveto show
 (C) 565.61 592.21 moveto show
@@ -4414,6 +4761,7 @@ showpage
 (G) 565.61 632.21 moveto show
 (U) 565.61 640.21 moveto show
 (G) 565.61 648.21 moveto show
+% residue 1530 on the next line
 (A) 571.61 652.21 moveto show
 (A) 571.61 659.21 moveto show
 (G) 565.61 663.21 moveto show
@@ -4424,6 +4772,7 @@ showpage
 (A) 571.21 700.21 moveto show
 (A) 565.61 705.21 moveto show
 (C) 565.61 713.21 moveto show
+% residue 1540 on the next line
 (A) 572.61 721.21 moveto show
 (A) 583.11 728.21 moveto show
 (G) 593.61 735.21 moveto show
@@ -4434,6 +4783,7 @@ showpage
 (C) 617.61 711.21 moveto show
 (C) 625.61 711.21 moveto show
 (G) 633.61 711.21 moveto show
+% residue 1550 on the next line
 (U) 641.61 711.21 moveto show
 (A) 649.61 711.21 moveto show
 (C) 657.61 711.21 moveto show
@@ -4444,6 +4794,7 @@ showpage
 (A) 674.80 690.37 moveto show
 (G) 665.61 691.21 moveto show
 (G) 657.61 691.21 moveto show
+% residue 1560 on the next line
 (U) 649.61 691.21 moveto show
 (G) 641.61 691.21 moveto show
 (C) 633.61 691.21 moveto show
@@ -4454,6 +4805,7 @@ showpage
 (G) 593.61 691.21 moveto show
 (G) 593.71 682.11 moveto show
 (A) 593.70 673.33 moveto show
+% residue 1570 on the next line
 (U) 593.70 664.55 moveto show
 (C) 593.69 655.77 moveto show
 (A) 593.68 647.00 moveto show
@@ -4464,24 +4816,50 @@ showpage
 (C) 593.65 603.10 moveto show
 (U) 593.64 593.32 moveto show
 (U) 593.63 584.55 moveto show
+% residue 1580 on the next line
 (U) 593.62 575.77 moveto show
 (C) 593.62 566.99 moveto show
 (U) 593.62 557.41 moveto show
 % end text residues
 
 % begin ignore
-grestore
 showpage
 % end ignore
+% begin ignore
+%
+% eukarya-0p1.ps:
+% An esl-ssdraw postscript template file for drawing
+% eukaryotic SSU rRNA secondary structure diagrams.
+% The input alignment must be of consensus length (nongap RF length)
+% of 1881. This corresponds to the SSU-ALIGN v0.1 eukaryotic
+% seed alignment derived from Robin Gutell and colleagues'
+% Comparative RNA Website (CRW) [http://www.rna.ccbb.utexas.edu/]
+% as described in Eric Nawrocki's PhD Thesis "Structural RNA
+% Homology Search and Alignment Using Covariance Models" 2009,
+% availabe from: [http://selab.janelia.org/publications.html].
+%
+% setup defaults
+/Helvetica findfont 8.00 scalefont setfont
+0.00 0.00 0.00 1.00 setcmykcolor
+1.00 setlinewidth
+% end ignore
+
 % begin modelname
 % eukarya
 % end modelname
 
+% begin legend
+% 1881 24. -24. 24
+% end legend
+
 % begin scale 
-0.54 0.54 scale
+0.53 0.53 scale
 % end scale
 
 % begin regurgitate
+/Helvetica findfont 18.11 scalefont setfont
+(created by the SSU-ALIGN package (http://selab.janelia.org/software.html)) 510.00 70.00 moveto show
+(structure diagram derived from CRW database (http://www.rna.ccbb.utexas.edu/)) 460.00 50.00 moveto show
 /Helvetica findfont 8.00 scalefont setfont
 0.00 0.00 0.00 1.00 setcmykcolor
 (5') 479.88 805.67 moveto show
@@ -4497,9 +4875,12 @@ showpage
 746.36 912.20 760.58 918.67 newpath moveto lineto stroke
 % end regurgitate
 
-% begin text hundreds
+% begin ignore
+% reset 8.0 fontsize
 /Helvetica findfont 8.00 scalefont setfont
-0.00 0.00 0.00 1.00 setcmykcolor
+% end ignore
+
+% begin text positiontext
 (100) 292.74 538.56 moveto show
 (200) 279.60 190.47 moveto show
 (300) 257.21 337.29 moveto show
@@ -4518,11 +4899,9 @@ showpage
 (1600) 915.02 943.39 moveto show
 (1700) 641.73 854.32 moveto show
 (1800) 603.08 461.82 moveto show
-% end text hundreds
+% end text positiontext
 
-% begin lines ticks
-2.00 setlinewidth
-0.00 0.00 0.00 1.00 setcmykcolor
+% begin lines positionticks
 533.07 849.82 536.04 842.93 newpath moveto lineto stroke
 477.33 872.25 475.44 879.51 newpath moveto lineto stroke
 421.08 823.49 425.88 817.72 newpath moveto lineto stroke
@@ -4711,12 +5090,9 @@ showpage
 700.69 818.46 703.48 825.42 newpath moveto lineto stroke
 642.58 791.67 642.58 784.17 newpath moveto lineto stroke
 621.68 732.57 629.18 732.57 newpath moveto lineto stroke
-% end lines ticks
-
+% end lines positionticks
 
 % begin lines bpconnects
-1.00 setlinewidth
-0.00 0.00 0.00 0.50 setcmykcolor
 478.93 862.16 480.63 855.58 newpath moveto lineto stroke
 486.68 864.16 488.37 857.58 newpath moveto lineto stroke
 494.42 866.16 496.12 859.58 newpath moveto lineto stroke
@@ -5168,8 +5544,6 @@ showpage
 % end lines bpconnects
 
 % begin text residues
-/Helvetica findfont 8.00 scalefont setfont
-0.00 0.00 0.00 1.00 setcmykcolor
 (A) 479.88 822.67 moveto show
 (A) 479.88 830.67 moveto show
 (C) 479.88 838.67 moveto show
@@ -5179,6 +5553,7 @@ showpage
 (G) 503.32 852.98 moveto show
 (U) 511.06 854.98 moveto show
 (U) 518.68 849.07 moveto show
+% residue 10 on the next line
 (G) 528.88 849.57 moveto show
 (A) 536.28 856.67 moveto show
 (U) 537.42 867.18 moveto show
@@ -5189,6 +5564,7 @@ showpage
 (C) 498.32 872.35 moveto show
 (C) 490.57 870.35 moveto show
 (A) 482.83 868.35 moveto show
+% residue 20 on the next line
 (G) 475.08 866.35 moveto show
 (U) 468.28 864.57 moveto show
 (A) 461.98 860.99 moveto show
@@ -5199,6 +5575,7 @@ showpage
 (U) 434.59 838.16 moveto show
 (A) 428.45 833.03 moveto show
 (U) 422.30 827.91 moveto show
+% residue 30 on the next line
 (G) 416.16 822.79 moveto show
 (C) 410.01 817.67 moveto show
 (U) 403.87 812.54 moveto show
@@ -5209,6 +5586,7 @@ showpage
 (U) 368.90 783.39 moveto show
 (C) 362.75 778.27 moveto show
 (A) 356.61 773.15 moveto show
+% residue 40 on the next line
 (A) 348.58 766.46 moveto show
 (A) 342.44 761.34 moveto show
 (G) 343.59 709.67 moveto show
@@ -5219,6 +5597,7 @@ showpage
 (A) 351.58 682.67 moveto show
 (G) 343.58 681.67 moveto show
 (C) 343.58 673.67 moveto show
+% residue 50 on the next line
 (C) 343.58 665.67 moveto show
 (A) 350.68 662.57 moveto show
 (U) 343.58 657.67 moveto show
@@ -5229,6 +5608,7 @@ showpage
 (G) 366.58 603.67 moveto show
 (U) 374.58 603.67 moveto show
 (C) 375.58 611.67 moveto show
+% residue 60 on the next line
 (U) 382.58 614.67 moveto show
 (A) 389.58 610.67 moveto show
 (A) 389.58 603.67 moveto show
@@ -5239,6 +5619,7 @@ showpage
 (A) 422.71 616.21 moveto show
 (A) 429.23 611.40 moveto show
 (A) 431.63 603.67 moveto show
+% residue 70 on the next line
 (C) 439.63 603.67 moveto show
 (A) 445.44 609.85 moveto show
 (A) 453.30 613.04 moveto show
@@ -5249,6 +5630,7 @@ showpage
 (A) 474.42 585.40 moveto show
 (U) 469.28 578.66 moveto show
 (A) 461.77 574.72 moveto show
+% residue 80 on the next line
 (C) 453.30 574.30 moveto show
 (U) 445.45 577.49 moveto show
 (G) 439.63 583.67 moveto show
@@ -5259,6 +5641,7 @@ showpage
 (A) 405.58 583.67 moveto show
 (C) 397.58 583.67 moveto show
 (U) 389.58 583.67 moveto show
+% residue 90 on the next line
 (G) 374.58 583.67 moveto show
 (C) 366.58 583.67 moveto show
 (G) 360.98 569.57 moveto show
@@ -5269,6 +5652,7 @@ showpage
 (G) 303.38 543.47 moveto show
 (C) 290.65 547.60 moveto show
 (U) 284.99 541.94 moveto show
+% residue 100 on the next line
 (C) 279.34 536.29 moveto show
 (A) 286.48 531.37 moveto show
 (U) 290.98 524.07 moveto show
@@ -5279,6 +5663,7 @@ showpage
 (U) 267.58 496.67 moveto show
 (C) 267.58 488.67 moveto show
 (A) 267.58 480.67 moveto show
+% residue 110 on the next line
 (G) 267.58 472.67 moveto show
 (U) 269.58 464.67 moveto show
 (U) 269.58 456.67 moveto show
@@ -5289,6 +5674,7 @@ showpage
 (U) 267.58 428.67 moveto show
 (U) 267.58 420.67 moveto show
 (U) 273.23 414.48 moveto show
+% residue 120 on the next line
 (A) 276.21 406.75 moveto show
 (U) 276.19 398.47 moveto show
 (U) 273.18 390.76 moveto show
@@ -5299,6 +5685,7 @@ showpage
 (G) 269.58 352.67 moveto show
 (G) 269.58 344.67 moveto show
 (U) 277.58 350.67 moveto show
+% residue 130 on the next line
 (U) 280.58 357.67 moveto show
 (C) 286.58 362.67 moveto show
 (C) 293.58 363.67 moveto show
@@ -5309,6 +5696,7 @@ showpage
 (U) 288.58 343.67 moveto show
 (A) 281.58 340.67 moveto show
 (C) 285.58 333.67 moveto show
+% residue 140 on the next line
 (U) 293.58 333.67 moveto show
 (U) 301.58 333.67 moveto show
 (G) 309.58 333.67 moveto show
@@ -5319,6 +5707,7 @@ showpage
 (A) 345.58 333.67 moveto show
 (C) 353.58 333.67 moveto show
 (C) 361.58 333.67 moveto show
+% residue 150 on the next line
 (G) 369.58 333.67 moveto show
 (U) 377.58 333.67 moveto show
 (A) 385.58 333.67 moveto show
@@ -5329,6 +5718,7 @@ showpage
 (U) 410.36 315.25 moveto show
 (U) 402.27 311.20 moveto show
 (C) 393.58 313.67 moveto show
+% residue 160 on the next line
 (U) 385.58 313.67 moveto show
 (A) 377.58 313.67 moveto show
 (G) 369.58 313.67 moveto show
@@ -5339,6 +5729,7 @@ showpage
 (A) 336.11 299.80 moveto show
 (A) 327.65 297.67 moveto show
 (U) 319.18 299.73 moveto show
+% residue 170 on the next line
 (A) 312.65 305.51 moveto show
 (C) 309.58 313.67 moveto show
 (A) 301.58 313.67 moveto show
@@ -5349,6 +5740,7 @@ showpage
 (A) 301.54 276.89 moveto show
 (A) 303.27 263.78 moveto show
 (A) 303.20 250.55 moveto show
+% residue 180 on the next line
 (A) 301.32 237.45 moveto show
 (A) 297.65 224.74 moveto show
 (C) 303.31 219.08 moveto show
@@ -5359,6 +5751,7 @@ showpage
 (A) 334.32 194.59 moveto show
 (C) 336.27 186.13 moveto show
 (U) 341.92 180.47 moveto show
+% residue 190 on the next line
 (U) 349.76 172.39 moveto show
 (U) 352.73 161.51 moveto show
 (U) 345.73 155.51 moveto show
@@ -5369,6 +5762,7 @@ showpage
 (A) 307.26 179.16 moveto show
 (G) 306.14 187.97 moveto show
 (G) 300.48 193.63 moveto show
+% residue 200 on the next line
 (G) 294.82 199.29 moveto show
 (G) 289.17 204.94 moveto show
 (U) 283.51 210.60 moveto show
@@ -5379,6 +5773,7 @@ showpage
 (U) 231.65 210.60 moveto show
 (U) 225.99 204.94 moveto show
 (A) 220.34 199.29 moveto show
+% residue 210 on the next line
 (U) 214.68 193.63 moveto show
 (U) 209.02 187.97 moveto show
 (A) 203.37 182.31 moveto show
@@ -5389,6 +5784,7 @@ showpage
 (A) 196.08 144.46 moveto show
 (A) 190.08 138.46 moveto show
 (A) 182.43 134.46 moveto show
+% residue 220 on the next line
 (A) 174.07 133.46 moveto show
 (A) 165.23 133.46 moveto show
 (A) 157.16 136.11 moveto show
@@ -5399,6 +5795,7 @@ showpage
 (U) 129.41 100.56 moveto show
 (G) 118.65 97.60 moveto show
 (C) 112.99 91.94 moveto show
+% residue 230 on the next line
 (C) 107.34 86.29 moveto show
 (G) 101.68 80.63 moveto show
 (G) 96.02 74.97 moveto show
@@ -5409,6 +5806,7 @@ showpage
 (G) 67.19 70.67 moveto show
 (U) 71.19 76.64 moveto show
 (G) 76.22 83.46 moveto show
+% residue 240 on the next line
 (C) 81.88 89.11 moveto show
 (C) 87.54 94.77 moveto show
 (G) 93.20 100.43 moveto show
@@ -5419,6 +5817,7 @@ showpage
 (U) 92.64 136.12 moveto show
 (A) 96.64 145.12 moveto show
 (U) 105.64 144.67 moveto show
+% residue 250 on the next line
 (U) 113.95 143.17 moveto show
 (U) 120.22 137.89 moveto show
 (U) 126.05 133.28 moveto show
@@ -5429,6 +5828,7 @@ showpage
 (A) 146.78 171.10 moveto show
 (U) 152.25 180.07 moveto show
 (U) 159.70 187.46 moveto show
+% residue 260 on the next line
 (C) 168.71 192.85 moveto show
 (A) 178.74 195.92 moveto show
 (U) 189.22 196.46 moveto show
@@ -5439,6 +5839,7 @@ showpage
 (A) 217.51 224.74 moveto show
 (C) 214.18 233.78 moveto show
 (U) 211.82 243.04 moveto show
+% residue 270 on the next line
 (U) 210.42 252.49 moveto show
 (U) 210.01 262.03 moveto show
 (U) 210.57 271.57 moveto show
@@ -5449,6 +5850,7 @@ showpage
 (U) 227.58 315.67 moveto show
 (C) 219.58 315.67 moveto show
 (G) 211.58 315.67 moveto show
+% residue 280 on the next line
 (C) 203.58 315.67 moveto show
 (A) 198.58 309.67 moveto show
 (U) 193.58 315.67 moveto show
@@ -5459,6 +5861,7 @@ showpage
 (U) 154.58 317.67 moveto show
 (U) 152.58 325.67 moveto show
 (G) 154.58 333.67 moveto show
+% residue 290 on the next line
 (U) 161.58 336.67 moveto show
 (G) 169.58 335.67 moveto show
 (C) 177.58 335.67 moveto show
@@ -5469,6 +5872,7 @@ showpage
 (G) 219.58 335.67 moveto show
 (A) 227.58 335.67 moveto show
 (U) 236.58 339.67 moveto show
+% residue 300 on the next line
 (G) 245.58 344.67 moveto show
 (C) 245.58 352.67 moveto show
 (A) 245.58 360.67 moveto show
@@ -5479,6 +5883,7 @@ showpage
 (U) 241.58 401.67 moveto show
 (C) 242.58 411.67 moveto show
 (A) 247.58 420.67 moveto show
+% residue 310 on the next line
 (A) 247.58 428.67 moveto show
 (A) 247.58 440.67 moveto show
 (U) 247.58 448.67 moveto show
@@ -5489,6 +5894,7 @@ showpage
 (G) 247.58 488.67 moveto show
 (C) 247.58 496.67 moveto show
 (C) 238.65 496.60 moveto show
+% residue 320 on the next line
 (C) 232.99 490.94 moveto show
 (U) 227.34 485.29 moveto show
 (A) 229.78 476.77 moveto show
@@ -5499,6 +5905,7 @@ showpage
 (C) 191.99 448.94 moveto show
 (U) 186.34 443.29 moveto show
 (U) 192.58 438.67 moveto show
+% residue 330 on the next line
 (U) 192.58 430.67 moveto show
 (C) 186.58 425.67 moveto show
 (G) 178.58 426.67 moveto show
@@ -5509,6 +5916,7 @@ showpage
 (U) 152.02 409.97 moveto show
 (A) 146.37 404.31 moveto show
 (G) 140.71 398.66 moveto show
+% residue 340 on the next line
 (G) 135.05 393.00 moveto show
 (G) 133.38 384.77 moveto show
 (U) 126.48 378.37 moveto show
@@ -5519,6 +5927,7 @@ showpage
 (G) 111.98 406.07 moveto show
 (C) 120.91 407.14 moveto show
 (C) 126.57 412.80 moveto show
+% residue 350 on the next line
 (U) 132.22 418.46 moveto show
 (A) 137.88 424.11 moveto show
 (C) 143.54 429.77 moveto show
@@ -5529,6 +5938,7 @@ showpage
 (G) 177.85 463.08 moveto show
 (U) 183.51 468.74 moveto show
 (U) 178.65 475.11 moveto show
+% residue 360 on the next line
 (G) 177.57 482.93 moveto show
 (U) 180.83 490.10 moveto show
 (A) 187.43 494.42 moveto show
@@ -5539,6 +5949,7 @@ showpage
 (G) 224.51 510.74 moveto show
 (U) 229.58 514.67 moveto show
 (A) 234.58 519.67 moveto show
+% residue 370 on the next line
 (A) 239.58 523.67 moveto show
 (C) 244.44 529.57 moveto show
 (G) 237.16 532.88 moveto show
@@ -5549,6 +5960,7 @@ showpage
 (A) 195.88 552.19 moveto show
 (U) 188.59 555.50 moveto show
 (U) 179.71 558.69 moveto show
+% residue 380 on the next line
 (A) 176.01 567.17 moveto show
 (G) 179.87 575.58 moveto show
 (G) 188.71 578.31 moveto show
@@ -5559,6 +5971,7 @@ showpage
 (G) 221.48 571.47 moveto show
 (A) 229.28 571.47 moveto show
 (U) 234.48 564.57 moveto show
+% residue 390 on the next line
 (U) 230.87 557.70 moveto show
 (C) 238.15 554.39 moveto show
 (C) 245.44 551.08 moveto show
@@ -5569,6 +5982,7 @@ showpage
 (A) 271.18 570.17 moveto show
 (G) 265.86 579.82 moveto show
 (G) 257.98 581.20 moveto show
+% residue 400 on the next line
 (G) 250.10 582.58 moveto show
 (A) 242.22 583.96 moveto show
 (G) 234.34 585.34 moveto show
@@ -5579,6 +5993,7 @@ showpage
 (A) 198.59 590.24 moveto show
 (G) 196.27 597.99 moveto show
 (A) 197.64 605.96 moveto show
+% residue 410 on the next line
 (A) 202.42 612.49 moveto show
 (A) 209.61 616.20 moveto show
 (C) 217.70 616.32 moveto show
@@ -5589,6 +6004,7 @@ showpage
 (A) 253.54 602.28 moveto show
 (C) 261.42 600.90 moveto show
 (C) 269.30 599.52 moveto show
+% residue 420 on the next line
 (A) 271.58 608.67 moveto show
 (C) 272.51 617.60 moveto show
 (A) 266.85 623.26 moveto show
@@ -5599,6 +6015,7 @@ showpage
 (A) 254.98 656.87 moveto show
 (G) 264.38 656.27 moveto show
 (G) 269.68 648.71 moveto show
+% residue 430 on the next line
 (A) 275.34 643.05 moveto show
 (A) 280.99 637.40 moveto show
 (G) 286.65 631.74 moveto show
@@ -5609,6 +6026,7 @@ showpage
 (C) 323.58 649.67 moveto show
 (A) 323.58 657.67 moveto show
 (G) 323.58 665.67 moveto show
+% residue 440 on the next line
 (G) 323.58 673.67 moveto show
 (C) 323.58 681.67 moveto show
 (G) 323.33 695.09 moveto show
@@ -5619,6 +6037,7 @@ showpage
 (A) 322.95 743.20 moveto show
 (A) 323.58 751.67 moveto show
 (U) 315.58 751.67 moveto show
+% residue 450 on the next line
 (U) 312.98 744.67 moveto show
 (A) 308.58 751.67 moveto show
 (C) 300.58 751.67 moveto show
@@ -5629,6 +6048,7 @@ showpage
 (U) 272.58 751.67 moveto show
 (C) 264.58 751.67 moveto show
 (C) 256.58 751.67 moveto show
+% residue 460 on the next line
 (U) 248.58 751.67 moveto show
 (G) 240.58 751.67 moveto show
 (A) 231.58 753.67 moveto show
@@ -5639,6 +6059,7 @@ showpage
 (G) 256.58 771.67 moveto show
 (G) 264.58 771.67 moveto show
 (G) 272.58 771.67 moveto show
+% residue 470 on the next line
 (A) 282.58 775.67 moveto show
 (G) 292.58 771.67 moveto show
 (G) 300.58 771.67 moveto show
@@ -5649,6 +6070,7 @@ showpage
 (G) 335.78 781.82 moveto show
 (A) 336.54 789.49 moveto show
 (C) 343.80 788.51 moveto show
+% residue 480 on the next line
 (A) 349.95 793.63 moveto show
 (A) 356.09 798.76 moveto show
 (G) 362.24 803.88 moveto show
@@ -5659,6 +6081,7 @@ showpage
 (A) 345.61 819.07 moveto show
 (A) 336.39 819.50 moveto show
 (C) 329.58 819.67 moveto show
+% residue 490 on the next line
 (A) 321.58 819.67 moveto show
 (A) 313.58 819.67 moveto show
 (U) 301.58 819.67 moveto show
@@ -5669,6 +6092,7 @@ showpage
 (G) 261.58 819.67 moveto show
 (G) 253.58 819.67 moveto show
 (C) 245.58 819.67 moveto show
+% residue 500 on the next line
 (C) 237.58 819.67 moveto show
 (C) 229.58 819.67 moveto show
 (U) 219.98 818.40 moveto show
@@ -5679,6 +6103,7 @@ showpage
 (G) 237.58 839.67 moveto show
 (G) 245.58 839.67 moveto show
 (U) 253.58 839.67 moveto show
+% residue 510 on the next line
 (C) 261.58 839.67 moveto show
 (U) 269.58 839.67 moveto show
 (U) 277.58 839.67 moveto show
@@ -5689,6 +6114,7 @@ showpage
 (U) 313.58 839.67 moveto show
 (U) 321.58 839.67 moveto show
 (G) 329.58 839.67 moveto show
+% residue 520 on the next line
 (G) 332.58 848.67 moveto show
 (A) 325.58 856.27 moveto show
 (A) 318.58 863.87 moveto show
@@ -5699,6 +6125,7 @@ showpage
 (U) 286.31 899.80 moveto show
 (A) 278.52 905.62 moveto show
 (C) 269.58 904.67 moveto show
+% residue 530 on the next line
 (A) 273.51 912.60 moveto show
 (A) 267.85 918.26 moveto show
 (U) 262.20 923.91 moveto show
@@ -5709,6 +6136,7 @@ showpage
 (A) 258.52 954.01 moveto show
 (U) 267.55 952.91 moveto show
 (C) 274.36 946.88 moveto show
+% residue 540 on the next line
 (C) 276.34 938.05 moveto show
 (C) 281.99 932.40 moveto show
 (U) 287.65 926.74 moveto show
@@ -5719,6 +6147,7 @@ showpage
 (G) 311.58 901.67 moveto show
 (A) 318.20 894.79 moveto show
 (G) 324.83 887.92 moveto show
+% residue 550 on the next line
 (G) 331.46 881.05 moveto show
 (A) 338.08 874.17 moveto show
 (U) 344.70 867.29 moveto show
@@ -5729,6 +6158,7 @@ showpage
 (U) 371.78 857.92 moveto show
 (G) 371.98 865.91 moveto show
 (G) 372.18 873.91 moveto show
+% residue 560 on the next line
 (A) 372.38 881.91 moveto show
 (G) 372.58 889.91 moveto show
 (G) 363.58 887.67 moveto show
@@ -5739,6 +6169,7 @@ showpage
 (G) 356.29 910.10 moveto show
 (U) 364.99 910.03 moveto show
 (C) 371.58 906.67 moveto show
+% residue 570 on the next line
 (U) 371.58 914.67 moveto show
 (G) 371.58 922.67 moveto show
 (G) 371.58 930.67 moveto show
@@ -5749,6 +6180,7 @@ showpage
 (A) 363.67 972.00 moveto show
 (G) 371.58 977.70 moveto show
 (C) 371.58 985.70 moveto show
+% residue 580 on the next line
 (A) 371.58 993.70 moveto show
 (G) 375.58 1003.51 moveto show
 (C) 387.58 1003.51 moveto show
@@ -5759,6 +6191,7 @@ showpage
 (G) 406.60 969.93 moveto show
 (U) 411.05 962.60 moveto show
 (A) 412.60 954.16 moveto show
+% residue 590 on the next line
 (A) 411.04 945.73 moveto show
 (U) 406.57 938.40 moveto show
 (U) 399.79 933.15 moveto show
@@ -5769,6 +6202,7 @@ showpage
 (C) 392.58 889.41 moveto show
 (U) 392.38 881.41 moveto show
 (C) 392.18 873.41 moveto show
+% residue 600 on the next line
 (C) 391.98 865.42 moveto show
 (A) 391.78 857.42 moveto show
 (A) 391.58 849.42 moveto show
@@ -5779,6 +6213,7 @@ showpage
 (G) 409.50 843.27 moveto show
 (U) 415.64 848.40 moveto show
 (A) 421.79 853.52 moveto show
+% residue 610 on the next line
 (U) 427.93 858.64 moveto show
 (A) 436.89 866.11 moveto show
 (U) 443.03 871.23 moveto show
@@ -5789,6 +6224,7 @@ showpage
 (G) 437.18 912.04 moveto show
 (U) 438.45 921.52 moveto show
 (U) 441.42 930.61 moveto show
+% residue 620 on the next line
 (G) 446.00 939.02 moveto show
 (U) 452.02 946.45 moveto show
 (U) 459.29 952.66 moveto show
@@ -5799,6 +6235,7 @@ showpage
 (U) 477.08 986.27 moveto show
 (U) 469.28 988.97 moveto show
 (A) 459.28 994.37 moveto show
+% residue 630 on the next line
 (A) 453.48 1001.07 moveto show
 (A) 448.08 1008.97 moveto show
 (A) 444.18 1017.77 moveto show
@@ -5809,6 +6246,7 @@ showpage
 (C) 416.18 1045.24 moveto show
 (G) 407.82 1041.62 moveto show
 (U) 399.18 1044.08 moveto show
+% residue 640 on the next line
 (A) 394.10 1051.49 moveto show
 (G) 394.85 1060.48 moveto show
 (U) 388.29 1065.07 moveto show
@@ -5819,6 +6257,7 @@ showpage
 (U) 359.43 1040.67 moveto show
 (U) 354.18 1030.17 moveto show
 (U) 348.93 1019.67 moveto show
+% residue 650 on the next line
 (C) 340.93 1019.67 moveto show
 (G) 332.93 1019.67 moveto show
 (G) 324.93 1019.67 moveto show
@@ -5829,6 +6268,7 @@ showpage
 (G) 284.93 1019.67 moveto show
 (G) 276.93 1019.67 moveto show
 (G) 268.93 1019.67 moveto show
+% residue 660 on the next line
 (C) 260.93 1019.67 moveto show
 (C) 252.93 1019.67 moveto show
 (U) 244.93 1019.67 moveto show
@@ -5839,6 +6279,7 @@ showpage
 (G) 204.93 1019.67 moveto show
 (G) 196.93 1019.67 moveto show
 (U) 188.93 1019.67 moveto show
+% residue 670 on the next line
 (C) 180.93 1019.67 moveto show
 (G) 172.93 1019.67 moveto show
 (A) 164.93 1019.67 moveto show
@@ -5849,6 +6290,7 @@ showpage
 (U) 124.93 1019.67 moveto show
 (U) 116.93 1019.67 moveto show
 (A) 108.93 1019.67 moveto show
+% residue 680 on the next line
 (U) 100.93 1019.67 moveto show
 (G) 92.93 1019.67 moveto show
 (G) 84.93 1019.67 moveto show
@@ -5859,6 +6301,7 @@ showpage
 (U) 84.93 1043.67 moveto show
 (G) 92.93 1043.67 moveto show
 (U) 100.93 1043.67 moveto show
+% residue 690 on the next line
 (G) 108.93 1043.67 moveto show
 (G) 116.93 1043.67 moveto show
 (G) 124.93 1043.67 moveto show
@@ -5869,6 +6312,7 @@ showpage
 (C) 164.93 1043.67 moveto show
 (U) 172.93 1043.67 moveto show
 (G) 180.93 1043.67 moveto show
+% residue 700 on the next line
 (C) 188.93 1043.67 moveto show
 (A) 196.93 1043.67 moveto show
 (C) 204.93 1043.67 moveto show
@@ -5879,6 +6323,7 @@ showpage
 (U) 244.93 1043.67 moveto show
 (U) 252.93 1043.67 moveto show
 (C) 260.93 1043.67 moveto show
+% residue 710 on the next line
 (U) 268.93 1043.67 moveto show
 (C) 276.93 1043.67 moveto show
 (C) 284.93 1043.67 moveto show
@@ -5889,6 +6334,7 @@ showpage
 (U) 324.93 1043.67 moveto show
 (U) 332.93 1043.67 moveto show
 (C) 332.93 1051.67 moveto show
+% residue 720 on the next line
 (C) 332.93 1059.67 moveto show
 (U) 332.93 1067.67 moveto show
 (U) 324.93 1067.67 moveto show
@@ -5899,6 +6345,7 @@ showpage
 (C) 284.93 1067.67 moveto show
 (U) 276.93 1067.67 moveto show
 (A) 268.93 1067.67 moveto show
+% residue 730 on the next line
 (C) 260.93 1067.67 moveto show
 (G) 252.93 1067.67 moveto show
 (U) 244.93 1067.67 moveto show
@@ -5909,6 +6356,7 @@ showpage
 (U) 204.93 1067.67 moveto show
 (G) 196.93 1067.67 moveto show
 (G) 188.93 1067.67 moveto show
+% residue 740 on the next line
 (G) 180.93 1067.67 moveto show
 (G) 172.93 1067.67 moveto show
 (G) 164.93 1067.67 moveto show
@@ -5919,6 +6367,7 @@ showpage
 (C) 124.93 1067.67 moveto show
 (G) 116.93 1067.67 moveto show
 (U) 108.93 1067.67 moveto show
+% residue 750 on the next line
 (U) 100.93 1067.67 moveto show
 (G) 92.93 1067.67 moveto show
 (U) 84.93 1067.67 moveto show
@@ -5929,6 +6378,7 @@ showpage
 (C) 84.93 1091.67 moveto show
 (C) 92.93 1091.67 moveto show
 (C) 100.93 1091.67 moveto show
+% residue 760 on the next line
 (U) 108.93 1091.67 moveto show
 (U) 116.93 1091.67 moveto show
 (A) 124.93 1091.67 moveto show
@@ -5939,6 +6389,7 @@ showpage
 (A) 164.93 1091.67 moveto show
 (G) 172.93 1091.67 moveto show
 (U) 180.93 1091.67 moveto show
+% residue 770 on the next line
 (U) 188.93 1091.67 moveto show
 (G) 196.93 1091.67 moveto show
 (U) 204.93 1091.67 moveto show
@@ -5949,6 +6400,7 @@ showpage
 (C) 244.93 1091.67 moveto show
 (G) 252.93 1091.67 moveto show
 (G) 260.93 1091.67 moveto show
+% residue 780 on the next line
 (U) 268.93 1091.67 moveto show
 (C) 276.93 1091.67 moveto show
 (G) 284.93 1091.67 moveto show
@@ -5959,6 +6411,7 @@ showpage
 (C) 324.93 1091.67 moveto show
 (G) 332.93 1091.67 moveto show
 (G) 332.93 1099.67 moveto show
+% residue 790 on the next line
 (C) 332.93 1107.67 moveto show
 (C) 332.93 1115.67 moveto show
 (C) 324.93 1115.67 moveto show
@@ -5969,6 +6422,7 @@ showpage
 (C) 284.93 1115.67 moveto show
 (A) 276.93 1115.67 moveto show
 (U) 268.93 1115.67 moveto show
+% residue 800 on the next line
 (C) 260.93 1115.67 moveto show
 (C) 252.93 1115.67 moveto show
 (A) 244.93 1115.67 moveto show
@@ -5979,6 +6433,7 @@ showpage
 (U) 204.93 1115.67 moveto show
 (U) 196.93 1115.67 moveto show
 (A) 188.93 1115.67 moveto show
+% residue 810 on the next line
 (C) 180.93 1115.67 moveto show
 (U) 172.93 1115.67 moveto show
 (G) 164.93 1115.67 moveto show
@@ -5989,6 +6444,7 @@ showpage
 (A) 124.93 1115.67 moveto show
 (A) 116.93 1115.67 moveto show
 (A) 108.93 1115.67 moveto show
+% residue 820 on the next line
 (A) 100.93 1115.67 moveto show
 (U) 92.93 1115.67 moveto show
 (U) 84.93 1115.67 moveto show
@@ -5999,6 +6455,7 @@ showpage
 (U) 84.93 1139.67 moveto show
 (G) 92.93 1139.67 moveto show
 (U) 100.93 1139.67 moveto show
+% residue 830 on the next line
 (U) 108.93 1139.67 moveto show
 (C) 116.93 1139.67 moveto show
 (A) 124.93 1139.67 moveto show
@@ -6009,6 +6466,7 @@ showpage
 (A) 164.93 1139.67 moveto show
 (G) 172.93 1139.67 moveto show
 (G) 180.93 1139.67 moveto show
+% residue 840 on the next line
 (C) 188.93 1139.67 moveto show
 (U) 196.93 1139.67 moveto show
 (U) 204.93 1139.67 moveto show
@@ -6019,6 +6477,7 @@ showpage
 (G) 244.93 1139.67 moveto show
 (C) 252.93 1139.67 moveto show
 (C) 260.93 1139.67 moveto show
+% residue 850 on the next line
 (U) 268.93 1139.67 moveto show
 (U) 276.93 1139.67 moveto show
 (G) 284.93 1139.67 moveto show
@@ -6029,6 +6488,7 @@ showpage
 (C) 324.93 1139.67 moveto show
 (A) 332.93 1139.67 moveto show
 (U) 332.93 1147.67 moveto show
+% residue 860 on the next line
 (U) 332.93 1155.67 moveto show
 (A) 332.93 1163.67 moveto show
 (G) 324.93 1163.67 moveto show
@@ -6039,6 +6499,7 @@ showpage
 (G) 284.93 1163.67 moveto show
 (A) 276.93 1163.67 moveto show
 (A) 268.93 1163.67 moveto show
+% residue 870 on the next line
 (U) 260.93 1163.67 moveto show
 (A) 252.93 1163.67 moveto show
 (A) 244.93 1163.67 moveto show
@@ -6049,6 +6510,7 @@ showpage
 (A) 204.93 1163.67 moveto show
 (U) 196.93 1163.67 moveto show
 (A) 188.93 1163.67 moveto show
+% residue 880 on the next line
 (G) 180.93 1163.67 moveto show
 (G) 172.93 1163.67 moveto show
 (A) 164.93 1163.67 moveto show
@@ -6059,6 +6521,7 @@ showpage
 (G) 124.93 1163.67 moveto show
 (G) 116.93 1163.67 moveto show
 (U) 108.93 1163.67 moveto show
+% residue 890 on the next line
 (U) 100.93 1163.67 moveto show
 (G) 92.93 1163.67 moveto show
 (G) 84.93 1163.67 moveto show
@@ -6069,6 +6532,7 @@ showpage
 (A) 84.93 1187.67 moveto show
 (U) 92.93 1187.67 moveto show
 (U) 100.93 1187.67 moveto show
+% residue 900 on the next line
 (U) 108.93 1187.67 moveto show
 (U) 116.93 1187.67 moveto show
 (G) 124.93 1187.67 moveto show
@@ -6079,6 +6543,7 @@ showpage
 (U) 164.93 1187.67 moveto show
 (U) 172.93 1187.67 moveto show
 (U) 180.93 1187.67 moveto show
+% residue 910 on the next line
 (G) 188.93 1187.67 moveto show
 (U) 196.93 1187.67 moveto show
 (A) 204.93 1187.67 moveto show
@@ -6089,6 +6554,7 @@ showpage
 (C) 244.93 1187.67 moveto show
 (G) 252.93 1187.67 moveto show
 (C) 260.93 1187.67 moveto show
+% residue 920 on the next line
 (A) 268.93 1187.67 moveto show
 (A) 276.93 1187.67 moveto show
 (G) 284.93 1187.67 moveto show
@@ -6099,6 +6565,7 @@ showpage
 (G) 324.93 1187.67 moveto show
 (A) 332.93 1187.67 moveto show
 (U) 340.93 1187.67 moveto show
+% residue 930 on the next line
 (U) 345.03 1175.47 moveto show
 (A) 349.13 1163.27 moveto show
 (A) 353.23 1151.07 moveto show
@@ -6109,6 +6576,7 @@ showpage
 (G) 372.58 1142.67 moveto show
 (A) 372.58 1150.67 moveto show
 (C) 372.58 1161.67 moveto show
+% residue 940 on the next line
 (A) 372.58 1169.67 moveto show
 (G) 372.58 1177.67 moveto show
 (U) 372.58 1185.67 moveto show
@@ -6119,6 +6587,7 @@ showpage
 (G) 372.58 1220.67 moveto show
 (G) 372.58 1228.67 moveto show
 (C) 372.58 1236.67 moveto show
+% residue 950 on the next line
 (A) 372.58 1244.67 moveto show
 (U) 372.58 1252.67 moveto show
 (U) 372.58 1260.67 moveto show
@@ -6129,6 +6598,7 @@ showpage
 (U) 332.58 1269.67 moveto show
 (U) 324.58 1269.67 moveto show
 (C) 316.58 1269.67 moveto show
+% residue 960 on the next line
 (C) 308.58 1269.67 moveto show
 (A) 300.58 1269.67 moveto show
 (U) 292.58 1269.67 moveto show
@@ -6139,6 +6609,7 @@ showpage
 (A) 249.58 1262.67 moveto show
 (G) 242.58 1269.67 moveto show
 (A) 234.58 1269.67 moveto show
+% residue 970 on the next line
 (G) 226.58 1269.67 moveto show
 (G) 218.58 1266.97 moveto show
 (U) 210.48 1269.17 moveto show
@@ -6149,6 +6620,7 @@ showpage
 (U) 226.58 1289.67 moveto show
 (U) 234.58 1289.67 moveto show
 (C) 242.58 1289.67 moveto show
+% residue 980 on the next line
 (U) 242.58 1298.67 moveto show
 (U) 246.58 1306.67 moveto show
 (G) 254.58 1311.67 moveto show
@@ -6159,6 +6631,7 @@ showpage
 (U) 284.58 1289.67 moveto show
 (A) 292.58 1289.67 moveto show
 (U) 300.58 1289.67 moveto show
+% residue 990 on the next line
 (G) 308.58 1289.67 moveto show
 (G) 316.58 1289.67 moveto show
 (A) 324.58 1289.67 moveto show
@@ -6169,6 +6642,7 @@ showpage
 (G) 364.58 1289.67 moveto show
 (A) 369.84 1296.69 moveto show
 (A) 377.66 1300.91 moveto show
+% residue 1000 on the next line
 (C) 386.53 1301.42 moveto show
 (U) 394.79 1298.14 moveto show
 (A) 400.58 1289.67 moveto show
@@ -6179,6 +6653,7 @@ showpage
 (G) 434.52 1290.03 moveto show
 (A) 440.97 1284.06 moveto show
 (A) 440.96 1275.27 moveto show
+% residue 1010 on the next line
 (A) 434.51 1269.30 moveto show
 (G) 425.58 1269.67 moveto show
 (C) 417.58 1269.67 moveto show
@@ -6189,6 +6664,7 @@ showpage
 (G) 392.58 1236.67 moveto show
 (C) 392.58 1228.67 moveto show
 (C) 392.58 1220.67 moveto show
+% residue 1020 on the next line
 (A) 392.58 1212.67 moveto show
 (A) 395.12 1203.17 moveto show
 (G) 392.58 1193.67 moveto show
@@ -6199,6 +6675,7 @@ showpage
 (U) 398.88 1155.27 moveto show
 (U) 392.58 1150.67 moveto show
 (U) 392.58 1142.67 moveto show
+% residue 1030 on the next line
 (U) 392.58 1134.67 moveto show
 (C) 392.58 1126.67 moveto show
 (A) 394.88 1114.77 moveto show
@@ -6209,6 +6686,7 @@ showpage
 (U) 406.31 1076.86 moveto show
 (C) 414.41 1079.93 moveto show
 (A) 422.78 1077.46 moveto show
+% residue 1040 on the next line
 (A) 427.89 1070.38 moveto show
 (G) 427.65 1061.63 moveto show
 (A) 434.21 1057.04 moveto show
@@ -6219,6 +6697,7 @@ showpage
 (A) 457.18 1060.47 moveto show
 (A) 462.98 1067.07 moveto show
 (G) 470.58 1072.60 moveto show
+% residue 1050 on the next line
 (U) 470.58 1080.60 moveto show
 (U) 470.58 1088.60 moveto show
 (A) 470.58 1096.60 moveto show
@@ -6229,6 +6708,7 @@ showpage
 (A) 462.10 1128.41 moveto show
 (U) 470.58 1130.67 moveto show
 (C) 470.58 1138.67 moveto show
+% residue 1060 on the next line
 (G) 467.58 1145.67 moveto show
 (A) 465.58 1153.67 moveto show
 (A) 466.58 1161.67 moveto show
@@ -6239,6 +6719,7 @@ showpage
 (A) 464.58 1199.67 moveto show
 (U) 462.58 1208.67 moveto show
 (C) 464.58 1217.67 moveto show
+% residue 1070 on the next line
 (A) 471.58 1224.67 moveto show
 (G) 480.58 1226.67 moveto show
 (A) 489.58 1224.67 moveto show
@@ -6249,6 +6730,7 @@ showpage
 (G) 490.58 1184.67 moveto show
 (U) 490.58 1176.67 moveto show
 (C) 490.58 1168.67 moveto show
+% residue 1080 on the next line
 (G) 496.51 1162.12 moveto show
 (U) 498.60 1153.62 moveto show
 (A) 496.47 1145.14 moveto show
@@ -6259,6 +6741,7 @@ showpage
 (U) 490.58 1096.60 moveto show
 (A) 490.58 1088.60 moveto show
 (A) 490.58 1080.60 moveto show
+% residue 1090 on the next line
 (C) 490.58 1072.60 moveto show
 (C) 499.58 1073.67 moveto show
 (A) 507.58 1072.47 moveto show
@@ -6269,6 +6752,7 @@ showpage
 (C) 526.48 1038.67 moveto show
 (U) 522.78 1030.97 moveto show
 (A) 516.78 1024.77 moveto show
+% residue 1100 on the next line
 (U) 509.08 1020.87 moveto show
 (G) 504.58 1011.67 moveto show
 (C) 512.58 1011.67 moveto show
@@ -6279,6 +6763,7 @@ showpage
 (U) 556.39 1012.21 moveto show
 (A) 566.39 1015.41 moveto show
 (G) 570.98 1021.96 moveto show
+% residue 1110 on the next line
 (G) 575.57 1028.51 moveto show
 (G) 575.00 1036.60 moveto show
 (A) 579.89 1043.50 moveto show
@@ -6289,6 +6774,7 @@ showpage
 (G) 605.66 1070.99 moveto show
 (G) 610.25 1077.55 moveto show
 (G) 614.83 1084.10 moveto show
+% residue 1120 on the next line
 (A) 619.42 1090.65 moveto show
 (U) 617.02 1098.09 moveto show
 (G) 624.18 1097.47 moveto show
@@ -6299,6 +6785,7 @@ showpage
 (U) 641.58 1130.99 moveto show
 (U) 649.58 1131.38 moveto show
 (U) 657.33 1129.38 moveto show
+% residue 1130 on the next line
 (U) 663.71 1123.77 moveto show
 (A) 666.99 1116.45 moveto show
 (U) 664.06 1108.49 moveto show
@@ -6309,6 +6796,7 @@ showpage
 (U) 635.80 1079.19 moveto show
 (C) 631.22 1072.63 moveto show
 (C) 626.63 1066.09 moveto show
+% residue 1140 on the next line
 (C) 622.05 1059.53 moveto show
 (U) 617.47 1052.97 moveto show
 (C) 612.88 1046.42 moveto show
@@ -6319,6 +6807,7 @@ showpage
 (C) 591.95 1017.03 moveto show
 (C) 587.36 1010.48 moveto show
 (U) 582.77 1003.93 moveto show
+% residue 1150 on the next line
 (U) 587.98 998.52 moveto show
 (A) 591.98 992.45 moveto show
 (U) 594.91 985.80 moveto show
@@ -6329,6 +6818,7 @@ showpage
 (A) 603.58 950.67 moveto show
 (A) 595.58 950.67 moveto show
 (U) 588.17 958.94 moveto show
+% residue 1160 on the next line
 (C) 582.51 964.60 moveto show
 (A) 571.14 967.73 moveto show
 (A) 561.32 973.62 moveto show
@@ -6339,6 +6829,7 @@ showpage
 (U) 534.58 984.67 moveto show
 (U) 530.58 977.67 moveto show
 (U) 522.58 977.67 moveto show
+% residue 1170 on the next line
 (G) 518.58 984.67 moveto show
 (G) 520.58 991.67 moveto show
 (G) 512.58 991.67 moveto show
@@ -6349,6 +6840,7 @@ showpage
 (G) 496.58 960.67 moveto show
 (G) 496.58 952.67 moveto show
 (G) 508.47 933.67 moveto show
+% residue 1180 on the next line
 (G) 516.47 933.67 moveto show
 (G) 524.47 933.67 moveto show
 (G) 525.81 941.47 moveto show
@@ -6359,6 +6851,7 @@ showpage
 (U) 557.27 941.43 moveto show
 (G) 558.58 933.67 moveto show
 (G) 566.58 933.67 moveto show
+% residue 1190 on the next line
 (U) 574.58 933.67 moveto show
 (C) 582.58 933.67 moveto show
 (G) 591.88 934.97 moveto show
@@ -6369,6 +6862,7 @@ showpage
 (G) 574.58 913.67 moveto show
 (C) 566.58 913.67 moveto show
 (U) 558.58 913.67 moveto show
+% residue 1200 on the next line
 (G) 553.17 907.11 moveto show
 (A) 545.66 903.43 moveto show
 (A) 537.30 903.45 moveto show
@@ -6379,6 +6873,7 @@ showpage
 (A) 511.79 906.63 moveto show
 (A) 516.49 900.39 moveto show
 (A) 522.19 895.07 moveto show
+% residue 1210 on the next line
 (G) 528.56 891.22 moveto show
 (G) 536.15 888.69 moveto show
 (A) 543.74 886.16 moveto show
@@ -6389,6 +6884,7 @@ showpage
 (A) 589.58 881.67 moveto show
 (C) 597.58 881.67 moveto show
 (G) 605.58 881.67 moveto show
+% residue 1220 on the next line
 (G) 610.78 888.07 moveto show
 (A) 615.58 881.67 moveto show
 (A) 623.58 881.67 moveto show
@@ -6399,6 +6895,7 @@ showpage
 (A) 663.58 881.67 moveto show
 (C) 665.73 890.12 moveto show
 (C) 674.44 890.13 moveto show
+% residue 1230 on the next line
 (A) 676.59 881.67 moveto show
 (C) 684.59 881.67 moveto show
 (C) 693.04 885.46 moveto show
@@ -6409,6 +6906,7 @@ showpage
 (G) 733.55 904.99 moveto show
 (U) 740.36 909.20 moveto show
 (G) 760.58 918.67 moveto show
+% residue 1240 on the next line
 (G) 760.58 926.67 moveto show
 (A) 760.58 934.67 moveto show
 (G) 760.58 942.67 moveto show
@@ -6419,6 +6917,7 @@ showpage
 (C) 760.58 982.67 moveto show
 (G) 760.58 990.67 moveto show
 (G) 760.58 1000.67 moveto show
+% residue 1250 on the next line
 (C) 760.58 1008.67 moveto show
 (U) 754.39 1004.48 moveto show
 (U) 747.22 1001.73 moveto show
@@ -6429,6 +6928,7 @@ showpage
 (U) 713.34 992.29 moveto show
 (G) 707.68 986.63 moveto show
 (A) 706.88 977.47 moveto show
+% residue 1260 on the next line
 (C) 701.08 970.47 moveto show
 (U) 692.48 967.57 moveto show
 (C) 683.58 969.57 moveto show
@@ -6439,6 +6939,7 @@ showpage
 (C) 693.54 1000.77 moveto show
 (G) 699.20 1006.43 moveto show
 (G) 704.85 1012.08 moveto show
+% residue 1270 on the next line
 (G) 710.51 1017.74 moveto show
 (A) 709.58 1026.27 moveto show
 (A) 711.08 1034.97 moveto show
@@ -6449,6 +6950,7 @@ showpage
 (U) 746.98 1052.07 moveto show
 (A) 753.98 1045.37 moveto show
 (C) 760.58 1040.67 moveto show
+% residue 1280 on the next line
 (C) 760.58 1048.67 moveto show
 (A) 760.58 1056.67 moveto show
 (G) 760.58 1064.67 moveto show
@@ -6459,6 +6961,7 @@ showpage
 (A) 743.58 1090.67 moveto show
 (G) 735.58 1094.67 moveto show
 (A) 728.58 1098.67 moveto show
+% residue 1290 on the next line
 (C) 721.99 1104.14 moveto show
 (A) 715.97 1109.41 moveto show
 (U) 709.95 1114.68 moveto show
@@ -6469,6 +6972,7 @@ showpage
 (A) 673.76 1136.09 moveto show
 (G) 666.70 1141.66 moveto show
 (G) 660.38 1148.07 moveto show
+% residue 1300 on the next line
 (A) 654.91 1155.21 moveto show
 (U) 650.36 1162.98 moveto show
 (U) 646.80 1171.25 moveto show
@@ -6479,6 +6983,7 @@ showpage
 (G) 619.40 1199.99 moveto show
 (A) 613.17 1205.01 moveto show
 (U) 604.34 1205.43 moveto show
+% residue 1310 on the next line
 (U) 597.04 1210.40 moveto show
 (G) 593.42 1218.46 moveto show
 (A) 594.55 1227.22 moveto show
@@ -6489,6 +6994,7 @@ showpage
 (U) 625.74 1220.58 moveto show
 (C) 631.96 1215.55 moveto show
 (U) 638.19 1210.53 moveto show
+% residue 1320 on the next line
 (U) 644.41 1205.50 moveto show
 (U) 650.64 1200.48 moveto show
 (C) 656.86 1195.45 moveto show
@@ -6499,6 +7005,7 @@ showpage
 (U) 702.90 1162.07 moveto show
 (U) 707.90 1151.51 moveto show
 (C) 711.08 1140.27 moveto show
+% residue 1330 on the next line
 (U) 717.10 1135.00 moveto show
 (A) 723.12 1129.73 moveto show
 (U) 729.14 1124.46 moveto show
@@ -6509,6 +7016,7 @@ showpage
 (G) 760.58 1116.67 moveto show
 (G) 760.58 1124.67 moveto show
 (U) 754.18 1130.17 moveto show
+% residue 1340 on the next line
 (G) 760.58 1134.67 moveto show
 (G) 760.58 1142.67 moveto show
 (U) 760.58 1150.67 moveto show
@@ -6519,6 +7027,7 @@ showpage
 (G) 760.58 1179.67 moveto show
 (G) 760.58 1194.67 moveto show
 (C) 760.58 1202.67 moveto show
+% residue 1350 on the next line
 (C) 760.58 1210.67 moveto show
 (G) 760.58 1220.67 moveto show
 (U) 760.58 1228.67 moveto show
@@ -6529,6 +7038,7 @@ showpage
 (A) 757.58 1268.77 moveto show
 (G) 752.58 1278.67 moveto show
 (U) 744.58 1278.67 moveto show
+% residue 1360 on the next line
 (U) 736.58 1278.67 moveto show
 (G) 728.58 1278.67 moveto show
 (G) 720.58 1278.67 moveto show
@@ -6539,6 +7049,7 @@ showpage
 (G) 701.58 1251.67 moveto show
 (U) 695.58 1245.67 moveto show
 (G) 687.58 1245.67 moveto show
+% residue 1370 on the next line
 (A) 680.58 1251.67 moveto show
 (U) 681.58 1260.67 moveto show
 (U) 681.58 1268.67 moveto show
@@ -6549,6 +7060,7 @@ showpage
 (U) 681.58 1320.67 moveto show
 (G) 681.58 1328.67 moveto show
 (G) 681.58 1336.67 moveto show
+% residue 1380 on the next line
 (U) 677.88 1344.37 moveto show
 (U) 679.98 1353.17 moveto show
 (A) 687.08 1358.67 moveto show
@@ -6559,6 +7071,7 @@ showpage
 (C) 701.58 1328.67 moveto show
 (G) 701.58 1320.67 moveto show
 (U) 701.58 1312.67 moveto show
+% residue 1390 on the next line
 (U) 709.48 1312.39 moveto show
 (A) 714.14 1306.46 moveto show
 (A) 712.58 1298.67 moveto show
@@ -6569,6 +7082,7 @@ showpage
 (C) 752.58 1298.67 moveto show
 (G) 755.26 1307.19 moveto show
 (A) 761.82 1313.29 moveto show
+% residue 1400 on the next line
 (G) 770.54 1315.34 moveto show
 (A) 779.14 1312.81 moveto show
 (C) 785.35 1306.35 moveto show
@@ -6579,6 +7093,7 @@ showpage
 (G) 825.58 1297.67 moveto show
 (C) 848.58 1297.67 moveto show
 (C) 856.58 1297.67 moveto show
+% residue 1410 on the next line
 (U) 864.58 1297.67 moveto show
 (G) 870.17 1302.38 moveto show
 (C) 875.58 1297.67 moveto show
@@ -6589,6 +7104,7 @@ showpage
 (U) 915.58 1301.67 moveto show
 (A) 922.58 1297.67 moveto show
 (G) 930.58 1297.67 moveto show
+% residue 1420 on the next line
 (U) 938.58 1297.67 moveto show
 (U) 946.58 1297.67 moveto show
 (G) 957.63 1304.10 moveto show
@@ -6599,6 +7115,7 @@ showpage
 (A) 1004.75 1303.67 moveto show
 (A) 1012.75 1303.67 moveto show
 (U) 1020.75 1303.67 moveto show
+% residue 1430 on the next line
 (C) 1028.75 1303.67 moveto show
 (A) 1038.57 1303.67 moveto show
 (U) 1046.15 1303.67 moveto show
@@ -6609,6 +7126,7 @@ showpage
 (G) 1054.15 1269.67 moveto show
 (G) 1046.17 1269.67 moveto show
 (U) 1040.62 1269.67 moveto show
+% residue 1440 on the next line
 (U) 1029.75 1269.67 moveto show
 (G) 1020.75 1269.67 moveto show
 (U) 1012.75 1269.67 moveto show
@@ -6619,6 +7137,7 @@ showpage
 (G) 972.75 1269.67 moveto show
 (G) 965.07 1270.51 moveto show
 (U) 957.69 1267.54 moveto show
+% residue 1450 on the next line
 (C) 950.28 1270.47 moveto show
 (A) 946.58 1277.67 moveto show
 (A) 938.58 1277.67 moveto show
@@ -6629,6 +7148,7 @@ showpage
 (U) 899.58 1277.67 moveto show
 (U) 891.58 1277.67 moveto show
 (A) 883.58 1277.67 moveto show
+% residue 1460 on the next line
 (G) 875.58 1277.67 moveto show
 (A) 864.58 1277.67 moveto show
 (G) 856.58 1277.67 moveto show
@@ -6639,6 +7159,7 @@ showpage
 (U) 846.58 1229.67 moveto show
 (U) 846.58 1221.67 moveto show
 (U) 846.58 1213.67 moveto show
+% residue 1470 on the next line
 (C) 846.58 1205.67 moveto show
 (G) 846.58 1197.67 moveto show
 (G) 846.58 1189.67 moveto show
@@ -6649,6 +7170,7 @@ showpage
 (U) 828.18 1164.90 moveto show
 (A) 824.13 1172.98 moveto show
 (G) 826.58 1181.67 moveto show
+% residue 1480 on the next line
 (C) 826.58 1189.67 moveto show
 (C) 826.58 1197.67 moveto show
 (G) 826.58 1205.67 moveto show
@@ -6659,6 +7181,7 @@ showpage
 (A) 822.84 1245.72 moveto show
 (A) 820.42 1254.08 moveto show
 (G) 820.89 1261.64 moveto show
+% residue 1490 on the next line
 (U) 823.56 1270.06 moveto show
 (U) 826.07 1277.94 moveto show
 (U) 816.55 1277.67 moveto show
@@ -6669,6 +7192,7 @@ showpage
 (C) 784.58 1268.77 moveto show
 (A) 784.58 1260.77 moveto show
 (A) 784.58 1252.67 moveto show
+% residue 1500 on the next line
 (U) 780.58 1244.67 moveto show
 (A) 780.58 1236.67 moveto show
 (A) 780.58 1228.67 moveto show
@@ -6679,6 +7203,7 @@ showpage
 (U) 780.58 1194.67 moveto show
 (C) 786.85 1194.05 moveto show
 (U) 791.61 1188.17 moveto show
+% residue 1510 on the next line
 (G) 786.86 1182.30 moveto show
 (U) 780.58 1179.67 moveto show
 (G) 785.66 1173.18 moveto show
@@ -6689,6 +7214,7 @@ showpage
 (C) 780.58 1134.67 moveto show
 (C) 780.58 1124.67 moveto show
 (U) 780.58 1116.67 moveto show
+% residue 1520 on the next line
 (U) 788.45 1115.45 moveto show
 (A) 794.38 1110.23 moveto show
 (G) 796.58 1102.64 moveto show
@@ -6699,6 +7225,7 @@ showpage
 (U) 780.58 1072.67 moveto show
 (C) 780.58 1064.67 moveto show
 (U) 780.58 1056.67 moveto show
+% residue 1530 on the next line
 (G) 780.58 1048.67 moveto show
 (G) 780.58 1040.67 moveto show
 (G) 785.58 1033.57 moveto show
@@ -6709,6 +7236,7 @@ showpage
 (A) 786.64 995.67 moveto show
 (C) 780.58 990.67 moveto show
 (G) 780.58 982.67 moveto show
+% residue 1540 on the next line
 (C) 780.58 974.67 moveto show
 (G) 780.58 966.67 moveto show
 (C) 780.58 958.67 moveto show
@@ -6719,6 +7247,7 @@ showpage
 (C) 780.58 918.67 moveto show
 (A) 789.08 918.94 moveto show
 (C) 797.48 917.52 moveto show
+% residue 1550 on the next line
 (U) 805.38 914.32 moveto show
 (G) 812.51 909.62 moveto show
 (A) 818.87 914.47 moveto show
@@ -6729,6 +7258,7 @@ showpage
 (G) 850.67 938.74 moveto show
 (U) 851.33 947.79 moveto show
 (C) 855.10 956.11 moveto show
+% residue 1560 on the next line
 (A) 861.36 962.78 moveto show
 (A) 869.43 967.07 moveto show
 (C) 878.46 968.52 moveto show
@@ -6739,6 +7269,7 @@ showpage
 (U) 893.23 992.94 moveto show
 (U) 895.63 1001.85 moveto show
 (A) 901.60 1008.88 moveto show
+% residue 1570 on the next line
 (U) 910.00 1012.70 moveto show
 (A) 919.23 1012.57 moveto show
 (A) 927.52 1008.52 moveto show
@@ -6749,6 +7280,7 @@ showpage
 (G) 954.13 1017.71 moveto show
 (G) 960.49 1022.57 moveto show
 (C) 966.85 1027.42 moveto show
+% residue 1580 on the next line
 (C) 973.21 1032.28 moveto show
 (G) 980.76 1037.99 moveto show
 (A) 989.12 1037.65 moveto show
@@ -6759,6 +7291,7 @@ showpage
 (C) 972.63 1006.67 moveto show
 (C) 966.27 1001.82 moveto show
 (U) 966.78 992.78 moveto show
+% residue 1590 on the next line
 (G) 960.40 987.71 moveto show
 (G) 951.74 990.25 moveto show
 (G) 945.38 985.40 moveto show
@@ -6769,6 +7302,7 @@ showpage
 (C) 912.25 960.58 moveto show
 (U) 905.89 955.73 moveto show
 (U) 899.53 950.87 moveto show
+% residue 1600 on the next line
 (U) 901.52 942.27 moveto show
 (U) 900.06 933.39 moveto show
 (G) 895.44 925.68 moveto show
@@ -6779,6 +7313,7 @@ showpage
 (U) 856.44 917.99 moveto show
 (G) 850.09 913.13 moveto show
 (C) 843.73 908.28 moveto show
+% residue 1610 on the next line
 (A) 837.37 903.43 moveto show
 (U) 831.01 898.57 moveto show
 (C) 824.65 893.72 moveto show
@@ -6789,6 +7324,7 @@ showpage
 (U) 816.95 852.35 moveto show
 (G) 809.06 847.73 moveto show
 (G) 800.20 845.39 moveto show
+% residue 1620 on the next line
 (G) 806.79 839.35 moveto show
 (G) 811.06 831.55 moveto show
 (A) 812.98 822.87 moveto show
@@ -6799,6 +7335,7 @@ showpage
 (U) 822.79 783.92 moveto show
 (C) 825.49 776.39 moveto show
 (A) 828.19 768.86 moveto show
+% residue 1630 on the next line
 (U) 830.89 761.33 moveto show
 (U) 838.98 756.39 moveto show
 (G) 843.10 747.96 moveto show
@@ -6809,6 +7346,7 @@ showpage
 (U) 811.62 736.69 moveto show
 (A) 809.45 745.82 moveto show
 (U) 812.06 754.58 moveto show
+% residue 1640 on the next line
 (U) 809.36 762.11 moveto show
 (G) 806.67 769.64 moveto show
 (A) 803.97 777.17 moveto show
@@ -6819,6 +7357,7 @@ showpage
 (G) 786.30 813.40 moveto show
 (A) 781.65 821.51 moveto show
 (A) 779.81 830.67 moveto show
+% residue 1650 on the next line
 (C) 780.96 839.95 moveto show
 (G) 771.26 844.42 moveto show
 (A) 762.70 851.69 moveto show
@@ -6829,6 +7368,7 @@ showpage
 (U) 744.06 887.98 moveto show
 (U) 737.25 883.77 moveto show
 (C) 730.45 879.57 moveto show
+% residue 1660 on the next line
 (C) 723.64 875.37 moveto show
 (U) 729.80 870.38 moveto show
 (A) 734.90 864.04 moveto show
@@ -6839,6 +7379,7 @@ showpage
 (G) 741.25 825.80 moveto show
 (C) 745.28 818.89 moveto show
 (G) 749.31 811.98 moveto show
+% residue 1670 on the next line
 (C) 753.34 805.07 moveto show
 (G) 757.37 798.16 moveto show
 (A) 761.40 791.25 moveto show
@@ -6849,6 +7390,7 @@ showpage
 (U) 769.14 757.02 moveto show
 (C) 761.23 755.46 moveto show
 (A) 752.70 758.34 moveto show
+% residue 1680 on the next line
 (G) 747.66 765.31 moveto show
 (C) 748.16 774.26 moveto show
 (U) 744.13 781.17 moveto show
@@ -6859,6 +7401,7 @@ showpage
 (C) 723.97 815.72 moveto show
 (U) 719.94 822.63 moveto show
 (G) 712.13 824.81 moveto show
+% residue 1690 on the next line
 (A) 704.83 828.30 moveto show
 (U) 698.33 833.13 moveto show
 (U) 692.89 839.13 moveto show
@@ -6869,6 +7412,7 @@ showpage
 (C) 675.05 852.64 moveto show
 (C) 669.07 847.69 moveto show
 (C) 661.11 853.62 moveto show
+% residue 1700 on the next line
 (U) 663.58 861.67 moveto show
 (G) 655.58 861.67 moveto show
 (C) 647.58 861.67 moveto show
@@ -6879,6 +7423,7 @@ showpage
 (U) 605.58 861.67 moveto show
 (G) 597.58 861.67 moveto show
 (U) 589.58 861.67 moveto show
+% residue 1710 on the next line
 (A) 584.78 855.27 moveto show
 (C) 579.58 861.67 moveto show
 (A) 571.58 861.67 moveto show
@@ -6889,6 +7434,7 @@ showpage
 (G) 569.58 817.67 moveto show
 (C) 569.58 809.67 moveto show
 (C) 565.65 800.68 moveto show
+% residue 1720 on the next line
 (C) 569.58 791.67 moveto show
 (G) 569.58 783.67 moveto show
 (U) 566.58 772.67 moveto show
@@ -6899,6 +7445,7 @@ showpage
 (C) 569.58 729.67 moveto show
 (C) 569.58 721.67 moveto show
 (U) 569.58 713.67 moveto show
+% residue 1730 on the next line
 (A) 569.58 705.67 moveto show
 (C) 569.58 697.67 moveto show
 (C) 569.58 689.67 moveto show
@@ -6909,6 +7456,7 @@ showpage
 (G) 569.58 655.67 moveto show
 (A) 569.58 647.67 moveto show
 (A) 569.58 639.67 moveto show
+% residue 1740 on the next line
 (U) 569.58 631.67 moveto show
 (G) 569.58 623.67 moveto show
 (G) 569.58 615.67 moveto show
@@ -6919,6 +7467,7 @@ showpage
 (G) 569.58 575.67 moveto show
 (U) 569.58 567.67 moveto show
 (G) 565.58 559.67 moveto show
+% residue 1750 on the next line
 (A) 565.58 551.67 moveto show
 (G) 569.58 543.22 moveto show
 (G) 569.58 535.22 moveto show
@@ -6929,6 +7478,7 @@ showpage
 (G) 569.58 495.22 moveto show
 (G) 569.58 487.22 moveto show
 (G) 569.58 479.22 moveto show
+% residue 1760 on the next line
 (A) 569.58 471.22 moveto show
 (U) 569.58 463.22 moveto show
 (U) 569.58 455.22 moveto show
@@ -6939,6 +7489,7 @@ showpage
 (C) 569.58 415.22 moveto show
 (G) 569.58 407.22 moveto show
 (A) 569.58 399.22 moveto show
+% residue 1770 on the next line
 (G) 569.58 391.22 moveto show
 (G) 569.58 383.22 moveto show
 (C) 569.58 375.22 moveto show
@@ -6949,6 +7500,7 @@ showpage
 (U) 569.58 335.22 moveto show
 (G) 567.58 327.22 moveto show
 (U) 565.58 317.22 moveto show
+% residue 1780 on the next line
 (U) 570.58 309.34 moveto show
 (A) 579.58 306.34 moveto show
 (A) 588.58 309.34 moveto show
@@ -6959,6 +7511,7 @@ showpage
 (C) 589.58 351.22 moveto show
 (C) 589.58 360.22 moveto show
 (G) 589.58 375.22 moveto show
+% residue 1790 on the next line
 (C) 589.58 383.22 moveto show
 (C) 589.58 391.22 moveto show
 (U) 589.58 399.22 moveto show
@@ -6969,6 +7522,7 @@ showpage
 (G) 589.58 439.22 moveto show
 (C) 589.58 447.22 moveto show
 (G) 589.58 455.22 moveto show
+% residue 1800 on the next line
 (A) 589.58 463.22 moveto show
 (G) 589.58 471.22 moveto show
 (A) 589.58 479.22 moveto show
@@ -6979,6 +7533,7 @@ showpage
 (G) 589.58 519.22 moveto show
 (A) 589.58 527.22 moveto show
 (C) 589.58 535.22 moveto show
+% residue 1810 on the next line
 (C) 589.58 543.22 moveto show
 (A) 594.58 550.67 moveto show
 (A) 594.58 559.67 moveto show
@@ -6989,6 +7544,7 @@ showpage
 (U) 589.58 599.67 moveto show
 (A) 589.58 607.67 moveto show
 (U) 589.58 615.67 moveto show
+% residue 1820 on the next line
 (C) 589.58 623.67 moveto show
 (A) 589.58 631.67 moveto show
 (U) 589.58 639.67 moveto show
@@ -6999,6 +7555,7 @@ showpage
 (A) 593.58 681.67 moveto show
 (G) 589.58 689.67 moveto show
 (G) 589.58 697.67 moveto show
+% residue 1830 on the next line
 (A) 589.58 705.67 moveto show
 (A) 589.58 713.67 moveto show
 (G) 589.58 721.67 moveto show
@@ -7009,6 +7566,7 @@ showpage
 (A) 595.58 759.67 moveto show
 (G) 589.58 763.67 moveto show
 (U) 592.58 772.67 moveto show
+% residue 1840 on the next line
 (C) 589.58 783.67 moveto show
 (G) 589.58 791.67 moveto show
 (U) 596.58 796.45 moveto show
@@ -7019,6 +7577,7 @@ showpage
 (A) 605.58 828.67 moveto show
 (G) 615.58 835.67 moveto show
 (G) 615.58 823.67 moveto show
+% residue 1850 on the next line
 (U) 615.58 811.67 moveto show
 (U) 623.58 811.67 moveto show
 (U) 631.58 811.67 moveto show
@@ -7029,6 +7588,7 @@ showpage
 (A) 671.58 811.67 moveto show
 (G) 679.58 811.67 moveto show
 (G) 687.58 811.67 moveto show
+% residue 1860 on the next line
 (U) 696.58 812.67 moveto show
 (G) 702.58 805.67 moveto show
 (A) 702.58 797.67 moveto show
@@ -7039,6 +7599,7 @@ showpage
 (G) 663.58 791.67 moveto show
 (C) 655.58 791.67 moveto show
 (A) 647.58 791.67 moveto show
+% residue 1870 on the next line
 (G) 639.58 791.67 moveto show
 (A) 631.58 791.67 moveto show
 (A) 623.58 791.67 moveto show
@@ -7049,11 +7610,11 @@ showpage
 (C) 615.68 755.07 moveto show
 (A) 615.68 746.57 moveto show
 (A) 615.68 738.07 moveto show
+% residue 1880 on the next line
 (U) 615.68 729.57 moveto show
 (A) 615.68 721.07 moveto show
 % end text residues
 
 % begin ignore
-grestore
 showpage
 % end ignore
