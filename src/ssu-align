@@ -1435,7 +1435,9 @@ sub print_scores_and_nomatch_files {
 # 
 # Purpose:    Get statistics on a sequence file using easel's
 #             esl-seqstat miniapp, including the length of each
-#             sequence.
+#             sequence. Also, verify that there are not two
+#             sequences with the same name in the sequence
+#             file; if there are, die with an error message.
 #
 # Arguments: 
 # $seqstat:          the esl-seqstat executable
