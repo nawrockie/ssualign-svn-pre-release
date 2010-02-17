@@ -62,7 +62,6 @@ $options_usage .= "  -m <s>    : use CM file <s> instead of the default CM file\
 $options_usage .= "  -F        : force; allow file clobbering\n";
 $options_usage .= "  --rfonly  : when merging alignments, only keep consensus (non-gap RF) columns\n";
 $options_usage .= "  --keep    : don't remove original files after they have been merged\n";
-$options_usage .= "  --keep    : don't remove original files after they have been merged\n";
 $options_usage .= "\noptions that only work with --list:\n";
 $options_usage .= "  -i        : input alignments are interleaved Stockholm format (not 1 line/seq)\n";
 $options_usage .= "  --dna     : output alignments as DNA, default is RNA (even if input is DNA)\n";
@@ -205,7 +204,7 @@ else { #--list enabled
 
     my $alimerge_out_file = $list_file . ".alimerge";
 
-    run_alimerge($alimerge, \%opt_H, $list_file, $alimerge_out_file, $list_merged_aln, $opt_H{"-i"}, $opt_H{"--dna"}, 0, \$nseq_merged, $sum_file, $log_file);
+    run_alimerge($alimerge, \%opt_H, $list_file, $alimerge_out_file, $list_merged_aln, $opt_H{"-i"}, $opt_H{"--dna"}, 0, 0, \$nseq_merged, $sum_file, $log_file);
 
     # echo the bulk of the esl-alimerge output to stdout
     my $seen_non_comment_line = 0;
@@ -394,8 +393,8 @@ for($i = 0; $i < scalar(@cm_names_A); $i++) {
 
 	$alimerge_out_file = $dir . "/" . $dir . "." .  $cm_names_A[$i] . ".alimerge";
 	$alimerge_list_file = $dir . "/" . $cm_names_A[$i] . ".merge.list";
-	create_list_file($alimerge_list_file, \%opt_H, \@{$stk_to_merge_AA[$i]}, $sum_file);
-	run_alimerge($alimerge, \%opt_H, $alimerge_list_file, $merged_stk_file, $ileaved_enabled, $dna_enabled, 1, \$nseq_merged, $sum_file, $log_file);
+	create_list_file($alimerge_list_file, \%opt_H, \@{$stk_to_merge_AA[$i]}, $sum_file, $log_file);
+	run_alimerge($alimerge, \%opt_H, $alimerge_list_file, $alimerge_out_file, $merged_stk_file, $ileaved_enabled, $dna_enabled, 1, 1, \$nseq_merged, $sum_file, $log_file);
 
 	# verify that esl-alimerge output detailing number of sequences in each alignment we just merged
 	# matches what we read from the ssu-align summary statistics (it should match, this is just another integrity check)
@@ -758,6 +757,7 @@ sub validate_and_setup_ssu_merge_default {
 # $do_ileaved            '1' if ssu-align -i, output in interleaved Stockholm
 # $do_dna                '1' if ssu-align --dna, output DNA alignments
 # $do_unlink_list        '1' to unlink list file after merging, '0' not to
+# $do_unlink_out         '1' to unlink esl-alimerge output file, '0' not to
 # $nseq_merged_R:        ref to number of sequences merged, filled here
 #                        by parsing esl-alimerge verbose (-v) output.
 # $sum_file:             ssu-merge summary file
@@ -770,9 +770,9 @@ sub validate_and_setup_ssu_merge_default {
 #
 ####################################################################
 sub run_alimerge { 
-    my $narg_expected = 11;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, merge_alignments_for_a_cm() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($alimerge, $opt_HR, $list_file, $alimerge_out_file, $merged_aln_file, $do_ileaved, $do_dna, $do_unlink_list, $nseq_merged_R, $sum_file, $log_file) = @_;
+    my $narg_expected = 12;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, run_alimerge() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my($alimerge, $opt_HR, $list_file, $alimerge_out_file, $merged_aln_file, $do_ileaved, $do_dna, $do_unlink_list, $do_unlink_out, $nseq_merged_R, $sum_file, $log_file) = @_;
 
     my ($output, $stk, $command, $command_worked, $line);
 
@@ -796,8 +796,6 @@ sub run_alimerge {
 
     $command = "$alimerge $rfonly_opt $format_opt $abc_opt --list -v -o $merged_aln_file $list_file > $alimerge_out_file";
     RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
-
-    if($do_unlink_list) { UnlinkFile($list_file, $log_file); }
 
     # parse the esl-alimerge output
     open(ALIMERGE, $alimerge_out_file) || FileOpenFailure($alimerge_out_file, $sum_file, $!, "reading");
@@ -825,6 +823,9 @@ sub run_alimerge {
     if($nseq_merged != $nseq_total) { 
 	PrintErrorAndExit(sprintf("Error, esl-alimerge output in file $alimerge_out_file is internally inconsistent.\n(%d) seqs merged != (%d) total seqs listed.", $nseq_merged, $nseq_total), $sum_file, 1);
     }
+
+    if($do_unlink_list) { UnlinkFile($list_file,         $log_file); }
+    if($do_unlink_out)  { UnlinkFile($alimerge_out_file, $log_file); }
 
     $$nseq_merged_R       = $nseq_merged;
     return;
@@ -1247,6 +1248,7 @@ sub validate_and_setup_ssu_merge_list {
 # $opt_HR:          reference to hash of command line options
 # $aln_to_merge_AR: ref to array of alignment file names to put in list file
 # $sum_file:        ssu-merge summary file
+# $log_file:        ssu-merge log file
 # 
 # Returns:    Nothing, if it returns, everything is valid.
 # 
@@ -1254,9 +1256,9 @@ sub validate_and_setup_ssu_merge_list {
 #
 ####################################################################
 sub create_list_file { 
-    my $narg_expected = 4;
+    my $narg_expected = 5;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, create_list_file() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($list_file, $opt_HR, $aln_to_merge_AR, $sum_file) = @_;
+    my($list_file, $opt_HR, $aln_to_merge_AR, $sum_file, $log_file) = @_;
 
     my $aln;
     if(-e $list_file) { 
@@ -1264,7 +1266,7 @@ sub create_list_file {
 	    PrintErrorAndExit("ERROR, list file $list_file already exists. Delete it or use -F to overwrite it.", $sum_file, 1); 
 	}
 	else {
-	    UnlinkFile($list_file);
+	    UnlinkFile($list_file, $log_file);
 	}
     }
 

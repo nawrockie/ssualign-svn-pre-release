@@ -436,7 +436,7 @@ if($do_filter_mode) {
 
     for($i = 0; $i < $naln; $i++) { 
 	$aln_file = $stk_list_A[$i];
-	filter_alignment($weight, $alistat, \%opt_H, $filter_root, $aln_file, $key_out, \@stk_suffix_A, $max_width_in, $max_width_fil, \@files_to_unlink_A, $sum_file, $log_file);
+	filter_alignment($weight, $alistat, $reformat, \%opt_H, $filter_root, $aln_file, $key_out, \@stk_suffix_A, $max_width_in, $max_width_fil, \@files_to_unlink_A, $sum_file, $log_file);
     }
 }  
 
@@ -477,7 +477,7 @@ if($do_list_mode)
 	    $list_file       = SwapOrAppendFileSuffix($aln_file, \@stk_suffix_A, $key_out . ".list", 1);
 	    $list_file2print = RemoveDirPath($list_file);
 	}
-	$command = "$alimanip --list $list_file $aln_file"; 
+	$command = "$alistat --list $list_file $aln_file"; 
 	RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
 
 	my $nseq = get_num_lines_in_file($list_file, $sum_file);
@@ -520,7 +520,7 @@ if($do_remove_seqs_mode)
 	#determine number of sequences in the alignment
 	my $nali = 0;
 	my @nseq_A = ();
-	DetermineNumSeqsStockholm($alistat, $seqr_aln, $sum_file, $log_file, \@nseq_A, \$nali);
+	DetermineNumSeqsStockholm($alistat, $seqr_aln, $opt_H{"-i"}, $tfilectr++, $sum_file, $log_file, \@nseq_A, \$nali);
 	if($nali != 1) { PrintErrorAndExit("ERROR, unexpectedly found %d (not 1) alignments in $seqr_aln.", $sum_file, 1); }
 	PrintStringToFile($sum_file, 1, sprintf("  %-*s  %8d\n", $max_width, $seqr_aln, $nseq_A[0]));
     }
@@ -532,7 +532,7 @@ if($do_remove_seqs_mode)
 	$command = "$alimanip -o $seqk_aln --seq-k " . $opt_H{"--seq-k"} . " $aln_file";
 	RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
 
-	#determine number of sequences in alignment (just number of sequences in the --seq-klist file) 
+	#determine number of sequences in alignment (just number of sequences in the --seq-k list file) 
 	my $nseq = get_num_lines_in_file($opt_H{"--seq-k"}, $sum_file);
 	PrintStringToFile($sum_file, 1, sprintf("  %-*s  %8d\n", $max_width, $seqk_aln, $nseq));
     }
@@ -562,7 +562,7 @@ if($do_stk2afa_mode)
     PrintStringToFile($sum_file, 1, sprintf("# %-*s  %-*s\n", $max_width_aln, "Stockholm aln file name", $max_width_afa, "aligned FASTA file name"));
     PrintStringToFile($sum_file, 1, sprintf("# %-*s  %-*s\n", $max_width_aln, $dashes_aln, $max_width_afa, $dashes_afa));
 
-    my ($afa_file, $afa_file2print, $aln_file2print, $nseq, $command_worked);
+    my ($afa_file, $afa_file2print, $aln_file2print, $nseq, $command_worked, $reformat_opts);
     for($i = 0; $i < $naln; $i++) { 
 	$aln_file         = $stk_list_A[$i];
 	if($opt_H{"-a"}) { # print directory as well as aln name for stockholm alignment, save afa to cwd
@@ -575,7 +575,9 @@ if($do_stk2afa_mode)
 	    $afa_file       = SwapOrAppendFileSuffix($aln_file, \@stk_suffix_A, $key_out . ".afa", 1);
 	    $afa_file2print = RemoveDirPath($afa_file);
 	}
-	$command = "$reformat -o $afa_file --informat stockholm afa $aln_file"; 
+	if($opt_H{"-i"}) { $reformat_opts = "--informat stockholm afa"; }
+	else             { $reformat_opts = "--small --informat pfam afa"; }
+	$command = "$reformat -o $afa_file $reformat_opts $aln_file";
 	RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
 
 	PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s\n", $max_width_aln, $aln_file2print, $max_width_afa, $afa_file2print));
@@ -738,7 +740,7 @@ sub validate_and_setup_ssu_mask {
 
     #Validate that 'esl-reformat' works if --afa, --only-afa, or --stk2afa
     my $reformat = "";
-    if(($opt_H{"--afa"}) || ($opt_H{"--only-afa"}) || ($opt_H{"--stk2afa"})) { 
+    if(($opt_H{"--afa"}) || ($opt_H{"--only-afa"}) || ($opt_H{"--stk2afa"}) || ($opt_H{"--filter"} ne "")) { 
 	$reformat = $globals_H{"esl-reformat"};
 	RunCommand("$reformat -h > /dev/null", $tfilectr++, 1, 0, $log_file, \$command_worked, "ERROR, the required executable $reformat (required b/c --afa, --only-afa or --stk2afa enabled) is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
     }	
@@ -1139,7 +1141,7 @@ sub mask_alignment {
 
     #reformat if necessary 
     if(($opt_HR->{"--afa"}) || ($opt_HR->{"--only-afa"})) { # convert stk to afa
-	$command = "$reformat -o $masked_afa_file --informat stockholm afa $masked_stk_file"; 
+	$command = "$reformat -o $masked_afa_file --small --informat pfam afa $masked_stk_file"; 
 	RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
 	PrintStringToFile($sum_file, 1, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $masked_afa_file2print, "output", "aln", $fnkept, "-", "-"));
     }
@@ -1164,6 +1166,7 @@ sub mask_alignment {
 # Arguments:  
 #   $weight:                path and name of esl-weight executable
 #   $alistat:               path and name of esl-alistat executable
+#   $reformat:              path and name of esl-reformat executable
 #   $opt_HR:                reference to the hash of command-line options
 #   $filter_root:           name for mask-related files, usually 'f'
 #   $aln_file2filter:       name of alignment file to filter, with path
@@ -1179,9 +1182,9 @@ sub mask_alignment {
 #
 ####################################################################
 sub filter_alignment { 
-    my $narg_expected = 12;
+    my $narg_expected = 13;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, filter_alignment() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($weight, $alistat, $opt_HR, $filter_root, $aln_file2filter, $key_out, $stk_suffix_AR, $max_width_in, $max_width_fil, $files_to_unlink_AR, $sum_file, $log_file) = @_;
+    my ($weight, $alistat, $reformat, $opt_HR, $filter_root, $aln_file2filter, $key_out, $stk_suffix_AR, $max_width_in, $max_width_fil, $files_to_unlink_AR, $sum_file, $log_file) = @_;
 
     my($filtered_stk_file, $nseq_input, $nseq_filtered, $filtered_stk_file2print, $command_worked, $filtered_afa_file, $filtered_afa_file2print, $aln_file2filter2print); 
 
@@ -1201,17 +1204,22 @@ sub filter_alignment {
     }    
     my @nseq_A = ();
     my $nali = 0;
-    DetermineNumSeqsStockholm($alistat, $aln_file2filter, $tfilectr++, $sum_file, $log_file, \@nseq_A, \$nali);
+    DetermineNumSeqsStockholm($alistat, $aln_file2filter, $opt_H{"-i"}, $tfilectr++, $sum_file, $log_file, \@nseq_A, \$nali);
     if($nali != 1) { PrintErrorAndExit("ERROR, unexpectedly found %d (not 1) alignments in $aln_file2filter.", $sum_file, 1); }
     $nseq_input = $nseq_A[0];
 
     # esl-weight -f --idf 0.75 10.stk
     if($opt_HR->{"--filter"} < 0.) { PrintErrorAndExit(sprintf("ERROR, with --filter <f>, <f> must be between 0.0 and 1.0, you entered %.4f.\n", $opt_HR->{"--filter"}), $sum_file, 1); }
     if($opt_HR->{"--filter"} > 1.) { PrintErrorAndExit(sprintf("ERROR, with --filter <f>, <f> must be between 0.0 and 1.0, you entered %.4f.\n", $opt_HR->{"--filter"}), $sum_file, 1); }
-    $command = "$weight -o $filtered_stk_file -f --idf " . $opt_HR->{"--filter"} . " $aln_file2filter";
+    if($opt_HR->{"-i"}) { 
+	$command = "$weight -o $filtered_stk_file -f --idf " . $opt_HR->{"--filter"} . " $aln_file2filter";
+    }
+    else {
+	$command = "$weight -f --idf " . $opt_HR->{"--filter"} . " $aln_file2filter | $reformat -o $filtered_stk_file --informat stockholm pfam -";
+    }
     RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
     @nseq_A = ();
-    DetermineNumSeqsStockholm($alistat, $filtered_stk_file, $sum_file, $log_file, \@nseq_A, \$nali);
+    DetermineNumSeqsStockholm($alistat, $filtered_stk_file, $opt_H{"-i"}, $tfilectr++, $sum_file, $log_file, \@nseq_A, \$nali);
     if($nali != 1) { PrintErrorAndExit("ERROR, unexpectedly found %d (not 1) alignments in $filtered_stk_file.", $sum_file, 0);  }
 
     $nseq_filtered = $nseq_A[0];

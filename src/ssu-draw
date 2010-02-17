@@ -225,6 +225,7 @@ if(! $opt_H{"-a"}) {
     $log_file2print = RemoveDirPath($log_file);
 }
 else { 
+    printf("$dir\n");
     $sum_file       = SwapOrAppendFileSuffix($dir, \@stk_suffix_A, $key_out . ".ssu-draw.sum", 0);
     $log_file       = SwapOrAppendFileSuffix($dir, \@stk_suffix_A, $key_out . ".ssu-draw.log", 0);
     $sum_file2print = $sum_file;

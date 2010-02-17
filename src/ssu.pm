@@ -436,6 +436,7 @@ sub RunCommand {
     if($retval != 0) { 
 	if($errmsg eq "") { $errmsg = "ERROR, the command \(\"$cmd\"\) unexpectedly returned non-zero exit status: $retval."; }
 	if($die_if_fails) { 
+	    PrintStringToFile($log_file, 0, "FATAL: Failed command: $cmd\n"); 
 	    PrintStringToFile($log_file, 0, ("Output (STDOUT) ($stdout_file_message): " . $stdout2print . "\n"));
 	    PrintStringToFile($log_file, 0, ("Output (STDERR) ($stderr_file_message): " . $stderr2print . "\n"));
 	}
@@ -445,6 +446,7 @@ sub RunCommand {
 	}
 	PrintStringToFile($log_file, 0, ("\n$errmsg\n"));
 	if($print_output_upon_failure) { 
+	    if($die_if_fails) { printf STDERR ("FATAL: Failed command: $cmd\n"); }
 	    printf STDERR ("Output (STDOUT):" . $stdout2print . "\n");
 	    printf STDERR ("Output (STDERR):" . $stderr2print . "\n");
 	}
@@ -624,6 +626,7 @@ sub DetermineNumSeqsFasta {
 # Arguments: 
 #   $alistat:   path and name of ssu-esl-alistat executable
 #   $alifile:   Stockholm sequence file
+#   $ileaved:   '1' if alignment is interleaved Stockholm else '0'
 #   $key:       string to add to temp file name
 #   $sum_file:  sum file 
 #   $log_file:  log file to print commands to
@@ -638,13 +641,15 @@ sub DetermineNumSeqsFasta {
 # 
 ####################################################################
 sub DetermineNumSeqsStockholm { 
-    my $narg_expected = 7;
+    my $narg_expected = 8;
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, DetermineNumSeqsStockholm() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($alistat, $alifile, $key, $sum_file, $log_file, $nseq_AR, $nali_R) = @_;
+    my($alistat, $alifile, $ileaved, $key, $sum_file, $log_file, $nseq_AR, $nali_R) = @_;
 
-    my ($nseq, $command, $line, $command_worked, $output);
+    my ($nseq, $command, $line, $command_worked, $output, $small_opt);
     my $tmp_alistat_file = TempFilename($log_file, $key);
-    $command = "$alistat $alifile > $tmp_alistat_file";
+    if($ileaved) { $small_opt = ""; } 
+    else         { $small_opt = " --rna --informat pfam --small"; } 
+    $command = "$alistat $small_opt $alifile > $tmp_alistat_file";
     $output = RunCommand("$command", $key, 1, 1, $log_file, \$command_worked, "");
 
     $nseq = 0;
@@ -850,9 +855,10 @@ sub SwapOrAppendFileSuffix() {
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, SwapOrAppendFileSuffix() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my ($orig_file, $orig_suffix_AR, $new_suffix, $use_orig_dir) = @_;
 
-    my $new_file = $orig_file;
+    my $new_file;
     my $suffix;
     my $did_swap = 0;
+    $new_file = $orig_file;
     foreach $suffix (@{$orig_suffix_AR}) { 
 	if($new_file =~ s/$suffix$/$new_suffix/) { $did_swap = 1; last; } #only remove final suffix (if ".stk.sto", remove only ".sto")
     }
