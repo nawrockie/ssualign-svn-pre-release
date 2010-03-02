@@ -260,7 +260,6 @@ ssu-align:
 	@echo ""
 	@echo "SSU-ALIGN built"
 	@echo ""
-	@echo ""
 
 setpaths:
 #	@echo 'setenv PATH "$$PATH"":""$(BINDIR)"' > setup.ssu-align.csh

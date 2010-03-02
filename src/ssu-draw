@@ -653,7 +653,7 @@ sub run_ssdraw_for_ssu_draw {
     my $nfiles_created = 0;
 
     my $indi_opt_enabled = 0;
-    if($ssdraw_opts =~ m/\s+\-\-indi\s+/) { $indi_opt_enabled = 1; }
+    if($ssdraw_opts =~ m/\-\-indi/) { $indi_opt_enabled = 1; }
 
     if($opt_HR->{"-a"}) { # save diagrams to CWD, print full path to input alignment
 	$aln_file2print = $aln_file;

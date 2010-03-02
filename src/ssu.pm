@@ -66,36 +66,36 @@ sub GetGlobals {
     my ($globals_HR, $ssualigndir) = @_;
 
     # default values, files and parameters
-    $globals_HR->{"VERSION"} = "0.1"; # original value: "0.1"
-    $globals_HR->{"DF_CM_FILE"} = $ssualigndir . "/ssu-align-0p1.cm";
-    $globals_HR->{"DF_TEMPLATE_FILE"} = $ssualigndir . "/ssu-align-0p1.ps";
-    $globals_HR->{"DF_MINBIT"} = 100; # original value: "0.1"
-    $globals_HR->{"DF_MINLEN"} = 1; # original value: "0.1"
-    $globals_HR->{"DF_MXSIZE"} = 4096; # original value: "0.1"
-    $globals_HR->{"DF_CMSEARCH_T"} = -1; # original value: "0.1"
-    $globals_HR->{"DF_CMBUILD_GAPTHRESH"} = 0.80;
-    $globals_HR->{"DF_NO_NAME"} = "<NONE>"; # original value: "0.1"
-    $globals_HR->{"DF_CMSEARCH_OPTS"} = " --hmm-cW 1.5 --no-null3 --noalign ";
-    $globals_HR->{"DF_CMSEARCH_ALG_FLAG"} = "--viterbi";
-    $globals_HR->{"DF_CMALIGN_OPTS"} = " --no-null3 --sub ";
-    $globals_HR->{"DF_ALIMASK_PFRACT"} = 0.95;
-    $globals_HR->{"DF_ALIMASK_PTHRESH"} = 0.95;
+    $globals_HR->{"VERSION"} = "0.1";                                           # original value: "0.1"
+    $globals_HR->{"DF_CM_FILE"} = $ssualigndir . "/ssu-align-0p1.cm";           # original value: $ssualigndir . "/ssu-align-0p1.cm"
+    $globals_HR->{"DF_TEMPLATE_FILE"} = $ssualigndir . "/ssu-align-0p1.ps";     # original value: $ssualigndir . "/ssu-align-0p1.ps"
+    $globals_HR->{"DF_MINBIT"} = 50;                                            # original value: "50"
+    $globals_HR->{"DF_MINLEN"} = 1;                                             # original value: "1"
+    $globals_HR->{"DF_MXSIZE"} = 4096;                                          # original value: "4096"
+    $globals_HR->{"DF_CMSEARCH_T"} = -1;                                        # original value: "-1"
+    $globals_HR->{"DF_CMBUILD_GAPTHRESH"} = 0.80;                               # original value: 0.80
+    $globals_HR->{"DF_NO_NAME"} = "<NONE>";                                     # original value: <NONE>
+    $globals_HR->{"DF_CMSEARCH_OPTS"} = " --hmm-cW 1.5 --no-null3 --noalign ";  # original value: " --hmm-cW 1.5 --no-null3 --noalign "
+    $globals_HR->{"DF_CMSEARCH_ALG_FLAG"} = "--viterbi";                        # original value: " --viterbi"
+    $globals_HR->{"DF_CMALIGN_OPTS"} = " --no-null3 --sub ";                    # original value: " --no-null3 --sub"
+    $globals_HR->{"DF_ALIMASK_PFRACT"} = 0.95;                                  # original value: 0.95
+    $globals_HR->{"DF_ALIMASK_PTHRESH"} = 0.95;                                 # original value: 0.95
 
     # executable programs
-    $globals_HR->{"cmalign"}      = "ssu-cmalign";
-    $globals_HR->{"cmbuild"}      = "ssu-cmbuild";
-    $globals_HR->{"cmsearch"}     = "ssu-cmsearch";
-    $globals_HR->{"esl-alimanip"} = "ssu-esl-alimanip";
-    $globals_HR->{"esl-alimask"}  = "ssu-esl-alimask";
-    $globals_HR->{"esl-alimerge"} = "ssu-esl-alimerge";
-    $globals_HR->{"esl-alistat"}  = "ssu-esl-alistat";
-    $globals_HR->{"esl-reformat"} = "ssu-esl-reformat";
-    $globals_HR->{"esl-seqstat"}  = "ssu-esl-seqstat";
-    $globals_HR->{"esl-sfetch"}   = "ssu-esl-sfetch";
-    $globals_HR->{"esl-ssdraw"}   = "ssu-esl-ssdraw";
-    $globals_HR->{"esl-weight"}   = "ssu-esl-weight";
-    $globals_HR->{"ps2pdf"}       = "ps2pdf";
-    $globals_HR->{"ssu-align"}    = "ssu-align";
+    $globals_HR->{"cmalign"}      = "ssu-cmalign";                              # original value: "ssu-cmalign"
+    $globals_HR->{"cmbuild"}      = "ssu-cmbuild";                              # original value: "ssu-cmbuild"
+    $globals_HR->{"cmsearch"}     = "ssu-cmsearch";                             # original value: "ssu-cmsearch"
+    $globals_HR->{"esl-alimanip"} = "ssu-esl-alimanip";                         # original value: "ssu-esl-alimanip"
+    $globals_HR->{"esl-alimask"}  = "ssu-esl-alimask";                          # original value: "ssu-esl-alimask"
+    $globals_HR->{"esl-alimerge"} = "ssu-esl-alimerge";                         # original value: "ssu-esl-alimerge"
+    $globals_HR->{"esl-alistat"}  = "ssu-esl-alistat";                          # original value: "ssu-esl-alistat"
+    $globals_HR->{"esl-reformat"} = "ssu-esl-reformat";                         # original value: "ssu-esl-reformat"
+    $globals_HR->{"esl-seqstat"}  = "ssu-esl-seqstat";                          # original value: "ssu-esl-seqstat"
+    $globals_HR->{"esl-sfetch"}   = "ssu-esl-sfetch";                           # original value: "ssu-esl-sfetch"
+    $globals_HR->{"esl-ssdraw"}   = "ssu-esl-ssdraw";                           # original value: "ssu-esl-ssdraw"
+    $globals_HR->{"esl-weight"}   = "ssu-esl-weight";                           # original value: "ssu-esl-weight"
+    $globals_HR->{"ps2pdf"}       = "ps2pdf";                                   # original value: "ps2pdf"
+    $globals_HR->{"ssu-align"}    = "ssu-align";                                # original value: "ssu-align"
 
     return;
 }

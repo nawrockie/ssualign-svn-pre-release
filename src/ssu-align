@@ -222,13 +222,13 @@ if(scalar(@ARGV) != 2) {
     print "\nTo see more help on available options, do ssu-draw -h\n\n";
     exit(1);
 }
-my ($target_file, $out_root) = @ARGV;
-$out_root =~ s/\/$//; # remove trailing slash if it exists
+my ($target_file, $out_dir) = @ARGV;
+$out_dir=~ s/\/$//; # remove trailing slash if it exists
 
 #####################################################
 # Create the output directory and sum and log files #
 #####################################################
-my $out_dir          = $out_root;
+my $out_root         = RemoveDirPath($out_dir);
 my $out_dir_and_root = $out_dir . "/" . $out_root;
 my ($sum_file, $sum_file2print);
 my ($log_file, $log_file2print);
@@ -721,21 +721,29 @@ sub prepare_only {
 
     my $prep_prefix = "";
     my $prep_suffix = "";
+    my $seen_two_lines = 0;
     my $errmsg = "";
-    if($opt_HR->{"--prep-in"} ne "") { # read the prep input file that specifies prefix/suffix for ssu-align runs
-	if(! (-e $opt_HR->{"--prep-in"})) { 
-	    PrintErrorAndExit("ERROR, the prep input file " . $opt_HR->{"--prep-in"} . " specified with --prep-in does not exist.", $sum_file, 1);
+    my $line;
+    my $prepin_file = $opt_HR->{"--prep-in"};
+    if($prepin_file ne "") { # read the prep input file that specifies prefix/suffix for ssu-align runs
+	if(! (-e $prepin_file)) { 
+	    PrintErrorAndExit("ERROR, the prep input file $prepin_file specified with --prep-in does not exist.", $sum_file, 1);
 	}
-	open(PREPIN, $opt_HR->{"--prep-in"}) || FileOpenFailure($opt_HR->{"--prep-in"}, $sum_file, $!, "reading");
-	$prep_prefix = <PREPIN>;
-	$prep_suffix = <PREPIN>;
-	chomp $prep_prefix;
-	chomp $prep_suffix;
+	open(PREPIN, $prepin_file) || FileOpenFailure($prepin_file, $sum_file, $!, "reading");
+	while($line = <PREPIN>) { 
+	    if(! $seen_two_lines) { 
+		if($line !~ m/^#/) { #skip comment lines
+		    chomp $line;
+		    if   ($prep_prefix eq "") { $prep_prefix = $line; }
+		    elsif($prep_suffix eq "") { $prep_suffix = $line; $seen_two_lines = 1; }
+		}
+	    }
+	}
 	close(PREPIN);
     }    
 
     my ($shell_script, $shell_script2print, $remainder, $n, $target_subfile_root, $target_subfile, $sub_output);
-    my ($nseq_this_file, $nseq_total_regurg, $line, $ncm, $ndig_runs, $ndig_seqs, $tmp, $description_width, $dashes1, $dashes2);
+    my ($nseq_this_file, $nseq_total_regurg, $ncm, $ndig_runs, $ndig_seqs, $tmp, $description_width, $dashes1, $dashes2);
     my ($i, $nmerge, $iter, $nstop, $lower, $upper, $merged_root, $merged_name, $fil_merged_name, $merged_lower_name, $merged_upper_name, $cm_name, $tmp2print);
 
     $ncm = scalar(@{$indi_cm_name_AR});
@@ -1116,7 +1124,7 @@ sub classify_and_extract_subseqs {
 	    $dashes = "";
 	    for($i = 0; $i < $cur_max_seq_name_width; $i++) { $dashes .= "-"; }
 	    printf OUTLIST  ("# List of %d subsequences to align to CM: $cm_name\n", $nwinners);
-	    printf OUTLIST  ("# Created by ssu-align.pl.\n#\n");
+	    printf OUTLIST  ("# Created by ssu-align.\n#\n");
 	    printf OUTLIST  ("# %-*s  %6s  %6s  %8s\n", $cur_max_seq_name_width, "target name", "start", "stop", "score");
 	    printf OUTLIST  ("# %*s  %6s  %6s  %8s\n", $cur_max_seq_name_width, $dashes, "------", "------", "--------");
 
@@ -1129,10 +1137,10 @@ sub classify_and_extract_subseqs {
 		    $hit_len_HR->{$by_cm_name_HA{$cm_name}[$i]} = $by_cm_start_HA{$cm_name}[$i] - $by_cm_end_HA{$cm_name}[$i] + 1; 
 		}
 		if($do_truncate) { 
-		    printf SFETCHIN ("$by_cm_name_HA{$cm_name}[$i]\t$by_cm_start_HA{$cm_name}[$i]\t$by_cm_end_HA{$cm_name}[$i]\t$by_cm_name_HA{$cm_name}[$i]\n"); 
+		    printf SFETCHIN ("%s\t%s\t%s\t%s\n", $by_cm_name_HA{$cm_name}[$i], $by_cm_start_HA{$cm_name}[$i], $by_cm_end_HA{$cm_name}[$i], $by_cm_name_HA{$cm_name}[$i]); 
 		}
 		else { 
-		    printf SFETCHIN ("$by_cm_name_HA{$cm_name}[$i]\n"); 
+		    printf SFETCHIN ("%s\n", $by_cm_name_HA{$cm_name}[$i]);
 		}
 	    }
 	    #PrintStringToFile($sum_file, 1, sprintf("\n"));
@@ -1329,7 +1337,7 @@ sub print_scores_and_nomatch_files {
     my $narg_expected = 11;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, print_scores_and_nomatch_files() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my ($opt_HR, $target_file, $ncm, $scores_file, $nomatch_file, $max_seq_name_width, $indi_cm_name_AR, $bestmatch_cm_HR, $cmscores2print_HR, $hmmscores2print_HR, $sum_file) = @_;
-
+    
     my ($seq_name, $cmscore2print);
     my ($i, $bestmatch_cm, $max_cm_name_width);
     my ($dashes_seqname, $dashes_cmname, $dashes1, $dashes2);

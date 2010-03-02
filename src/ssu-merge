@@ -645,6 +645,8 @@ sub validate_and_setup_ssu_merge_default {
     if($max_num == 0) { PrintErrorAndExit("ERROR, couldn't find any subdirectories created by ssu-align in $dir.\nDid you run the shell script created by your initial ssu-align --prep-* call\nto create alignments?", $sum_file, 1); }
     # Make sure we have all directories from <dir>.1 to <dir>.$max_num, and they all
     # contain ssu-align sum files in them that are finished running.
+    my @unstarted_A = ();
+    my @unfinished_A = ();
     for($i = 1; $i <= $max_num; $i++) { 
 	$subdir = "$dir." . $i;
 	$fa_file = $dir . "/" . $orig_fa_file . "." . $i;
@@ -655,21 +657,35 @@ sub validate_and_setup_ssu_merge_default {
 	}
 	$child_sum_file = $dir . "/" . $subdir . "/" . $subdir . ".ssu-align.sum";
 	if(! (-e $child_sum_file)) { 
-	    PrintErrorAndExit("ERROR, ssu-align created subdirectory " . $dir . "/$subdir does not have a ssu-align summary (.sum) file in it.\nThis suggests the ssu-align job for that directory has not completed executing yet.\nPlease execute it, or if it is currently executing, wait until it is finished.\nThen run ssu-merge again.", $sum_file, 1);  
+	    push(@unstarted_A, $i);
 	}
-	# look for a line starting with  "# CPU" (reporting running time) in ssu-align summary file (it should be there if the file is finished running) 
-	open(SUM, $child_sum_file) || FileOpenFailure($child_sum_file, $sum_file, $!, "reading");
-	$seen_cpu = 0;
-	while($line = <SUM>) { 
-	    if($line =~ m/^\#\s+CPU time/) { $seen_cpu = 1; }
-	}
-	close(SUM);
-	if(! $seen_cpu) { 
-	    PrintErrorAndExit("ERROR, ssu-align created subdirectory " . $dir . "/$subdir has an incomplete ssu-align summary (.sum) file in it.\nThis suggests the ssu-align job for that directory did not successfully finish running yet.\nPlease rerun it or wait until it is finished.\nThen run ssu-merge again.", $sum_file, 1);  
+	else { 
+	    # look for a line starting with  "# CPU" (reporting running time) in ssu-align summary file (it should be there if the file is finished running) 
+	    open(SUM, $child_sum_file) || FileOpenFailure($child_sum_file, $sum_file, $!, "reading");
+	    $seen_cpu = 0;
+	    while($line = <SUM>) { 
+		if($line =~ m/^\#\s+CPU time/) { $seen_cpu = 1; }
+	    }
+	    close(SUM);
+	    if(! $seen_cpu) { push(@unfinished_A, $i); }
 	}
 	push(@{$subdir_AR}, $subdir);
     }
-
+    $errmsg = "";
+    my $nunstarted  = scalar(@unstarted_A);
+    my $nunfinished = scalar(@unfinished_A);
+    if(scalar(@unstarted_A) > 0) { 
+	$errmsg .= "ERROR, the following $nunstarted ssu-align created subdirectories do not have ssu-align summary (.sum) files in them:";
+	foreach $i (@unstarted_A) { $errmsg .= "\t" . $dir . "/" . $dir . "." . $i . "/\n"; }
+	$errmsg .= "\nThis suggests the ssu-align jobs for these directories have not completed executing yet.\nPlease execute them, or if they are currently executing, wait until they are finished.\nThen run ssu-merge again.";  
+    }
+    if(scalar(@unfinished_A) > 0) { 
+	$errmsg = "ERROR, the following $nunfinished ssu-align created subdirectories include incomplete ssu-align summary (.sum) files:\n";
+	foreach $i (@unfinished_A) { $errmsg .= "\t" . $dir . "/" . $dir . "." . $i . "/\n"; }
+	$errmsg .= "\nThis suggests the ssu-align jobs for these directories did not successfully finish running yet.\nPlease rerun them or wait until they are finished.\nThen run ssu-merge again.";
+    }
+    if($errmsg ne "") { PrintErrorAndExit($errmsg, $sum_file, 1); }
+    
     # make a list of files to merge, by checking each subdirectory for each possible file, either 0 or 1 alignment per CM should exist,
     foreach $subdir (@{$subdir_AR}) { 
 	# each directory should have:
