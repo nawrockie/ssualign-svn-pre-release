@@ -845,7 +845,7 @@ sub prepare_only {
 	PrintErrorAndExit("ERROR, problem partitioning target FASTA file $target_file into $nruns files, $n files were successfully created.", $sum_file, 1);
     }    
     PrintStringToFile($sum_file, 1, sprintf("  %-*s  shell script that will run ssu-align %d times\n", $max_file_name_width, $shell_script2print, $nruns));
-    PrintStringToFile($sum_file, 1, sprintf("#\n# To perform the alignments, execute the following 2 commands:\n#\t\"cd $out_dir\"\n#\t\"sh $shell_script2print\"\n"));
+    PrintStringToFile($sum_file, 1, sprintf("#\n# To perform the alignments, execute the following:\n#\t\"cd $out_dir; sh $shell_script2print\"\n"));
     PrintStringToFile($sum_file, 1, sprintf("#\n# When all runs are complete, move into *this directory* and do:\n#\t\"ssu-merge $out_dir\"\n"));
 
     $$max_file_name_width_R = $max_file_name_width;

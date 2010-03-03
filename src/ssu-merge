@@ -445,7 +445,7 @@ PrintTiming("# Summed ssu-align CPU time (total):     ", $summed_total_seconds, 
 ########################################
 # Note: this is purposefully done at very end of run so that if any
 # error causes us to exit early, we don't remove original files
-clean_up_post_merge($dir, \%opt_H, \@subdir_A, \@score_to_merge_A, \@sum_to_merge_A, \@log_to_merge_A, \@tab_to_merge_A, \@nomatch_to_merge_A, \@fa_files_A, 
+clean_up_post_merge($dir, $root, \%opt_H, \@subdir_A, \@score_to_merge_A, \@sum_to_merge_A, \@log_to_merge_A, \@tab_to_merge_A, \@nomatch_to_merge_A, \@fa_files_A, 
 		    \@cmalign_to_merge_AA, \@hits_fa_to_merge_AA, \@hits_list_to_merge_AA, \@stk_to_merge_AA, \@ifile_to_merge_AA, $sum_file, $log_file);
 
 
@@ -631,7 +631,7 @@ sub validate_and_setup_ssu_merge_default {
     my ($subdir, $num, $file, $cm, $maybe_dir);
     foreach $maybe_dir (glob("$dir/*")) { 
 	if(-d $maybe_dir) { # $maybe_dir is a dir
-	    $maybe_dir =~ s/^$root\///;
+	    $maybe_dir =~ s/^$dir\///;
 	    if($maybe_dir =~ /^$root\.(\d+)$/) { 
 		$num = $1;
 		if($num > 0) { #don't bother with '0' or negative numbers, they weren't created by ssu-align 

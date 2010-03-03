@@ -54,7 +54,7 @@ my $usage          = "Usage: ssu-mask [-options] <directory created by ssu-align
 my $options_usage  = "where general options are:\n";
 #                           1         2         3         4         5         6         7         8
 #                  12345678901234567890123456789012345678901234567890123456789012345678901234567890
-#$options_usage .= "  -a            : the command-line argument is a stockholm alignment, not a directory\n";
+$options_usage .= "  -a            : the command-line argument is a stockholm alignment, not a directory\n";
 $options_usage .= "  -h            : show brief help on version and usage\n";
 $options_usage .= "  -m <s>        : CM file <s> created the alignment(s) (with ssu-align -m <f>)\n";
 $options_usage .= "  -t <s>        : for structure diagrams, use template file <s>, not the default\n";
@@ -73,7 +73,7 @@ $options_usage .= "  --gapthresh <f> : only consider columns with <= <f> fractio
 $options_usage .= "  --keep          : keep all intermediate files which are normally removed\n";
 
 $options_usage .= "\noptions for using pre-calculated mask files for masking alignments:\n";
-$options_usage .= "    (standard options for --mask-key <s> are \"liberal\", \"cmemit\", \"ggcore\")";
+$options_usage .= "    (standard options for --mask-key <s> are \"liberal\", \"cmemit\", \"ggcore\")\n";
 $options_usage .= "  --mask-file <s> : use single mask in existing file <s> to mask single alignment\n";
 $options_usage .= "  --mask-key  <s> : use existing mask files named <model>.<s>.mask for masking\n";
 
