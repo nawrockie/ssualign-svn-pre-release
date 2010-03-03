@@ -212,20 +212,20 @@ if(scalar(@ARGV) != 1) {
 }
 
 my ($dir) = $ARGV[0];
-$dir =~ s/\/$//;
+$dir =~ s/\/$//; # remove trailing slash
+my $root = RemoveDirPath($dir);
 my @stk_suffix_A = (".stk", ".sto", ".stk.gz", ".sto.gz");
 
 my ($sum_file, $sum_file2print, $log_file, $log_file2print);
 if(! $opt_H{"-a"}) { 
     #validate that $dir exists
     if(!(-d $dir)) { printf STDERR ("\nERROR, directory $dir does not exist.\n"); exit(1); }
-    $sum_file       = $dir . "\/" . $dir . $key_out . ".ssu-draw.sum";
-    $log_file       = $dir . "\/" . $dir . $key_out . ".ssu-draw.log";
+    $sum_file       = $dir . "\/" . $root . $key_out . ".ssu-draw.sum";
+    $log_file       = $dir . "\/" . $root . $key_out . ".ssu-draw.log";
     $sum_file2print = RemoveDirPath($sum_file);
     $log_file2print = RemoveDirPath($log_file);
 }
 else { 
-    printf("$dir\n");
     $sum_file       = SwapOrAppendFileSuffix($dir, \@stk_suffix_A, $key_out . ".ssu-draw.sum", 0);
     $log_file       = SwapOrAppendFileSuffix($dir, \@stk_suffix_A, $key_out . ".ssu-draw.log", 0);
     $sum_file2print = $sum_file;
@@ -248,7 +248,7 @@ my @stk_list_A = ();
 my @mask_list_A = ();
 my @ifile_list_A = ();
 my ($cm_file, $template_file, $ssdraw);
-validate_and_setup_ssu_draw($ssualigndir, $dir, $key_in, \%opt_H, \$cm_file, \$template_file, \$ssdraw, \@stk_list_A, \@mask_list_A, \@ifile_list_A, $log_file, $sum_file);
+validate_and_setup_ssu_draw($ssualigndir, $dir, $root, $key_in, \%opt_H, \$cm_file, \$template_file, \$ssdraw, \@stk_list_A, \@mask_list_A, \@ifile_list_A, $log_file, $sum_file);
 my $naln = scalar(@stk_list_A);
 my $aln_file;
 
@@ -341,6 +341,7 @@ exit(0);
 # Arguments: 
 # $ssualigndir:       dir defined by SSUALIGNDIR environment variable 
 # $dir:               the directory we will create files in
+# $root:              the keyword we'll use for root of output file names (this is same as $dir unless $dir includes >=1 subdirs)
 # $key_in:            "" or a key that is included in input file names, just prior to the suffix
 #                     e.g. $key_in = "fookey", $dir = "foodir", aln file is foodir/foodir.archaea.fookey.stk
 # $opt_HR:            reference to the hash of command-line options
@@ -361,9 +362,9 @@ exit(0);
 #
 ####################################################################
 sub validate_and_setup_ssu_draw { 
-    my $narg_expected = 12;
+    my $narg_expected = 13;
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, validate_and_setup_ssu_draw() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($ssualigndir, $dir, $key_in, $opt_HR, $cm_file_ref, $template_file_ref, $ssdraw_ref, $stk_list_arr_ref, $mask_list_arr_ref, $ifile_list_arr_ref, $log_file, $sum_file) = @_;
+    my($ssualigndir, $dir, $root, $key_in, $opt_HR, $cm_file_ref, $template_file_ref, $ssdraw_ref, $stk_list_arr_ref, $mask_list_arr_ref, $ifile_list_arr_ref, $log_file, $sum_file) = @_;
 
     #Validate that we can read the CM file
     my $cm_file = "";
@@ -453,7 +454,7 @@ sub validate_and_setup_ssu_draw {
 	close(CM);
 	foreach $name (@names_A) { 
 	    $found_aln = 0;
-	    $aln_name = $dir . "/" . $dir . "." . $name . $key_in . ".stk";
+	    $aln_name = $dir . "/" . $root . "." . $name . $key_in . ".stk";
 	    if(-e $aln_name) { 
 		push(@{$stk_list_arr_ref}, $aln_name);
 		$naln++; 
@@ -467,7 +468,7 @@ sub validate_and_setup_ssu_draw {
 	    if($found_aln) { 
 		# determine mask file to use, if any
 		if($opt_HR->{"--no-mask"}) { 
-		    $mask_name = $dir . "/" . $dir . "." . $name . $key_in . ".mask";
+		    $mask_name = $dir . "/" . $root . "." . $name . $key_in . ".mask";
 		    if(-e $mask_name) { 
 			push(@{$mask_list_arr_ref}, $mask_name);
 		    }
@@ -476,7 +477,7 @@ sub validate_and_setup_ssu_draw {
 		else { push(@{$mask_list_arr_ref}, ""); } # empty string tells later functions: don't use mask for this alignment
 
 		# determine insert file to use, we always use one if it exists
-		$ifile_name = $dir . "/" . $dir . "." . $name . $key_in . ".ifile";
+		$ifile_name = $dir . "/" . $root . "." . $name . $key_in . ".ifile";
 		if(-e $ifile_name) { 
 		    push(@{$ifile_list_arr_ref}, $ifile_name);
 		}
@@ -491,7 +492,7 @@ sub validate_and_setup_ssu_draw {
 	    PrintStringToFile($sum_file, 0, $errmsg);
 	    printf STDERR $errmsg;
 	    foreach $name (@names_A) { 
-		$aln_name = $dir . "/" . $dir . "." . $name . $key_in . ".stk";
+		$aln_name = $dir . "/" . $root . "." . $name . $key_in . ".stk";
 		$errmsg = "\t$aln_name\n";
 		PrintStringToFile($sum_file, 0, $errmsg);
 		printf STDERR $errmsg;

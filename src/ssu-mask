@@ -283,7 +283,8 @@ if(scalar(@ARGV) != 1) {
     exit(1);
 }
 my ($dir) = $ARGV[0];
-$dir =~ s/\/$//;
+$dir =~ s/\/$//; # remove trailing slash
+my $root = RemoveDirPath($dir);
 
 my ($sum_file, $sum_file2print, $log_file, $log_file2print);
 my @files_to_unlink_A = ();
@@ -291,8 +292,8 @@ my @stk_suffix_A = (".stk", ".sto", ".stk.gz", ".sto.gz");
 if(! $opt_H{"-a"}) { 
     #validate that $dir exists
     if(!(-d $dir)) { printf STDERR ("\nERROR, directory $dir does not exist.\n"); exit(1); }
-    $sum_file       = $dir . "\/" . $dir . $key_out . ".ssu-mask.sum";
-    $log_file       = $dir . "\/" . $dir . $key_out . ".ssu-mask.log";
+    $sum_file       = $dir . "\/" . $root . $key_out . ".ssu-mask.sum";
+    $log_file       = $dir . "\/" . $root . $key_out . ".ssu-mask.log";
     $sum_file2print = RemoveDirPath($sum_file);
     $log_file2print = RemoveDirPath($log_file);
 }
@@ -319,7 +320,7 @@ PrintGlobalsToFile(\%globals_H, $log_file);
 my @stk_list_A = ();
 my @in_mask_list_A = ();
 my ($cm_file, $template_file, $alimanip, $alimask, $ssdraw, $weight, $alistat, $reformat);
-validate_and_setup_ssu_mask($ssualigndir, $dir, $key_in, \%opt_H, \$cm_file, \$template_file, \$alimask, \$alimanip, \$ssdraw, \$weight, \$alistat, \$reformat, \@stk_list_A, \@in_mask_list_A, $log_file, $sum_file);
+validate_and_setup_ssu_mask($ssualigndir, $dir, $root, $key_in, \%opt_H, \$cm_file, \$template_file, \$alimask, \$alimanip, \$ssdraw, \$weight, \$alistat, \$reformat, \@stk_list_A, \@in_mask_list_A, $log_file, $sum_file);
 my $naln = scalar(@stk_list_A);
 my $aln_file;
 
@@ -653,6 +654,7 @@ exit(0);
 # Arguments: 
 # $ssualigndir:          dir defined by SSUALIGNDIR environment variable 
 # $dir:                  the directory we will create files in
+# $root:                 the keyword we'll use for root of output file names (this is same as $dir unless $dir includes >=1 subdirs)
 # $key_in:               "" or a key that is included in input file names, just prior to the suffix
 #                        e.g. $key_in = "fookey", $dir = "foodir", aln file is foodir/foodir.archaea.fookey.stk
 # $opt_HR:               reference to the hash of command-line options
@@ -677,9 +679,9 @@ exit(0);
 #
 ####################################################################
 sub validate_and_setup_ssu_mask { 
-    my $narg_expected = 16;
+    my $narg_expected = 17;
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, validate_and_setup_ssu_mask() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($ssualigndir, $dir, $key_in, $opt_HR, $cm_file_ref, $template_file_ref, $alimask_ref, $alimanip_ref, $ssdraw_ref, $weight_ref, $alistat_ref, $reformat_ref, $stk_list_arr_ref, $in_mask_list_arr_ref, $log_file, $sum_file) = @_;
+    my($ssualigndir, $dir, $root, $key_in, $opt_HR, $cm_file_ref, $template_file_ref, $alimask_ref, $alimanip_ref, $ssdraw_ref, $weight_ref, $alistat_ref, $reformat_ref, $stk_list_arr_ref, $in_mask_list_arr_ref, $log_file, $sum_file) = @_;
 
     #Validate that we can read the CM file
     my $cm_file = "";
@@ -778,7 +780,7 @@ sub validate_and_setup_ssu_mask {
 	}
 	close(CM);
 	foreach $name (@names_A) { 
-	    $aln_name = $dir . "/" . $dir . "." . $name . $key_in . ".stk";
+	    $aln_name = $dir . "/" . $root . "." . $name . $key_in . ".stk";
 	    if(-e $aln_name) { 
 		push(@{$stk_list_arr_ref}, $aln_name);
 		$naln++; 
@@ -796,7 +798,7 @@ sub validate_and_setup_ssu_mask {
 	    PrintStringToFile($sum_file, 0, $errmsg);
 	    printf STDERR $errmsg;
 	    foreach $name (@names_A) { 
-		$aln_name = $dir . "/" . $dir . "." . $name . $key_in . ".stk";
+		$aln_name = $dir . "/" . $root . "." . $name . $key_in . ".stk";
 		$errmsg = "\t$aln_name\n";
 		PrintStringToFile($sum_file, 0, $errmsg);
 		printf STDERR $errmsg;

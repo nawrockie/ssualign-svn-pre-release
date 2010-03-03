@@ -96,7 +96,7 @@ $options_usage .= "  --global   : search with globally configured HMM [default: 
 $options_usage .= "\nexpert options for tuning the alignment stage:\n";
 $options_usage .= "  --no-trunc    : do not truncate seqs to HMM predicted start/end, align full seqs\n";
 $options_usage .= "  --aln-one <s> : only align best-matching sequences to the CM named <s> in CM file\n";
-$options_usage .= "  --filter <f>  : filter aln based on seq identity, allow no 2 seqs > <f> identical\n";
+#$options_usage .= "  --filter <f>  : filter aln based on seq identity, allow no 2 seqs > <f> identical\n";
 $options_usage .= "  --no-prob     : do not append posterior probabilities to alignments\n";
 $options_usage .= "  --mxsize <f>  : increase mx size for cmalign to <f> Mb (default: 4096)\n";
 
@@ -169,7 +169,6 @@ my $opt_return = GetOptions
      'mxsize'    => \$opt_H{"--mxsize"});
 
 if($opt_return != 1) { print STDERR "\nERROR, GetOptions() did not return 1, but $opt_return\n"; exit(1); }
-
 
 if ($opt_H{"-h"}) { 
     PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, "");
