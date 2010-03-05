@@ -252,8 +252,8 @@ PrintGlobalsToFile(\%globals_H, $log_file);
 ##################################################################
 # Validate that everything is go and determine output file names #
 ##################################################################
-my ($ssualign, $cmsearch, $cmalign, $sfetch, $seqstat, $weight, $cm_file, $errmsg);
-validate_and_setup_ssu_align($target_file, \%opt_H, \$ssualign, \$cmsearch, \$cmalign, \$sfetch, \$seqstat, \$weight, \$cm_file, $sum_file, $log_file);
+my ($ssualign, $cmsearch, $cmalign, $reformat, $sfetch, $seqstat, $weight, $cm_file, $errmsg);
+validate_and_setup_ssu_align($target_file, \%opt_H, \$ssualign, \$cmsearch, \$cmalign, \$reformat, \$sfetch, \$seqstat, \$weight, \$cm_file, $sum_file, $log_file);
 
 # get stats on the input sequences, including the length of each sequence
 my $seqstat_out_file = $out_dir_and_root . ".seqstat";
@@ -311,7 +311,7 @@ my %hit_len_H = ();
 my $max_seq_name_width;
 
 if(! $opt_H{"--no-search"}) { 
-    classify_and_extract_subseqs(\%opt_H, $tab_file, $target_file, $out_dir_and_root, $sfetch, $max_file_name_width, \@indi_cm_name_A, \%bestmatch_cm_H, \%new_target_file_per_cm_name_H, \%hmmscores2print_H, \%hit_len_H, \$max_seq_name_width, $sum_file, $log_file);
+    classify_and_extract_subseqs(\%opt_H, $tab_file, $target_file, $out_dir_and_root, $sfetch, $reformat, $max_file_name_width, \@indi_cm_name_A, \%bestmatch_cm_H, \%new_target_file_per_cm_name_H, \%hmmscores2print_H, \%hit_len_H, \$max_seq_name_width, $sum_file, $log_file);
 }
 else { 
     # No initial search stage; align all the sequences in the full target sequence file to the only CM (we've checked there's only 1 CM)
@@ -410,6 +410,7 @@ exit(0);
 # $ssualign_R:     RETURN; ssu-align executable command
 # $cmsearch_R:     RETURN; cmsearch executable command
 # $cmalign_R:      RETURN; cmalign executable command
+# $reformat_R:     RETURN; esl-reformat executable command
 # $sfetch_R:       RETURN; esl-sfetch executable command
 # $seqstat_R:      RETURN; esl-seqstat executable command
 # $weight_R:       RETURN; esl-weight executable command
@@ -425,9 +426,9 @@ exit(0);
 #
 ####################################################################
 sub validate_and_setup_ssu_align { 
-    my $narg_expected = 11;
+    my $narg_expected = 12;
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, validate_and_setup_ssu_align() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($target_file, $opt_HR, $ssualign_R, $cmsearch_R, $cmalign_R, $sfetch_R, $seqstat_R, $weight_R, $cm_file_R, $sum_file, $log_file) = @_;
+    my($target_file, $opt_HR, $ssualign_R, $cmsearch_R, $cmalign_R, $reformat_R, $sfetch_R, $seqstat_R, $weight_R, $cm_file_R, $sum_file, $log_file) = @_;
 
     #Make sure the CM file exists
     my $cm_file = "";
@@ -458,6 +459,7 @@ sub validate_and_setup_ssu_align {
     my ($tmp, $command_worked);
     my $cmsearch   = $globals_H{"cmsearch"};
     my $cmalign    = $globals_H{"cmalign"};
+    my $reformat   = $globals_H{"esl-reformat"};
     my $sfetch     = $globals_H{"esl-sfetch"};
     my $seqstat    = $globals_H{"esl-seqstat"};
     my $weight     = $globals_H{"esl-weight"};
@@ -466,7 +468,8 @@ sub validate_and_setup_ssu_align {
     RunCommand("$seqstat -h > /dev/null", $tfilectr++, 1, 0, $log_file, \$command_worked, "ERROR, the required executable $seqstat is either not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
     if(!($opt_HR->{"--no-search"})) { 
 	RunCommand("$cmsearch -h > /dev/null", $tfilectr++, 1, 0, $log_file, \$command_worked, "ERROR, the required executable $cmsearch is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
-	RunCommand("$sfetch -h > /dev/null", $tfilectr++, 1, 0, $log_file, \$command_worked, "ERROR, the required executable $sfetch is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
+	RunCommand("$sfetch -h > /dev/null",   $tfilectr++, 1, 0, $log_file, \$command_worked, "ERROR, the required executable $sfetch is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
+	RunCommand("$reformat -h > /dev/null", $tfilectr++, 1, 0, $log_file, \$command_worked, "ERROR, the required executable $reformat is not in your PATH environment\nvariable. See the User's Guide Installation section.");;
     }
     if(!($opt_HR->{"--no-align"})) { 
 	RunCommand("$cmalign -h > /dev/null", $tfilectr++, 1, 0, $log_file, \$command_worked, "ERROR, the required executable $cmalign is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
@@ -481,6 +484,7 @@ sub validate_and_setup_ssu_align {
     $$ssualign_R = $ssualign;
     $$cmsearch_R = $cmsearch;
     $$cmalign_R  = $cmalign;
+    $$reformat_R = $reformat;
     $$sfetch_R   = $sfetch;
     $$seqstat_R  = $seqstat;
     $$weight_R   = $weight;
@@ -958,6 +962,7 @@ sub search_sequences_with_each_model {
 # $target_file:                    name of the target sequence filee
 # $out_dir_and_root:               output root, for naming output files
 # $sfetch:                         esl-sfetch executable
+# $reformat:                       esl-reformat executable
 # $max_file_name_width:            max length of a file name
 # $indi_cm_name_AR:                reference to array of individual CM names
 # $bestmatch_cm_HR:                RETURN; reference to hash of best-matching CM for each sequence
@@ -974,9 +979,9 @@ sub search_sequences_with_each_model {
 # 
 ####################################################################
 sub classify_and_extract_subseqs { 
-    my $narg_expected = 14;
+    my $narg_expected = 15;
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, classify_and_extract_subseqs() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($opt_HR, $tab_file, $target_file, $out_dir_and_root, $sfetch, $max_file_name_width, $indi_cm_name_AR, $bestmatch_cm_HR, $new_target_file_per_cm_name_HR,
+    my ($opt_HR, $tab_file, $target_file, $out_dir_and_root, $sfetch, $reformat, $max_file_name_width, $indi_cm_name_AR, $bestmatch_cm_HR, $new_target_file_per_cm_name_HR,
 	$hmmscores2print_HR, $hit_len_HR, $max_seq_name_width_R, $sum_file, $log_file) = @_;
     my $cur_max_seq_name_width = 0;
     my $max_seq_name_width = 0;
@@ -1095,7 +1100,7 @@ sub classify_and_extract_subseqs {
 
     # For each CM c, list the target sequences that score highest to c in tabular format
     # and then fetch them with esl-sfetch
-    my ($index_file, $ncm_with_at_least_one_seq, $list_file, $list_file2print, $sfetch_in_file, $nwinners, $hits_file, $hits_file2print, $sfetch_options);
+    my ($index_file, $ncm_with_at_least_one_seq, $list_file, $list_file2print, $sfetch_in_file, $nwinners, $hits_file, $hits_file2print, $sfetch_options, $reformat_options);
     $ncm_with_at_least_one_seq = 0;
     $index_file = $target_file . ".ssi";
     
@@ -1153,7 +1158,13 @@ sub classify_and_extract_subseqs {
 	    if(-e ($hits_file)) { UnlinkFile($hits_file, $log_file); }
 	    if($do_truncate) { $sfetch_options = "-Cf"; }
 	    else             { $sfetch_options = "-f";  }
-	    $command = "$sfetch -o $hits_file $sfetch_options $target_file $sfetch_in_file";
+	    $reformat_options = "--informat fasta"; # esl-reformat can't autodetect format when reading from stdin
+	    if($opt_HR->{"--dna"}) { $reformat_options .= " -d"; }
+	    else                   { $reformat_options .= " -r"; }
+	    # We pipe the esl-sfetch output into esl-reformat to convert it to either all RNA or all DNA (if --dna), otherwise
+	    # if the input dataset is mixed DNA/RNA (for example a combined dataset of all of Silva and all of Green Genes)
+	    # it will be extracted as mixed DNA/RNA b/c all esl-sfetch does is regurgitate the input. 
+	    $command = "$sfetch $sfetch_options $target_file $sfetch_in_file | $reformat -o $hits_file $reformat_options -"; 
 	    RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
 
 	    if(-e $hits_file) { 
