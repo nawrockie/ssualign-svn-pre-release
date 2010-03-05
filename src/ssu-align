@@ -67,7 +67,7 @@ my $options_usage  = "where general options are:\n";
 #                  12345678901234567890123456789012345678901234567890123456789012345678901234567890
 $options_usage .= "  -h         : show brief help on version and usage\n";
 $options_usage .= "  -m <s>     : use CM file <s> instead of the default CM file\n";
-$options_usage .= "  -b <f>     : set minimum bit score of a surviving subsequence as <f> (default: 100)\n";
+$options_usage .= "  -b <f>     : set minimum bit score of a surviving subsequence as <f> (default: 50)\n";
 $options_usage .= "  -l <n>     : set minimum length    of a surviving subsequence as <n> (default: 1)\n";
 $options_usage .= "  -i         : output alignments in interleaved Stockholm format (not 1 line/seq)\n";
 $options_usage .= "  -F         : force; if <output dir> already exists - empty it and fill it\n";
@@ -244,7 +244,7 @@ else {
     $log_file2print = $out_root         . ".ssu-align.log";
 }
 # we don't open the summary and log files here b/c the output dir has not yet been created, we do that in create_output_dir
-create_output_dir($out_dir, \%opt_H, $sum_file, $log_file); 
+create_output_dir($out_dir, $out_root, \%opt_H, $sum_file, $log_file); 
 PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, $sum_file);
 PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 0, $log_file);
 PrintGlobalsToFile(\%globals_H, $log_file);
@@ -505,6 +505,7 @@ sub validate_and_setup_ssu_align {
 # 
 # Arguments:  
 # $out_dir:   directory to create
+# $out_root:  lowest level subdirectory in $out_dir (equals $out_dir if $out_dir contains 0 subdirs)
 # $opt_HR:    reference to the hash of command-line options
 # $sum_file:  summary file, created (opened) here
 # $log_file:  log file, created (opened) here
@@ -517,9 +518,9 @@ sub validate_and_setup_ssu_align {
 # 
 ####################################################################
 sub create_output_dir { 
-    my $narg_expected = 4;
+    my $narg_expected = 5;
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, create_output_dir() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($out_dir, $opt_HR, $sum_file, $log_file) = @_;
+    my($out_dir, $out_root, $opt_HR, $sum_file, $log_file) = @_;
 
     my ($command, $tmp, $command_worked, $maybe_dir, $has_subdir, $has_ssualign_subdir, $ran_command, $output, $errmsg);
     $has_subdir = 0;
@@ -543,8 +544,8 @@ sub create_output_dir {
 	    foreach $maybe_dir (glob("$out_dir/*")) { 
 		if(-d $maybe_dir) { # $maybe_dir is a dir
 		    $has_subdir = 1;
-		    if($maybe_dir !~ m/^$out_dir\/$out_dir\.(\d+)/) { # subdirectory not created by ssu-align
-			printf STDERR "Subdirectory $maybe_dir of $out_dir exists; it doesn't appear to have been created by ssu-align.\nEither delete it, or use --FF to remove all subdirectories of $out_dir.";
+		    if($maybe_dir !~ m/^$out_dir\/$out_root\.(\d+)/) { # subdirectory not created by ssu-align
+			printf STDERR "Subdirectory $maybe_dir of $out_dir exists; it doesn't appear to have been created by ssu-align.\nEither delete it, or use --FF to remove all subdirectories of $out_dir.\n";
 		    }
 		    else { # subdirectory (probably) created by ssu-align
 			$has_ssualign_subdir = 1;
@@ -688,7 +689,7 @@ sub process_cm_file {
 # Arguments:  
 # $target_file              the target sequence file
 # $out_dir                  output directory
-# $out_root                 root for output files
+# $out_root                 lowest level subdir of $out_dir (equals $out_dir if $out_dir contains 0 subdirs)
 # $opt_HR:                  reference to the hash of command-line options
 # $opt_takes_arg_HR:        reference to the hash specifying if each option takes an arg or not
 # $opt_is_prep_HR:          reference to the hash of options that should be passed to children
@@ -1164,7 +1165,7 @@ sub classify_and_extract_subseqs {
 	    # We pipe the esl-sfetch output into esl-reformat to convert it to either all RNA or all DNA (if --dna), otherwise
 	    # if the input dataset is mixed DNA/RNA (for example a combined dataset of all of Silva and all of Green Genes)
 	    # it will be extracted as mixed DNA/RNA b/c all esl-sfetch does is regurgitate the input. 
-	    $command = "$sfetch $sfetch_options $target_file $sfetch_in_file | $reformat -o $hits_file $reformat_options -"; 
+	    $command = "$sfetch $sfetch_options $target_file $sfetch_in_file | $reformat -o $hits_file $reformat_options fasta -"; 
 	    RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
 
 	    if(-e $hits_file) { 

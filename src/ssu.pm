@@ -66,20 +66,21 @@ sub GetGlobals {
     my ($globals_HR, $ssualigndir) = @_;
 
     # default values, files and parameters
-    $globals_HR->{"VERSION"} = "0.1";                                           # original value: "0.1"
-    $globals_HR->{"DF_CM_FILE"} = $ssualigndir . "/ssu-align-0p1.cm";           # original value: $ssualigndir . "/ssu-align-0p1.cm"
-    $globals_HR->{"DF_TEMPLATE_FILE"} = $ssualigndir . "/ssu-align-0p1.ps";     # original value: $ssualigndir . "/ssu-align-0p1.ps"
-    $globals_HR->{"DF_MINBIT"} = 50;                                            # original value: "50"
-    $globals_HR->{"DF_MINLEN"} = 1;                                             # original value: "1"
-    $globals_HR->{"DF_MXSIZE"} = 4096;                                          # original value: "4096"
-    $globals_HR->{"DF_CMSEARCH_T"} = -1;                                        # original value: "-1"
-    $globals_HR->{"DF_CMBUILD_GAPTHRESH"} = 0.80;                               # original value: 0.80
-    $globals_HR->{"DF_NO_NAME"} = "<NONE>";                                     # original value: <NONE>
-    $globals_HR->{"DF_CMSEARCH_OPTS"} = " --hmm-cW 1.5 --no-null3 --noalign ";  # original value: " --hmm-cW 1.5 --no-null3 --noalign "
-    $globals_HR->{"DF_CMSEARCH_ALG_FLAG"} = "--viterbi";                        # original value: " --viterbi"
-    $globals_HR->{"DF_CMALIGN_OPTS"} = " --no-null3 --sub ";                    # original value: " --no-null3 --sub"
-    $globals_HR->{"DF_ALIMASK_PFRACT"} = 0.95;                                  # original value: 0.95
-    $globals_HR->{"DF_ALIMASK_PTHRESH"} = 0.95;                                 # original value: 0.95
+    $globals_HR->{"VERSION"}              = "0.1";                                  # original value: "0.1"
+    $globals_HR->{"DF_CM_FILE"}           = $ssualigndir . "/ssu-align-0p1.cm";     # original value: $ssualigndir . "/ssu-align-0p1.cm"
+    $globals_HR->{"DF_TEMPLATE_FILE"}     = $ssualigndir . "/ssu-align-0p1.ps";     # original value: $ssualigndir . "/ssu-align-0p1.ps"
+    $globals_HR->{"DF_MASK_FILE"}         = $ssualigndir . "/ssu-align-0p1.mask";   # original value: $ssualigndir . "/ssu-align-0p1.mask"
+    $globals_HR->{"DF_MINBIT"}            = 50;                                     # original value: "50"
+    $globals_HR->{"DF_MINLEN"}            = 1;                                      # original value: "1"
+    $globals_HR->{"DF_MXSIZE"}            = 4096;                                   # original value: "4096"
+    $globals_HR->{"DF_CMSEARCH_T"}        = -1;                                     # original value: "-1"
+    $globals_HR->{"DF_CMBUILD_GAPTHRESH"} = 0.80;                                   # original value: 0.80
+    $globals_HR->{"DF_NO_NAME"}           = "<NONE>";                               # original value: <NONE>
+    $globals_HR->{"DF_CMSEARCH_OPTS"}     = " --hmm-cW 1.5 --no-null3 --noalign ";  # original value: " --hmm-cW 1.5 --no-null3 --noalign "
+    $globals_HR->{"DF_CMSEARCH_ALG_FLAG"} = "--viterbi";                            # original value: " --viterbi"
+    $globals_HR->{"DF_CMALIGN_OPTS"}      = " --no-null3 --sub ";                   # original value: " --no-null3 --sub"
+    $globals_HR->{"DF_ALIMASK_PFRACT"}    = 0.95;                                   # original value: 0.95
+    $globals_HR->{"DF_ALIMASK_PTHRESH"}   = 0.95;                                   # original value: 0.95
 
     # executable programs
     $globals_HR->{"cmalign"}      = "ssu-cmalign";                              # original value: "ssu-cmalign"
@@ -1176,6 +1177,44 @@ sub NumberOfDigits
     return $ndig;
 }
 
+
+#################################################################
+# Subroutine : FindPossiblySharedFile()
+# Incept:      EPN, Thu Nov 19 09:45:55 2009
+# 
+# Purpose:     Given a path to a file, determine if that file
+#              exists either with respect to the current
+#              working directory and/or with respect to 
+#              another directory <$other_dir>.
+#
+# Arguments:
+# $file:       name of file, possibly with directory path as a prefix
+# $other_dir:  second directory in which to look for the file, 
+#              if "", don't look in another dir
+# 
+# Returns:     The local path to the file if it does
+#              exist in the current dir, else the full
+#              path to it in <$other_dir>, else if it
+#              doesn't exist in either place, return "".
+#
+################################################################# 
+sub FindPossiblySharedFile
+{
+    my $narg_expected = 2;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, FindPossiblySharedFile() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($file, $other_dir) = @_;
+    
+    if(-e $file) { return $file; }
+
+    if($other_dir ne "") { 
+	# if other_dir has a "/" at the end, remove it
+	$other_dir =~ s/\/$//;
+	
+	$file = $other_dir . "/" . $file;
+	if(-e ($file)) { return $file; }
+    }
+    return "";
+}
 
 
 ####################################################################
