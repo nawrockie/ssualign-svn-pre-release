@@ -893,15 +893,14 @@ sub concatenate_a_list_of_files {
 	}
     }
 
-    # create concat file
-    $command = "cat $files_to_concat_AR->[0] > $concat_file";
-    RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
-
-    # add to concat file
-    for($i = 1; $i < scalar(@{$files_to_concat_AR}); $i++) { 
-	$command = "cat " . $files_to_concat_AR->[$i] . " >> $concat_file";
-	RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
+    # create and execute one command that concatenates all the files
+    # (this is signicantly faster than calling cat to append each file (seems to be about 5X faster))
+    $command = "cat ";
+    for($i = 0; $i < scalar(@{$files_to_concat_AR}); $i++) { 
+	$command .= $files_to_concat_AR->[0] . " ";
     }
+    $command .= "> " . $concat_file;
+    RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
 
     return;
 }
