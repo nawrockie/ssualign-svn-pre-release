@@ -58,8 +58,8 @@ $options_usage .= "  -h            : show brief help on version and usage\n";
 $options_usage .= "  -a            : the command-line argument is a stockholm alignment, not a directory\n";
 $options_usage .= "  -d            : use default ssu-align-0.1 masks\n";
 $options_usage .= "  -f <f>        : use single mask in existing file <f> to mask single alignment\n";
-$options_usage .= "  -k <s>        : use mask file named <family>.<s>.mask for masking\n";
-$options_usage .= "                  (<family> might be 'archaea', 'bacteria' or 'eukarya')\n";
+$options_usage .= "  -k <s>        : use mask file named <modelname>.<s>.mask for masking\n";
+$options_usage .= "                  (<modelname> might be 'archaea', 'bacteria' or 'eukarya')\n";
 $options_usage .= "  -m <f>        : CM file <f> created the alignment(s) (with ssu-align -m <f>)\n";
 $options_usage .= "  -t <f>        : for structure diagrams, use template file <f>, not the default\n";
 $options_usage .= "  -i            : -i used with ssu-align, alignments are interleaved\n";
@@ -150,6 +150,7 @@ my $opt_return = GetOptions
      'key-out=s'   => \$opt_H{"--key-out"},
      'ps2pdf=s'    => \$opt_H{"--ps2pdf"},
      'ps-only'     => \$opt_H{"--ps-only"},
+     'no-draw'     => \$opt_H{"--no-draw"},
      'filter=s'    => \$opt_H{"--filter"},
      'list'        => \$opt_H{"--list"},
      'seq-r=s'     => \$opt_H{"--seq-r"},
@@ -611,7 +612,12 @@ if($do_mask_mode) {
 	PrintStringToFile($sum_file, 1, sprintf("# Some, but not all, attempts to draw structure diagrams of masks were successful.\n"));
     }
     elsif((! $ssdraw_worked_at_least_once) && (! $ssdraw_failed_at_least_once)) { 
-	PrintStringToFile($sum_file, 1, sprintf("# No structure diagrams were attempted. Unable to locate default template file.\n"));
+	if($opt_H{"--no-draw"}) {
+	    PrintStringToFile($sum_file, 1, sprintf("# No structure diagram drawing was attempted due to --no-draw option.\n"));
+	}
+	else { 
+	    PrintStringToFile($sum_file, 1, sprintf("# No structure diagram drawing was attempted. Unable to locate default template file.\n"));
+	}
     }
     elsif((! $ssdraw_worked_at_least_once) && $ssdraw_failed_at_least_once) { 
 	if(($opt_H{"-m"} eq "") && (! $opt_H{"-a"})) { 
@@ -1034,7 +1040,7 @@ sub mask_alignment {
 
     my($masked_stk_file, $fmask_file, $pmask_file, $gmask_file, $masked_stk_file2print, $fmask_file2print, $pmask_file2print, $gmask_file2print, $masked_afa_file, $masked_afa_file2print, $aln_file2mask2print);
     my($aln_file2print, $alen, $rflen, $pnkept, $gnkept, $fnkept, $ssdraw_failed, $command_worked, $do_gmask, $do_pmask, $do_rfismask, $alimask_opts, $pf_opt, $pt_opt);
-    my($alimask_output_file, $ssdraw_worked, $do_column_breakdown, $small_opt, $family);
+    my($alimask_output_file, $ssdraw_worked, $do_column_breakdown, $small_opt);
 
     if($opt_H{"-a"}) { # print directory as well as aln name for input alignment, save masked alns to CWD
 	$aln_file2print        = $aln_file;
