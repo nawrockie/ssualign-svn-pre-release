@@ -85,8 +85,8 @@ $options_usage .= "  --ps2pdf <s>    : <s> (!= \"ps2pdf\") is the command for co
 $options_usage .= "  --ps-keep       : if --ps2pdf or ps2pdf is installed, save postscript (& pdf) files\n";
 $options_usage .= "  --ps-only       : only save postscript secondary structure diagrams, no pdfs\n";
 
-$options_usage .= "\noption for filtering alignments based on sequence identity (no masking):\n";
-$options_usage .= "  --filter <f> : remove seqs such that no 2 seqs > <f> identical (1st seq is always kept)\n";
+#$options_usage .= "\noption for filtering alignments based on sequence identity (no masking):\n";
+#$options_usage .= "  --filter <f> : remove seqs such that no 2 seqs > <f> identical (1st seq is always kept)\n";
 
 $options_usage .= "\noption for listing sequences in alignment(s) (no masking):\n";
 $options_usage .= "  --list : output list file(s) of sequence names in alignment(s)\n";    
@@ -208,7 +208,7 @@ if(($opt_H{"--mask-key"} ne "") && ($opt_H{"--mask-df"})) {
 if(($opt_H{"--mask-key"} ne "") && ($opt_H{"--mask-file"} ne "")) { 
     printf STDERR ("\nERROR, only one of --mask-file, --mask-key and --mask-df will work.\n"); exit(1); 
 }
-if(($opt_H{"--mask-file"} ne "") || ($opt_H{"--mask-df"} ne "") || ($opt_H{"--mask-key"})) {  
+if(($opt_H{"--mask-file"} ne "") || ($opt_H{"--mask-df"}) || ($opt_H{"--mask-key"} ne "")) {  
     if($do_mask_mode)  { 
 	if($opt_H{"--mask-file"} ne "") { printf STDERR ("\nERROR, --mask-file is incompatible with --pf, --pt, --rfonly, and --gapthresh.\n"); exit(1); }
 	if($opt_H{"--mask-df"})         { printf STDERR ("\nERROR, --mask-df is incompatible with --pf, --pt, --rfonly, and --gapthresh.\n"); exit(1); }
@@ -223,7 +223,8 @@ if($opt_H{"--seq-r"} ne "")  { $do_remove_seqs_mode = 1; }
 if($opt_H{"--seq-k"} ne "")  { $do_remove_seqs_mode = 1; }
 
 if($do_remove_seqs_mode && $do_mask_mode) { 
-    printf STDERR ("\nERROR, --pf, --pt, --gapthresh, --filter, --rfonly, --mask-df, --mask-key, --mask-file are incompatible with --seq-k and --seq-r.\n"); exit(1); 
+    # NOTE: deleted --filter from next line when option was removed from -h list prior to 0.1 release
+    printf STDERR ("\nERROR, --pf, --pt, --gapthresh, --rfonly, --mask-df, --mask-key, --mask-file are incompatible with --seq-k and --seq-r.\n"); exit(1); 
 }
 if($do_remove_seqs_mode && (! $opt_H{"-a"})) { 
     printf STDERR ("\nERROR,--seq-k and --seq-r require -a. They can only be used on a single alignment.\n"); exit(1); 
@@ -232,7 +233,8 @@ if($do_remove_seqs_mode && (! $opt_H{"-a"})) {
 # Filter options.
 if($opt_H{"--filter"} ne "") { $do_filter_mode = 1; }
 if($do_filter_mode && $do_mask_mode) { 
-    printf STDERR ("\nERROR, --pf, --pt, --gapthresh, --filter, --rfonly, --mask-df, --mask-key and --mask-file are incompatible with --filter.\nFilter first, then mask filtered alignments with a subsequent ssu-mask call\n"); exit(1); 
+    # NOTE: deleted --filter from next line when option was removed from -h list prior to 0.1 release
+    printf STDERR ("\nERROR, --pf, --pt, --gapthresh, --rfonly, --mask-df, --mask-key and --mask-file are incompatible with --filter.\nFilter first, then mask filtered alignments with a subsequent ssu-mask call\n"); exit(1); 
 }
 if($do_filter_mode && $do_remove_seqs_mode) { 
     printf STDERR ("\nERROR, --seq-k and --seq-r are incompatible with --filter.\n"); exit(1); 
@@ -241,7 +243,8 @@ if($do_filter_mode && $do_remove_seqs_mode) {
 # List sequences options.
 if($opt_H{"--list"})      { $do_list_mode = 1;}
 if($do_list_mode && $do_mask_mode) { 
-    printf STDERR ("\nERROR, --pf, --pt, --gapthresh, --filter, --rfonly, --mask-df, --mask-key and --mask-file are incompatible with --list.\n"); exit(1); 
+    # NOTE: deleted --filter from next line when option was removed from -h list prior to 0.1 release
+    printf STDERR ("\nERROR, --pf, --pt, --gapthresh, --rfonly, --mask-df, --mask-key and --mask-file are incompatible with --list.\n"); exit(1); 
 }
 if($do_list_mode && $do_remove_seqs_mode) { 
     printf STDERR ("\nERROR, --seq-k and --seq-r are incompatible with --list.\n"); exit(1); 
@@ -254,7 +257,8 @@ if($do_list_mode && $do_filter_mode) {
 if($opt_H{"--stk2afa"})  { $do_stk2afa_mode = 1; }
 
 if($do_stk2afa_mode && $do_mask_mode) { 
-    printf STDERR ("\nERROR, --pf, --pt, --gapthresh, --filter, --rfonly, --mask-df, --mask-key and --mask-file are incompatible with --stk2afa.\n"); exit(1); 
+    # NOTE: deleted --filter from next line when option was removed from -h list prior to 0.1 release
+    printf STDERR ("\nERROR, --pf, --pt, --gapthresh, --rfonly, --mask-df, --mask-key and --mask-file are incompatible with --stk2afa.\n"); exit(1); 
 }
 if($do_stk2afa_mode && $do_remove_seqs_mode) { 
     printf STDERR ("\nERROR, --stk2afa is incompatible with --seq-k and --seq-r.\n"); exit(1); 
@@ -268,10 +272,11 @@ if($do_stk2afa_mode && $do_list_mode) {
 
 if(($do_remove_seqs_mode + $do_list_mode + $do_filter_mode + $do_stk2afa_mode) == 0) { $do_mask_mode = 1; }
 
-if($opt_H{"--ps2pdf"}  && (! $do_mask_mode)) { printf STDERR ("\nERROR, --ps2pdf is incompatible with --filter, --list, --stk2afa, --seq-r and --seq-k\n"); exit(1); }
-if($opt_H{"--ps-keep"} && (! $do_mask_mode)) { printf STDERR ("\nERROR, --ps-keep is incompatible with --filter, --list, --stk2afa, --seq-r and --seq-k\n"); exit(1); }
-if($opt_H{"--ps-only"} && (! $do_mask_mode)) { printf STDERR ("\nERROR, --ps-only is incompatible with --filter, --list, --stk2afa, --seq-r and --seq-k\n"); exit(1); }
-if($opt_H{"--keep"}    && (! $do_mask_mode)) { printf STDERR ("\nERROR, --keep is incompatible with --filter, --list, --stk2afa, --seq-r and --seq-k\n"); exit(1); }
+# NOTE: deleted --filter from each of next line four STDERR outputs when option was removed from -h list prior to 0.1 release
+if($opt_H{"--ps2pdf"}  && (! $do_mask_mode)) { printf STDERR ("\nERROR, --ps2pdf is incompatible with --list, --stk2afa, --seq-r and --seq-k\n"); exit(1); }
+if($opt_H{"--ps-keep"} && (! $do_mask_mode)) { printf STDERR ("\nERROR, --ps-keep is incompatible with --list, --stk2afa, --seq-r and --seq-k\n"); exit(1); }
+if($opt_H{"--ps-only"} && (! $do_mask_mode)) { printf STDERR ("\nERROR, --ps-only is incompatible with --list, --stk2afa, --seq-r and --seq-k\n"); exit(1); }
+if($opt_H{"--keep"}    && (! $do_mask_mode)) { printf STDERR ("\nERROR, --keep is incompatible with --list, --stk2afa, --seq-r and --seq-k\n"); exit(1); }
 
 if(($opt_H{"--afa"})  && ((! $do_mask_mode) && (! $do_filter_mode)))      { printf STDERR ("\nERROR, --afa is incompatible with --list, --stk2afa, --seq-r, and --seq-k\n"); exit(1); }
 if(($opt_H{"--only-afa"})  && ((! $do_mask_mode) && (! $do_filter_mode))) { printf STDERR ("\nERROR, --only-afa is incompatible with --list, --stk2afa, --seq-r, and --seq-k\n"); exit(1); }
@@ -606,6 +611,11 @@ if(! $opt_H{"-a"}) {
     }
 }
 
+if($opt_H{"--mask-df"}) { 
+    PrintStringToFile($sum_file, 1, sprintf("#\n"));
+    PrintStringToFile($sum_file, 1, sprintf("# All '$root.<modelname>.mask' files are copies of the default masks from\n# $ssualigndir/<modelname>-0p1.mask.\n"));
+}
+    
 if($do_mask_mode) { 
     PrintStringToFile($sum_file, 1, sprintf("#\n"));
     if    ($ssdraw_worked_at_least_once && (! $ssdraw_failed_at_least_once)) { 
@@ -1038,7 +1048,7 @@ sub mask_alignment {
 
     my($masked_stk_file, $fmask_file, $pmask_file, $gmask_file, $masked_stk_file2print, $fmask_file2print, $pmask_file2print, $gmask_file2print, $masked_afa_file, $masked_afa_file2print, $aln_file2mask2print);
     my($aln_file2print, $alen, $rflen, $pnkept, $gnkept, $fnkept, $ssdraw_failed, $command_worked, $do_gmask, $do_pmask, $do_rfismask, $alimask_opts, $pf_opt, $pt_opt);
-    my($alimask_output_file, $ssdraw_worked, $do_column_breakdown, $small_opt);
+    my($alimask_output_file, $ssdraw_worked, $do_column_breakdown, $small_opt, $family);
 
     if($opt_H{"-a"}) { # print directory as well as aln name for input alignment, save masked alns to CWD
 	$aln_file2print        = $aln_file;
@@ -1080,6 +1090,7 @@ sub mask_alignment {
 		$alimask_opts .= " -g --gapthresh " . $opt_HR->{"--gapthresh"}; 
 	    }
 	    else { 
+		$do_rfismask = 1;
 		$alimask_opts .= " --rf-is-mask"; 
 	    }
 	    $alimask_opts .= " --fmask-rf $fmask_file";
@@ -1142,25 +1153,20 @@ sub mask_alignment {
     }
 
     # print info on mask, alignment files created
-    if($mask_file2use eq "") { 
-	if($do_pmask && $do_gmask) { 
-	    if($opt_HR->{"--keep"}) { 
-		PrintStringToFile($sum_file, 1, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $pmask_file2print, "output", "mask", $rflen, $pnkept, $rflen-$pnkept));
-		PrintStringToFile($sum_file, 1, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $gmask_file2print, "output", "mask", $rflen, $gnkept, $rflen-$gnkept));
-	    }
-	    else { 
-		push(@{$files_to_unlink_AR}, $pmask_file);
-		push(@{$files_to_unlink_AR}, $gmask_file);
-	    }
-	    PrintStringToFile($sum_file, 1, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $fmask_file2print, "output", "mask", $rflen, $fnkept, $rflen-$fnkept));
-	}		
-	elsif($do_rfismask) { 
-	    PrintStringToFile($sum_file, 1, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $fmask_file2print, "output", "mask", $alen, $rflen, $alen-$rflen));
+    if($do_pmask && $do_gmask) { 
+	if($opt_HR->{"--keep"}) { 
+	    PrintStringToFile($sum_file, 1, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $pmask_file2print, "output", "mask", $rflen, $pnkept, $rflen-$pnkept));
+	    PrintStringToFile($sum_file, 1, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $gmask_file2print, "output", "mask", $rflen, $gnkept, $rflen-$gnkept));
 	}
 	else { 
-	    PrintStringToFile($sum_file, 1, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $fmask_file2print, "output", "mask", $rflen, $fnkept, $rflen-$fnkept));
+	    push(@{$files_to_unlink_AR}, $pmask_file);
+	    push(@{$files_to_unlink_AR}, $gmask_file);
 	}
     }
+    # print info on final mask
+    PrintStringToFile($sum_file, 1, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $fmask_file2print, "output", "mask", $rflen, $fnkept, $rflen-$fnkept));
+
+    # print info on alignment
     if(!($opt_HR->{"--only-afa"})) { 
 	PrintStringToFile($sum_file, 1, sprintf("  %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $masked_stk_file2print, "output", "aln", $fnkept, "-", "-"));
     }
