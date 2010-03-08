@@ -41,7 +41,11 @@ if (! -e "$ssumask")  { die "FAIL: didn't find ssu-mask script $ssumask"; }
 if (! -e "$ssumerge") { die "FAIL: didn't find ssu-merge script $ssumerge"; }
 
 $fafile   = $datadir . "/seed-15.fa";
-$maskfile = $datadir . "/arc.1.mask";
+# HERE HERE HERE
+# make array of family names: "archaea", "bacteria", "eukarya",
+# then set $masksuffix to ".1.mask", then use them all when testing
+# key-in for example.
+$maskfile = $datadir . "/archaea.1.mask";
 if (! -e "$fafile")   { die "FAIL: didn't find fasta file $fafile in current directory"; }
 if (! -e "$maskfile") { die "FAIL: didn't find fasta file $fafile in current directory"; }
 
@@ -115,19 +119,19 @@ $testctr++;
 # Test 5
 if(($testnum eq "") || ($testnum == $testctr)) {
     # first make the required input mask with the key 
-    $newmaskfile = $maskfile;
-    $newmaskfile =~ s/\.mask/181.mask/; #requires maskfile be *.mask, which it is
+    $maskkey = "181";
+    $newmaskfile = $tmppfx . "/archaea.$maskkey.mask";
     system("cp $maskfile $newmaskfile");
-    $command = "$ssumask --mask-key 181 $tmppfx > /dev/null";
+    $command = "$ssumask --mask-key $maskkey $tmppfx > /dev/null";
     if ($? != 0) { die "FAIL: cp command failed unexpectedly";}
     printf("Running command: $command\n");
     system("$command");
     if ($? != 0) { die "FAIL: ssu-mask failed unexpectedly";}
     $output = `cat $tmppfx/$tmppfx.ssu-mask.sum`;
-    if($output !~ /foo.eukarya.181.mask.stk\s+output\s+aln\s+1634/) { 
+    if($output !~ /foo.eukarya.$maskkey.mask.stk\s+output\s+aln\s+1634/) { 
 	die "ERROR, problem with masking"; 
     }
-    run_draw($tmppfx, "--key-in 181", $testctr);
+    run_draw($tmppfx, "--key-in $maskkey", $testctr);
 }
 $testctr++;
 
