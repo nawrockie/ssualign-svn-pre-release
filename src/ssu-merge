@@ -22,6 +22,7 @@
 use Getopt::Long;
 use strict;
 use warnings;
+use Cwd;
 
 #Make sure the SSUALIGNDIR environmental variable is set and the directory exists
 my $ssualigndir = $ENV{'SSUALIGNDIR'};
@@ -129,10 +130,14 @@ my $dir = "";
 my $list_file = "";
 my $list_merged_aln = "";
 my $root = "";
+my $cwd = getcwd();
 if(scalar(@ARGV) == 1) { 
     $dir = $ARGV[0]; 
     $dir =~ s/\/$//; # remove trailing slash if it exists
     $root = RemoveDirPath($dir);
+    if($dir eq ".") { 
+	$root = RemoveDirPath($cwd);
+    }
 }
 else { 
     ($list_file, $list_merged_aln) = @ARGV;
@@ -142,9 +147,9 @@ my @stk_suffix_A = (".stk", ".sto", ".stk.gz", ".sto.gz");
 my ($sum_file, $sum_file2print, $log_file, $log_file2print);
 if(! $opt_H{"--list"}) {
     $sum_file       = $dir . "/" . $root . ".ssu-merge.sum";
-    $sum_file2print = $dir . ".ssu-merge.sum";
+    $sum_file2print = $root . ".ssu-merge.sum";
     $log_file       = $dir . "/" . $root . ".ssu-merge.log";
-    $log_file2print = $dir . ".ssu-merge.log";
+    $log_file2print = $root . ".ssu-merge.log";
     if(-f $dir) { 
 	printf STDERR ("\nERROR, $dir was specified as the directory created by ssu-align, but a file with the same name exists. Are you in the correct dir?\n");
 	exit(1);
@@ -248,7 +253,7 @@ my ($max_file_name_width, $max_cm_name_width, $file_dashes, $cm_dashes);
 # merge one-per-run files:
 # *.sum, *.log in all cases
 # *.tab, *.scores and possibly *.nomatch unless --no-search enabled
-$max_file_name_width  = MaxLengthScalarInArray(\@cm_names_A) + 1 + length($dir) + 1;
+$max_file_name_width  = MaxLengthScalarInArray(\@cm_names_A) + 1 + length($root) + 1;
 if(scalar(@sum_to_merge_A)   == 0)   { PrintErrorAndExit("ERROR, no *.sum files found.", $sum_file, 1); }
 if(scalar(@log_to_merge_A)   == 0)   { PrintErrorAndExit("ERROR, no *.log files found.", $sum_file, 1); }
 if(scalar(@nomatch_to_merge_A) == 0) { ; } # this is okay, .nomatch files are only generated if at least one sequence did not match a CM 
@@ -288,11 +293,11 @@ $nomatch_file             = $dir . "/" . $root . ".nomatch";
 $ssu_align_sum_file       = $dir . "/" . $root . ".ssu-align.sum";
 $ssu_align_log_file       = $dir . "/" . $root . ".ssu-align.log";
 $tab_file                 = $dir . "/" . $root . ".tab";
-$scores_file2print        = $dir . ".scores";
-$nomatch_file2print       = $dir . ".nomatch";
-$ssu_align_sum_file2print = $dir . ".ssu-align.sum";
-$ssu_align_log_file2print = $dir . ".ssu-align.log";
-$tab_file2print           = $dir . ".tab";
+$scores_file2print        = $root . ".scores";
+$nomatch_file2print       = $root . ".nomatch";
+$ssu_align_sum_file2print = $root . ".ssu-align.sum";
+$ssu_align_log_file2print = $root . ".ssu-align.log";
+$tab_file2print           = $root . ".tab";
 
 if(scalar(@tab_to_merge_A) > 0) { 
     concatenate_a_list_of_files(\%opt_H, $tab_file, \@tab_to_merge_A);
@@ -341,11 +346,11 @@ for($i = 0; $i < scalar(@cm_names_A); $i++) {
     $hitslist_file         = $dir . "/" . $root . "." . $cm_names_A[$i] . ".hits.list";
     $merged_stk_file       = $dir . "/" . $root . "." . $cm_names_A[$i] . ".stk";
     $merged_ifile          = $dir . "/" . $root . "." . $cm_names_A[$i] . ".ifile";
-    $cmalign_file2print    = $dir . "." . $cm_names_A[$i] . ".cmalign";
-    $hitsfa_file2print     = $dir . "." . $cm_names_A[$i] . ".hits.fa";
-    $hitslist_file2print   = $dir . "." . $cm_names_A[$i] . ".hits.list";
-    $merged_stk_file2print = $dir . "." . $cm_names_A[$i] . ".stk";
-    $merged_ifile2print    = $dir . "." . $cm_names_A[$i] . ".ifile";
+    $cmalign_file2print    = $root . "." . $cm_names_A[$i] . ".cmalign";
+    $hitsfa_file2print     = $root . "." . $cm_names_A[$i] . ".hits.fa";
+    $hitslist_file2print   = $root . "." . $cm_names_A[$i] . ".hits.list";
+    $merged_stk_file2print = $root . "." . $cm_names_A[$i] . ".stk";
+    $merged_ifile2print    = $root . "." . $cm_names_A[$i] . ".ifile";
 
     # check we have all the files we expect, and determine number of sequences we'll merge for this CM
     if((! $no_search_enabled) && (! $no_align_enabled)) { # neither --no-search nor --no-align enabled
@@ -440,6 +445,8 @@ if($summed_align_seconds ne "NA") {
 PrintTiming("# Summed ssu-align CPU time (total):     ", $summed_total_seconds, $time_hires_installed, 1, $sum_file); 
 PrintTiming("# Summed ssu-align CPU time (total):     ", $summed_total_seconds, $time_hires_installed, 0, $ssu_align_sum_file); 
 
+
+
 ########################################
 # Remove original files we just merged #
 ########################################
@@ -450,8 +457,12 @@ clean_up_post_merge($dir, $root, \%opt_H, \@subdir_A, \@score_to_merge_A, \@sum_
 
 
 $total_seconds += SecondsSinceEpoch($time_hires_installed);
-PrintConclusion($sum_file, $log_file, $sum_file2print, $log_file2print, $total_seconds, $time_hires_installed, $dir);
-
+if($dir eq ".") { 
+    PrintConclusion($sum_file, $log_file, $sum_file2print, $log_file2print, $total_seconds, $time_hires_installed, "");
+}
+else { 
+    PrintConclusion($sum_file, $log_file, $sum_file2print, $log_file2print, $total_seconds, $time_hires_installed, $dir);
+}
 # Success! Exit normally
 exit(0); 
 
@@ -517,8 +528,10 @@ exit(0);
 sub validate_and_setup_ssu_merge_default { 
     my $narg_expected = 25;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, validate_and_setup_ssu_merge_default() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($ssualigndir, $opt_HR, $dir, $root, $subdir_AR, $score_to_merge_AR, $sum_to_merge_AR, $log_to_merge_AR, $tab_to_merge_AR, $nomatch_to_merge_AR, $cmalign_to_merge_AAR, $hits_fa_to_merge_AAR, 
-       $hits_list_to_merge_AAR, $stk_to_merge_AAR, $ifile_to_merge_AAR, $fa_files_AR, $cm_names_AR, $alimerge_R, $cm_file_R, $no_search_enabled_R, $no_align_enabled_R, $aln_one_cm_R, $ileaved_enabled_R, $dna_enabled_R, $sum_file) = @_;
+    my($ssualigndir, $opt_HR, $dir, $root, $subdir_AR, $score_to_merge_AR, $sum_to_merge_AR, $log_to_merge_AR, 
+       $tab_to_merge_AR, $nomatch_to_merge_AR, $cmalign_to_merge_AAR, $hits_fa_to_merge_AAR, $hits_list_to_merge_AAR, 
+       $stk_to_merge_AAR, $ifile_to_merge_AAR, $fa_files_AR, $cm_names_AR, $alimerge_R, $cm_file_R, $no_search_enabled_R, 
+       $no_align_enabled_R, $aln_one_cm_R, $ileaved_enabled_R, $dna_enabled_R, $sum_file) = @_;
 
     #Make sure $dir exists
     if(!(-d $dir)) { PrintErrorAndExit("ERROR, directory $dir does not exist.", $sum_file, 1); }
@@ -530,7 +543,7 @@ sub validate_and_setup_ssu_merge_default {
     my $no_align_enabled = 0;
     my $read_command_line = 0;
     my $aln_one_cm = "";
-    my $only_cm = "";
+    my $single_cm = "";
     my $orig_fa_file = "";
     my $fa_file = "";
     my $ileaved_enabled = 0;
@@ -559,9 +572,9 @@ sub validate_and_setup_ssu_merge_default {
 			if($a == ($nels-1)) { PrintErrorAndExit("ERROR, processing ssu-align prep summary file, --aln-one was read as final command line arg to ssu-align. This shouldn't happen.", $sum_file, 1); }
 			$aln_one_cm = $prep_argv[$a+1];
 		    }
-		    if($prep_argv[$a] eq "--only")   { 
-			if($a == ($nels-1)) { PrintErrorAndExit("ERROR, processing ssu-align prep summary file, --only was read as final command line arg to ssu-align. This shouldn't happen.", $sum_file, 1); }
-			$only_cm = $prep_argv[$a+1];
+		    if($prep_argv[$a] eq "-s")   { 
+			if($a == ($nels-1)) { PrintErrorAndExit("ERROR, processing ssu-align prep summary file, -s was read as final command line arg to ssu-align. This shouldn't happen.", $sum_file, 1); }
+			$single_cm = $prep_argv[$a+1];
 		    }
 		    if($prep_argv[$a] eq "--no-search") { $no_search_enabled = 1; }
 		    if($prep_argv[$a] eq "--no-align")  { $no_align_enabled = 1; }
@@ -604,7 +617,7 @@ sub validate_and_setup_ssu_merge_default {
 	if($line =~ /^NAME\s+(\S+)/) { 
 	    $cm_name = $1;
 	    if(exists($cm_name_idx_H{$cm_name})) { PrintErrorAndExit("ERROR, two CMs in CM file $cm_file have the name $cm_name. Each CM must have a unique name.", $sum_file, 1); }
-	    if(($only_cm eq "") || ($only_cm eq $cm_name)) { # if --only <s> was enabled to ssu-align, we'll only use this cm if it is named <s>
+	    if(($single_cm eq "") || ($single_cm eq $cm_name)) { # if -s <s> was enabled to ssu-align, we'll only use this cm if it is named <s>
 		push(@{$cm_names_AR}, $cm_name);
 		# initialize arrays for this cm:
 		@{$cmalign_to_merge_AAR->[$ncm]} = ();
@@ -1198,7 +1211,14 @@ sub clean_up_post_merge {
 	}
     }
     if(! $printed_error)      { PrintStringToFile($sum_file, 1, sprintf("done.\n")); }
-    if(! $do_actually_remove) { PrintStringToFile($sum_file, 1, sprintf("# To remove the original files that were just merged, do:\n# \"cd $dir; sh $cleanup_script2print\".\n")); }
+    if(! $do_actually_remove) { 
+	if($dir eq ".") { 
+	    PrintStringToFile($sum_file, 1, sprintf("# To remove the original files that were just merged, do:\n# sh $cleanup_script2print\n from this directory.\n")); 
+	}
+	else {
+	    PrintStringToFile($sum_file, 1, sprintf("# To remove the original files that were just merged, do:\n# cd $dir; sh $cleanup_script2print.\n")); 
+	}
+    }
     return;
 }
 

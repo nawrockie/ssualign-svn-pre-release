@@ -65,24 +65,29 @@ my $usage          = "Usage: ssu-align [-options] <sequence file> <output dir to
 my $options_usage  = "where general options are:\n";
 #                           1         2         3         4         5         6         7         8
 #                  12345678901234567890123456789012345678901234567890123456789012345678901234567890
-$options_usage .= "  -h         : show brief help on version and usage\n";
-$options_usage .= "  -m <s>     : use CM file <s> instead of the default CM file\n";
-$options_usage .= "  -b <f>     : set minimum bit score of a surviving subsequence as <f> (default: 50)\n";
-$options_usage .= "  -l <n>     : set minimum length    of a surviving subsequence as <n> (default: 1)\n";
-$options_usage .= "  -i         : output alignments in interleaved Stockholm format (not 1 line/seq)\n";
-$options_usage .= "  -F         : force; if <output dir> already exists - empty it and fill it\n";
-$options_usage .= "  --FF       : really force; remove <output dir> and all its subdirectories\n";
-$options_usage .= "  --dna      : output alignments as DNA, default is RNA (even if input is DNA)\n";
-$options_usage .= "  --keep     : keep intermediate files which are normally removed\n";
-$options_usage .= "  --rfonly   : discard inserts, only keep consensus (non-gap RF) columns in alignments\n";
-$options_usage .= "               (alignments will be fixed width but won't include all target residues)\n";
-$options_usage .= "  --only <s> : only search for and align to CM named <s> in CM file\n"; 
-$options_usage .= "               (default CM file includes 'archaea', 'bacteria', 'eukarya')\n";
+$options_usage .= "  -h     : show brief help on version and usage\n";
+$options_usage .= "  -m <f> : use CM file <f> instead of the default CM file\n";
+$options_usage .= "  -b <x> : set minimum bit score of a surviving subsequence as <x> (default: 50)\n";
+$options_usage .= "  -l <n> : set minimum length    of a surviving subsequence as <n> (default: 1)\n";
+$options_usage .= "  -i     : output alignments in interleaved Stockholm format (not 1 line/seq)\n";
+$options_usage .= "  -s <s> : only search for and align to single CM named <s> in CM file\n"; 
+$options_usage .= "           (default CM file includes 'archaea', 'bacteria', 'eukarya')\n";
+$options_usage .= "  -F     : force; if <output dir> already exists, empty it and fill it\n";
+$options_usage .= "  --FF   : really force; remove <output dir> and all its subdirectories\n";
+
+$options_usage .= "\nmiscellaneous output options:\n";
+$options_usage .= "  --dna    : output alignments as DNA, default is RNA (even if input is DNA)\n";
+$options_usage .= "  --keep   : keep intermediate files which are normally removed\n";
+$options_usage .= "  --rfonly : discard inserts, only keep consensus (non-gap RF) columns in alignments\n";
+$options_usage .= "             (alignments will be fixed width but won't include all target residues)\n";
 
 $options_usage .= "\noptions for running ssu-align in 'preparation' mode to split up a large job:\n";
 $options_usage .= "  --prep-n <n>  : split target seq file into multiple files with <n> seqs each\n";
 $options_usage .= "  --prep-p <n>  : split target seq file into <n> files with equal number of seqs\n";
+$options_usage .= "  --prep-m      : w/prep-p <n>, a single <n>-core machine will be used\n";
 $options_usage .= "  --prep-in <s> : in file <s>; lines 1,2 specify prefix,suffix for ssu-align runs\n";
+$options_usage .= "  --prep-f      : force; w/prep-m and --prep-p <n>, accept high values of <n>\n";
+$options_usage .= "  -x            : WRITE ME\n";
 
 $options_usage .= "\noptions for skipping either the 1st (search) stage or 2nd (alignment) stage\n";
 $options_usage .= "  --no-align  : only search target sequence file for hits, skip alignment step\n";
@@ -115,15 +120,18 @@ $opt_takes_arg_H{"-m"}          = 1;  push(@opt_order_A, "-m");           $opt_i
 $opt_takes_arg_H{"-b"}          = 1;  push(@opt_order_A, "-b");           $opt_is_prep_H{"-b"}          = 1;
 $opt_takes_arg_H{"-l"}          = 1;  push(@opt_order_A, "-l");           $opt_is_prep_H{"-l"}          = 1;
 $opt_takes_arg_H{"-i"}          = 0;  push(@opt_order_A, "-i");           $opt_is_prep_H{"-i"}          = 1;
+$opt_takes_arg_H{"-s"}          = 1;  push(@opt_order_A, "-s");           $opt_is_prep_H{"-s"}      = 1;
 $opt_takes_arg_H{"-F"}          = 0;  push(@opt_order_A, "-F");           $opt_is_prep_H{"-F"}          = 0;
 $opt_takes_arg_H{"--FF"}        = 0;  push(@opt_order_A, "--FF");         $opt_is_prep_H{"--FF"}        = 0;
 $opt_takes_arg_H{"--dna"}       = 0;  push(@opt_order_A, "--dna");        $opt_is_prep_H{"--dna"}       = 1;
 $opt_takes_arg_H{"--keep"}      = 0;  push(@opt_order_A, "--keep");       $opt_is_prep_H{"--keep"}      = 1;
 $opt_takes_arg_H{"--rfonly"}    = 0;  push(@opt_order_A, "--rfonly");     $opt_is_prep_H{"--rfonly"}    = 1;
-$opt_takes_arg_H{"--only"}      = 1;  push(@opt_order_A, "--only");       $opt_is_prep_H{"--only"}      = 1;
 $opt_takes_arg_H{"--prep-n"}    = 1;  push(@opt_order_A, "--prep-n");     $opt_is_prep_H{"--prep-n"}    = 0;
 $opt_takes_arg_H{"--prep-p"}    = 1;  push(@opt_order_A, "--prep-p");     $opt_is_prep_H{"--prep-p"}    = 0;
+$opt_takes_arg_H{"--prep-m"}    = 0;  push(@opt_order_A, "--prep-m");     $opt_is_prep_H{"--prep-m"}    = 0;
 $opt_takes_arg_H{"--prep-in"}   = 1;  push(@opt_order_A, "--prep-in");    $opt_is_prep_H{"--prep-in"}   = 0;
+$opt_takes_arg_H{"--prep-f"}    = 0;  push(@opt_order_A, "--prep-f");     $opt_is_prep_H{"--prep-f"}    = 0;
+$opt_takes_arg_H{"-x"}          = 0;  push(@opt_order_A, "-x");           $opt_is_prep_H{"-x"}          = 0;
 $opt_takes_arg_H{"--no-align"}  = 0;  push(@opt_order_A, "--no-align");   $opt_is_prep_H{"--no-align"}  = 1;
 $opt_takes_arg_H{"--no-search"} = 0;  push(@opt_order_A, "--no-search");  $opt_is_prep_H{"--no-search"} = 1;
 $opt_takes_arg_H{"--no-trunc"}  = 0;  push(@opt_order_A, "--no-trunc");   $opt_is_prep_H{"--no-trunc"}  = 1;
@@ -153,10 +161,13 @@ my $opt_return = GetOptions
      'dna'       => \$opt_H{"--dna"},
      'rfonly'    => \$opt_H{"--rfonly"},
      'keep'      => \$opt_H{"--keep"},
-     'only=s'    => \$opt_H{"--only"},
+     's=s'       => \$opt_H{"-s"},
      'prep-n=n'  => \$opt_H{"--prep-n"},
      'prep-p=n'  => \$opt_H{"--prep-p"},
+     'prep-m'    => \$opt_H{"--prep-m"},
      'prep-in=s' => \$opt_H{"--prep-in"},
+     'prep-f'    => \$opt_H{"--prep-f"},
+     'x'         => \$opt_H{"-x"},
      'no-align'  => \$opt_H{"--no-align"},
      'no-search' => \$opt_H{"--no-search"},
      'no-trunc'  => \$opt_H{"--no-trunc"},
@@ -199,6 +210,21 @@ if(($opt_H{"--no-search"}) &&
 }
 if(($opt_H{"--prep-n"} ne "") && ($opt_H{"--prep-p"} ne "")) { 
     printf STDERR ("\nERROR, --prep-n and --prep-p are incompatible, choose one or the other.\n"); exit(1);
+}    
+if(($opt_H{"--prep-m"}) && ($opt_H{"--prep-in"} ne "")) { 
+    printf STDERR ("\nERROR, --prep-m and --prep-in are incompatible, choose one or the other.\n"); exit(1);
+}    
+if(($opt_H{"--prep-m"}) && (! $opt_H{"--prep-p"})) { 
+    printf STDERR ("\nERROR, --prep-m only makes sense in combination with --prep-p.\n"); exit(1);
+}    
+if(($opt_H{"--prep-f"}) && (! $opt_H{"--prep-m"})) { 
+    printf STDERR ("\nERROR, --prep-f only makes sense in combination with --prep-m.\n"); exit(1);
+}    
+if(($opt_H{"--prep-m"}) && (! $opt_H{"--prep-f"}) && ($opt_H{"--prep-p"} ne "") && ($opt_H{"--prep-p"} > $globals_H{"DF_NCORES_WO_WARNING"})) { 
+    printf STDERR ("\nWARNING: --prep-p " . $opt_H{"--prep-p"} . " is enabled with --prep-m.\n");
+    printf STDERR ("--prep-m is meant for running ssu-align multiple times simultaneously\non a single multicore machine.\n");
+    printf STDERR ("If you really have a " . $opt_H{"--prep-p"} . "-core machine use --prep-f to override this warning.\n");
+    exit(1);
 }    
 if(($opt_H{"--prep-in"} ne "") && ((! $opt_H{"--prep-p"} ne "") && (! $opt_H{"--prep-n"} ne ""))) { 
     printf STDERR ("\nERROR, --prep-in only makes sense in combination with --prep-n or --prep-p.\n"); exit(1);
@@ -272,17 +298,23 @@ my (@indi_cm_name_A);
 process_cm_file($out_root, $cm_file, \%opt_H, \@indi_cm_name_A, $sum_file);
 my $ncm = scalar(@indi_cm_name_A); 
 if(($opt_H{"--no-search"}) && ($ncm > 1)) { 
-    PrintErrorAndExit("ERROR, the --no-search option only works if either --only <s> is used or the CM file contains exactly 1 CM.\n$cm_file has $ncm CMs in it.", $sum_file, 1);
+    PrintErrorAndExit("ERROR, the --no-search option only works if either -s <s> is used or the CM file contains exactly 1 CM.\n$cm_file has $ncm CMs in it.", $sum_file, 1);
 }
 my $tab_file;
 my $max_file_name_width = 0;
+my $shell_script = "";
 
 if($opt_H{"--prep-n"} || $opt_H{"--prep-p"}) { 
-    prepare_only($target_file, $out_dir, $out_root, \%opt_H, \%opt_takes_arg_H, \%opt_is_prep_H, \@opt_order_A, $ssualign, $weight, $cm_file, $target_nseq, \@indi_cm_name_A, \$max_file_name_width, $sum_file, $log_file);
+    prepare_only($target_file, $out_dir, $out_root, \%opt_H, \%opt_takes_arg_H, \%opt_is_prep_H, \@opt_order_A, $ssualign, $weight, $cm_file, $target_nseq, \@indi_cm_name_A, \$max_file_name_width, \$shell_script, $sum_file, $log_file);
     $total_seconds += SecondsSinceEpoch($time_hires_installed);
     PrintConclusion($sum_file, $log_file, $sum_file2print, $log_file2print, $total_seconds, $time_hires_installed, $out_dir);
 
     # Prep mode success! Exit normally
+    if($opt_H{"-x"}) { 
+	$shell_script = RemoveDirPath($shell_script);
+	if(! -e ($shell_script)) { PrintErrorAndExit("ERROR, unable to find just created shell script $shell_script.", $sum_file, 1); }
+	system("sh $shell_script");
+    }
     exit(0);
 }
 # if we get here, neither --prep-p nor --prep-n were enabled
@@ -637,8 +669,8 @@ sub process_cm_file {
 	if($line =~ /^NAME\s+(\S+)/) { 
 	    $cm_name = $1;
 	    $cms_read .= "\t$cm_name\n";
-	    if(($opt_HR->{"--only"} eq "") || # --only not enabled
-	       ($opt_HR->{"--only"} ne "") && ($cm_name eq $opt_HR->{"--only"})) { #--only enabled and we have a match!
+	    if(($opt_HR->{"-s"} eq "") || # -s not enabled
+	       ($opt_HR->{"-s"} ne "") && ($cm_name eq $opt_HR->{"-s"})) { #-s enabled and we have a match!
 		push(@{$indi_cm_name_AR}, $cm_name);
 		if(exists($cm_name_exists_H{$cm_name})) { 
 		    PrintErrorAndExit("ERROR, two CMs in CM file $cm_file have the name $cm_name. Each CM must have a unique name.", $sum_file, 1); 
@@ -651,7 +683,7 @@ sub process_cm_file {
 		if(($opt_HR->{"--aln-one"} ne "") && ($cm_name eq $opt_HR->{"--aln-one"})) { 
 		    $found_aln_one_name = 1; 
 		}
-		if(($opt_HR->{"--only"} ne "") && ($cm_name eq $opt_HR->{"--only"})) { 
+		if(($opt_HR->{"-s"} ne "") && ($cm_name eq $opt_HR->{"-s"})) { 
 		    $found_only_name = 1; 
 		}
 	    }
@@ -661,8 +693,8 @@ sub process_cm_file {
     if(($opt_HR->{"--aln-one"} ne "") && (! $found_aln_one_name)) { 
 	PrintErrorAndExit(sprintf("\nERROR, --aln-one %s enabled, but no CM named %s exists in $cm_file.\nCMs that do exist are:\n$cms_read\n", $opt_HR->{"--aln-one"}, $opt_HR->{"--aln-one"}), $sum_file, 1);
     }
-    if(($opt_HR->{"--only"} ne "") && (! $found_only_name)) { 
-	PrintErrorAndExit(sprintf("\nERROR, --only %s enabled, but no CM named %s exists in $cm_file.\nCMs that do exist are:\n$cms_read\n", $opt_HR->{"--only"}, $opt_HR->{"--only"}), $sum_file, 1);
+    if(($opt_HR->{"-s"} ne "") && (! $found_only_name)) { 
+	PrintErrorAndExit(sprintf("\nERROR, -s %s enabled, but no CM named %s exists in $cm_file.\nCMs that do exist are:\n$cms_read\n", $opt_HR->{"-s"}, $opt_HR->{"-s"}), $sum_file, 1);
     }
     return;
 }									 
@@ -680,11 +712,7 @@ sub process_cm_file {
 #             The target sequence file <$target_file> is partitioned
 #             into > 1 new, smaller fasta files. A shell script named
 #             <$out_dir_and_root.ssu-align.sh> is created that calls 'ssu-align'
-#             once each for each of the new fasta files. A separate
-#             perl script named <$out_dir_and_root.merge.pl> is
-#             created that is to be run after the alignments in
-#             <$out_dir_and_root.ssu-align.sh> are complete.  This script merges
-#             all the small alignments into one big alignment.
+#             once each for each of the new fasta files. 
 # 
 # Arguments:  
 # $target_file              the target sequence file
@@ -700,6 +728,7 @@ sub process_cm_file {
 # $target_nseq:             number of sequences in $target_file
 # $indi_cm_name_AR:         reference to array with names of individual CMs
 # $max_file_name_width_R:   RETURN; maximum length of a file name
+# $shell_script_R:          RETURN; name of shell script we create here
 # $sum_file:                file to print output file notices to
 # $log_file:                log file
 #
@@ -711,9 +740,9 @@ sub process_cm_file {
 # 
 ####################################################################
 sub prepare_only { 
-    my $narg_expected = 15;
+    my $narg_expected = 16;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, prepare_only() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($target_file, $out_dir, $out_root, $opt_HR, $opt_takes_arg_HR, $opt_is_prep_HR, $opt_order_AR, $ssualign, $weight, $cm_file, $target_nseq, $indi_cm_name_AR, $max_file_name_width_R, $sum_file, $log_file) = @_;
+    my($target_file, $out_dir, $out_root, $opt_HR, $opt_takes_arg_HR, $opt_is_prep_HR, $opt_order_AR, $ssualign, $weight, $cm_file, $target_nseq, $indi_cm_name_AR, $max_file_name_width_R, $shell_script_R, $sum_file, $log_file) = @_;
 
     # Steps we'll perform:
     # 1. read preparation input file (if --prep-in enabled)
@@ -752,8 +781,8 @@ sub prepare_only {
 
     $ncm = scalar(@{$indi_cm_name_AR});
 
-    $shell_script       = $out_dir_and_root . ".ssu-align.sh";
-    $shell_script2print = $out_root         . ".ssu-align.sh";
+    $shell_script       = $out_root . ".ssu-align.sh";
+    $shell_script2print = $out_root . ".ssu-align.sh";
     open(SH, ">" . $shell_script) || FileOpenFailure($shell_script, $sum_file, $!, "writing");
 
     #determine number of seqs per file 
@@ -812,6 +841,7 @@ sub prepare_only {
     open(FULL, $target_file) || FileOpenFailure($target_file, $sum_file, $!, "reading");
     $nseq_this_file = 0;
     $nseq_total_regurg = 0;
+    my $command;
     while($line = <FULL>) { 
 	if($line =~ m/^>/) { 
 	    if($nseq_this_file == $nseq_per_run_A[($n-1)]) {
@@ -819,7 +849,19 @@ sub prepare_only {
 		if($nseq_this_file == 1) { $tmp2print = "seq"; } 
 		else                     { $tmp2print = "seqs"; }
 		PrintStringToFile($sum_file, 1, sprintf("  %-*s  partition %*d FASTA sequence file (%*d $tmp2print)\n", $max_file_name_width, $target_subfile_root, $ndig_runs, $n, $ndig_seqs, $nseq_this_file));
-		printf SH ("%s%s%s\n", $prep_prefix, "$ssualign -F $prep_enabled_options $target_subfile_root $out_root." . $n, $prep_suffix);
+
+		$command = "$ssualign -F $prep_enabled_options $out_dir/$target_subfile_root $out_dir/$out_root." . $n;
+		if($opt_HR->{"--prep-m"}) { $command .= " > /dev/null &"; }
+		printf SH ("%s\n", $command);
+		printf SH ("echo \"\# Executed: $command\"\n");
+		if($opt_HR->{"--prep-m"}) { 
+		    printf SH ("echo \"\# Output will be written to $out_dir/$out_root.$n/$out_root.$n.ssu-align.sum, script will run in background.\"\n");
+		}
+		else { 
+		    printf SH ("echo \"\# Output will be written to $out_dir/$out_root.$n/$out_root.$n.ssu-align.sum.\"\n");
+		}
+		printf SH ("echo \"\#\"\n");
+
 		$target_subfile_root = $target_file . "." . (++$n);
 		$target_subfile_root =~ s/^.+\///;  # remove path 
 		$target_subfile      = $out_dir . "/" . $target_subfile_root;
@@ -840,7 +882,19 @@ sub prepare_only {
     if($nseq_this_file == 1) { $tmp2print = "seq"; } 
     else                     { $tmp2print = "seqs"; }
     PrintStringToFile($sum_file, 1, sprintf("  %-*s  partition %*d FASTA sequence file (%*d $tmp2print)\n", $max_file_name_width, $target_subfile_root, $ndig_runs, $n, $ndig_seqs, $nseq_this_file));
-    printf SH ("%s%s%s\n", $prep_prefix, "$ssualign -F $prep_enabled_options $target_subfile_root $out_root." . $n, $prep_suffix);
+
+    # write final chunk's command
+    $command = "$ssualign -F $prep_enabled_options $out_dir/$target_subfile_root $out_dir/$out_root." . $n;
+    if($opt_HR->{"--prep-m"}) { $command .= " > /dev/null &"; }
+    printf SH ("%s\n", $command);
+    printf SH ("echo \"\# Executed: $command\"\n");
+    if($opt_HR->{"--prep-m"}) { 
+	printf SH ("echo \"\# Output will be written to $out_dir/$out_root.$n/$out_root.$n.ssu-align.sum, script will run in background.\"\n");
+    }
+    else { 
+	printf SH ("echo \"\# Output will be written to $out_dir/$out_root.$n/$out_root.$n.ssu-align.sum.\"\n");
+    }
+    printf SH ("echo \"\#\"\n");
     close(SH); 
 
     if($nseq_total_regurg != $target_nseq) { 
@@ -850,10 +904,13 @@ sub prepare_only {
 	PrintErrorAndExit("ERROR, problem partitioning target FASTA file $target_file into $nruns files, $n files were successfully created.", $sum_file, 1);
     }    
     PrintStringToFile($sum_file, 1, sprintf("  %-*s  shell script that will run ssu-align %d times\n", $max_file_name_width, $shell_script2print, $nruns));
-    PrintStringToFile($sum_file, 1, sprintf("#\n# To perform the alignments, execute the following:\n#\t\"cd $out_dir; sh $shell_script2print\"\n"));
-    PrintStringToFile($sum_file, 1, sprintf("#\n# When all runs are complete, move into *this directory* and do:\n#\t\"ssu-merge $out_dir\"\n"));
-
+	
+    if(! $opt_H{"-x"}) {
+	PrintStringToFile($sum_file, 1, sprintf("#\n# To perform the alignments, execute the following:\n#\tcd $out_dir; sh $shell_script2print\n"));
+	PrintStringToFile($sum_file, 1, sprintf("#\n# When all runs are complete, move into *this directory* and do:\n#\tssu-merge $out_dir\n"));
+    }
     $$max_file_name_width_R = $max_file_name_width;
+    $$shell_script_R = $shell_script;
     return;
 }
 
@@ -894,8 +951,8 @@ sub search_sequences_with_each_model {
     my ($i, $cmsearch_opts, $tab_file, $tab_file2print, $alg_flag, $max_file_name_width, $dashes1, $dashes2, $tmp, $command, $command_worked, $cmsearch_outfile);
 
     # contract check
-    if($opt_HR->{"--only"} ne "") { 
-	if(scalar(@{$indi_cm_name_AR}) != 1) { PrintErrorAndExit("ERROR, --only enabled, but more than 1 CMs read from CM file. This shouldn't happen.", $sum_file, 1); }
+    if($opt_HR->{"-s"} ne "") { 
+	if(scalar(@{$indi_cm_name_AR}) != 1) { PrintErrorAndExit("ERROR, -s enabled, but more than 1 CMs read from CM file. This shouldn't happen.", $sum_file, 1); }
     }
 
     $tab_file          = $out_dir_and_root . ".tab";
@@ -929,7 +986,7 @@ sub search_sequences_with_each_model {
     $cmsearch_opts = $globals_H{"DF_CMSEARCH_OPTS"};
     my $cmsearch_T = $globals_H{"DF_CMSEARCH_T"};
     if($opt_HR->{"--toponly"})    { $cmsearch_opts .= " --toponly"; }
-    if($opt_HR->{"--only"} ne "") { $cmsearch_opts .= " --cm-name " . $opt_HR->{"--only"}; }
+    if($opt_HR->{"-s"} ne "") { $cmsearch_opts .= " --cm-name " . $opt_HR->{"-s"}; }
 
     $command = "$cmsearch $cmsearch_opts -T $cmsearch_T --tab $tab_file $alg_flag $cm_file $target_file > $cmsearch_outfile";
     RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
@@ -1252,7 +1309,7 @@ sub align_subseqs {
     for($m = 1; $m <= $ncm; $m++) { 
 	$cm_name = $indi_cm_name_AR->[($m-1)];
 	if(($opt_HR->{"--aln-one"} ne "") && ($cm_name ne $opt_HR->{"--aln-one"})) { next; }
-	if(($opt_HR->{"--only"}    ne "") && ($cm_name ne $opt_HR->{"--only"}))    { next; }
+	if(($opt_HR->{"-s"}    ne "") && ($cm_name ne $opt_HR->{"-s"}))    { next; }
 
 	if(exists($new_target_file_per_cm_name_HR->{$cm_name})) { # >= 1 sequences in this set were classified as the current CM
 	    $hits_file      = $new_target_file_per_cm_name_HR->{$cm_name};

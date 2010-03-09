@@ -32,7 +32,7 @@
 # FileOpenFailure():               called if an open() call fails, print error msg and exit
 # PrintErrorAndExit():             print an error message and call exit to kill the program
 # PrintSearchAndAlignStatistics(): print ssu-align summary statistics on search and alignment
-# NumberofDigits():                determine number of digits before decimal point in a number
+# NumberOfDigits():                determine number of digits before decimal point in a number
 # FindPossiblySharedFile():        given a file, determine if that file exists in cwd or $ENV(SSUALIGNDIR)
 #
 use strict;
@@ -81,6 +81,7 @@ sub GetGlobals {
     $globals_HR->{"DF_CMALIGN_OPTS"}      = " --no-null3 --sub ";                   # original value: " --no-null3 --sub"
     $globals_HR->{"DF_ALIMASK_PFRACT"}    = 0.95;                                   # original value: 0.95
     $globals_HR->{"DF_ALIMASK_PTHRESH"}   = 0.95;                                   # original value: 0.95
+    $globals_HR->{"DF_NCORES_WO_WARNING"} = 8;                                      # original value: 8
 
     # executable programs
     $globals_HR->{"cmalign"}      = "ssu-cmalign";                              # original value: "ssu-cmalign"
@@ -492,10 +493,16 @@ sub RunCommand {
 #          that gets passed in is included in the file name after
 #          "ssutmp" as an additional safeguard against creating 
 #          two file with identical names. 
+#      
+#          Temp file will be put in the same directory
+#          that $out_file exists in.
 # 
 # Arguments:
 # $out_file: file to print error to if we can't open the
 #            file;
+# $key:      added to temp file name, to possibly make it 
+#            even more unique
+#
 # Returns: Temporary file name. Nothing if unable to get a
 #          name. Prints error message to $out_file and
 #          exits if it can't create the temp file.
@@ -506,10 +513,18 @@ sub TempFilename {
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, TempFilename() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my ($out_file, $key) = @_;
 
-    my ($name, $suffix);
+    my ($name, $suffix, $out_dir);
+
+    if($out_file !~ m/\//) { 
+	$out_dir = ""; 
+    }
+    else { 
+	$out_dir = $out_file;
+	$out_dir =~ s/\/.+$/\//; # replace final '/' plus file name with full dir path and final '/'
+    }
 
     foreach $suffix ("aa".."zz") {
-        $name = "ssutmp".$key.$suffix.$$;
+        $name = $out_dir . "ssutmp".$key.$suffix.$$;
         if (! (-e $name)) { 
             open (TMP,">$name") || FileOpenFailure($name, $out_file, 1, "writing");
             close(TMP);
