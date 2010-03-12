@@ -41,7 +41,10 @@ if (! -e "$ssudraw")  { die "FAIL: didn't find ssu-draw script $ssudraw"; }
 if (! -e "$ssumask")  { die "FAIL: didn't find ssu-mask script $ssumask"; }
 if (! -e "$ssumerge") { die "FAIL: didn't find ssu-merge script $ssumerge"; }
 
-$fafile   = $datadir . "/seed-15.fa";
+$fafile       = $datadir . "/seed-15.fa";
+$trna_stkfile = $datadir . "/trna-5.stk";
+$trna_fafile  = $datadir . "/trna-5.fa";
+$trna_psfile  = $datadir . "/trna-ssdraw.ps";
 @name_A =     ("archaea", "bacteria", "eukarya");
 @arc_only_A = ("archaea");
 @bac_only_A = ("bacteria");
@@ -49,7 +52,10 @@ $fafile   = $datadir . "/seed-15.fa";
 $mask_key_in  = "181";
 $mask_key_out = "1.8.1";
 
-if (! -e "$fafile")   { die "FAIL: didn't find fasta file $fafile in data dir $datadir"; }
+if (! -e "$fafile")       { die "FAIL: didn't find fasta file $fafile in data dir $datadir"; }
+if (! -e "$trna_stkfile") { die "FAIL: didn't find file $trna_stkfile in data dir $datadir"; }
+if (! -e "$trna_fafile")  { die "FAIL: didn't find file $trna_fafile in data dir $datadir"; }
+if (! -e "$trna_psfile")  { die "FAIL: didn't find file $trna_psfile in data dir $datadir"; }
 foreach $name (@name_A) {
     $maskfile = $datadir . "/" . $name . "." . $mask_key_in . ".mask";
     if (! -e "$maskfile") { die "FAIL: didn't find mask file $maskfile in data dir $datadir"; }
@@ -58,6 +64,11 @@ $testctr = 1;
 
 # Do ssu-align call, required for all tests:
 run_align($fafile, $dir, "-F", $testctr);
+check_for_files($dir, $dir, $testctr, \@name_A, ".hits.list");
+check_for_files($dir, $dir, $testctr, \@name_A, ".hits.fa");
+check_for_files($dir, $dir, $testctr, \@name_A, ".stk");
+check_for_files($dir, $dir, $testctr, \@name_A, ".ifile");
+check_for_files($dir, $dir, $testctr, \@name_A, ".cmalign");
 
 #######################################
 # Basic options (single letter options)
@@ -114,8 +125,9 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     $output = `cat $dir.bacteria.ssu-mask.sum`;
     if($output !~ /$dir.bacteria.mask\s+output\s+mask\s+1582\s+1499\s+83/)      { die "ERROR, problem with masking"; }
     if($output !~ /$dir.bacteria.mask.p\w+\s+output\s+p\w+\s+1582\s+1499\s+83/) { die "ERROR, problem with creating mask diagram"; }
-    remove_files              (".", "bacteria.mask");
-    remove_files              (".", "bacteria.ssu-mask");
+    remove_files              (".", "$dir.bacteria.mask");
+    remove_files              (".", "$dir.bacteria.ssu-mask");
+    remove_files              (".", "$dir.bacteria.stk");
 }
 $testctr++;
 
@@ -129,6 +141,24 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     if($output !~ /$dir.bacteria.mask.stk+\s+output\s+aln+\s+1376\s+\-\s+\-/)    { die "ERROR, problem with creating mask diagram"; }
     if($output !~ /$dir.eukarya.mask.stk+\s+output\s+aln+\s+1343\s+\-\s+\-/)     { die "ERROR, problem with creating mask diagram"; }
     remove_files              ($dir, "mask");
+}
+$testctr++;
+
+# Test -f (only works in combination with -a)
+if(($testnum eq "") || ($testnum == $testctr)) {
+    # first make the required input mask with the maskkey 
+    foreach $name (@arc_only_A) {
+	$maskfile        = $datadir . "/" . $name . "." . $mask_key_in . ".mask";
+	$maskfile_wo_dir = $name . "." . $mask_key_in . ".mask";
+    }
+    run_mask                  ($dir . "/" . $dir . ".archaea.stk", "-f $maskfile -a", $testctr);
+    check_for_files           (".", $dir, $testctr, \@arc_only_A, ".mask.stk");
+    check_for_one_of_two_files(".", $dir, $testctr, \@arc_only_A, ".mask.pdf", "mask.ps");
+    $output = `cat $dir.archaea.ssu-mask.sum`;
+    if($output !~ /$dir.archaea.mask.stk\s+output\s+aln\s+794/)  { die "ERROR, problem with masking"; }
+    if($output !~ /$maskfile_wo_dir\s+input/)                    { die "ERROR, problem with masking"; }
+    remove_files              (".", "archaea.mask");
+    remove_files              (".", "archaea.ssu-mask");
 }
 $testctr++;
 
@@ -151,7 +181,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     if($output !~ /$dir.eukarya.mask.stk\s+output\s+aln\s+1341/) { die "ERROR, problem with masking"; }
     remove_files              ($dir, "mask");
 
-    # with -a
+    # with -a, need to put mask files in cwd first
     foreach $name (@name_A) {
 	$maskfile     = $datadir . "/" . $name . "." . $mask_key_in . ".mask";
 	$newmaskfile  = $dir . "." . $name . "." . $mask_key_in . ".mask";
@@ -166,7 +196,11 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     if($output !~ /eukarya.$mask_key_in.mask\s+input/)           { die "ERROR, problem with masking"; }
     if($output !~ /$dir.eukarya.mask.stk\s+output\s+aln\s+1341/) { die "ERROR, problem with masking"; }
     remove_files              (".", "eukarya.mask");
-    remove_files              (".", "eukaryaa.ssu-mask");
+    remove_files              (".", "eukarya.ssu-mask");
+    foreach $name (@name_A) {
+	$newmaskfile  = $dir . "." . $name . "." . $mask_key_in . ".mask";
+	remove_files(".", $newmaskfile);
+    }
 
     # now test if mask files they're in the cwd, not in $dir (without -a):
     foreach $name (@name_A) {
@@ -183,6 +217,10 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     if($output !~ /eukarya.$mask_key_in.mask\s+input/)           { die "ERROR, problem with masking"; }
     if($output !~ /$dir.eukarya.mask.stk\s+output\s+aln\s+1341/) { die "ERROR, problem with masking"; }
     remove_files              ($dir, "mask");
+    foreach $name (@name_A) {
+	$newmaskfile  = $name . "." . $mask_key_in . ".mask";
+	remove_files(".", $newmaskfile);
+    }
 }
 $testctr++;
 
@@ -451,8 +489,8 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     check_for_one_of_two_files(".", $dir, $testctr, \@euk_only_A, ".$mask_key_out.mask.pdf", ".$mask_key_out.mask.ps");
     $output = `cat $dir.eukarya.$mask_key_out.ssu-mask.sum`;
     if($output !~ /$dir.eukarya.$mask_key_out.mask.stk\s+output\s+aln\s+1634/) { die "ERROR, problem with masking"; }
-    remove_files              (".", "eukarya.mask");
-    remove_files              (".", "eukarya.ssu-mask");
+    remove_files              (".", "eukarya." . $mask_key_out . ".mask");
+    remove_files              (".", "eukarya." . $mask_key_out . ".ssu-mask");
 }
 $testctr++;
 
@@ -556,9 +594,169 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     if($output =~ /$dir.archaea.stk\s+$dir.archaea.afa/) { die "ERROR, problem with stockholm to aligned fasta conversion"; }
     if($output !~ /$dir.eukarya.stk\s+$dir.eukarya.afa/) { die "ERROR, problem with stockholm to aligned fasta conversion"; }
     remove_files              (".", $dir . ".eukarya.afa");
+    remove_files              (".", $dir . ".eukarya.ssu-mask");
+}
+$testctr++;
+
+# Test --seq-k (only possible in combination with -a)
+if(($testnum eq "") || ($testnum == $testctr)) {
+    # first run --list to get a list
+    run_mask                  ($dir . "/" . $dir . ".eukarya.stk", "--list -a", $testctr);
+    check_for_files           (".", $dir, $testctr, \@euk_only_A, ".list");
+    $list_file = $dir . ".eukarya.list";
+    $seqk_file = $dir . ".eukarya.seqk";
+    open(LIST, $list_file) || die "TEST SCRIPT ERROR, unable to open file $list_file for reading.";
+    $seq1 = <LIST>; chomp $seq1;
+    $seq2 = <LIST>; chomp $seq2;
+    $seq3 = <LIST>; chomp $seq3;
+    $seq4 = <LIST>; chomp $seq4;
+    $seq5 = <LIST>; chomp $seq5;
+    close(LIST);
+    open(SEQK, ">" . $seqk_file) || die "TEST SCRIPT ERROR, unable to open file $seqk_file for writing.";
+    printf SEQK ("$seq1\n");
+    printf SEQK ("$seq5\n");
+    printf SEQK ("$seq4\n");
+    close(SEQK);
+
+    # now run ssu-mask --seq-k -a
+    run_mask                  ($dir . "/" . $dir . ".eukarya.stk", "--seq-k $seqk_file -a" , $testctr);
+    check_for_files           (".", $dir, $testctr, \@euk_only_A, ".seqk.stk");
+    $output = `cat $dir.eukarya.ssu-mask.sum`;
+    if($output =~ /archaea/)                   { die "ERROR, problem with stockholm to aligned fasta conversion"; }
+    if($output !~ /$dir.eukarya.seqk.stk\s+3/) { die "ERROR, problem with stockholm to aligned fasta conversion"; }
+    remove_files              (".", $dir . ".eukarya.list");
+    remove_files              (".", $dir . ".eukarya.seqk");
     remove_files              (".", $dir . ".eukarya.ssu-mask.sum");
 }
 $testctr++;
+
+# Test --seq-r (only possible in combination with -a)
+if(($testnum eq "") || ($testnum == $testctr)) {
+    # first run --list to get a list
+    run_mask                  ($dir . "/" . $dir . ".eukarya.stk", "--list -a", $testctr);
+    check_for_files           (".", $dir, $testctr, \@euk_only_A, ".list");
+    $list_file = $dir . ".eukarya.list";
+    $seqr_file = $dir . ".eukarya.seqr";
+    open(LIST, $list_file) || die "TEST SCRIPT ERROR, unable to open file $list_file for reading.";
+    $seq1 = <LIST>; chomp $seq1;
+    $seq2 = <LIST>; chomp $seq2;
+    $seq3 = <LIST>; chomp $seq3;
+    $seq4 = <LIST>; chomp $seq4;
+    $seq5 = <LIST>; chomp $seq5;
+    close(LIST);
+    open(SEQR, ">" . $seqr_file) || die "TEST SCRIPT ERROR, unable to open file $seqr_file for writing.";
+    printf SEQR ("$seq1\n");
+    printf SEQR ("$seq4\n");
+    printf SEQR ("$seq5\n");
+    close(SEQR);
+
+    # now run ssu-mask --seq-r -a
+    run_mask                  ($dir . "/" . $dir . ".eukarya.stk", "--seq-r $seqr_file -a" , $testctr);
+    check_for_files           (".", $dir, $testctr, \@euk_only_A, ".seqr.stk");
+    $output = `cat $dir.eukarya.ssu-mask.sum`;
+    if($output =~ /archaea/)                   { die "ERROR, problem with stockholm to aligned fasta conversion"; }
+    if($output !~ /$dir.eukarya.seqr.stk\s+2/) { die "ERROR, problem with stockholm to aligned fasta conversion"; }
+    remove_files              (".", $dir . ".eukarya.list");
+    remove_files              (".", $dir . ".eukarya.seqr");
+    remove_files              (".", $dir . ".eukarya.ssu-mask.sum");
+}
+$testctr++;
+
+####################################
+# Test the special -m and -t options
+####################################
+if(($testnum eq "") || ($testnum == $testctr)) {
+    # first, build new v4.cm with 3 v4 CMs
+    run_build("-F -d --trunc 525-765  -n arc-v4 -o       v4.cm archaea", $testctr);
+    check_for_files           (".", "", $testctr, \@arc_only_A, "-0p1-sb.525-765.stk");
+    check_for_one_of_two_files(".", "", $testctr, \@arc_only_A, "-0p1-sb.525-765.ps", "-0p1-sb.525-765.pdf");
+    remove_files              (".", "0p1-sb.525-765");
+
+    run_build("-F -d --trunc 584-824  -n bac-v4 --append v4.cm bacteria", $testctr);
+    check_for_files           (".", "", $testctr, \@bac_only_A, "-0p1-sb.584-824.stk");
+    check_for_one_of_two_files(".", "", $testctr, \@bac_only_A, "-0p1-sb.584-824.ps", "-0p1-sb.584-824.pdf");
+    remove_files              (".", "0p1-sb.584-824");
+
+    run_build("-F -d --trunc 620-1082 -n euk-v4 --append v4.cm eukarya", $testctr);
+    check_for_files           (".", "", $testctr, \@euk_only_A, "-0p1-sb.620-1082.stk");
+    check_for_one_of_two_files(".", "", $testctr, \@euk_only_A, "-0p1-sb.620-1082.ps", "-0p1-sb.620-1082.pdf");
+    remove_files              (".", "0p1-sb.620-1082");
+
+    @v4_name_A = ("arc-v4", "bac-v4", "euk-v4");
+    @v4_arc_only_A = ("arc-v4");
+
+    # next, call ssu-align with new v4.cm
+    run_align($fafile, $dir, "-F -m v4.cm", $testctr);
+    check_for_files($dir, $dir, $testctr, \@v4_name_A, ".hits.list");
+    check_for_files($dir, $dir, $testctr, \@v4_name_A, ".hits.fa");
+    check_for_files($dir, $dir, $testctr, \@v4_name_A, ".stk");
+    check_for_files($dir, $dir, $testctr, \@v4_name_A, ".ifile");
+    check_for_files($dir, $dir, $testctr, \@v4_name_A, ".cmalign");
+
+    # mask alignments 
+    # without -a 
+    run_mask($dir, "-m v4.cm", $testctr);
+    check_for_files($dir, $dir, $testctr, \@v4_name_A, ".mask");
+    check_for_files($dir, $dir, $testctr, \@v4_name_A, ".mask.stk");
+    $output = `cat $dir/$dir.ssu-mask.sum`;
+    if($output !~ /$dir.bac-v4.mask\s+output\s+mask\s+241\s+237\s+4/) { die "ERROR, problem with masking";}
+    remove_files(".", "archaea.mask");
+    remove_files(".", "archaea.ssu-mask");
+
+    # with -a 
+    run_mask($dir . "/" . $dir . ".arc-v4.stk", "-a -m v4.cm", $testctr);
+    check_for_files(".", $dir, $testctr, \@v4_arc_only_A, ".mask");
+    check_for_files(".", $dir, $testctr, \@v4_arc_only_A, ".mask.stk");
+    $output = `cat $dir.arc-v4.ssu-mask.sum`;
+    if($output !~ /$dir.arc-v4.mask\s+output\s+mask\s+241\s+241\s+0/) { die "ERROR, problem with masking";}
+    remove_files(".", "arc-v4.mask");
+    remove_files(".", "arc-v4.ssu-mask");
+
+    remove_files(".", "v4.cm");
+}
+$testctr++;
+
+if(($testnum eq "") || ($testnum == $testctr)) {
+    # first, build new trna.cm 
+    $trna_cmfile = "trna-5.cm";
+    @trna_only_A = "trna-5";
+    run_build("-F --rf -n $trna_only_A[0] -o $trna_cmfile $trna_stkfile", $testctr);
+    check_for_files           (".", "", $testctr, \@trna_only_A, ".cm");
+    check_for_files           (".", "", $testctr, \@trna_only_A, ".ssu-build.log");
+    check_for_files           (".", "", $testctr, \@trna_only_A, ".ssu-build.sum");
+    remove_files(".", "trna-5.ssu-build");
+
+    # next, call ssu-align with new $trna_cmfile
+    run_align($trna_fafile, $dir, "-F -m $trna_cmfile", $testctr);
+    check_for_files($dir, $dir, $testctr, \@trna_only_A, ".hits.list");
+    check_for_files($dir, $dir, $testctr, \@trna_only_A, ".hits.fa");
+    check_for_files($dir, $dir, $testctr, \@trna_only_A, ".stk");
+    check_for_files($dir, $dir, $testctr, \@trna_only_A, ".ifile");
+    check_for_files($dir, $dir, $testctr, \@trna_only_A, ".cmalign");
+
+    # mask alignments with -t $trna_psfile
+    # without -a 
+    run_mask($dir, "-t $trna_psfile -m $trna_cmfile", $testctr);
+    check_for_files           ($dir, $dir, $testctr, \@trna_only_A, ".mask");
+    check_for_files           ($dir, $dir, $testctr, \@trna_only_A, ".mask.stk");
+    check_for_one_of_two_files($dir, $dir, $testctr, \@trna_only_A, ".mask.ps", ".mask.pdf");
+    $output = `cat $dir/$dir.ssu-mask.sum`;
+    if($output !~ /$dir.trna-5.mask\s+output\s+mask\s+71\s+68\s+3/) { die "ERROR, problem with masking";}
+    remove_files(".", "trna-5.mask");
+    remove_files(".", "trna-5.ssu-mask");
+
+    # with -a 
+    run_mask($dir . "/" . $dir . ".trna-5.stk", "-a -t $trna_psfile -m $trna_cmfile", $testctr);
+    check_for_files(".", $dir, $testctr, \@trna_only_A, ".mask");
+    check_for_files(".", $dir, $testctr, \@trna_only_A, ".mask.stk");
+    $output = `cat $dir.trna-5.ssu-mask.sum`;
+    if($output !~ /$dir.trna-5.mask\s+output\s+mask\s+71\s+68\s+3/) { die "ERROR, problem with masking";}
+    remove_files(".", "trna-5.mask");
+    remove_files(".", "trna-5.ssu-mask");
+    remove_files(".", "trna-5.cm");
+}
+$testctr++;
+
 
 printf("All commands completed successfully.\n");
 exit 0;
@@ -593,6 +791,15 @@ sub run_align {
     return;
 }
 #####################################################
+sub run_build { 
+    my ($opts, $testctr) = @_;
+    $command = "$ssubuild $opts > /dev/null"; 
+    printf("Running build command for set %3d: $command\n", $testctr);
+    system("$command");
+    if ($? != 0) { die "FAIL: ssu-build $testctr failed unexpectedly"; }
+    return;
+}
+#####################################################
 sub run_draw {
     my ($dir, $extra_opts, $testctr) = @_;
     if($extra_opts ne "") { $command = "$ssudraw $extra_opts $dir > /dev/null"; }
@@ -607,7 +814,8 @@ sub run_draw {
 sub check_for_files {
     my ($dir, $root, $testctr, $name_AR, $suffix) = @_;
     foreach $name (@{$name_AR}) { 
-	$file = $dir . "/" . $root . "." . $name . $suffix;
+	if($root ne "") { $file = $dir . "/" . $root . "." . $name . $suffix; }
+	else            { $file = $dir . "/" . $name . $suffix; }
 	if(! -e $file) { die "FAIL: ssu-mask $testctr call failed to create file $file"; }
     }
     return;
@@ -618,8 +826,14 @@ sub check_for_files {
 sub check_for_one_of_two_files {
     my ($dir, $root, $testctr, $name_AR, $suffix1, $suffix2) = @_;
     foreach $name (@{$name_AR}) { 
-	$file1 = $dir . "/" . $root . "." . $name . $suffix1;
-	$file2 = $dir . "/" . $root . "." . $name . $suffix2;
+	if($root ne "") { 
+	    $file1 = $dir . "/" . $root . "." . $name . $suffix1; 
+	    $file2 = $dir . "/" . $root . "." . $name . $suffix2;
+	}
+	else {
+	    $file1 = $dir . "/" . $name . $suffix1; 
+	    $file2 = $dir . "/" . $name . $suffix2;
+	}
 	if((! -e $file1) && (! -e $file2)) { die "FAIL: ssu-mask $testctr call failed to create either file $file1 or file $file2"; }
     }
     return;
