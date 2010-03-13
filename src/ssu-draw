@@ -61,7 +61,6 @@ $options_usage .= "  --ps2pdf <s>   : <s> (!= \"ps2pdf\") is the command for con
 $options_usage .= "  --ps-keep      : if --ps2pdf or ps2pdf is installed, save postscript (& pdf) files\n";
 $options_usage .= "  --ps-only      : only save postscript secondary structure diagrams, no pdfs\n";
 $options_usage .= "\noptions for 1-page alignment summary diagrams (by default, all are drawn):\n";
-$options_usage .= "  --no-aln  : do not create multi-page pdf with all alignment stats\n";
 $options_usage .= "  --prob    : draw average posterior probability per column (save as *.prob.pdf)\n";
 $options_usage .= "  --ifreq   : draw frequency of insertions per column (save as *.ifreq.pdf)\n";
 $options_usage .= "  --iavglen : draw average length of insertions per column (save as *.iavglen.pdf)\n";
@@ -70,6 +69,7 @@ $options_usage .= "  --dint    : draw frequency of internal deletions per column
 $options_usage .= "  --span    : draw fraction of seqs that span each position (save as *.span.pdf)\n";
 $options_usage .= "  --info    : draw sequence information content per position (save as *.info.pdf)\n";
 $options_usage .= "  --mutinfo : draw mutual information per position (save as *.mutinfo.pdf)\n";
+$options_usage .= "  --no-aln  : do not create multi-page pdf with all alignment stats\n";
 $options_usage .= "\noptions for structure diagrams for individual sequences:\n";
 $options_usage .= "  (warning: --indi-all will generate very large .ps/.pdf files for large alignments)\n";
 $options_usage .= "  --indi-all      : draw sequence and probability diagrams for all aligned sequences\n";
@@ -103,7 +103,6 @@ $opt_takes_arg_H{"--no-mask"}   = 0;  push(@opt_order_A, "--no-mask");
 $opt_takes_arg_H{"--ps2pdf"}    = 1;  push(@opt_order_A, "--ps2pdf");      
 $opt_takes_arg_H{"--ps-keep"}   = 0;  push(@opt_order_A, "--ps-keep");      
 $opt_takes_arg_H{"--ps-only"}   = 0;  push(@opt_order_A, "--ps-only");      
-$opt_takes_arg_H{"--no-aln"}    = 0;  push(@opt_order_A, "--no-aln");     
 $opt_takes_arg_H{"--prob"}      = 0;  push(@opt_order_A, "--prob");       
 $opt_takes_arg_H{"--ifreq"}     = 0;  push(@opt_order_A, "--ifreq");        
 $opt_takes_arg_H{"--iavglen"}   = 0;  push(@opt_order_A, "--iavglen");        
@@ -112,6 +111,7 @@ $opt_takes_arg_H{"--dint"}      = 0;  push(@opt_order_A, "--dint");
 $opt_takes_arg_H{"--span"}      = 0;  push(@opt_order_A, "--span");       
 $opt_takes_arg_H{"--info"}      = 0;  push(@opt_order_A, "--info");       
 $opt_takes_arg_H{"--mutinfo"}   = 0;  push(@opt_order_A, "--mutinfo");     
+$opt_takes_arg_H{"--no-aln"}    = 0;  push(@opt_order_A, "--no-aln");     
 $opt_takes_arg_H{"--indi-list"} = 1;  push(@opt_order_A, "--indi-list");       
 $opt_takes_arg_H{"--indi-all"}  = 0;  push(@opt_order_A, "--indi-all");       
 $opt_takes_arg_H{"--no-prob"}   = 0;  push(@opt_order_A, "--no-prob");    
@@ -283,6 +283,7 @@ for($i = 0; $i < $naln; $i++) {
 }					     
 $max_width_draw += $extra_draw_chars; # $extra_draw_chars is for adding keys, such as 'mutinfo.' to names
 if($max_width_draw < (length("structure diagram file"))) { $max_width_draw = length("structure diagram file"); }
+$max_width_tab += $extra_draw_chars; # $extra_draw_chars is for adding keys, such as 'mutinfo.' to names
 if($max_width_tab  < (length("tabular data file")))      { $max_width_tab  = length("tabular data file"); }
 my $dashes_aln = "";  for($i = 0; $i < $max_width_aln;  $i++) { $dashes_aln .= "-"; }
 my $dashes_draw = ""; for($i = 0; $i < $max_width_draw; $i++) { $dashes_draw .= "-"; }
@@ -617,7 +618,7 @@ sub draw_alignment {
 		   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
     }
     if($opt_HR->{"--indi-all"}) { 
-	$draw_opts = "--indi --all ";
+	$draw_opts = "--indi";
 	if(! $opt_HR->{"--no-prob"}) { $draw_opts .= " --prob"; }
 	$draw_key = $key_out . ".indiall";
 	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts), $aln_file, $stk_suffix_AR, $template_file, 

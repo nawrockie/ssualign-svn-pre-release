@@ -75,7 +75,7 @@ check_for_files($dir, $dir, $testctr, \@name_A, ".cmalign");
 #######################################
 # Test -h
 if(($testnum eq "") || ($testnum == $testctr)) {
-    run_mask($dir, "-h", $testctr);
+    run_mask("", "-h", $testctr);
     if ($? != 0) { die "FAIL: ssu-mask -h failed unexpectedly"; }
 }
 $testctr++;

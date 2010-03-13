@@ -801,7 +801,7 @@ sub run_ssdraw_for_ssu_build {
 
     #to determine consensus length, grep for the RF lines of the alignment, and overwrite them with 0s and 1s.
     my ($command_worked, $output, $line);
-    my $tmp_rf_file = $aln_file . ".rf";
+    my $tmp_rf_file = RemoveDirPath($aln_file) . ".rf";
     my $command = "grep '^#=GC RF[[:space:]]' $aln_file > $tmp_rf_file";
     RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
 
