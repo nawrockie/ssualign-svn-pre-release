@@ -379,7 +379,7 @@ sub validate_and_setup_ssu_build {
     if(!($opt_HR->{"-d"})) { 
 	$aln_file = $aln_file_or_model_name;
 	if(!(-e $aln_file)) { printf STDERR ("\nERROR, alignment file $aln_file does not exist.\n"); exit(1); }
-	$root = $aln_file; 
+	$root = RemoveDirPath($aln_file); 
 	$root =~ s/.+\///;  #remove directory path
 	if($root =~ s/\.stk$//)    { ; }
 	elsif($root =~ s/\.sto$//) { ; }
@@ -390,13 +390,9 @@ sub validate_and_setup_ssu_build {
 	if(!(-e $aln_file)) { printf STDERR ("\nERROR, -d enabled, specifying use of default ssu-align-0.1 alignment file:\n$aln_file,\nbut it does not exist.\nValid options command-line argument with -d are \"archaea\", \"bacteria\", or \"eukarya\".\n"); exit(1); }
 	$root = $aln_file_or_model_name . "-0p1-sb";
     }
-    if($opt_HR->{"-o"} ne "") { 
-	$root = $opt_HR->{"-o"};
-	$root =~ s/\.cm//; # remove .cm if it's there
-    }
     my $num_aln_file   = $root . $key_out . ".num.stk";
 
-    #determine truncated aln file name (we may or may not create this alignment
+    #determine truncated aln file name (we may or may not create this alignment)
     my $trunc_aln_file = "";
     if($opt_HR->{"--trunc"} ne "") { 
 	my ($start, $end);
@@ -413,7 +409,7 @@ sub validate_and_setup_ssu_build {
     # determine CM name, if -d or -t we will set it as the $root, if -n <s> enabled, set it as <s>,
     # otherwise, let cmbuild name it (by leaving it as "").
     my $cm_name = "";
-    if($opt_HR->{"-n"} ne "")                           { $cm_name = $opt_HR->{"-n"}; }
+    if($opt_HR->{"-n"} ne "")                                { $cm_name = $opt_HR->{"-n"}; }
     elsif(($opt_HR->{"-d"}) || ($opt_HR->{"--trunc"} ne "")) { $cm_name = $root; }
     
     my $sum_file = $root . $key_out . ".ssu-build.sum";
@@ -479,7 +475,7 @@ sub validate_and_setup_ssu_build {
                                         #0 = don't die if command fails
 	    if(! $command_worked ) { $ssdraw = ""; }
 	}
-	$ps_file = $root . $key_out . ".ps";
+	$ps_file  = $root . $key_out . ".ps";
 	$pdf_file = $root . $key_out . ".pdf";
     }
 
@@ -832,7 +828,7 @@ sub run_ssdraw_for_ssu_build {
     $command = "$ssdraw --mask-col --mask $mask_file $aln_file $template_file $ps_file";
     $output = RunCommand("$command", $tfilectr++, 0, 0, $log_file, \$command_worked, "");
                                         #0 = okay if it doesn't work, alert caller by returning 0 though
-    #UnlinkFile($mask_file, $log_file);
+    UnlinkFile($mask_file, $log_file);
     if(! $command_worked) { return 0;}
     PrintStringToFile($sum_file, 1, sprintf("#\n"));
 

@@ -249,7 +249,7 @@ my @stk_list_A = ();
 my @mask_list_A = ();
 my @ifile_list_A = ();
 my ($cm_file, $template_file, $ssdraw);
-validate_and_setup_ssu_draw($ssualigndir, $dir, $root, \%opt_H, \$cm_file, \$template_file, \$ssdraw, \@stk_list_A, \@mask_list_A, \@ifile_list_A, $log_file, $sum_file);
+validate_and_setup_ssu_draw($ssualigndir, $dir, $root, \%opt_H, \@stk_suffix_A, \$cm_file, \$template_file, \$ssdraw, \@stk_list_A, \@mask_list_A, \@ifile_list_A, $log_file, $sum_file);
 my $naln = scalar(@stk_list_A);
 my $aln_file;
 
@@ -344,6 +344,7 @@ exit(0);
 # $dir:               the directory we will create files in
 # $root:              the keyword we'll use for root of output file names (this is same as $dir unless $dir includes >=1 subdirs)
 # $opt_HR:            reference to the hash of command-line options
+# $stk_suffix_AR:     reference to list of stockholm file suffices
 # $cm_file_ref:       RETURN; the path to the CM file, either default CM file or $alt_cm_file
 # $template_file_ref: RETURN; the path to the template file, either default template file or $alt_template_file
 # $ssdraw_ref:        RETURN; the esl-ssdraw command
@@ -361,9 +362,9 @@ exit(0);
 #
 ####################################################################
 sub validate_and_setup_ssu_draw { 
-    my $narg_expected = 12;
+    my $narg_expected = 13;
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, validate_and_setup_ssu_draw() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($ssualigndir, $dir, $root, $opt_HR, $cm_file_ref, $template_file_ref, $ssdraw_ref, $stk_list_arr_ref, $mask_list_arr_ref, $ifile_list_arr_ref, $log_file, $sum_file) = @_;
+    my($ssualigndir, $dir, $root, $opt_HR, $stk_suffix_AR, $cm_file_ref, $template_file_ref, $ssdraw_ref, $stk_list_arr_ref, $mask_list_arr_ref, $ifile_list_arr_ref, $log_file, $sum_file) = @_;
 
     #Validate that we can read the CM file
     my $cm_file = "";
@@ -398,7 +399,7 @@ sub validate_and_setup_ssu_draw {
     my $errmsg = "";
     my $found_aln = 0;
     my $mask_key = "";
-    if($opt_HR->{"--mask-key"}  ne "") { $mask_key  = "." . $opt_HR->{"--mask-key"};  }
+    if($opt_HR->{"--mask-key"} ne "") { $mask_key  .= "." . $opt_HR->{"--mask-key"};  }
 
     if($opt_HR->{"-a"}) { # special mode, single command line argument is not a directory, it's an alignment
 	$aln_name = $dir;
@@ -409,12 +410,20 @@ sub validate_and_setup_ssu_draw {
 	$naln++; 
 
 	# determine mask file to use, if any 
-	if(! $opt_HR->{"--no-mask"}) { # check if a mask for this alignment exists in current dir
-	    $mask_name = SwapOrAppendFileSuffix($aln_file, \@stk_suffix_A, ($mask_key . ".mask"), 1);
+	if(! $opt_HR->{"--no-mask"}) { # check if a mask for this alignment exists in directory where alignment file exists, or in the current dir
+	    $mask_name = SwapOrAppendFileSuffix($aln_name, $stk_suffix_AR, ($mask_key . ".mask"), 1);
 	    if(-e $mask_name) { 
-		push(@{$mask_list_arr_ref}, $mask_name);
+		push(@{$mask_list_arr_ref}, $mask_name); 
 	    }
-	    else { push(@{$mask_list_arr_ref}, ""); } # empty string tells later functions: don't use mask for this alignment
+	    else { 
+		$mask_name = SwapOrAppendFileSuffix($aln_name, $stk_suffix_AR, ($mask_key . ".mask"), 0);
+		if(-e $mask_name) { 
+		    push(@{$mask_list_arr_ref}, $mask_name); 
+		}
+		else { 
+		    push(@{$mask_list_arr_ref}, ""); # empty string tells later functions: don't use mask for this alignment
+		}
+	    } 
 	}
 	elsif ($opt_HR->{"--in-mask"} ne "") { 
 	    $mask_name = $opt_HR->{"--in-mask"}; 
@@ -473,6 +482,12 @@ sub validate_and_setup_ssu_draw {
 		    $mask_name = $dir . "/" . $root . "." . $name . $mask_key . ".mask";
 		    if(-e $mask_name) { 
 			push(@{$mask_list_arr_ref}, $mask_name);
+		    }
+		    elsif($mask_key ne "") { # try for just $name . $mask_key . ".mask";
+			$mask_name = $dir . "/" . $name . $mask_key . ".mask";
+			if(-e $mask_name) { 
+			    push(@{$mask_list_arr_ref}, $mask_name);
+			}
 		    }
 		    else { push(@{$mask_list_arr_ref}, ""); } # empty string tells later functions: don't use mask for this alignment
 		}
