@@ -30,7 +30,7 @@ $datadir   =~ s/\/$//; # remove trailing "/"
 $ssualign = $scriptdir . "/ssu-align";
 $ssubuild = $scriptdir . "/ssu-build";
 $ssudraw  = $scriptdir . "/ssu-draw";
-$ssumask  = $scriptdir . "/ssu-draw";
+$ssumask  = $scriptdir . "/ssu-mask";
 $ssumerge = $scriptdir . "/ssu-merge";
 
 if (! -e "$ssualign") { die "FAIL: didn't find ssu-mask script $ssualign"; }
@@ -55,6 +55,7 @@ $trna_psfile  = $datadir . "/trna-ssdraw.ps";
 @ssudraw_only_A = ("ssu-draw");
 $mask_key_in  = "181";
 $mask_key_out = "1.8.1";
+$draw_key_out = "1.8.1";
 
 if (! -e "$fafile")       { die "FAIL: didn't find fasta file $fafile in data dir $datadir"; }
 if (! -e "$trna_stkfile") { die "FAIL: didn't find file $trna_stkfile in data dir $datadir"; }
@@ -67,7 +68,7 @@ foreach $name (@name_A) {
 $testctr = 1;
 
 # Do ssu-align call, required for all tests:
-#run_align($fafile, $dir, "-F", $testctr);
+run_align($fafile, $dir, "-F", $testctr);
 check_for_files($dir, $dir, $testctr, \@name_A, ".hits.list");
 check_for_files($dir, $dir, $testctr, \@name_A, ".hits.fa");
 check_for_files($dir, $dir, $testctr, \@name_A, ".stk");
@@ -95,10 +96,84 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.p\w+/)        { die "ERROR, problem with drawing"; }
     $output = `cat $dir/$dir.bacteria.drawtab`;
     if($output !~ /infocontent\s+1\s+2.\d+\s+2\s+6\s*infocontent/) { die "ERROR, problem with drawing"; }
-    if($output !~ /span\s+1\s+0.4\d+\s+3\s*span/)                  { die "ERROR, problem with drawing"; } 
+    if($output !~ /span\s+1\s+0.4\d+\s+4\s*span/)                  { die "ERROR, problem with drawing"; } 
     remove_files              ($dir, "draw");
     remove_files              ($dir, "\.ps");
     remove_files              ($dir, "\.pdf");
+}
+$testctr++;
+
+# Test default (no options) and --no-mask with freshly created mask files in foo/ (masks should automatically be incorporated into the drawings)
+if(($testnum eq "") || ($testnum == $testctr)) {
+    run_mask                  ($dir, "", $testctr);
+    check_for_files           ($dir, $dir, $testctr, \@name_A, ".mask");
+    run_draw                  ($dir, "", $testctr);
+    check_for_files           ($dir, $dir, $testctr, \@name_A, ".drawtab");
+    check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
+    check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
+    check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".pdf", ".ps");
+    $output = `cat $dir/$dir.ssu-draw.sum`;
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.p\w+/)        { die "ERROR, problem with drawing"; }
+    $output = `cat $dir/$dir.bacteria.drawtab`;
+    if($output !~ /infocontent\s+1\s+2.\d+\s+2\s+6\s+1\s*infocontent/) { die "ERROR, problem with drawing"; }
+    if($output !~ /span\s+1\s+0.4\d+\s+4\s+1\s*span/)                 { die "ERROR, problem with drawing"; } 
+    $output = `cat $dir/$dir.ssu-draw.log`;
+    if($output !~ /Executing\:\s+ssu-esl-ssdraw.+\-\-mask/) { die "ERROR, problem with drawing"; } 
+    remove_files              ($dir, "draw");
+    remove_files              ($dir, "\.ps");
+    remove_files              ($dir, "\.pdf");
+
+    # check that --no-mask works
+    run_draw                  ($dir, "--no-mask", $testctr);
+    check_for_files           ($dir, $dir, $testctr, \@name_A, ".drawtab");
+    check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
+    check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
+    check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".pdf", ".ps");
+    $output = `cat $dir/$dir.ssu-draw.sum`;
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.p\w+/)        { die "ERROR, problem with drawing"; }
+    $output = `cat $dir/$dir.bacteria.drawtab`;
+    if($output !~ /infocontent\s+1\s+2.\d+\s+2\s+6\s*infocontent/) { die "ERROR, problem with drawing"; }
+    if($output !~ /span\s+1\s+0.4\d+\s+4\s*span/)                 { die "ERROR, problem with drawing"; } 
+    $output = `cat $dir/$dir.ssu-draw.log`;
+    if($output =~ /Executing\:\s+ssu-esl-ssdraw.+\-\-mask/) { die "ERROR, problem with drawing"; } 
+    remove_files              ($dir, "draw");
+    remove_files              ($dir, "\.ps");
+    remove_files              ($dir, "\.pdf");
+
+    # test that -a uses the mask
+    run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "-a", $testctr);
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".drawtab");
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
+    check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".pdf", ".ps");
+    $output = `cat $dir.bacteria.ssu-draw.sum`;
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.p\w+/) { die "ERROR, problem with drawing"; }
+    $output = `cat $dir.bacteria.drawtab`;
+    if($output !~ /infocontent\s+1\s+2.\d+\s+2\s+6\s+1\s*infocontent/) { die "ERROR, problem with drawing"; }
+    if($output !~ /span\s+1\s+0.4\d+\s+4\s+1\s*span/)                  { die "ERROR, problem with drawing"; } 
+    $output = `cat $dir.bacteria.ssu-draw.log`;
+    if($output !~ /Executing\:\s+ssu-esl-ssdraw.+\-\-mask/) { die "ERROR, problem with drawing"; } 
+    remove_files              (".", "bacteria.draw");
+    remove_files              (".", "bacteria.ssu-draw");
+
+    # and now that -a and --no-mask does not use the mask
+    run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "--no-mask -a", $testctr);
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".drawtab");
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
+    check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".pdf", ".ps");
+    $output = `cat $dir.bacteria.ssu-draw.sum`;
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.p\w+/) { die "ERROR, problem with drawing"; }
+    $output = `cat $dir.bacteria.drawtab`;
+    if($output !~ /infocontent\s+1\s+2.\d+\s+2\s+6\s*infocontent/) { die "ERROR, problem with drawing"; }
+    if($output !~ /span\s+1\s+0.4\d+\s+4\s*span/)                  { die "ERROR, problem with drawing"; } 
+    $output = `cat $dir.bacteria.ssu-draw.log`;
+    if($output =~ /Executing\:\s+ssu-esl-ssdraw.+\-\-mask/) { die "ERROR, problem with drawing"; } 
+    remove_files              (".", "bacteria.draw");
+    remove_files              (".", "bacteria.ssu-draw");
+
+    # remove masks
+    remove_files              ($dir, "mask");
 }
 $testctr++;
 
@@ -113,7 +188,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.p\w+/) { die "ERROR, problem with drawing"; }
     $output = `cat $dir.bacteria.drawtab`;
     if($output !~ /infocontent\s+1\s+2.\d+\s+2\s+6\s*infocontent/) { die "ERROR, problem with drawing"; }
-    if($output !~ /span\s+1\s+0.4\d+\s+3\s*span/)                  { die "ERROR, problem with drawing"; } 
+    if($output !~ /span\s+1\s+0.4\d+\s+4\s*span/)                  { die "ERROR, problem with drawing"; } 
     remove_files              (".", "bacteria.draw");
     remove_files              (".", "bacteria.ssu-draw");
 }
@@ -131,14 +206,92 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.p\w+/) { die "ERROR, problem with drawing"; }
     $output = `cat $dir.bacteria.drawtab`;
     if($output !~ /infocontent\s+1\s+2.\d+\s+2\s+6\s*infocontent/) { die "ERROR, problem with drawing"; }
-    if($output !~ /span\s+1\s+0.4\d+\s+3\s*span/)                  { die "ERROR, problem with drawing"; } 
+    if($output !~ /span\s+1\s+0.4\d+\s+4\s*span/)                  { die "ERROR, problem with drawing"; } 
     remove_files              (".", "bacteria.draw");
     remove_files              (".", "bacteria.ssu-draw");
     remove_files              (".", "$dir.bacteria.stk");
 }
 $testctr++;
 
-# Test --mask-key $mask_key_in
+# Test -d
+if(($testnum eq "") || ($testnum == $testctr)) {
+    # without -a
+    run_draw                  ($dir, "-d", $testctr);
+    check_for_files           ($dir, $dir, $testctr, \@name_A, ".drawtab");
+    check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
+    check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
+    check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".pdf", ".ps");
+    $output = `cat $dir/$dir.bacteria.drawtab`;
+    if($output !~ /infocontent\s+1\s+2.\d+\s+2\s+6\s+1\s*infocontent/) { die "ERROR, problem with drawing"; }
+    if($output !~ /span\s+1\s+0.4\d+\s+4\s+1\s*span/)                  { die "ERROR, problem with drawing"; } 
+    $output = `cat $dir/$dir.ssu-draw.log`;
+    if($output !~ /Executing\:\s+ssu-esl-ssdraw.+\-\-mask\s+/)         { die "ERROR, problem with drawing"; } 
+    remove_files              ($dir, "draw");
+    remove_files              ($dir, "\.ps");
+    remove_files              ($dir, "\.pdf");
+
+    # with -a
+    run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "-d -a", $testctr);
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".drawtab");
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
+    check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
+    check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".pdf", ".ps");
+    $output = `cat $dir.bacteria.ssu-draw.sum`;
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.p\w+/) { die "ERROR, problem with drawing"; }
+    $output = `cat $dir.bacteria.drawtab`;
+    if($output !~ /infocontent\s+1\s+2.\d+\s+2\s+6\s+1\s*infocontent/) { die "ERROR, problem with drawing"; }
+    if($output !~ /span\s+1\s+0.4\d+\s+4\s+1\s*span/)                  { die "ERROR, problem with drawing"; } 
+    $output = `cat $dir.bacteria.ssu-draw.log`;
+    if($output !~ /Executing\:\s+ssu-esl-ssdraw.+\-\-mask\s+/)         { die "ERROR, problem with drawing"; } 
+    remove_files              (".", "bacteria.draw");
+    remove_files              (".", "bacteria.ssu-draw");
+}
+$testctr++;
+
+# Test -f with -a (on $dir.bacteria.stk in cwd/ freshly created foo.bacteria.mask in $dir/)
+if(($testnum eq "") || ($testnum == $testctr)) {
+    run_mask                  ($dir, "", $testctr);
+    check_for_files           ($dir, $dir, $testctr, \@name_A, ".mask");
+    system("cp " . $dir . "/" . $dir . ".bacteria.stk $dir.bacteria.stk");
+    $in_mask_file = $dir . "/" . $dir . ".bacteria.mask";
+    run_draw                  ($dir . ".bacteria.stk", "-a -f $in_mask_file", $testctr);
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".drawtab");
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
+    check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
+    check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".pdf", ".ps");
+    $output = `cat $dir.bacteria.ssu-draw.sum`;
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.p\w+/) { die "ERROR, problem with drawing"; }
+    $output = `cat $dir.bacteria.drawtab`;
+    if($output !~ /infocontent\s+1\s+2.\d+\s+2\s+6\s+1\s*infocontent/) { die "ERROR, problem with drawing"; }
+    if($output !~ /span\s+1\s+0.4\d+\s+4\s+1\s*span/)                  { die "ERROR, problem with drawing"; } 
+    $output = `cat $dir.bacteria.ssu-draw.log`;
+    if($output !~ /Executing\:\s+ssu-esl-ssdraw.+\-\-mask\s+$in_mask_file/) { die "ERROR, problem with drawing"; } 
+    remove_files              (".", "bacteria.draw");
+    remove_files              (".", "bacteria.ssu-draw");
+    remove_files              (".", "$dir.bacteria.stk");
+    remove_files              ($dir, "mask");
+
+    # test the negative, using no -f should cause ssu-draw to *not* use a mask
+    system("cp " . $dir . "/" . $dir . ".bacteria.stk $dir.bacteria.stk");
+    run_draw                  ($dir . ".bacteria.stk", "-a", $testctr);
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".drawtab");
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
+    check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
+    check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".pdf", ".ps");
+    $output = `cat $dir.bacteria.ssu-draw.sum`;
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.p\w+/) { die "ERROR, problem with drawing"; }
+    $output = `cat $dir.bacteria.drawtab`;
+    if($output !~ /infocontent\s+1\s+2.\d+\s+2\s+6\s*infocontent/) { die "ERROR, problem with drawing"; }
+    if($output !~ /span\s+1\s+0.4\d+\s+4\s*span/)                  { die "ERROR, problem with drawing"; } 
+    $output = `cat $dir.bacteria.ssu-draw.log`;
+    if($output =~ /Executing\:\s+ssu-esl-ssdraw.+\-\-mask\s+$in_mask_file/) { die "ERROR, problem with drawing"; } 
+    remove_files              (".", "bacteria.draw");
+    remove_files              (".", "bacteria.ssu-draw");
+    remove_files              (".", "$dir.bacteria.stk");
+}
+$testctr++;
+
+# Test -k $mask_key_in
 if(($testnum eq "") || ($testnum == $testctr)) {
     # first make the required input masks with the maskkey 
     foreach $name (@name_A) {
@@ -148,7 +301,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
 	if ($? != 0) { die "FAIL: cp command failed unexpectedly";}
     }
     # without -a 
-    run_draw                  ($dir, "--mask-key $mask_key_in", $testctr);
+    run_draw                  ($dir, "-k $mask_key_in", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@name_A, ".drawtab");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
@@ -159,11 +312,11 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     if($output !~ /$dir.eukarya.stk\s+$dir.eukarya.p\w+/)    { die "ERROR, problem with drawing"; }
     $output = `cat $dir/$dir.bacteria.drawtab`;
     if($output !~ /infocontent\s+1\s+2.\d+\s+2\s+6\s+1\s*infocontent/) { die "ERROR, problem with drawing"; }
-    if($output !~ /span\s+1\s+0.4\d+\s+3\s+1\s*span/)                  { die "ERROR, problem with drawing"; } 
+    if($output !~ /span\s+1\s+0.4\d+\s+4\s+1\s*span/)                  { die "ERROR, problem with drawing"; } 
     remove_files              ($dir, "draw");
     remove_files              ($dir, "\.ps");
     remove_files              ($dir, "\.pdf");
-    foreach $name (@names_A) {
+    foreach $name (@name_A) {
 	$newmaskfile  = $dir . "/" . $name . "." . $mask_key_in . ".mask";
 	remove_files(".", $newmaskfile);
     }
@@ -175,7 +328,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
 	system("cp $maskfile $newmaskfile");
 	if ($? != 0) { die "FAIL: cp command failed unexpectedly";}
     }
-    run_draw                  ($dir . "/" . $dir . ".eukarya.stk", "--mask-key $mask_key_in -a", $testctr);
+    run_draw                  ($dir . "/" . $dir . ".eukarya.stk", "-k $mask_key_in -a", $testctr);
     check_for_files           (".", $dir, $testctr, \@euk_only_A, ".drawtab");
     check_for_files           (".", $dir, $testctr, \@euk_only_A, ".ssu-draw.sum");
     check_for_files           (".", $dir, $testctr, \@euk_only_A, ".ssu-draw.log");
@@ -184,7 +337,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     if($output !~ /$dir.eukarya.stk\s+$dir.eukarya.p\w+/)    { die "ERROR, problem with drawing"; }
     $output = `cat $dir.eukarya.drawtab`;
     if($output !~ /infocontent\s+1\s+1.08\d+\s+3\s+3\s+1\s*infocontent/) { die "ERROR, problem with drawing"; }
-    if($output !~ /span\s+1\s+0.6\d+\s+4\s+1\s*span/)                  { die "ERROR, problem with drawing"; } 
+    if($output !~ /span\s+1\s+0.6\d+\s+5\s+1\s*span/)                  { die "ERROR, problem with drawing"; } 
     remove_files              (".", "eukarya.draw");
     remove_files              (".", "eukarya.ssu-draw");
     foreach $name (@euk_only_A) {
@@ -200,7 +353,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
 	if ($? != 0) { die "FAIL: cp command failed unexpectedly";}
     }
     # without -a 
-    run_draw                  ($dir, "--mask-key $mask_key_in", $testctr);
+    run_draw                  ($dir, "-k $mask_key_in", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@name_A, ".drawtab");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
@@ -211,11 +364,11 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     if($output !~ /$dir.eukarya.stk\s+$dir.eukarya.p\w+/)    { die "ERROR, problem with drawing"; }
     $output = `cat $dir/$dir.bacteria.drawtab`;
     if($output !~ /infocontent\s+1\s+2.\d+\s+2\s+6\s+1\s*infocontent/) { die "ERROR, problem with drawing"; }
-    if($output !~ /span\s+1\s+0.4\d+\s+3\s+1\s*span/)                  { die "ERROR, problem with drawing"; } 
+    if($output !~ /span\s+1\s+0.4\d+\s+4\s+1\s*span/)                  { die "ERROR, problem with drawing"; } 
     remove_files              ($dir, "draw");
     remove_files              ($dir, "\.ps");
     remove_files              ($dir, "\.pdf");
-    foreach $name (@names_A) {
+    foreach $name (@name_A) {
 	$newmaskfile  = $name . "." . $mask_key_in . ".mask";
 	remove_files(".", $newmaskfile);
     }
@@ -236,7 +389,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     if($output !~ /$dir.eukarya.stk\s+$dir.eukarya.p\w+/)    { die "ERROR, problem with drawing"; }
     $output = `cat $dir/$dir.bacteria.drawtab`;
     if($output !~ /infocontent\s+1\s+2.\d+\s+2\s+6\s*infocontent/) { die "ERROR, problem with drawing"; }
-    if($output !~ /span\s+1\s+0.4\d+\s+3\s*span/)                  { die "ERROR, problem with drawing"; } 
+    if($output !~ /span\s+1\s+0.4\d+\s+4\s*span/)                  { die "ERROR, problem with drawing"; } 
     remove_files              (".", "bacteria.draw");
     remove_files              (".", "bacteria.ssu-draw");
 
@@ -250,11 +403,119 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     if($output !~ /$dir.eukarya.stk\s+$dir.eukarya.p\w+/)    { die "ERROR, problem with drawing"; }
     $output = `cat $dir.eukarya.drawtab`;
     if($output !~ /infocontent\s+1\s+1.08\d+\s+3\s+3\s*infocontent/) { die "ERROR, problem with drawing"; }
-    if($output !~ /span\s+1\s+0.6\d+\s+4\s*span/)                  { die "ERROR, problem with drawing"; } 
+    if($output !~ /span\s+1\s+0.6\d+\s+5\s*span/)                  { die "ERROR, problem with drawing"; } 
     remove_files              (".", "eukarya.draw");
     remove_files              (".", "eukarya.ssu-draw");
 }
 $testctr++;
+
+####################################
+# Miscellaneous input/output options
+####################################
+# tests only --ifile, --key-out, --mask-key
+# --no-mask is tested above.
+# --ps2pdf is not tested b/c it is hard to test due to non-portability
+# --ps-only is tested below.
+
+# Test --ifile with -a (on $dir.bacteria.stk in cwd/ and $dir.bacteria.ifile in $dir/)
+if(($testnum eq "") || ($testnum == $testctr)) {
+    system("cp " . $dir . "/" . $dir . ".bacteria.stk $dir.bacteria.stk");
+    $ifile = $dir . "/" . $dir . ".bacteria.ifile";
+    run_draw                  ($dir . ".bacteria.stk", "-a --ifile $ifile", $testctr);
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".drawtab");
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
+    check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
+    check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".pdf", ".ps");
+    $output = `cat $dir.bacteria.ssu-draw.sum`;
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.p\w+/) { die "ERROR, problem with drawing"; }
+    $output = `cat $dir.bacteria.drawtab`;
+    if($output !~ /infocontent\s+1\s+2.\d+\s+2\s+6\s*infocontent/) { die "ERROR, problem with drawing"; }
+    if($output !~ /span\s+1\s+0.4\d+\s+4\s*span/)                  { die "ERROR, problem with drawing"; } 
+    $output = `cat $dir.bacteria.ssu-draw.log`;
+    if($output !~ /Executing\:\s+ssu-esl-ssdraw.+\-\-ifile\s+$ifile/) { die "ERROR, problem with drawing"; } 
+    remove_files              (".", "bacteria.draw");
+    remove_files              (".", "bacteria.ssu-draw");
+    remove_files              (".", "$dir.bacteria.stk");
+}
+$testctr++;
+
+# Test --key-out
+if(($testnum eq "") || ($testnum == $testctr)) {
+    # without -a
+    run_draw                  ($dir, "--key-out $draw_key_out", $testctr);
+    check_for_files           ($dir, $dir, $testctr, \@name_A, ".$draw_key_out.drawtab");
+    check_for_files           ($dir, $dir . "." . $draw_key_out, $testctr, \@ssudraw_only_A, ".sum");
+    check_for_files           ($dir, $dir . "." . $draw_key_out, $testctr, \@ssudraw_only_A, ".log");
+    check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".$draw_key_out.pdf", ".$draw_key_out.ps");
+    $output = `cat $dir/$dir.$draw_key_out.ssu-draw.sum`;
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.$draw_key_out.p\w+/)   { die "ERROR, problem with drawing"; }
+    $output = `cat $dir/$dir.bacteria.$draw_key_out.drawtab`;
+    if($output !~ /infocontent\s+1\s+2.\d+\s+2\s+6\s*infocontent/) { die "ERROR, problem with drawing"; }
+    if($output !~ /span\s+1\s+0.4\d+\s+4\s*span/)                 { die "ERROR, problem with drawing"; } 
+    remove_files              ($dir, "draw");
+    remove_files              ($dir, "\.ps");
+    remove_files              ($dir, "\.pdf");
+
+    # with -a
+    run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "--key-out $draw_key_out -a", $testctr);
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".$draw_key_out.drawtab");
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".$draw_key_out.ssu-draw.sum");
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".$draw_key_out.ssu-draw.log");
+    check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".$draw_key_out.pdf", ".$draw_key_out.ps");
+    $output = `cat $dir.bacteria.$draw_key_out.ssu-draw.sum`;
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.$draw_key_out.p\w+/) { die "ERROR, problem with drawing"; }
+    $output = `cat $dir.bacteria.$draw_key_out.drawtab`;
+    if($output !~ /infocontent\s+1\s+2.\d+\s+2\s+6\s*infocontent/) { die "ERROR, problem with drawing"; }
+    if($output !~ /span\s+1\s+0.4\d+\s+4\s*span/)                  { die "ERROR, problem with drawing"; } 
+    remove_files              (".", "bacteria.$draw_key_out.draw");
+    remove_files              (".", "bacteria.$draw_key_out.ssu-draw");
+}
+$testctr++;
+
+
+# Test 'ssu-mask --key-out'; 'ssu-draw --mask-key';
+if(($testnum eq "") || ($testnum == $testctr)) {
+    $mykey = "test-key";
+
+    # without -a
+    run_mask                  ($dir, "--key-out $mykey", $testctr);
+    check_for_files           ($dir, $dir, $testctr, \@name_A, ("." . $mykey . ".mask"));
+    run_draw                  ($dir, "--mask-key $mykey --key-out $mykey", $testctr);
+    check_for_files           ($dir, $dir, $testctr, \@name_A, ".$mykey.drawtab");
+    check_for_files           ($dir, $dir . "." . $mykey, $testctr, \@ssudraw_only_A, ".sum");
+    check_for_files           ($dir, $dir . "." . $mykey, $testctr, \@ssudraw_only_A, ".log");
+    check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".$mykey.pdf", ".$mykey.ps");
+    $output = `cat $dir/$dir.$mykey.ssu-draw.sum`;
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.$mykey.p\w+/)   { die "ERROR, problem with drawing"; }
+    $output = `cat $dir/$dir.bacteria.$mykey.drawtab`;
+    if($output !~ /infocontent\s+1\s+2.\d+\s+2\s+6\s+1\s*infocontent/) { die "ERROR, problem with drawing"; }
+    if($output !~ /span\s+1\s+0.4\d+\s+4\s+1\s*span/)                 { die "ERROR, problem with drawing"; } 
+    remove_files              ($dir, "draw");
+    remove_files              ($dir, "\.ps");
+    remove_files              ($dir, "\.pdf");
+    remove_files              ($dir, "mask");
+
+    # with -a
+    run_mask                  ($dir . "/" . $dir . ".bacteria.stk", "--key-out $mykey -a", $testctr);
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ("." . $mykey . ".mask"));
+    run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "--mask-key $mykey --key-out $mykey -a", $testctr);
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".$mykey.drawtab");
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".$mykey.ssu-draw.sum");
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".$mykey.ssu-draw.log");
+    check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".$mykey.pdf", ".$mykey.ps");
+    $output = `cat $dir.bacteria.$mykey.ssu-draw.sum`;
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.$mykey.p\w+/) { die "ERROR, problem with drawing"; }
+    $output = `cat $dir.bacteria.$mykey.drawtab`;
+    if($output !~ /infocontent\s+1\s+2.\d+\s+2\s+6\s+1\s*infocontent/) { die "ERROR, problem with drawing"; }
+    if($output !~ /span\s+1\s+0.4\d+\s+4\s+1\s*span/)                  { die "ERROR, problem with drawing"; } 
+    remove_files              (".", "bacteria.$mykey.draw");
+    remove_files              (".", "bacteria.$mykey.ssu-draw");
+    remove_files              (".", "bacteria.mask");
+    remove_files              (".", "bacteria.ssu-mask");
+}
+$testctr++;
+
+
 
 ###############################################
 # Options for 1-page alignment summary diagrams
@@ -269,7 +530,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
     check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".prob.pdf", ".prob.ps");
     $output = `cat $dir/$dir.ssu-draw.sum`;
-    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.prob.p\w+/)     { die "ERROR, problem with drawing"; }
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.prob.p\w+\s+1\s*/)     { die "ERROR, problem with drawing"; }
     $output = `cat $dir/$dir.bacteria.prob.drawtab`;
     if($output !~ /avgpostprob\s+1\s+0.97\d+\s+2\s+6\s*avgpostprob/) { die "ERROR, problem with drawing"; }
     remove_files              ($dir, "draw");
@@ -283,7 +544,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
     check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".prob.pdf", ".prob.ps");
     $output = `cat $dir.bacteria.ssu-draw.sum`;
-    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.prob.p\w+/)        { die "ERROR, problem with drawing"; }
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.prob.p\w+\s+1\s*/)        { die "ERROR, problem with drawing"; }
     $output = `cat $dir.bacteria.prob.drawtab`;
     if($output !~ /avgpostprob\s+1\s+0.97\d+\s+2\s+6\s*avgpostprob/) { die "ERROR, problem with drawing"; }
     remove_files              (".", "bacteria.prob");
@@ -300,7 +561,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
     check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".ifreq.pdf", ".ifreq.ps");
     $output = `cat $dir/$dir.ssu-draw.sum`;
-    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.ifreq.p\w+/)   { die "ERROR, problem with drawing"; }
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.ifreq.p\w+\s+1\s*/)   { die "ERROR, problem with drawing"; }
     $output = `cat $dir/$dir.bacteria.ifreq.drawtab`;
     if($output !~ /insertfreq\s+73\s+0.33\d+\s+3\s+5\s*insertfreq/) { die "ERROR, problem with drawing"; }
     remove_files              ($dir, "draw");
@@ -314,7 +575,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
     check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".ifreq.pdf", ".ifreq.ps");
     $output = `cat $dir.bacteria.ssu-draw.sum`;
-    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.ifreq.p\w+/)   { die "ERROR, problem with drawing"; }
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.ifreq.p\w+\s+1\s*/)   { die "ERROR, problem with drawing"; }
     $output = `cat $dir.bacteria.ifreq.drawtab`;
     if($output !~ /insertfreq\s+73\s+0.33\d+\s+3\s+5\s*insertfreq/) { die "ERROR, problem with drawing"; }
     remove_files              (".", "bacteria.ifreq");
@@ -331,7 +592,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
     check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".iavglen.pdf", ".iavglen.ps");
     $output = `cat $dir/$dir.ssu-draw.sum`;
-    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.iavglen.p\w+/)               { die "ERROR, iavglenlem with drawing"; }
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.iavglen.p\w+\s+1\s*/)               { die "ERROR, iavglenlem with drawing"; }
     $output = `cat $dir/$dir.bacteria.iavglen.drawtab`;
     if($output !~ /insertavglen\s+73\s+1.00\d+\s+0.33\d+\s+3\s+1\s*insertavglen/) { die "ERROR, problem with drawing"; }
     remove_files              ($dir, "draw");
@@ -362,21 +623,21 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
     check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".dall.pdf", ".dall.ps");
     $output = `cat $dir/$dir.ssu-draw.sum`;
-    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.dall.p\w+/) { die "ERROR, problem with drawing"; }
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.dall.p\w+\s+1\s*/) { die "ERROR, problem with drawing"; }
     $output = `cat $dir/$dir.bacteria.dall.drawtab`;
     if($output !~ /deleteall\s+99\s+0.6\d+\s+4\s*deleteall/)     { die "ERROR, problem with drawing"; }
     remove_files              ($dir, "draw");
     remove_files              ($dir, "\.ps");
     remove_files              ($dir, "\.pdf");
 
-    # with -a
+    # with -a 
     run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "--dall --no-aln -a", $testctr);
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".dall.drawtab");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
     check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".dall.pdf", ".dall.ps");
     $output = `cat $dir.bacteria.ssu-draw.sum`;
-    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.dall.p\w+/) { die "ERROR, problem with drawing"; }
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.dall.p\w+\s+1\s*/) { die "ERROR, problem with drawing"; }
     $output = `cat $dir.bacteria.dall.drawtab`;
     if($output !~ /deleteall\s+99\s+0.6\d+\s+4\s*deleteall/)     { die "ERROR, problem with drawing"; }
     remove_files              (".", "bacteria.dall");
@@ -393,7 +654,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
     check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".dint.pdf", ".dint.ps");
     $output = `cat $dir/$dir.ssu-draw.sum`;
-    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.dint.p\w+/) { die "ERROR, problem with drawing"; }
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.dint.p\w+\s+1\s*/) { die "ERROR, problem with drawing"; }
     $output = `cat $dir/$dir.bacteria.dint.drawtab`;
     if($output !~ /deleteint\s+99\s+0.2\d+\s+3\s+2\s*deleteint/) { die "ERROR, problem with drawing"; }
     remove_files              ($dir, "draw");
@@ -407,7 +668,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
     check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".dint.pdf", ".dint.ps");
     $output = `cat $dir.bacteria.ssu-draw.sum`;
-    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.dint.p\w+/) { die "ERROR, problem with drawing"; }
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.dint.p\w+\s+1\s*/) { die "ERROR, problem with drawing"; }
     $output = `cat $dir.bacteria.dint.drawtab`;
     if($output !~ /deleteint\s+99\s+0.2\d+\s+3\s+2\s*deleteint/) { die "ERROR, problem with drawing"; }
     remove_files              (".", "bacteria.dint");
@@ -424,9 +685,9 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
     check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".span.pdf", ".span.ps");
     $output = `cat $dir/$dir.ssu-draw.sum`;
-    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.span.p\w+/) { die "ERROR, problem with drawing"; }
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.span.p\w+\s+1\s*/) { die "ERROR, problem with drawing"; }
     $output = `cat $dir/$dir.bacteria.span.drawtab`;
-    if($output !~ /span\s+1\s+0.4\d+\s+3\s*span/) { die "ERROR, problem with drawing"; }
+    if($output !~ /span\s+1\s+0.4\d+\s+4\s*span/) { die "ERROR, problem with drawing"; }
     remove_files              ($dir, "draw");
     remove_files              ($dir, "\.ps");
     remove_files              ($dir, "\.pdf");
@@ -440,7 +701,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     $output = `cat $dir.bacteria.ssu-draw.sum`;
     if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.span.p\w+/) { die "ERROR, problem with drawing"; }
     $output = `cat $dir.bacteria.span.drawtab`;
-    if($output !~ /span\s+1\s+0.4\d+\s+3\s*span/) { die "ERROR, problem with drawing"; }
+    if($output !~ /span\s+1\s+0.4\d+\s+4\s*span/) { die "ERROR, problem with drawing"; }
     remove_files              (".", "bacteria.span");
     remove_files              (".", "bacteria.ssu-draw");
 }
@@ -455,7 +716,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
     check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".info.pdf", ".info.ps");
     $output = `cat $dir/$dir.ssu-draw.sum`;
-    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.info.p\w+/) { die "ERROR, problem with drawing"; }
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.info.p\w+\s+1\s*/) { die "ERROR, problem with drawing"; }
     $output = `cat $dir/$dir.bacteria.info.drawtab`;
     if($output !~ /infocontent\s+1\s+2.0\d+\s+2\s+6\s*infocontent/) { die "ERROR, problem with drawing"; }
     remove_files              ($dir, "draw");
@@ -469,7 +730,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
     check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".info.pdf", ".info.ps");
     $output = `cat $dir.bacteria.ssu-draw.sum`;
-    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.info.p\w+/) { die "ERROR, problem with drawing"; }
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.info.p\w+\s+1\s*/) { die "ERROR, problem with drawing"; }
     $output = `cat $dir.bacteria.info.drawtab`;
     if($output !~ /infocontent\s+1\s+2.0\d+\s+2\s+6\s*infocontent/) { die "ERROR, problem with drawing"; }
     remove_files              (".", "bacteria.info");
@@ -486,7 +747,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
     check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".mutinfo.pdf", ".mutinfo.ps");
     $output = `cat $dir/$dir.ssu-draw.sum`;
-    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.mutinfo.p\w+/) { die "ERROR, problem with drawing"; }
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.mutinfo.p\w+\s+1\s*/) { die "ERROR, problem with drawing"; }
     $output = `cat $dir/$dir.bacteria.mutinfo.drawtab`;
     if($output !~ /mutualinfo\s+62\s+140\s+246\s+1.18\d+\s+1.18\d+\s+0.40\d+\s+4\s+3\s*mutualinfo/) { die "ERROR, problem with drawing"; }
     remove_files              ($dir, "draw");
@@ -500,7 +761,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
     check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".mutinfo.pdf", ".mutinfo.ps");
     $output = `cat $dir.bacteria.ssu-draw.sum`;
-    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.mutinfo.p\w+/)                                 { die "ERROR, problem with drawing"; }
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.mutinfo.p\w+\s+1\s*/)                                 { die "ERROR, problem with drawing"; }
     $output = `cat $dir.bacteria.mutinfo.drawtab`;
     if($output !~ /mutualinfo\s+62\s+140\s+246\s+1.18\d+\s+1.18\d+\s+0.40\d+\s+4\s+3\s*mutualinfo/) { die "ERROR, problem with drawing"; }
     remove_files              (".", "bacteria.mutinfo");
@@ -518,21 +779,21 @@ if(($testnum eq "") || ($testnum == $testctr)) {
 	if ($? != 0) { die "FAIL: cp command failed unexpectedly";}
     }
     # without -a 
-    run_draw                  ($dir, "--mutinfo --mask-key $mask_key_in", $testctr);
+    run_draw                  ($dir, "--mutinfo --no-aln -k $mask_key_in", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@name_A, ".mutinfo.drawtab");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
     check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".mutinfo.pdf", ".mutinfo.ps");
     $output = `cat $dir/$dir.ssu-draw.sum`;
-    if($output !~ /$dir.archaea.stk\s+$dir.archaea.mutinfo.p\w+/)    { die "ERROR, problem with drawing"; }
-    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.mutinfo.p\w+/)  { die "ERROR, problem with drawing"; }
-    if($output !~ /$dir.eukarya.stk\s+$dir.eukarya.mutinfo.p\w+/)    { die "ERROR, problem with drawing"; }
+    if($output !~ /$dir.archaea.stk\s+$dir.archaea.mutinfo.p\w+\s+1\s*/)    { die "ERROR, problem with drawing"; }
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.mutinfo.p\w+\s+1\s*/)  { die "ERROR, problem with drawing"; }
+    if($output !~ /$dir.eukarya.stk\s+$dir.eukarya.mutinfo.p\w+\s+1\s*/)    { die "ERROR, problem with drawing"; }
     $output = `cat $dir/$dir.bacteria.mutinfo.drawtab`;
     if($output !~ /mutualinfo\s+62\s+140\s+246\s+1.18\d+\s+1.18\d+\s+0.40\d+\s+4\s+3\s+0\s+1\s*mutualinfo/) { die "ERROR, problem with drawing"; }
     remove_files              ($dir, "draw");
     remove_files              ($dir, "\.ps");
     remove_files              ($dir, "\.pdf");
-    foreach $name (@names_A) {
+    foreach $name (@name_A) {
 	$newmaskfile  = $dir . "/" . $name . "." . $mask_key_in . ".mask";
 	remove_files(".", $newmaskfile);
     }
@@ -544,13 +805,13 @@ if(($testnum eq "") || ($testnum == $testctr)) {
 	system("cp $maskfile $newmaskfile");
 	if ($? != 0) { die "FAIL: cp command failed unexpectedly";}
     }
-    run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "--mutinfo --mask-key $mask_key_in -a", $testctr);
+    run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "--mutinfo -k $mask_key_in -a", $testctr);
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".mutinfo.drawtab");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
     check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".mutinfo.pdf", ".mutinfo.ps");
     $output = `cat $dir.bacteria.ssu-draw.sum`;
-    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.p\w+/)    { die "ERROR, problem with drawing"; }
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.mutinfo.p\w+\s+1\s*/)    { die "ERROR, problem with drawing"; }
     $output = `cat $dir.bacteria.drawtab`;
     if($output !~ /mutualinfo\s+62\s+140\s+246\s+1.18\d+\s+1.18\d+\s+0.40\d+\s+4\s+3\s+0\s+1\s*mutualinfo/) { die "ERROR, problem with drawing"; }
     remove_files              (".", "bacteria.mutinfo");
@@ -562,390 +823,53 @@ if(($testnum eq "") || ($testnum == $testctr)) {
 }
 $testctr++;
 
+
+##################################################################
+# Options for drawing structure diagrams for individual sequences:
+##################################################################
+
 # Test --indi-all
 if(($testnum eq "") || ($testnum == $testctr)) {
     # without -a
     run_draw                  ($dir, "--indi-all --no-aln", $testctr);
-    exit 0;
-    check_for_files           ($dir, $dir, $testctr, \@name_A, ".mutinfo.drawtab");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
-    check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".mutinfo.pdf", ".mutinfo.ps");
+    check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".indiall.ps", ".indiall.pdf");
     $output = `cat $dir/$dir.ssu-draw.sum`;
-    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.mutinfo.p\w+/) { die "ERROR, problem with drawing"; }
-    $output = `cat $dir/$dir.bacteria.mutinfo.drawtab`;
-    if($output !~ /mutualinfo\s+62\s+140\s+246\s+1.18\d+\s+1.18\d+\s+0.40\d+\s+4\s+3\s*mutualinfo/) { die "ERROR, problem with drawing"; }
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.indiall.p\w+\s+10\s*/) { die "ERROR, problem with drawing"; }
+    # NOTE: no drawtab file is created, and the postscript is not checked (I could do that, but don't)
     remove_files              ($dir, "draw");
     remove_files              ($dir, "\.ps");
     remove_files              ($dir, "\.pdf");
 
     # with -a
-    run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "--mutinfo --no-aln -a", $testctr);
-    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".mutinfo.drawtab");
+    run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "--indi-all --no-aln -a", $testctr);
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
-    check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".mutinfo.pdf", ".mutinfo.ps");
+    check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".indiall.pdf", ".indiall.ps");
     $output = `cat $dir.bacteria.ssu-draw.sum`;
-    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.mutinfo.p\w+/)                                 { die "ERROR, problem with drawing"; }
-    $output = `cat $dir.bacteria.mutinfo.drawtab`;
-    if($output !~ /mutualinfo\s+62\s+140\s+246\s+1.18\d+\s+1.18\d+\s+0.40\d+\s+4\s+3\s*mutualinfo/) { die "ERROR, problem with drawing"; }
-    remove_files              (".", "bacteria.mutinfo");
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.indiall.p\w+\s+10\s*/) { die "ERROR, problem with drawing"; }
+    # NOTE: no drawtab file is created, and the postscript is not checked (I could do that, but don't)
+    remove_files              (".", "bacteria.indiall");
     remove_files              (".", "bacteria.ssu-draw");
+
+    # without -a, but with --no-prob
+    run_draw                  ($dir, "--indi-all --no-aln --no-prob", $testctr);
+    check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
+    check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
+    check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".indiall.ps", ".indiall.pdf");
+    $output = `cat $dir/$dir.ssu-draw.sum`;
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.indiall.p\w+\s+5/) { die "ERROR, problem with drawing"; }
+    # NOTE: no drawtab file is created, and the postscript is not checked (I could do that, but don't)
+    remove_files              ($dir, "draw");
+    remove_files              ($dir, "\.ps");
+    remove_files              ($dir, "\.pdf");
 }
 $testctr++;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-exit 0;
-
-# Test --pt
+# Test --indi-list
 if(($testnum eq "") || ($testnum == $testctr)) {
-    run_mask                  ($dir, "--pt 0.5", $testctr);
-    check_for_files           ($dir, $dir, $testctr, \@name_A, ".mask");
-    check_for_files           ($dir, $dir, $testctr, \@name_A, ".mask.stk");
-    check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".mask.pdf", ".mask.ps");
-    $output = `cat $dir/$dir.ssu-mask.sum`;
-    if($output !~ /$dir.bacteria.mask\s+output\s+mask\s+1582\s+1570\s+12/) { die "ERROR, problem with masking"; }
-    remove_files              ($dir, "mask");
-
-    #with -a
-    run_mask                  ($dir . "/" . $dir . ".bacteria.stk", "--pt 0.5 -a", $testctr);
-    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".mask");
-    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".mask.stk");
-    check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".mask.pdf", "mask.ps");
-    $output = `cat $dir.bacteria.ssu-mask.sum`;
-    if($output !~ /$dir.bacteria.mask\s+output\s+mask\s+1582\s+1570\s+12/) { die "ERROR, problem with masking"; }
-    remove_files              (".", "bacteria.mask");
-    remove_files              (".", "bacteria.ssu-mask");
-}
-$testctr++;
-
-# Test --pf and --pt
-if(($testnum eq "") || ($testnum == $testctr)) {
-    # without -a
-    run_mask                  ($dir, "--pt 0.5 --pf 0.75", $testctr);
-    check_for_files           ($dir, $dir, $testctr, \@name_A, ".mask");
-    check_for_files           ($dir, $dir, $testctr, \@name_A, ".mask.stk");
-    check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".mask.pdf", ".mask.ps");
-    $output = `cat $dir/$dir.ssu-mask.sum`;
-    if($output !~ /$dir.bacteria.mask\s+output\s+mask\s+1582\s+1571\s+11/) { die "ERROR, problem with masking"; }
-    remove_files              ($dir, "mask");
-
-    # with -a
-    run_mask                  ($dir . "/" . $dir . ".bacteria.stk", "--pt 0.5 --pf 0.75 -a", $testctr);
-    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".mask");
-    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".mask.stk");
-    check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".mask.pdf", "mask.ps");
-    $output = `cat $dir.bacteria.ssu-mask.sum`;
-    if($output !~ /$dir.bacteria.mask\s+output\s+mask\s+1582\s+1571\s+11/) { die "ERROR, problem with masking"; }
-    remove_files              (".", "bacteria.mask");
-    remove_files              (".", "bacteria.ssu-mask");
-}
-$testctr++;
-
-# Test --rfonly
-if(($testnum eq "") || ($testnum == $testctr)) {
-    # without -a
-    run_mask                  ($dir, "--rfonly", $testctr);
-    check_for_files           ($dir, $dir, $testctr, \@name_A, ".mask");
-    check_for_files           ($dir, $dir, $testctr, \@name_A, ".mask.stk");
-    check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".mask.pdf", ".mask.ps");
-    $output = `cat $dir/$dir.ssu-mask.sum`;
-    if($output !~ /$dir.archaea.mask\s+output\s+mask\s+1508\s+1508\s+0/)  { die "ERROR, problem with masking"; }
-    if($output !~ /$dir.bacteria.mask\s+output\s+mask\s+1582\s+1582\s+0/) { die "ERROR, problem with masking"; }
-    if($output !~ /$dir.eukarya.mask\s+output\s+mask\s+1881\s+1881\s+0/)  { die "ERROR, problem with masking"; }
-    remove_files              ($dir, "mask");
-
-    #with -a
-    run_mask                  ($dir . "/" . $dir . ".archaea.stk", "--rfonly -a ", $testctr);
-    check_for_files           (".", $dir, $testctr, \@arc_only_A, ".mask");
-    check_for_files           (".", $dir, $testctr, \@arc_only_A, ".mask.stk");
-    check_for_one_of_two_files(".", $dir, $testctr, \@arc_only_A, ".mask.pdf", "mask.ps");
-    $output = `cat $dir.archaea.ssu-mask.sum`;
-    if($output !~ /$dir.archaea.mask\s+output\s+mask\s+1508\s+1508\s+0/)  { die "ERROR, problem with masking"; }
-    if($output =~ /$dir.bacteria.mask\s+output\s+mask\s+1582\s+1582\s+0/) { die "ERROR, problem with masking"; }
-    if($output =~ /$dir.eukarya.mask\s+output\s+mask\s+1881\s+1881\s+0/)  { die "ERROR, problem with masking"; }
-    remove_files              (".", "archaea.mask");
-    remove_files              (".", "archaea.ssu-mask");
-}
-$testctr++;
-
-# Test --gapthresh 0.4
-if(($testnum eq "") || ($testnum == $testctr)) {
-    # without -a
-    run_mask                  ($dir, "--gapthresh 0.4", $testctr);
-    check_for_files           ($dir, $dir, $testctr, \@name_A, ".mask");
-    check_for_files           ($dir, $dir, $testctr, \@name_A, ".pmask");
-    check_for_files           ($dir, $dir, $testctr, \@name_A, ".gmask");
-    check_for_files           ($dir, $dir, $testctr, \@name_A, ".mask.stk");
-    check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".mask.pdf", ".mask.ps");
-    check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".pmask.pdf", ".pmask.ps");
-    check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".gmask.pdf", ".gmask.ps");
-    check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".maskdiff.pdf", ".maskdiff.ps");
-    $output = `cat $dir/$dir.ssu-mask.sum`;
-    if($output !~ /$dir.archaea.mask\s+output\s+mask\s+1508\s+1435\s+73/)         { die "ERROR, problem with masking"; }
-    if($output !~ /$dir.bacteria.pmask\s+output\s+mask\s+1582\s+1499\s+83/)       { die "ERROR, problem with masking"; }
-    if($output !~ /$dir.bacteria.gmask\s+output\s+mask\s+1582\s+1525\s+57/)       { die "ERROR, problem with masking"; }
-    if($output !~ /$dir.bacteria.mask.p\w+\s+output\s+p\w+\s+1582\s+1457\s+125/)  { die "ERROR, problem with creating mask diagram"; }
-    if($output !~ /$dir.bacteria.maskdiff.p\w+\s+output\s+p\w+\s+1582\s+\-\s+\-/) { die "ERROR, problem with creating mask diagram"; }
-    if($output !~ /$dir.bacteria.mask.stk+\s+output\s+aln+\s+1457\s+\-\s+\-/)     { die "ERROR, problem with creating mask diagram"; }
-    remove_files              ($dir, "mask");
-
-    #with -a
-    run_mask                  ($dir . "/" . $dir . ".bacteria.stk", "--gapthresh 0.4 -a", $testctr);
-    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".mask");
-    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".pmask");
-    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".gmask");
-    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".mask.stk");
-    check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".mask.pdf", ".mask.ps");
-    check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".pmask.pdf", ".pmask.ps");
-    check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".gmask.pdf", ".gmask.ps");
-    check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".maskdiff.pdf", ".maskdiff.ps");
-    $output = `cat $dir.bacteria.ssu-mask.sum`;
-    if($output !~ /$dir.bacteria.pmask\s+output\s+mask\s+1582\s+1499\s+83/)       { die "ERROR, problem with masking"; }
-    if($output !~ /$dir.bacteria.gmask\s+output\s+mask\s+1582\s+1525\s+57/)       { die "ERROR, problem with masking"; }
-    if($output !~ /$dir.bacteria.mask.p\w+\s+output\s+p\w+\s+1582\s+1457\s+125/)  { die "ERROR, problem with creating mask diagram"; }
-    if($output !~ /$dir.bacteria.maskdiff.p\w+\s+output\s+p\w+\s+1582\s+\-\s+\-/) { die "ERROR, problem with creating mask diagram"; }
-    if($output !~ /$dir.bacteria.mask.stk+\s+output\s+aln+\s+1457\s+\-\s+\-/)     { die "ERROR, problem with creating mask diagram"; }
-    remove_files              (".", "bacteria.pmask");
-    remove_files              (".", "bacteria.gmask");
-    remove_files              (".", "bacteria.mask");
-    remove_files              (".", "bacteria.ssu-mask");
-}
-$testctr++;
-
-# Test --gaponly --gapthresh 0.4
-if(($testnum eq "") || ($testnum == $testctr)) {
-    # without -a
-    run_mask                  ($dir, "--gaponly --gapthresh 0.4", $testctr);
-    check_for_files           ($dir, $dir, $testctr, \@name_A, ".mask");
-    check_for_files           ($dir, $dir, $testctr, \@name_A, ".mask.stk");
-    check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".mask.pdf", ".mask.ps");
-    $output = `cat $dir/$dir.ssu-mask.sum`;
-    if($output !~ /$dir.archaea.mask\s+output\s+mask\s+1508\s+1467\s+41/)        { die "ERROR, problem with masking"; }
-    if($output !~ /$dir.bacteria.mask.p\w+\s+output\s+p\w+\s+1582\s+1525\s+57/)  { die "ERROR, problem with creating mask diagram"; }
-    if($output !~ /$dir.bacteria.mask.stk+\s+output\s+aln+\s+1525\s+\-\s+\-/)    { die "ERROR, problem with creating mask diagram"; }
-    remove_files              ($dir, "mask");
-
-    # with -a
-    run_mask                  ($dir . "/" . $dir . ".bacteria.stk", "--gaponly --gapthresh 0.4 -a", $testctr);
-    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".mask");
-    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".mask.stk");
-    check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".mask.pdf", ".mask.ps");
-    $output = `cat $dir.bacteria.ssu-mask.sum`;
-    if($output =~ /$dir.archaea.mask\s+output\s+mask\s+1508\s+1467\s+41/)        { die "ERROR, problem with masking"; }
-    if($output !~ /$dir.bacteria.mask.p\w+\s+output\s+p\w+\s+1582\s+1525\s+57/)  { die "ERROR, problem with creating mask diagram"; }
-    if($output !~ /$dir.bacteria.mask.stk+\s+output\s+aln+\s+1525\s+\-\s+\-/)    { die "ERROR, problem with creating mask diagram"; }
-    remove_files              (".", "bacteria.mask");
-    remove_files              (".", "bacteria.ssu-mask");
-}
-$testctr++;
-
-###############################
-# Miscellaneous output options: 
-###############################
-
-# Test --afa
-if(($testnum eq "") || ($testnum == $testctr)) {
-    # without -a
-    run_mask                  ($dir, "--afa", $testctr);
-    check_for_files           ($dir, $dir, $testctr, \@name_A, ".mask");
-    check_for_files           ($dir, $dir, $testctr, \@name_A, ".mask.afa");
-    check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".mask.pdf", ".mask.ps");
-    $output = `cat $dir/$dir.ssu-mask.sum`;
-    if($output !~ /$dir.eukarya.mask.afa\s+output\s+aln\s+1634/) { die "ERROR, problem with masking"; }
-    if($output =~ /$dir.eukarya.mask.stk\s+output\s+aln\s+1634/) { die "ERROR, problem with masking"; }
-    remove_files              ($dir, "mask");
-
-    # with -a
-    run_mask                  ($dir . "/" . $dir . ".eukarya.stk", "--afa -a", $testctr);
-    check_for_files           (".", $dir, $testctr, \@euk_only_A, ".mask");
-    check_for_files           (".", $dir, $testctr, \@euk_only_A, ".mask.afa");
-    check_for_one_of_two_files(".", $dir, $testctr, \@euk_only_A, ".mask.pdf", ".mask.ps");
-    $output = `cat $dir.eukarya.ssu-mask.sum`;
-    if($output !~ /$dir.eukarya.mask.afa\s+output\s+aln\s+1634/) { die "ERROR, problem with masking"; }
-    if($output =~ /$dir.eukarya.mask.stk\s+output\s+aln\s+1634/) { die "ERROR, problem with masking"; }
-    remove_files              (".", "eukarya.mask");
-    remove_files              (".", "eukarya.ssu-mask");
-}
-$testctr++;
-
-# Test --dna
-if(($testnum eq "") || ($testnum == $testctr)) {
-    # without -a
-    run_mask                  ($dir, "--dna", $testctr);
-    check_for_files           ($dir, $dir, $testctr, \@name_A, ".mask");
-    check_for_files           ($dir, $dir, $testctr, \@name_A, ".mask.stk");
-    check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".mask.pdf", ".mask.ps");
-    $output = `cat $dir/$dir.ssu-mask.sum`;
-    if($output !~ /$dir.eukarya.mask.stk\s+output\s+aln\s+1634/) { die "ERROR, problem with masking"; }
-    remove_files              ($dir, "mask");
-
-    # with -a
-    run_mask                  ($dir . "/" . $dir . ".eukarya.stk", "--dna -a", $testctr);
-    check_for_files           (".", $dir, $testctr, \@euk_only_A, ".mask");
-    check_for_files           (".", $dir, $testctr, \@euk_only_A, ".mask.stk");
-    check_for_one_of_two_files(".", $dir, $testctr, \@euk_only_A, ".mask.pdf", ".mask.ps");
-    $output = `cat $dir.eukarya.ssu-mask.sum`;
-    if($output !~ /$dir.eukarya.mask.stk\s+output\s+aln\s+1634/) { die "ERROR, problem with masking"; }
-    remove_files              (".", "eukarya.mask");
-    remove_files              (".", "eukarya.ssu-mask");
-}
-$testctr++;
-
-# Test --key-out
-if(($testnum eq "") || ($testnum == $testctr)) {
-    # without -a
-    run_mask                  ($dir, "--key-out $mask_key_out", $testctr);
-    check_for_files           ($dir, $dir, $testctr, \@name_A, ".$mask_key_out.mask");
-    check_for_files           ($dir, $dir, $testctr, \@name_A, ".$mask_key_out.mask.stk");
-    check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".$mask_key_out.mask.pdf", ".$mask_key_out.mask.ps");
-    $output = `cat $dir/$dir.$mask_key_out.ssu-mask.sum`;
-    if($output !~ /$dir.eukarya.$mask_key_out.mask.stk\s+output\s+aln\s+1634/) { die "ERROR, problem with masking"; }
-    remove_files              ($dir, "mask");
-
-    # with -a
-    run_mask                  ($dir . "/" . $dir . ".eukarya.stk", "--key-out $mask_key_out -a", $testctr);
-    check_for_files           (".", $dir, $testctr, \@euk_only_A, ".$mask_key_out.mask");
-    check_for_files           (".", $dir, $testctr, \@euk_only_A, ".$mask_key_out.mask.stk");
-    check_for_one_of_two_files(".", $dir, $testctr, \@euk_only_A, ".$mask_key_out.mask.pdf", ".$mask_key_out.mask.ps");
-    $output = `cat $dir.eukarya.$mask_key_out.ssu-mask.sum`;
-    if($output !~ /$dir.eukarya.$mask_key_out.mask.stk\s+output\s+aln\s+1634/) { die "ERROR, problem with masking"; }
-    remove_files              (".", "eukarya." . $mask_key_out . ".mask");
-    remove_files              (".", "eukarya." . $mask_key_out . ".ssu-mask");
-}
-$testctr++;
-
-#####################################################################
-# Options for creating secondary structure diagrams displaying masks:
-#####################################################################
-# NOTE: --ps2pdf is not tested, I don't think any test of it would be portable...
-
-# Test --ps-only
-if(($testnum eq "") || ($testnum == $testctr)) {
-    #without -a
-    run_mask                  ($dir, "--ps-only", $testctr);
-    check_for_files           ($dir, $dir, $testctr, \@name_A, ".mask");
-    check_for_files           ($dir, $dir, $testctr, \@name_A, ".mask.stk");
-    check_for_files           ($dir, $dir, $testctr, \@name_A, ".mask.ps");
-    $output = `cat $dir/$dir.ssu-mask.sum`;
-    if($output !~ /$dir.archaea.mask\s+output\s+mask\s+1508\s+1449\s+59/)      { die "ERROR, problem with masking"; }
-    if($output !~ /$dir.bacteria.mask.ps\s+output\s+ps\s+1582\s+1499\s+83/)    { die "ERROR, problem with creating mask diagram"; }
-    if($output =~ /$dir.bacteria.mask.pdf\s+output\s+pdf\s+1582\s+1499\s+83/)  { die "ERROR, problem with creating mask diagram"; }
-    remove_files              ($dir, "mask");
-
-    #with -a
-    run_mask                  ($dir . "/" . $dir . ".bacteria.stk", "--ps-only -a", $testctr);
-    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".mask");
-    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".mask.stk");
-    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".mask.ps");
-    $output = `cat $dir.bacteria.ssu-mask.sum`;
-    if($output =~ /$dir.archaea.mask\s+output\s+mask\s+1508\s+1449\s+59/)      { die "ERROR, problem with masking"; }
-    if($output !~ /$dir.bacteria.mask.ps\s+output\s+ps\s+1582\s+1499\s+83/)    { die "ERROR, problem with creating mask diagram"; }
-    if($output =~ /$dir.bacteria.mask.pdf\s+output\s+pdf\s+1582\s+1499\s+83/)  { die "ERROR, problem with creating mask diagram"; }
-    remove_files              (".", "bacteria.mask");
-    remove_files              (".", "bacteria.ssu-mask");
-}
-$testctr++;
-
-# Test --no-draw
-if(($testnum eq "") || ($testnum == $testctr)) {
-    # without -a 
-    remove_files              ($dir, "mask");
-    run_mask                  ($dir, "--no-draw", $testctr);
-    check_for_files           ($dir, $dir, $testctr, \@name_A, ".mask");
-    check_for_files           ($dir, $dir, $testctr, \@name_A, ".mask.stk");
-    $output = `cat $dir/$dir.ssu-mask.sum`;
-    if($output !~ /$dir.archaea.mask\s+output\s+mask\s+1508\s+1449\s+59/)      { die "ERROR, problem with masking"; }
-    if($output =~ /$dir.bacteria.mask.ps\s+output\s+ps\s+1582\s+1499\s+83/)    { die "ERROR, problem with creating mask diagram"; }
-    if($output =~ /$dir.bacteria.mask.pdf\s+output\s+pdf\s+1582\s+1499\s+83/)  { die "ERROR, problem with creating mask diagram"; }
-    remove_files              ($dir, "mask");
-
-    # with -a
-    run_mask                  ($dir . "/" . $dir . ".bacteria.stk", "--no-draw -a", $testctr);
-    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".mask");
-    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".mask.stk");
-    $output = `cat $dir.bacteria.ssu-mask.sum`;
-    if($output =~ /$dir.archaea.mask\s+output\s+mask\s+1508\s+1449\s+59/)      { die "ERROR, problem with masking"; }
-    if($output !~ /$dir.bacteria.mask\s+output\s+mask\s+1582\s+1499\s+83/)    { die "ERROR, problem with creating mask diagram"; }
-    if($output =~ /$dir.bacteria.mask.ps\s+output\s+ps\s+1582\s+1499\s+83/)    { die "ERROR, problem with creating mask diagram"; }
-    if($output =~ /$dir.bacteria.mask.pdf\s+output\s+pdf\s+1582\s+1499\s+83/)  { die "ERROR, problem with creating mask diagram"; }
-    remove_files              (".", "bacteria.mask");
-    remove_files              (".", "bacteria.ssu-mask");
-}
-$testctr++;
-
-###################################################################################
-# Options for listing, converting, or removing sequences (no masking will be done):
-###################################################################################
-# Test --list
-if(($testnum eq "") || ($testnum == $testctr)) {
-    # without -a 
-    run_mask                  ($dir, "--list", $testctr);
-    check_for_files           ($dir, $dir, $testctr, \@name_A, ".list");
-    $output = `cat $dir/$dir.ssu-mask.sum`;
-    if($output !~ /$dir.archaea.stk\s+$dir.archaea.list\s+5/) { die "ERROR, problem with listing sequences"; }
-    if($output !~ /$dir.eukarya.stk\s+$dir.eukarya.list\s+5/) { die "ERROR, problem with listing sequences"; }
-    remove_files              ($dir, "mask");
-
-    # with -a 
-    run_mask                  ($dir . "/" . $dir . ".eukarya.stk", "--list -a", $testctr);
-    check_for_files           (".", $dir, $testctr, \@euk_only_A, ".list");
-    $output = `cat $dir.eukarya.ssu-mask.sum`;
-    if($output =~ /$dir.archaea.stk\s+$dir.archaea.list\s+5/) { die "ERROR, problem with listing sequences"; }
-    if($output !~ /$dir.eukarya.stk\s+$dir.eukarya.list\s+5/) { die "ERROR, problem with listing sequences"; }
-    remove_files              (".", "eukarya.mask");
-    remove_files              (".", "eukarya.ssu-mask");
-}
-$testctr++;
-
-# Test --stk2afa
-if(($testnum eq "") || ($testnum == $testctr)) {
-    # without -a
-    run_mask                  ($dir, "--stk2afa", $testctr);
-    check_for_files           ($dir, $dir, $testctr, \@name_A, ".afa");
-    $output = `cat $dir/$dir.ssu-mask.sum`;
-    if($output !~ /$dir.archaea.stk\s+$dir.archaea.afa/) { die "ERROR, problem with stockholm to aligned fasta conversion"; }
-    if($output !~ /$dir.eukarya.stk\s+$dir.eukarya.afa/) { die "ERROR, problem with stockholm to aligned fasta conversion"; }
-    remove_files              ($dir, "afa");
-
-    # with -a
-    run_mask                  ($dir . "/" . $dir . ".eukarya.stk", "--stk2afa -a" , $testctr);
-    check_for_files           (".", $dir, $testctr, \@euk_only_A, ".afa");
-    $output = `cat $dir.eukarya.ssu-mask.sum`;
-    if($output =~ /$dir.archaea.stk\s+$dir.archaea.afa/) { die "ERROR, problem with stockholm to aligned fasta conversion"; }
-    if($output !~ /$dir.eukarya.stk\s+$dir.eukarya.afa/) { die "ERROR, problem with stockholm to aligned fasta conversion"; }
-    remove_files              (".", $dir . ".eukarya.afa");
-    remove_files              (".", $dir . ".eukarya.ssu-mask");
-}
-$testctr++;
-
-# Test --seq-k (only possible in combination with -a)
-if(($testnum eq "") || ($testnum == $testctr)) {
-    # first run --list to get a list
+    # first run ssu-mask --list to get a list
     run_mask                  ($dir . "/" . $dir . ".eukarya.stk", "--list -a", $testctr);
     check_for_files           (".", $dir, $testctr, \@euk_only_A, ".list");
     $list_file = $dir . ".eukarya.list";
@@ -962,105 +886,220 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     printf SEQK ("$seq5\n");
     printf SEQK ("$seq4\n");
     close(SEQK);
+    
+    # now run ssu-draw --indi-list -a (it requires -a)
+    run_draw                  ($dir . "/" . $dir . ".eukarya.stk", "--indi-list $seqk_file --no-aln -a", $testctr);
+    check_for_files           (".", $dir, $testctr, \@euk_only_A, ".ssu-draw.sum");
+    check_for_files           (".", $dir, $testctr, \@euk_only_A, ".ssu-draw.log");
+    check_for_one_of_two_files(".", $dir, $testctr, \@euk_only_A, ".indi.pdf", ".indi.ps");
+    $output = `cat $dir.eukarya.ssu-draw.sum`;
+    if($output !~ /$dir.eukarya.stk\s+$dir.eukarya.indi.p\w+\s+6\s*/) { die "ERROR, problem with drawing"; }
+    # NOTE: no drawtab file is created, and the postscript is not checked (I could do that, but don't)
+    remove_files              (".", "eukarya.indi");
+    remove_files              (".", "eukarya.ssu-draw");
+    
+    # now run ssu-draw --indi-list -a --no-prob 
+    run_draw                  ($dir . "/" . $dir . ".eukarya.stk", "--indi-list $seqk_file --no-aln -a --no-prob", $testctr);
+    check_for_files           (".", $dir, $testctr, \@euk_only_A, ".ssu-draw.sum");
+    check_for_files           (".", $dir, $testctr, \@euk_only_A, ".ssu-draw.log");
+    check_for_one_of_two_files(".", $dir, $testctr, \@euk_only_A, ".indi.pdf", ".indi.ps");
+    $output = `cat $dir.eukarya.ssu-draw.sum`;
+    if($output !~ /$dir.eukarya.stk\s+$dir.eukarya.indi.p\w+\s+3\s*/) { die "ERROR, problem with drawing"; }
+    # NOTE: no drawtab file is created, and the postscript is not checked (I could do that, but don't)
+    remove_files              (".", "eukarya.indi");
+    remove_files              (".", "eukarya.ssu-draw");
+    remove_files              (".", "eukarya.list");
+    remove_files              (".", "eukarya.seqk");
+}
+$testctr++;    
 
-    # now run ssu-mask --seq-k -a
-    run_mask                  ($dir . "/" . $dir . ".eukarya.stk", "--seq-k $seqk_file -a" , $testctr);
-    check_for_files           (".", $dir, $testctr, \@euk_only_A, ".seqk.stk");
-    $output = `cat $dir.eukarya.ssu-mask.sum`;
-    if($output =~ /archaea/)                   { die "ERROR, problem with stockholm to aligned fasta conversion"; }
-    if($output !~ /$dir.eukarya.seqk.stk\s+3/) { die "ERROR, problem with stockholm to aligned fasta conversion"; }
-    remove_files              (".", $dir . ".eukarya.list");
-    remove_files              (".", $dir . ".eukarya.seqk");
-    remove_files              (".", $dir . ".eukarya.ssu-mask.sum");
+# Test --rf
+if(($testnum eq "") || ($testnum == $testctr)) {
+    # without -a
+    run_draw                  ($dir, "--rf --no-aln", $testctr);
+    check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
+    check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
+    check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".rf.ps", ".rf.pdf");
+    $output = `cat $dir/$dir.ssu-draw.sum`;
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.rf.p\w+\s+1\s*/) { die "ERROR, problem with drawing"; }
+    # NOTE: no drawtab file is created, and the postscript is not checked (I could do that, but don't)
+    remove_files              ($dir, "draw");
+    remove_files              ($dir, "\.ps");
+    remove_files              ($dir, "\.pdf");
+
+    # with -a
+    run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "--rf --no-aln -a", $testctr);
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
+    check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".rf.pdf", ".rf.ps");
+    $output = `cat $dir.bacteria.ssu-draw.sum`;
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.rf.p\w+\s+1\s*/) { die "ERROR, problem with drawing"; }
+    # NOTE: no drawtab file is created, and the postscript is not checked (I could do that, but don't)
+    remove_files              (".", "bacteria.rf");
+    remove_files              (".", "bacteria.ssu-draw");
 }
 $testctr++;
 
-# Test --seq-r (only possible in combination with -a)
-if(($testnum eq "") || ($testnum == $testctr)) {
-    # first run --list to get a list
-    run_mask                  ($dir . "/" . $dir . ".eukarya.stk", "--list -a", $testctr);
-    check_for_files           (".", $dir, $testctr, \@euk_only_A, ".list");
-    $list_file = $dir . ".eukarya.list";
-    $seqr_file = $dir . ".eukarya.seqr";
-    open(LIST, $list_file) || die "TEST SCRIPT ERROR, unable to open file $list_file for reading.";
-    $seq1 = <LIST>; chomp $seq1;
-    $seq2 = <LIST>; chomp $seq2;
-    $seq3 = <LIST>; chomp $seq3;
-    $seq4 = <LIST>; chomp $seq4;
-    $seq5 = <LIST>; chomp $seq5;
-    close(LIST);
-    open(SEQR, ">" . $seqr_file) || die "TEST SCRIPT ERROR, unable to open file $seqr_file for writing.";
-    printf SEQR ("$seq1\n");
-    printf SEQR ("$seq4\n");
-    printf SEQR ("$seq5\n");
-    close(SEQR);
+#############################################
+# Options for omitting parts of the diagrams: 
+#############################################
 
-    # now run ssu-mask --seq-r -a
-    run_mask                  ($dir . "/" . $dir . ".eukarya.stk", "--seq-r $seqr_file -a" , $testctr);
-    check_for_files           (".", $dir, $testctr, \@euk_only_A, ".seqr.stk");
-    $output = `cat $dir.eukarya.ssu-mask.sum`;
-    if($output =~ /archaea/)                   { die "ERROR, problem with stockholm to aligned fasta conversion"; }
-    if($output !~ /$dir.eukarya.seqr.stk\s+2/) { die "ERROR, problem with stockholm to aligned fasta conversion"; }
-    remove_files              (".", $dir . ".eukarya.list");
-    remove_files              (".", $dir . ".eukarya.seqr");
-    remove_files              (".", $dir . ".eukarya.ssu-mask.sum");
+# Test --no-leg
+if(($testnum eq "") || ($testnum == $testctr)) {
+    # without -a
+    run_draw                  ($dir, "--no-leg --info --no-aln --ps-only", $testctr);
+    check_for_files           ($dir, $dir, $testctr, \@name_A, ".info.drawtab");
+    check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
+    check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
+    check_for_files           ($dir, $dir, $testctr, \@name_A, ".info.ps");
+    $output = `cat $dir/$dir.ssu-draw.sum`;
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.info.ps\s+1\s*/) { die "ERROR, problem with drawing"; }
+    $output = `cat $dir/$dir.bacteria.info.drawtab`;
+    if($output !~ /infocontent\s+1\s+2.0\d+\s+2\s+6\s*infocontent/) { die "ERROR, problem with drawing"; }
+    $output = `cat $dir/$dir.archaea.info.ps`;
+    if($output =~ /\(LEGEND\)/)                         { die "ERROR, problem with drawing"; }
+    if($output !~ /\(information content per position/) { die "ERROR, problem with drawing"; }
+    if($output !~ /\(alignment file\:/)                 { die "ERROR, problem with drawing"; }
+    remove_files              ($dir, "draw");
+    remove_files              ($dir, "\.ps");
+
+    # with -a
+    run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "--no-leg --info --no-aln --ps-only -a", $testctr);
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".info.drawtab");
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".info.ps");
+    $output = `cat $dir.bacteria.ssu-draw.sum`;
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.info.ps\s+1\s*/) { die "ERROR, problem with drawing"; }
+    $output = `cat $dir.bacteria.info.drawtab`;
+    if($output !~ /infocontent\s+1\s+2.0\d+\s+2\s+6\s*infocontent/) { die "ERROR, problem with drawing"; }
+    $output = `cat $dir.bacteria.info.ps`;
+    if($output =~ /\(LEGEND\)/)                         { die "ERROR, problem with drawing"; }
+    if($output !~ /\(information content per position/) { die "ERROR, problem with drawing"; }
+    if($output !~ /\(alignment file\:/)                 { die "ERROR, problem with drawing"; }
+    remove_files              (".", "bacteria.info");
+    remove_files              (".", "bacteria.ssu-draw");
+}
+$testctr++;
+
+# Test --no-head
+if(($testnum eq "") || ($testnum == $testctr)) {
+    # without -a
+    run_draw                  ($dir, "--no-head --info --no-aln --ps-only", $testctr);
+    check_for_files           ($dir, $dir, $testctr, \@name_A, ".info.drawtab");
+    check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
+    check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
+    check_for_files           ($dir, $dir, $testctr, \@name_A, ".info.ps");
+    $output = `cat $dir/$dir.ssu-draw.sum`;
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.info.ps\s+1\s*/) { die "ERROR, problem with drawing"; }
+    $output = `cat $dir/$dir.bacteria.info.drawtab`;
+    if($output !~ /infocontent\s+1\s+2.0\d+\s+2\s+6\s*infocontent/) { die "ERROR, problem with drawing"; }
+    $output = `cat $dir/$dir.archaea.info.ps`;
+    if($output !~ /\(LEGEND\)/)                         { die "ERROR, problem with drawing"; }
+    if($output =~ /\(information content per position/) { die "ERROR, problem with drawing"; }
+    if($output !~ /\(alignment file\:/)                 { die "ERROR, problem with drawing"; }
+    remove_files              ($dir, "draw");
+    remove_files              ($dir, "\.ps");
+
+    # with -a
+    run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "--no-head --info --no-aln --ps-only -a", $testctr);
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".info.drawtab");
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".info.ps");
+    $output = `cat $dir.bacteria.ssu-draw.sum`;
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.info.ps\s+1\s*/) { die "ERROR, problem with drawing"; }
+    $output = `cat $dir.bacteria.info.drawtab`;
+    if($output !~ /infocontent\s+1\s+2.0\d+\s+2\s+6\s*infocontent/) { die "ERROR, problem with drawing"; }
+    $output = `cat $dir.bacteria.info.ps`;
+    if($output !~ /\(LEGEND\)/)                         { die "ERROR, problem with drawing"; }
+    if($output =~ /\(information content per position/) { die "ERROR, problem with drawing"; }
+    if($output !~ /\(alignment file\:/)                 { die "ERROR, problem with drawing"; }
+    remove_files              (".", "bacteria.info");
+    remove_files              (".", "bacteria.ssu-draw");
+}
+$testctr++;
+
+# Test --no-foot
+if(($testnum eq "") || ($testnum == $testctr)) {
+    # without -a
+    run_draw                  ($dir, "--no-foot --info --no-aln --ps-only", $testctr);
+    check_for_files           ($dir, $dir, $testctr, \@name_A, ".info.drawtab");
+    check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
+    check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
+    check_for_files           ($dir, $dir, $testctr, \@name_A, ".info.ps");
+    $output = `cat $dir/$dir.ssu-draw.sum`;
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.info.ps\s+1\s*/) { die "ERROR, problem with drawing"; }
+    $output = `cat $dir/$dir.bacteria.info.drawtab`;
+    if($output !~ /infocontent\s+1\s+2.0\d+\s+2\s+6\s*infocontent/) { die "ERROR, problem with drawing"; }
+    $output = `cat $dir/$dir.archaea.info.ps`;
+    if($output !~ /\(LEGEND\)/)                         { die "ERROR, problem with drawing"; }
+    if($output !~ /\(information content per position/) { die "ERROR, problem with drawing"; }
+    if($output =~ /\(alignment file\:/)                 { die "ERROR, problem with drawing"; }
+    remove_files              ($dir, "draw");
+    remove_files              ($dir, "\.ps");
+
+    # with -a
+    run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "--no-foot --info --no-aln --ps-only -a", $testctr);
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".info.drawtab");
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".info.ps");
+    $output = `cat $dir.bacteria.ssu-draw.sum`;
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.info.ps\s+1\s*/) { die "ERROR, problem with drawing"; }
+    $output = `cat $dir.bacteria.info.drawtab`;
+    if($output !~ /infocontent\s+1\s+2.0\d+\s+2\s+6\s*infocontent/) { die "ERROR, problem with drawing"; }
+    $output = `cat $dir.bacteria.info.ps`;
+    if($output !~ /\(LEGEND\)/)                         { die "ERROR, problem with drawing"; }
+    if($output !~ /\(information content per position/) { die "ERROR, problem with drawing"; }
+    if($output =~ /\(alignment file\:/)                 { die "ERROR, problem with drawing"; }
+    remove_files              (".", "bacteria.info");
+    remove_files              (".", "bacteria.ssu-draw");
+}
+$testctr++;
+
+# Test combination of --no-leg no-head and --no-foot
+if(($testnum eq "") || ($testnum == $testctr)) {
+    # without -a
+    run_draw                  ($dir, "--no-leg --no-head --no-foot --info --no-aln --ps-only", $testctr);
+    check_for_files           ($dir, $dir, $testctr, \@name_A, ".info.drawtab");
+    check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
+    check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
+    check_for_files           ($dir, $dir, $testctr, \@name_A, ".info.ps");
+    $output = `cat $dir/$dir.ssu-draw.sum`;
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.info.ps\s+1\s*/) { die "ERROR, problem with drawing"; }
+    $output = `cat $dir/$dir.bacteria.info.drawtab`;
+    if($output !~ /infocontent\s+1\s+2.0\d+\s+2\s+6\s*infocontent/) { die "ERROR, problem with drawing"; }
+    $output = `cat $dir/$dir.archaea.info.ps`;
+    if($output =~ /\(LEGEND\)/)                         { die "ERROR, problem with drawing"; }
+    if($output =~ /\(information content per position/) { die "ERROR, problem with drawing"; }
+    if($output =~ /\(alignment file\:/)                 { die "ERROR, problem with drawing"; }
+    remove_files              ($dir, "draw");
+    remove_files              ($dir, "\.ps");
+
+    # with -a
+    run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "--no-leg --no-head --no-foot --info --no-aln --ps-only -a", $testctr);
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".info.drawtab");
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".info.ps");
+    $output = `cat $dir.bacteria.ssu-draw.sum`;
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.info.ps\s+1\s*/) { die "ERROR, problem with drawing"; }
+    $output = `cat $dir.bacteria.info.drawtab`;
+    if($output !~ /infocontent\s+1\s+2.0\d+\s+2\s+6\s*infocontent/) { die "ERROR, problem with drawing"; }
+    $output = `cat $dir.bacteria.info.ps`;
+    if($output =~ /\(LEGEND\)/)                         { die "ERROR, problem with drawing"; }
+    if($output =~ /\(information content per position/) { die "ERROR, problem with drawing"; }
+    if($output =~ /\(alignment file\:/)                 { die "ERROR, problem with drawing"; }
+    remove_files              (".", "bacteria.info");
+    remove_files              (".", "bacteria.ssu-draw");
 }
 $testctr++;
 
 ####################################
 # Test the special -m and -t options
 ####################################
-if(($testnum eq "") || ($testnum == $testctr)) {
-    # first, build new v4.cm with 3 v4 CMs
-    run_build("-F -d --trunc 525-765  -n arc-v4 -o       v4.cm archaea", $testctr);
-    check_for_files           (".", "", $testctr, \@arc_only_A, "-0p1-sb.525-765.stk");
-    check_for_one_of_two_files(".", "", $testctr, \@arc_only_A, "-0p1-sb.525-765.ps", "-0p1-sb.525-765.pdf");
-    remove_files              (".", "0p1-sb.525-765");
-
-    run_build("-F -d --trunc 584-824  -n bac-v4 --append v4.cm bacteria", $testctr);
-    check_for_files           (".", "", $testctr, \@bac_only_A, "-0p1-sb.584-824.stk");
-    check_for_one_of_two_files(".", "", $testctr, \@bac_only_A, "-0p1-sb.584-824.ps", "-0p1-sb.584-824.pdf");
-    remove_files              (".", "0p1-sb.584-824");
-
-    run_build("-F -d --trunc 620-1082 -n euk-v4 --append v4.cm eukarya", $testctr);
-    check_for_files           (".", "", $testctr, \@euk_only_A, "-0p1-sb.620-1082.stk");
-    check_for_one_of_two_files(".", "", $testctr, \@euk_only_A, "-0p1-sb.620-1082.ps", "-0p1-sb.620-1082.pdf");
-    remove_files              (".", "0p1-sb.620-1082");
-
-    @v4_name_A = ("arc-v4", "bac-v4", "euk-v4");
-    @v4_arc_only_A = ("arc-v4");
-
-    # next, call ssu-align with new v4.cm
-    run_align($fafile, $dir, "-F -m v4.cm", $testctr);
-    check_for_files($dir, $dir, $testctr, \@v4_name_A, ".hits.list");
-    check_for_files($dir, $dir, $testctr, \@v4_name_A, ".hits.fa");
-    check_for_files($dir, $dir, $testctr, \@v4_name_A, ".stk");
-    check_for_files($dir, $dir, $testctr, \@v4_name_A, ".ifile");
-    check_for_files($dir, $dir, $testctr, \@v4_name_A, ".cmalign");
-
-    # mask alignments 
-    # without -a 
-    run_mask($dir, "-m v4.cm", $testctr);
-    check_for_files($dir, $dir, $testctr, \@v4_name_A, ".mask");
-    check_for_files($dir, $dir, $testctr, \@v4_name_A, ".mask.stk");
-    $output = `cat $dir/$dir.ssu-mask.sum`;
-    if($output !~ /$dir.bac-v4.mask\s+output\s+mask\s+241\s+237\s+4/) { die "ERROR, problem with masking";}
-    remove_files(".", "archaea.mask");
-    remove_files(".", "archaea.ssu-mask");
-
-    # with -a 
-    run_mask($dir . "/" . $dir . ".arc-v4.stk", "-a -m v4.cm", $testctr);
-    check_for_files(".", $dir, $testctr, \@v4_arc_only_A, ".mask");
-    check_for_files(".", $dir, $testctr, \@v4_arc_only_A, ".mask.stk");
-    $output = `cat $dir.arc-v4.ssu-mask.sum`;
-    if($output !~ /$dir.arc-v4.mask\s+output\s+mask\s+241\s+241\s+0/) { die "ERROR, problem with masking";}
-    remove_files(".", "arc-v4.mask");
-    remove_files(".", "arc-v4.ssu-mask");
-
-    remove_files(".", "v4.cm");
-}
-$testctr++;
-
+# Note: the build parts of these tests are identical to those found in other test scripts: ssu-align.itest.pl, ssu-mask.itest.pl
 if(($testnum eq "") || ($testnum == $testctr)) {
     # first, build new trna.cm 
     $trna_cmfile = "trna-5.cm";
@@ -1079,29 +1118,95 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     check_for_files($dir, $dir, $testctr, \@trna_only_A, ".ifile");
     check_for_files($dir, $dir, $testctr, \@trna_only_A, ".cmalign");
 
+    # draw alignments with -t $trna_psfile
+    # without -a
+    run_draw($dir, "-t $trna_psfile -m $trna_cmfile", $testctr);
+    check_for_files           ($dir, $dir, $testctr, \@trna_only_A, ".drawtab");
+    check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
+    check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
+    check_for_one_of_two_files($dir, $dir, $testctr, \@trna_only_A, ".ps", ".pdf");
+    $output = `cat $dir/$dir.ssu-draw.sum`;
+    if($output !~ /$dir.trna-5.stk\s+$dir.trna-5.p\w+/)              { die "ERROR, problem with drawing"; }
+    $output = `cat $dir/$dir.trna-5.drawtab`;
+    if($output !~ /infocontent\s+1\s+1.00\d+\s+4\s+3\s*infocontent/) { die "ERROR, problem with drawing"; }
+    if($output !~ /span\s+1\s+1.00\d+\s+1\s*span/)                   { die "ERROR, problem with drawing"; }
+    remove_files              ($dir, "draw");
+    remove_files              ($dir, "\.ps");
+    remove_files              ($dir, "\.pdf");
+
     # mask alignments with -t $trna_psfile
-    # without -a 
+    # again, without -a
     run_mask($dir, "-t $trna_psfile -m $trna_cmfile", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@trna_only_A, ".mask");
     check_for_files           ($dir, $dir, $testctr, \@trna_only_A, ".mask.stk");
     check_for_one_of_two_files($dir, $dir, $testctr, \@trna_only_A, ".mask.ps", ".mask.pdf");
     $output = `cat $dir/$dir.ssu-mask.sum`;
     if($output !~ /$dir.trna-5.mask\s+output\s+mask\s+71\s+68\s+3/) { die "ERROR, problem with masking";}
-    remove_files(".", "trna-5.mask");
-    remove_files(".", "trna-5.ssu-mask");
 
-    # with -a 
+    # now draw again, should see same output files, but now the diagrams will have masks
+    run_draw($dir, "-t $trna_psfile -m $trna_cmfile", $testctr);
+    check_for_files           ($dir, $dir, $testctr, \@trna_only_A, ".drawtab");
+    check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
+    check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
+    check_for_one_of_two_files($dir, $dir, $testctr, \@trna_only_A, ".ps", ".pdf");
+    $output = `cat $dir/$dir.ssu-draw.sum`;
+    if($output !~ /$dir.trna-5.stk\s+$dir.trna-5.p\w+/)              { die "ERROR, problem with drawing"; }
+    $output = `cat $dir/$dir.trna-5.drawtab`;
+    if($output !~ /infocontent\s+1\s+1.00\d+\s+4\s+3\s+1\s*infocontent/) { die "ERROR, problem with drawing"; }
+    if($output !~ /span\s+1\s+1.00\d+\s+1\s+1\s*span/)                   { die "ERROR, problem with drawing"; }
+    remove_files              ($dir, "draw");
+    remove_files              ($dir, "\.ps");
+    remove_files              ($dir, "\.pdf");
+
+    # remove mask files
+    remove_files($dir, "mask");
+
+    # now repeat the same thing but not with -a
+    # draw alignments with -t $trna_psfile
+    run_draw($dir . "/" . $dir . ".trna-5.stk", "-t $trna_psfile -m $trna_cmfile -a", $testctr);
+    check_for_files           (".", $dir, $testctr, \@trna_only_A, ".drawtab");
+    check_for_files           (".", $dir, $testctr, \@trna_only_A, ".ssu-draw.sum");
+    check_for_files           (".", $dir, $testctr, \@trna_only_A, ".ssu-draw.log");
+    check_for_one_of_two_files(".", $dir, $testctr, \@trna_only_A, ".ps", ".pdf");
+    $output = `cat $dir.trna-5.ssu-draw.sum`;
+    if($output !~ /$dir.trna-5.stk\s+$dir.trna-5.p\w+/)              { die "ERROR, problem with drawing"; }
+    $output = `cat $dir.trna-5.drawtab`;
+    if($output !~ /infocontent\s+1\s+1.00\d+\s+4\s+3\s*infocontent/) { die "ERROR, problem with drawing"; }
+    if($output !~ /span\s+1\s+1.00\d+\s+1\s*span/)                   { die "ERROR, problem with drawing"; }
+    remove_files              (".", "trna-5.draw");
+    remove_files              (".", "trna-5.ps");
+    remove_files              (".", "trna-5.pdf");
+
+    # mask alignments with -t $trna_psfile
+    # again, now with -a
     run_mask($dir . "/" . $dir . ".trna-5.stk", "-a -t $trna_psfile -m $trna_cmfile", $testctr);
     check_for_files(".", $dir, $testctr, \@trna_only_A, ".mask");
     check_for_files(".", $dir, $testctr, \@trna_only_A, ".mask.stk");
     $output = `cat $dir.trna-5.ssu-mask.sum`;
     if($output !~ /$dir.trna-5.mask\s+output\s+mask\s+71\s+68\s+3/) { die "ERROR, problem with masking";}
+
+    # now draw again, should see same output files, but now the diagrams will have masks
+    run_draw($dir . "/" . $dir . ".trna-5.stk", "-t $trna_psfile -m $trna_cmfile -a", $testctr);
+    check_for_files           (".", $dir, $testctr, \@trna_only_A, ".drawtab");
+    check_for_files           (".", $dir, $testctr, \@trna_only_A, ".ssu-draw.sum");
+    check_for_files           (".", $dir, $testctr, \@trna_only_A, ".ssu-draw.log");
+    check_for_one_of_two_files(".", $dir, $testctr, \@trna_only_A, ".ps", ".pdf");
+    $output = `cat $dir.trna-5.ssu-draw.sum`;
+    if($output !~ /$dir.trna-5.stk\s+$dir.trna-5.p\w+/)              { die "ERROR, problem with drawing"; }
+    $output = `cat $dir.trna-5.drawtab`;
+    if($output !~ /infocontent\s+1\s+1.00\d+\s+4\s+3\s+1\s*infocontent/) { die "ERROR, problem with drawing"; }
+    if($output !~ /span\s+1\s+1.00\d+\s+1\s+1\s*span/)                   { die "ERROR, problem with drawing"; }
+    remove_files              (".", "trna-5.draw");
+    remove_files              (".", "trna-5.ps");
+    remove_files              (".", "trna-5.pdf");
+
+    # now remove mask files
     remove_files(".", "trna-5.mask");
     remove_files(".", "trna-5.ssu-mask");
+
     remove_files(".", "trna-5.cm");
 }
 $testctr++;
-
 
 printf("All commands completed successfully.\n");
 exit 0;
@@ -1179,7 +1284,7 @@ sub check_for_one_of_two_files {
 	    $file1 = $dir . "/" . $name . $suffix1; 
 	    $file2 = $dir . "/" . $name . $suffix2;
 	}
-	if((! -e $file1) && (! -e $file2)) { die "FAIL: ssu-mask $testctr call failed to create either file $file1 or file $file2"; }
+	if((! -e $file1) && (! -e $file2)) { die "FAIL: ssu-draw $testctr call failed to create either file $file1 or file $file2"; }
     }
     return;
 }

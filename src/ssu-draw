@@ -50,39 +50,47 @@ my $usage          = "Usage: ssu-draw [-options] <directory created by ssu-align
 my $options_usage  = "where general options are:\n";
 #                           1         2         3         4         5         6         7         8
 #                  12345678901234567890123456789012345678901234567890123456789012345678901234567890
-$options_usage .= "  -h             : show brief help on version and usage\n";
-$options_usage .= "  -m <f>         : CM file <f> created the alignment(s) (with ssu-align -m <f>)\n";
-$options_usage .= "  -t <f>         : use template file <f>, not the default template file\n";
-$options_usage .= "  -i             : -i used with ssu-align, alignments are interleaved\n";
-$options_usage .= "  --key-out <s>  : add <s> to all output file names, before the suffix\n";
-$options_usage .= "  --no-mask      : do not use ssu-mask created '.mask' files in the aln dir\n";
-$options_usage .= "  --mask-key <s> : assume <s> is part of input mask file names, before the suffix\n";
-$options_usage .= "  --ps2pdf <s>   : <s> (!= \"ps2pdf\") is the command for converting ps to pdf\n";
-$options_usage .= "  --ps-keep      : if --ps2pdf or ps2pdf is installed, save postscript (& pdf) files\n";
-$options_usage .= "  --ps-only      : only save postscript secondary structure diagrams, no pdfs\n";
+$options_usage .= "  -h     : show brief help on version and usage\n";
+$options_usage .= "  -a     : the command-line argument is a stockholm alignment, not a directory\n";
+$options_usage .= "  -d     : display default ssu-align-0.1 masks on drawings\n";
+$options_usage .= "  -f <f> : display single mask in file <f> for single alignment (requires -a)\n";
+$options_usage .= "  -k <s> : display masks from files named <modelname>.<s>.mask on drawings\n";
+$options_usage .= "           (<modelname> might be 'archaea', 'bacteria' or 'eukarya')\n";
+$options_usage .= "  -m <f> : CM file <f> created the alignment(s) (with ssu-align -m <f>)\n";
+$options_usage .= "  -t <f> : use template file <f>, not the default template file\n";
+$options_usage .= "  -i     : -i used with ssu-align, alignments are interleaved\n";
+
+$options_usage .= "\nmiscellaneous input/output options:\n";
+$options_usage .= "  --ps2pdf <s>  : <s> (!= \"ps2pdf\") is the command for converting ps to pdf\n";
+$options_usage .= "  --ps-only     : only save postscript secondary structure diagrams, no pdfs\n";
+$options_usage .= "  --ifile <s>   : insert info for alignment is in <s> (requires -a)\n";
+$options_usage .= "  --key-out <s> : add <s> to all output file names, before the suffix\n";
+$options_usage .= "  --no-mask     : do not use ssu-mask created '.mask' files in the aln dir\n";
+$options_usage .= "  --mask-key    : display masks from files named <dir>.<modelname>.<s>.mask on drawings\n";
+$options_usage .= "                  (typically used after running 'ssu-mask --key-out <s>')\n";
+
 $options_usage .= "\noptions for 1-page alignment summary diagrams (by default, all are drawn):\n";
-$options_usage .= "  --prob    : draw average posterior probability per column (save as *.prob.pdf)\n";
-$options_usage .= "  --ifreq   : draw frequency of insertions per column (save as *.ifreq.pdf)\n";
-$options_usage .= "  --iavglen : draw average length of insertions per column (save as *.iavglen.pdf)\n";
-$options_usage .= "  --dall    : draw frequency of deletions per column (save as *.dall.pdf)\n";
-$options_usage .= "  --dint    : draw frequency of internal deletions per column (save as *.dint.pdf)\n";
-$options_usage .= "  --span    : draw fraction of seqs that span each position (save as *.span.pdf)\n";
-$options_usage .= "  --info    : draw sequence information content per position (save as *.info.pdf)\n";
-$options_usage .= "  --mutinfo : draw mutual information per position (save as *.mutinfo.pdf)\n";
+$options_usage .= "  --prob    : draw average posterior probability per position (save as *.prob.pdf)\n";
+$options_usage .= "  --ifreq   : draw frequency of insertions per position         (save as *.ifreq.pdf)\n";
+$options_usage .= "  --iavglen : draw average length of insertions per position    (save as *.iavglen.pdf)\n";
+$options_usage .= "  --dall    : draw frequency of deletions per position          (save as *.dall.pdf)\n";
+$options_usage .= "  --dint    : draw frequency of internal deletions per position (save as *.dint.pdf)\n";
+$options_usage .= "  --span    : draw fraction of seqs that span each position     (save as *.span.pdf)\n";
+$options_usage .= "  --info    : draw sequence information content per position    (save as *.info.pdf)\n";
+$options_usage .= "  --mutinfo : draw mutual information per position              (save as *.mutinfo.pdf)\n";
 $options_usage .= "  --no-aln  : do not create multi-page pdf with all alignment stats\n";
-$options_usage .= "\noptions for structure diagrams for individual sequences:\n";
-$options_usage .= "  (warning: --indi-all will generate very large .ps/.pdf files for large alignments)\n";
+
+$options_usage .= "\noptions for drawing structure diagrams for individual sequences:\n";
+$options_usage .= "  (WARNING: files can get very large: ~1 Mb/20 seqs (pdf); ~1 Mb/2 seqs (postscript)\n";
 $options_usage .= "  --indi-all      : draw sequence and probability diagrams for all aligned sequences\n";
 $options_usage .= "  --indi-list <f> : draw sequence and probability diagrams for sequences listed in <f>\n";
+$options_usage .= "  --rf            : draw reference (consensus) sequence/structure only (save as *.rf.pdf)\n";
 $options_usage .= "  --no-prob       : with --indi-list or --indi-all, omit probability diagrams\n";
-$options_usage .= "  --cons          : draw consensus sequence/structure only (save as *.cons.pdf)\n";
+
 $options_usage .= "\noptions for omitting parts of the diagrams:\n";
 $options_usage .= "  --no-leg  : do not draw legends\n";
 $options_usage .= "  --no-head : do not draw headers\n";
 $options_usage .= "  --no-foot : do not draw footers\n";
-$options_usage .= "\noptions that only work with -a:\n";
-$options_usage .= "  --ifile <s>   : insert info for alignment is in <s>, requires -a\n";
-$options_usage .= "  --in-mask <s> : mask alignment given 1/0s in 1-line mask file <f>, requires -a\n";
 
 ###################
 # Process options #
@@ -92,17 +100,20 @@ my %opt_takes_arg_H  = ();   # key: option; value: "1" if option takes argument,
 my @opt_order_A  = ();       # order of options for printing in banner
 my $opt;
 
-$opt_takes_arg_H{"-a"}          = 0;  push(@opt_order_A, "-a");           
 $opt_takes_arg_H{"-h"}          = 0;  push(@opt_order_A, "-h");           
+$opt_takes_arg_H{"-a"}          = 0;  push(@opt_order_A, "-a");           
+$opt_takes_arg_H{"-d"}          = 0;  push(@opt_order_A, "-d");           
+$opt_takes_arg_H{"-f"}          = 1;  push(@opt_order_A, "-f");    
+$opt_takes_arg_H{"-k"}          = 1;  push(@opt_order_A, "-k");     
 $opt_takes_arg_H{"-m"}          = 1;  push(@opt_order_A, "-m");           
 $opt_takes_arg_H{"-t"}          = 1;  push(@opt_order_A, "-t");           
 $opt_takes_arg_H{"-i"}          = 1;  push(@opt_order_A, "-i");     
-$opt_takes_arg_H{"--key-out"}   = 1;  push(@opt_order_A, "--key-out");    
-$opt_takes_arg_H{"--mask-key"}  = 1;  push(@opt_order_A, "--mask-key");     
-$opt_takes_arg_H{"--no-mask"}   = 0;  push(@opt_order_A, "--no-mask");  
 $opt_takes_arg_H{"--ps2pdf"}    = 1;  push(@opt_order_A, "--ps2pdf");      
-$opt_takes_arg_H{"--ps-keep"}   = 0;  push(@opt_order_A, "--ps-keep");      
 $opt_takes_arg_H{"--ps-only"}   = 0;  push(@opt_order_A, "--ps-only");      
+$opt_takes_arg_H{"--ifile"}     = 1;  push(@opt_order_A, "--ifile");
+$opt_takes_arg_H{"--key-out"}   = 1;  push(@opt_order_A, "--key-out");    
+$opt_takes_arg_H{"--no-mask"}   = 0;  push(@opt_order_A, "--no-mask");  
+$opt_takes_arg_H{"--mask-key"}  = 1;  push(@opt_order_A, "--mask-key");    
 $opt_takes_arg_H{"--prob"}      = 0;  push(@opt_order_A, "--prob");       
 $opt_takes_arg_H{"--ifreq"}     = 0;  push(@opt_order_A, "--ifreq");        
 $opt_takes_arg_H{"--iavglen"}   = 0;  push(@opt_order_A, "--iavglen");        
@@ -115,33 +126,33 @@ $opt_takes_arg_H{"--no-aln"}    = 0;  push(@opt_order_A, "--no-aln");
 $opt_takes_arg_H{"--indi-list"} = 1;  push(@opt_order_A, "--indi-list");       
 $opt_takes_arg_H{"--indi-all"}  = 0;  push(@opt_order_A, "--indi-all");       
 $opt_takes_arg_H{"--no-prob"}   = 0;  push(@opt_order_A, "--no-prob");    
-$opt_takes_arg_H{"--cons"}      = 0;  push(@opt_order_A, "--cons");       
+$opt_takes_arg_H{"--rf"}        = 0;  push(@opt_order_A, "--rf");       
 $opt_takes_arg_H{"--no-leg"}    = 0;  push(@opt_order_A, "--no-leg");     
 $opt_takes_arg_H{"--no-head"}   = 0;  push(@opt_order_A, "--no-head");    
 $opt_takes_arg_H{"--no-foot"}   = 0;  push(@opt_order_A, "--no-foot");    
-$opt_takes_arg_H{"--in-mask"}   = 1;  push(@opt_order_A, "--in-mask");    
-$opt_takes_arg_H{"--ifile"}     = 1;  push(@opt_order_A, "--ifile");
 
 #set default options
 foreach $opt (keys %opt_takes_arg_H) { 
     if($opt_takes_arg_H{$opt}) { $opt_H{$opt} = ""; }
-    else                       { $opt_H{$opt} = 0; }
+    else                       { $opt_H{$opt} = 0;  }
 }
 
 Getopt::Long::Configure ("bundling");
 my $opt_return = GetOptions
-    ('a'           => \$opt_H{"-a"},
-     'h'           => \$opt_H{"-h"}, 
+    ('h'           => \$opt_H{"-h"}, 
+     'a'           => \$opt_H{"-a"},
+     'd'           => \$opt_H{"-d"},
+     'f=s'         => \$opt_H{"-f"},
+     'k=s'         => \$opt_H{"-k"},
      'm=s'         => \$opt_H{"-m"},
      't=s'         => \$opt_H{"-t"},
      'i'           => \$opt_H{"-i"},
-     'key-out=s'   => \$opt_H{"--key-out"},
-     'mask-key=s'  => \$opt_H{"--mask-key"},
-     'no-mask'     => \$opt_H{"--no-mask"},
      'ps2pdf=s'    => \$opt_H{"--ps2pdf"},
-     'ps-keep'     => \$opt_H{"--ps-keep"},
      'ps-only'     => \$opt_H{"--ps-only"},
-     'no-aln'      => \$opt_H{"--no-aln"},
+     'ifile=s'     => \$opt_H{"--ifile"},
+     'key-out=s'   => \$opt_H{"--key-out"},
+     'no-mask'     => \$opt_H{"--no-mask"},
+     'mask-key=s'  => \$opt_H{"--mask-key"},
      'prob'        => \$opt_H{"--prob"},
      'ifreq'       => \$opt_H{"--ifreq"},
      'iavglen'     => \$opt_H{"--iavglen"},
@@ -150,15 +161,14 @@ my $opt_return = GetOptions
      'span'        => \$opt_H{"--span"},
      'info'        => \$opt_H{"--info"},
      'mutinfo'     => \$opt_H{"--mutinfo"},
+     'no-aln'      => \$opt_H{"--no-aln"},
      'indi-list=s' => \$opt_H{"--indi-list"},
      'indi-all'    => \$opt_H{"--indi-all"},
      'no-prob'     => \$opt_H{"--no-prob"},
-     'cons'        => \$opt_H{"--cons"},
+     'rf'          => \$opt_H{"--rf"},
      'no-leg'      => \$opt_H{"--no-leg"},
      'no-head'     => \$opt_H{"--no-head"},
-     'no-foot'     => \$opt_H{"--no-foot"},
-     'ifile=s'     => \$opt_H{"--ifile"},
-     'in-mask=s'   => \$opt_H{"--in-mask"});
+     'no-foot'     => \$opt_H{"--no-foot"});
 
 if($opt_return != 1) { print STDERR "\nERROR, GetOptions() did not return 1, but $opt_return\n"; exit(1); }
 
@@ -173,11 +183,38 @@ my $key_out = "";
 if($opt_H{"--key-out"}  ne "") { $key_out   = "." . $opt_H{"--key-out"};  }
 
 # Check for incompatible options combinations.
-if($opt_H{"--no-mask"} && ($opt_H{"--in-mask"} ne "")) { 
-    printf STDERR ("\nERROR, --in-mask is incompatible with --no-mask.\n"); exit(1); 
+if(($opt_H{"-d"}) && ($opt_H{"--mask-key"})) { 
+    printf STDERR ("\nERROR, only one of -f, -k, -d, --mask-key will work.\n"); exit(1); 
 }
-if(($opt_H{"--in-mask"} ne "") && ($opt_H{"-a"} == 0)) { 
-    printf STDERR ("\nERROR, --in-mask requires the -a option.\n"); exit(1);
+if(($opt_H{"-f"} ne "") && ($opt_H{"-d"})) { 
+    printf STDERR ("\nERROR, only one of -f, -k, -d, --mask-key will work.\n"); exit(1); 
+}
+if(($opt_H{"-f"} ne "") && ($opt_H{"--mask-key"})) { 
+    printf STDERR ("\nERROR, only one of -f, -k, -d, --mask-key will work.\n"); exit(1); 
+}
+if(($opt_H{"-k"} ne "") && ($opt_H{"-d"})) { 
+    printf STDERR ("\nERROR, only one of -f, -k, -d, --mask-key will work.\n"); exit(1); 
+}
+if(($opt_H{"-k"} ne "") && ($opt_H{"-f"} ne "")) { 
+    printf STDERR ("\nERROR, only one of -f, -k, -d, --mask-key will work.\n"); exit(1); 
+}
+if(($opt_H{"-k"} ne "") && ($opt_H{"--mask-key"} ne "")) { 
+    printf STDERR ("\nERROR, only one of -f, -k, -d, --mask-key will work.\n"); exit(1); 
+}
+if($opt_H{"--no-mask"} && ($opt_H{"-f"} ne "")) { 
+    printf STDERR ("\nERROR, -f is incompatible with --no-mask.\n"); exit(1); 
+}
+if($opt_H{"--no-mask"} && ($opt_H{"-d"})) { 
+    printf STDERR ("\nERROR, -d is incompatible with --no-mask.\n"); exit(1); 
+}
+if($opt_H{"--no-mask"} && ($opt_H{"-k"} ne "")) { 
+    printf STDERR ("\nERROR, -k is incompatible with --no-mask.\n"); exit(1); 
+}
+if($opt_H{"--no-mask"} && ($opt_H{"--mask-key"} ne "")) { 
+    printf STDERR ("\nERROR, --mask-key is incompatible with --no-mask.\n"); exit(1); 
+}
+if(($opt_H{"-f"} ne "") && ($opt_H{"-a"} == 0)) { 
+    printf STDERR ("\nERROR, -f requires the -a option.\n"); exit(1);
 }    
 if(($opt_H{"--ifile"} ne "") && ($opt_H{"-a"} == 0)) { 
     printf STDERR ("\nERROR, --ifile requires the -a option.\n"); exit(1);
@@ -196,11 +233,10 @@ if($opt_H{"--ps-only"} && ($opt_H{"--ps2pdf"} ne "")) {
 }
 if(($opt_H{"--no-aln"}) && 
    (! (($opt_H{"--prob"}) || ($opt_H{"--ifreq"}) || ($opt_H{"--iavglen"}) || ($opt_H{"--dall"}) || ($opt_H{"--dint"}) || ($opt_H{"--span"}) || ($opt_H{"--info"}) || ($opt_H{"--mutinfo"}) ||
-       ($opt_H{"--indi-list"} ne "") || ($opt_H{"--indi-all"}) || ($opt_H{"--cons"})))) { 
-    printf STDERR ("\nERROR, --no-aln only makes sense if used in combination with at least one of: --prob, --ifreq, --iavglen, --dall, --dint, --span, --info, --mutinfo, --indi-list, --indi-all, --cons.\n"); 
+       ($opt_H{"--indi-list"} ne "") || ($opt_H{"--indi-all"}) || ($opt_H{"--rf"})))) { 
+    printf STDERR ("\nERROR, --no-aln only makes sense if used in combination with at least one of: --prob, --ifreq, --iavglen, --dall, --dint, --span, --info, --mutinfo, --indi-list, --indi-all, --rf.\n"); 
     exit(1);
 }
-
 
 ###################################################
 # Process command-line arguments and print banner #
@@ -263,15 +299,19 @@ my $max_width_draw = 0;
 my $max_width_tab  = 0;
 my ($nec_width, $i, $aln_root, $aln_root2print);
 my $extra_draw_chars = 0;
-if($opt_H{"--prob"} || $opt_H{"--dall"} || $opt_H{"--dint"} || $opt_H{"--span"} || $opt_H{"--info"} || ($opt_H{"--indi-list"} ne "") || $opt_H{"--indi-all"} || $opt_H{"--cons"}) { 
+if($opt_H{"--rf"}) { 
+    $extra_draw_chars = 2+1; # +1 is for the '.'
+}
+if($opt_H{"--prob"} || $opt_H{"--dall"} || $opt_H{"--dint"} || $opt_H{"--span"} || $opt_H{"--info"} || ($opt_H{"--indi-list"} ne "")) { 
     $extra_draw_chars = 4+1; # +1 is for the '.'
 }
 if($opt_H{"--ifreq"})                          { $extra_draw_chars = 5+1; } 
 if($opt_H{"--mutinfo"} || $opt_H{"--iavglen"}) { $extra_draw_chars = 7+1; }
+if($opt_H{"--indi-all"})                       { $extra_draw_chars = 7+1; }
 
 for($i = 0; $i < $naln; $i++) { 
     $aln_file         = $stk_list_A[$i];
-    $aln_root2print   = SwapOrAppendFileSuffix($aln_file, \@stk_suffix_A, "", $opt_H{"-a"}); # if -a, we'll write output dir as well as file name
+    $aln_root2print   = SwapOrAppendFileSuffix($aln_file, \@stk_suffix_A, "", 0);
     if($opt_H{"-a"}) { $nec_width = length($aln_file); }
     else             { $nec_width = length(RemoveDirPath($aln_file)); }
     if($max_width_aln < $nec_width) { $max_width_aln = $nec_width; }
@@ -392,58 +432,19 @@ sub validate_and_setup_ssu_draw {
     my $ssdraw = $globals_H{"esl-ssdraw"};
     my $command_worked;
     RunCommand("$ssdraw -h > /dev/null", $tfilectr++, 1, 0, $log_file, \$command_worked, "ERROR, the required executable $ssdraw is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
-
+    
+    # Find the alignments we'll draw
     my $naln = 0;
-    my $aln_name = "";
-    my $mask_name = "";
-    my $ifile_name = "";
     my $errmsg = "";
-    my $found_aln = 0;
-    my $mask_key = "";
-    if($opt_HR->{"--mask-key"} ne "") { $mask_key  .= "." . $opt_HR->{"--mask-key"};  }
-
+    my ($aln_name);
     if($opt_HR->{"-a"}) { # special mode, single command line argument is not a directory, it's an alignment
 	$aln_name = $dir;
 	if(! (-e $aln_name)) { 
 	    PrintErrorAndExit("ERROR, the alignment file $aln_name does not exist.", $sum_file, 1); 
 	}
 	push(@{$stk_list_arr_ref}, $aln_name);
-	$naln++; 
-
-	# determine mask file to use, if any 
-	if(! $opt_HR->{"--no-mask"}) { # check if a mask for this alignment exists in directory where alignment file exists, or in the current dir
-	    $mask_name = SwapOrAppendFileSuffix($aln_name, $stk_suffix_AR, ($mask_key . ".mask"), 1);
-	    if(-e $mask_name) { 
-		push(@{$mask_list_arr_ref}, $mask_name); 
-	    }
-	    else { 
-		$mask_name = SwapOrAppendFileSuffix($aln_name, $stk_suffix_AR, ($mask_key . ".mask"), 0);
-		if(-e $mask_name) { 
-		    push(@{$mask_list_arr_ref}, $mask_name); 
-		}
-		else { 
-		    push(@{$mask_list_arr_ref}, ""); # empty string tells later functions: don't use mask for this alignment
-		}
-	    } 
-	}
-	elsif ($opt_HR->{"--in-mask"} ne "") { 
-	    $mask_name = $opt_HR->{"--in-mask"}; 
-	    if(! (-e $mask_name)) { 
-		PrintErrorAndExit("ERROR, --in-mask enabled, but the mask file $mask_name does not exist.", $sum_file, 1); 
-	    }
-	    push(@{$mask_list_arr_ref}, $mask_name);
-	}
-	else { push(@{$mask_list_arr_ref}, ""); } # empty string tells later functions: don't use mask for this alignment
-
-	# determine ifile to use, if any 
-	if($opt_HR->{"--ifile"} ne "") { 
-	    if(!(-e $opt_HR->{"--ifile"})) { 
-		PrintErrorAndExit(sprintf("ERROR, the --ifile file %s does not exist.\n", $opt_HR->{"--ifile"}), $sum_file, 1);
-	    }
-	    push(@{$ifile_list_arr_ref}, $opt_HR->{"--ifile"});
-	}
-	else { push(@{$ifile_list_arr_ref}, ""); } # empty string tells later functions: don't use an ifile for this alignment
-    }
+	$naln = 1; 
+    } # end of "if(opt_HR->{"-a"})"
     else { 
 	# Validate there is at least 1 alignment in the input dir
 	if(! (-d $dir)) { 
@@ -465,45 +466,18 @@ sub validate_and_setup_ssu_draw {
 	}
 	close(CM);
 	foreach $name (@names_A) { 
-	    $found_aln = 0;
 	    $aln_name = $dir . "/" . $root . "." . $name . ".stk";
 	    if(-e $aln_name) { 
 		push(@{$stk_list_arr_ref}, $aln_name);
 		$naln++; 
-		$found_aln = 1;
 	    }
-	    elsif(-e ($aln_name . ".gz")) { 
+	    elsif(-e ($aln_name . ".gz")) {
 		push(@{$stk_list_arr_ref}, ($aln_name . ".gz"));
 		$naln++; 
-		$found_aln = 1;
-	    }
-	    if($found_aln) { 
-		# determine mask file to use, if any
-		if(! $opt_HR->{"--no-mask"}) { 
-		    $mask_name = $dir . "/" . $root . "." . $name . $mask_key . ".mask";
-		    if(-e $mask_name) { 
-			push(@{$mask_list_arr_ref}, $mask_name);
-		    }
-		    elsif($mask_key ne "") { # try for just $name . $mask_key . ".mask";
-			$mask_name = $dir . "/" . $name . $mask_key . ".mask";
-			if(-e $mask_name) { 
-			    push(@{$mask_list_arr_ref}, $mask_name);
-			}
-		    }
-		    else { push(@{$mask_list_arr_ref}, ""); } # empty string tells later functions: don't use mask for this alignment
-		}
-		else { push(@{$mask_list_arr_ref}, ""); } # empty string tells later functions: don't use mask for this alignment
-
-		# determine insert file to use, we always use one if it exists
-		$ifile_name = $dir . "/" . $root . "." . $name . ".ifile";
-		if(-e $ifile_name) { 
-		    push(@{$ifile_list_arr_ref}, $ifile_name);
-		}
-		else { push(@{$ifile_list_arr_ref}, ""); } # empty string tells later functions: don't use ifile for this alignment
 	    }
 	}
 	if($naln == 0) { 
-	    $errmsg = "ERROR, found 0 alignments created by ssu-align using the CM file $cm_file\nin directory $dir.";
+	    $errmsg = "ERROR, found 0 alignments created by ssu-align using the CM file $cm_file\nin directory $dir.\n\n";
 	    PrintStringToFile($sum_file, 0, $errmsg);
 	    printf STDERR $errmsg;
 	    $errmsg = "The following alignments were searched for, but none were found:\n";
@@ -518,7 +492,146 @@ sub validate_and_setup_ssu_draw {
 	    exit(1);
 	}
     }
-
+    
+    # Find the mask files, if any, to use.
+    # This is complex b/c it depends on 5 different command line options, but only one can be set (we enforced this above)
+    # -d, -k, -f, --mask-key, --no-mask
+    # If -f <s> enabled, make sure the mask file <s> exists either locally (relative to the current working directory)
+    # or in SSUALIGNDIR
+    my ($mask_file, $actual_mask_file, $found_it, $mask_suffix);
+    foreach $aln_name (@{$stk_list_arr_ref}) {
+	if($opt_HR->{"-f"} ne "") { # easy case, we know -a was enabled also, $opt_HR->{"-f"} must exist or we die
+	    if($naln != 1) { 
+		$errmsg = "ERROR, -f only makes sense when masking a single alignment.\n\n";
+		PrintStringToFile($sum_file, 0, $errmsg);
+		printf STDERR $errmsg;
+		$errmsg = "The following alignments were to be drawn:\n";
+		PrintStringToFile($sum_file, 0, $errmsg);
+		printf STDERR $errmsg;
+		foreach $aln_name (@{$stk_list_arr_ref}) { 
+		    $errmsg = "\t$aln_name\n";
+		    PrintStringToFile($sum_file, 0, $errmsg);
+		    printf STDERR $errmsg;
+		}
+		$errmsg = "Use the -a option if you want to select just one to draw.\n";
+		PrintStringToFile($sum_file, 0, $errmsg);
+		exit(1);
+	    }
+	    $mask_file = FindPossiblySharedFile($opt_HR->{"-f"}, $ssualigndir);
+	    if($mask_file eq "") { # file doesn't exist
+		$mask_file = RemoveDirPath($opt_HR->{"-f"});
+		PrintErrorAndExit("ERROR, the mask file " . $opt_HR->{"-f"} . " does not exist relative to the current directory.\nAnd $mask_file does not exist in SSUALIGNDIR $ssualigndir.", $sum_file, 1); 
+	    }
+	    push(@{$mask_list_arr_ref}, $opt_HR->{"-f"});
+	}
+	elsif($opt_HR->{"-d"} || $opt_HR->{"-k"}) { 
+	    $mask_file = $aln_name;
+	    # remove suffix 
+	    $mask_file =~ s/\.stk$//;
+	    # remove dir path
+	    $mask_file = RemoveDirPath($mask_file);
+	    # remove "$root." prefix
+	    $mask_file =~ s/^$root\.//;
+	    # if -a, remove everything up to the final '.'
+	    if($opt_HR->{"-a"}) { $mask_file =~ s/^.+\.//; }
+	    # add mask suffix and look for it
+	    if($opt_HR->{"-d"}) { 
+		$mask_file .= "-0p1.mask";
+	    }
+	    else { # -k enabled
+		$mask_file .= "." . $opt_HR->{"-k"} . ".mask";
+	    }
+	    # Look for mask file: 
+	    # if -k: look first in dir with alignment, then in CWD, then in SSUALIGNDIR
+	    # if -d: look in SSUALIGNDIR only
+	    $found_it = 0;
+	    if($opt_HR->{"-k"} ne "") {
+		if (-e (ReturnDirPath($aln_name) . $mask_file)) { 
+		    $actual_mask_file = ReturnDirPath($aln_name) . $mask_file; 
+		    $found_it = 1; 
+		} 
+		if (! $found_it) { 
+		    if (-e $mask_file) { 
+			$actual_mask_file = $mask_file; 
+			$found_it = 1; 
+		    }
+		}
+	    }
+	    if(! $found_it) { 
+		if (-e ($ssualigndir . "/" . $mask_file)) { 
+		    $actual_mask_file = $ssualigndir . "/" . $mask_file; 
+		    $found_it = 1; 
+		}
+	    }
+	    if(! $found_it) { 
+		if($opt_HR->{"-d"}) { 
+		    PrintErrorAndExit("ERROR, unable to locate default mask file $mask_file for masking alignment $aln_name in\nthe SSUALIGNDIR $ssualigndir.", $sum_file, 1);
+		}
+		else { #-k must be enabled
+		    if($opt_HR->{"-a"}) {
+			PrintErrorAndExit("ERROR, unable to locate mask file $mask_file for masking alignment $aln_name in the\ncurrent working directory, directory " . ReturnDirPath($aln_name) . ",\nor the SSUALIGNDIR $ssualigndir.", $sum_file, 1);
+		    }
+		    else { 
+			PrintErrorAndExit("ERROR, unable to locate mask file $mask_file for masking alignment $aln_name in the\ndirectory " . ReturnDirPath($aln_name) . ",\nor the SSUALIGNDIR $ssualigndir.", $sum_file, 1);
+		    }
+		}
+	    }
+	    else { 
+		push(@{$mask_list_arr_ref}, $actual_mask_file);
+	    }
+	}
+	elsif(! $opt_HR->{"--no-mask"}) { # --no-mask not enabled, --mask-key may or may not be enabled
+	    if($opt_HR->{"--mask-key"} ne "") { $mask_suffix = "." . $opt_HR->{"--mask-key"} . ".mask"; }
+	    else                              { $mask_suffix = ".mask"; }
+	    $mask_file = SwapOrAppendFileSuffix($aln_name, $stk_suffix_AR, $mask_suffix, 1);
+	    # Look for mask file: 
+	    # look first in dir with alignment, then in CWD
+	    $found_it = 0;
+	    if(-e $mask_file) { 
+		$actual_mask_file = $mask_file;
+		$found_it = 1;
+	    }
+	    if (! $found_it) { # check in CWD
+		if(-e RemoveDirPath($mask_file)) { 
+		    $actual_mask_file = RemoveDirPath($mask_file);
+		    $found_it = 1;
+		}
+	    }
+	    if($found_it) { 
+		push(@{$mask_list_arr_ref}, $actual_mask_file);
+	    }
+	    elsif($opt_HR->{"--mask-key"} ne "") { 
+		# mask doesn't exist, this is not okay if --mask-key enabled
+		PrintErrorAndExit("ERROR, unable to locate mask file $mask_file or " . RemoveDirPath($mask_file) . " for masking alignment $aln_name", $sum_file, 1);
+	    }
+	    else { 
+		push(@{$mask_list_arr_ref}, ""); # empty string tells later functions: don't use a mask for this alignment
+	    }
+	}
+	else { # --no-mask enabled we won't use a mask
+	    push(@{$mask_list_arr_ref}, ""); # empty string tells later functions: don't use a mask for this alignment
+	}
+    }    
+	
+    # check for insert files, we always use them if they exist
+    my $ifile_name = "";
+    foreach $aln_name (@{$stk_list_arr_ref}) {
+	if($opt_HR->{"--ifile"} ne "") { 
+	    if(!(-e $opt_HR->{"--ifile"})) { 
+		PrintErrorAndExit(sprintf("ERROR, the --ifile file %s does not exist.\n", $opt_HR->{"--ifile"}), $sum_file, 1);
+	    }
+	    push(@{$ifile_list_arr_ref}, $opt_HR->{"--ifile"});
+	}
+	# determine insert file to use, we always use one if it exists
+	$ifile_name = SwapOrAppendFileSuffix($aln_name, $stk_suffix_AR, ".ifile", 1);
+	if(-e $ifile_name) { 
+	    push(@{$ifile_list_arr_ref}, $ifile_name);
+	    # NOTE: with -a, this is risky b/c if $ifile_name exists we assume it corresponds to the $aln_name, but that is not necessarily so... 
+	    # we'll die later with an error that the user will likely not understand in this case
+	}
+	else { push(@{$ifile_list_arr_ref}, ""); } # empty string tells later functions: don't use ifile for this alignment
+    }
+    
     $$cm_file_ref  = $cm_file;
     $$template_file_ref  = $template_file;
     $$ssdraw_ref  = $ssdraw;
@@ -556,86 +669,102 @@ sub draw_alignment {
     my($ssdraw, $template_file, $aln_file, $stk_suffix_AR, $mask_file2use, $ifile2use, $max_width_aln, $max_width_draw, $max_width_tab, $key_out, $opt_HR, $sum_file) = @_;
 
     my $nfiles_created = 0;
-    my ($all_aln_opts, $mask_opts, $ifile_opts, $draw_opts, $draw_key);
+    my ($all_aln_opts, $mask_opts, $ifile_opts, $draw_opts, $draw_key, $do_tabfile, $omit_opts);
     if($mask_file2use ne "")  { $mask_opts = " --mask $mask_file2use"; }
     else                      { $mask_opts = ""; }
     if($ifile2use ne "")      { $ifile_opts = " --ifile $ifile2use"; }
     else                      { $ifile_opts = ""; }
+    $omit_opts = "";
+    if($opt_HR->{"--no-leg"})  { $omit_opts .= " --no-leg"; }
+    if($opt_HR->{"--no-head"}) { $omit_opts .= " --no-head"; }
+    if($opt_HR->{"--no-foot"}) { $omit_opts .= " --no-foot"; }
 
     # Default multi-page align call, or not if --no-aln enabled
     if(! ($opt_HR->{"--no-aln"})) { 
 	$draw_opts = "";
 	$draw_key = $key_out; #this will be "" unless --key-out was enabled
-	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts), $aln_file, $stk_suffix_AR, $template_file, 
-		   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
+	$do_tabfile = 1;
+	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
+						   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
     }
     if($opt_HR->{"--prob"}) { 
 	$draw_opts = "--prob"; 
 	$draw_key = $key_out . ".prob";
-	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts), $aln_file, $stk_suffix_AR, $template_file, 
-		   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
+	$do_tabfile = 1;
+	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
+						   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
     }
     if($opt_HR->{"--ifreq"}) { 
 	$draw_opts = "--ifreq"; 
 	$draw_key = $key_out . ".ifreq";
-	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts), $aln_file, $stk_suffix_AR, $template_file, 
-		   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
+	$do_tabfile = 1;
+	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
+						   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
     }
     if($opt_HR->{"--iavglen"}) { 
 	$draw_opts = "--iavglen"; 
 	$draw_key = $key_out . ".iavglen";
-	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts), $aln_file, $stk_suffix_AR, $template_file, 
-		   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
+	$do_tabfile = 1;
+	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
+						   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
     }
     if($opt_HR->{"--dall"}) { 
 	$draw_opts = "--dall"; 
 	$draw_key = $key_out . ".dall";
-	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts), $aln_file, $stk_suffix_AR, $template_file, 
-		   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
+	$do_tabfile = 1;
+	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
+						   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
     }
     if($opt_HR->{"--dint"}) { 
 	$draw_opts = "--dint"; 
 	$draw_key = $key_out . ".dint";
-	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts), $aln_file, $stk_suffix_AR, $template_file, 
-		   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
+	$do_tabfile = 1;
+	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
+						   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
     }
     if($opt_HR->{"--span"}) { 
 	$draw_opts = "--span"; 
 	$draw_key = $key_out . ".span";
-	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts), $aln_file, $stk_suffix_AR, $template_file, 
-		   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
+	$do_tabfile = 1;
+	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
+						   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
     }
     if($opt_HR->{"--info"}) { 
-	$draw_opts = ""; 
+	$draw_opts = "--info"; 
 	$draw_key = $key_out . ".info";
-	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts), $aln_file, $stk_suffix_AR, $template_file, 
-		   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
+	$do_tabfile = 1;
+	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
+						   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
     }
     if($opt_HR->{"--mutinfo"}) { 
 	$draw_opts = "--mutinfo"; 
 	$draw_key = $key_out . ".mutinfo";
-	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts), $aln_file, $stk_suffix_AR, $template_file, 
-		   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
+	$do_tabfile = 1;
+	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
+						   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
     }
     if($opt_HR->{"--indi-all"}) { 
 	$draw_opts = "--indi";
-	if(! $opt_HR->{"--no-prob"}) { $draw_opts .= " --prob"; }
+	if($opt_HR->{"--no-prob"}) { $draw_opts .= " --no-iprob"; }
 	$draw_key = $key_out . ".indiall";
-	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts), $aln_file, $stk_suffix_AR, $template_file, 
-		   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
+	$do_tabfile = 0;
+	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
+						   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
     }
     if($opt_HR->{"--indi-list"}) { 
 	$draw_opts = "--indi --list " . $opt_HR->{"--indi-list"}; 
-	if(! $opt_HR->{"--no-prob"}) { $draw_opts .= " --prob"; }
+	if($opt_HR->{"--no-prob"}) { $draw_opts .= " --no-iprob"; }
 	$draw_key = $key_out . ".indi";
-	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts), $aln_file, $stk_suffix_AR, $template_file, 
-		   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
+	$do_tabfile = 0;
+	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
+						   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
     }
-    if($opt_HR->{"--cons"}) { 
-	$draw_opts = "--rf"; 
-	$draw_key = $key_out . ".cons";
-	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts), $aln_file, $stk_suffix_AR, $template_file, 
-		   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
+    if($opt_HR->{"--rf"}) { 
+	$draw_opts  = "--rf"; 
+	$draw_key   = $key_out . ".rf";
+	$do_tabfile = 0;
+	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
+						   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
     }
 
     return $nfiles_created;
@@ -652,6 +781,7 @@ sub draw_alignment {
 # Arguments:
 #   $ssdraw:            path and name of esl-alimanip/ssu-esl-alimanip executable
 #   $ssdraw_opts:       string defining options for esl-ssdraw call
+#   $do_tabfile:        '1' to create a tabfile, '0' not to
 #   $aln_file           name of alignment file 
 #   $stk_suffix_AR:     reference to array of legal stockholm suffixes
 #   $template_file:     name of template file to use
@@ -667,9 +797,9 @@ sub draw_alignment {
 # 
 ####################################################################
 sub run_ssdraw_for_ssu_draw { 
-    my $narg_expected = 12;
+    my $narg_expected = 13;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, run_ssdraw_for_ssu_draw() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($ssdraw, $ssdraw_opts, $aln_file, $stk_suffix_AR, $template_file, $draw_key, $max_width_aln,
+    my ($ssdraw, $ssdraw_opts, $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, $draw_key, $max_width_aln,
 	$max_width_draw, $max_width_tab,$opt_HR, $sum_file, $log_file) = @_;
 
     my($draw_ps, $draw_pdf, $draw_ps2print, $draw_pdf2print, $command_worked, $aln_file2print);
@@ -677,16 +807,13 @@ sub run_ssdraw_for_ssu_draw {
     my $tabfile2print = "-";
     my $nfiles_created = 0;
 
-    my $indi_opt_enabled = 0;
-    if($ssdraw_opts =~ m/\-\-indi/) { $indi_opt_enabled = 1; }
-
     if($opt_HR->{"-a"}) { # save diagrams to CWD, print full path to input alignment
 	$aln_file2print = $aln_file;
 	$draw_ps        = SwapOrAppendFileSuffix($aln_file, $stk_suffix_AR, $draw_key . ".ps", 0);
 	$draw_ps2print  = $draw_ps;
 	$draw_pdf       = SwapOrAppendFileSuffix($aln_file, $stk_suffix_AR, $draw_key . ".pdf", 0);
 	$draw_pdf2print = $draw_pdf;
-	if(! $indi_opt_enabled) { 
+	if($do_tabfile) {
 	    $tabfile        = SwapOrAppendFileSuffix($aln_file, $stk_suffix_AR, $draw_key . ".drawtab", 0);
 	    $tabfile2print  = $tabfile;
 	}
@@ -697,7 +824,7 @@ sub run_ssdraw_for_ssu_draw {
 	$draw_ps2print  = RemoveDirPath($draw_ps);
 	$draw_pdf       = SwapOrAppendFileSuffix($aln_file, $stk_suffix_AR, $draw_key . ".pdf", 1);
 	$draw_pdf2print = RemoveDirPath($draw_pdf);
-	if(! $indi_opt_enabled) { 
+	if($do_tabfile) { 
 	    $tabfile        = SwapOrAppendFileSuffix($aln_file, $stk_suffix_AR, $draw_key . ".drawtab", 1);
 	    $tabfile2print  = RemoveDirPath($tabfile);
 	}
@@ -707,7 +834,7 @@ sub run_ssdraw_for_ssu_draw {
     if((! $opt_HR->{"-i"}) && (! $opt_HR->{"--indi-all"})) { $small_opt = "--small "; }
 
     my $tab_opt = "";
-    if(! $indi_opt_enabled) { $tab_opt = "--tabfile $tabfile "; }
+    if($do_tabfile) { $tab_opt = "--tabfile $tabfile "; }
 
     my $ssdraw_output_file = SwapOrAppendFileSuffix($aln_file, \@stk_suffix_A, ".ssdraw", 0);
 
@@ -738,10 +865,7 @@ sub run_ssdraw_for_ssu_draw {
 	    PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %-*s\n", $max_width_aln, $aln_file2print, $max_width_draw, $draw_pdf2print, $npages, $max_width_tab, $tabfile2print));
 	    $tabfile2print = "-";
 	    $nfiles_created++;
-	    # if --ps-keep is not enabled and we successfully have the pdf ($command_worked above), remove the ps below
-	    if(! $opt_HR->{"--ps-keep"}) { 
-		$keep_ps = 0;
-	    }
+	    $keep_ps = 0;
 	}
     }
     if($keep_ps) { # $keep_ps is set to 0 only if we successfully make a pdf above and --ps-keep was not enabled

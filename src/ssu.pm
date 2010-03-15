@@ -27,6 +27,7 @@
 # TryPs2Pdf():                     attempt to run 'ps2pdf' to convert ps to pdf file.
 # SwapOrAppendFileSuffix():        given a file name, return a new name with a suffix swapped.
 # RemoveDirPath():                 remove the leading directory path of a filename
+# ReturnDirPath():                 return the leading directory path of a filename
 # UseModuleIfItExists():           use 'use()' to use a module, if it exists on the system
 # SecondsSinceEpoch():             return number of seconds since the epoch 
 # FileOpenFailure():               called if an open() call fails, print error msg and exit
@@ -908,6 +909,34 @@ sub RemoveDirPath() {
 
     $orig_file =~ s/^.+\///;
     return $orig_file;
+}
+
+
+
+#################################################################
+# Subroutine : ReturnDirPath()
+# Incept:      EPN, Mon Mar 15 10:17:11 2010
+#
+# Purpose:     Given a file name return the directory path, with the final '/'
+#              For example: "foodir/foodir2/foo.stk" becomes "foodir/foodir2/".
+#
+# Arguments: 
+#   $orig_file: name of original file
+# 
+# Returns:     The string $orig_file with actual file name removed
+#
+################################################################# 
+sub ReturnDirPath() {
+    my $narg_expected = 1;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, RemoveDirPath() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my $orig_file = $_[0];
+
+    if($orig_file !~ m/\//) { $orig_file = "/" . $orig_file; } # add '/' to beginning if it doesn't exist
+
+    $orig_file =~ s/\/.+$//; # remove everything after first '/' as well as first '/'
+
+    if($orig_file eq "") { return "./";             }
+    else                 { return $orig_file . "/"; }
 }
 
 

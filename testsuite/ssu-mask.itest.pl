@@ -133,14 +133,26 @@ $testctr++;
 
 # Test -d
 if(($testnum eq "") || ($testnum == $testctr)) {
+    # without -a
     run_mask                  ($dir, "-d", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@name_A, ".mask.stk");
     check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".mask.pdf", ".mask.ps");
     $output = `cat $dir/$dir.ssu-mask.sum`;
+    if($output !~ /\.mask\s+input/)                              { die "ERROR, problem with masking"; }
     if($output !~ /$dir.archaea.mask.stk+\s+output\s+aln+\s+1376\s+\-\s+\-/)     { die "ERROR, problem with creating mask diagram"; }
     if($output !~ /$dir.bacteria.mask.stk+\s+output\s+aln+\s+1376\s+\-\s+\-/)    { die "ERROR, problem with creating mask diagram"; }
     if($output !~ /$dir.eukarya.mask.stk+\s+output\s+aln+\s+1343\s+\-\s+\-/)     { die "ERROR, problem with creating mask diagram"; }
     remove_files              ($dir, "mask");
+
+    # with -a
+    run_mask                  ($dir . "/" . $dir . ".eukarya.stk", "-d -a", $testctr);
+    check_for_files           (".", $dir, $testctr, \@euk_only_A, ".mask.stk");
+    check_for_one_of_two_files(".", $dir, $testctr, \@euk_only_A, ".mask.pdf", "mask.ps");
+    $output = `cat $dir.eukarya.ssu-mask.sum`;
+    if($output !~ /\.mask\s+input/)                              { die "ERROR, problem with masking"; }
+    if($output !~ /$dir.eukarya.mask.stk\s+output\s+aln\s+1343/) { die "ERROR, problem with masking"; }
+    remove_files              (".", "eukarya.mask");
+    remove_files              (".", "eukarya.ssu-mask");
 }
 $testctr++;
 
@@ -700,8 +712,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     check_for_files($dir, $dir, $testctr, \@v4_name_A, ".mask.stk");
     $output = `cat $dir/$dir.ssu-mask.sum`;
     if($output !~ /$dir.bac-v4.mask\s+output\s+mask\s+241\s+237\s+4/) { die "ERROR, problem with masking";}
-    remove_files(".", "archaea.mask");
-    remove_files(".", "archaea.ssu-mask");
+    remove_files              ($dir, "mask");
 
     # with -a 
     run_mask($dir . "/" . $dir . ".arc-v4.stk", "-a -m v4.cm", $testctr);
@@ -742,8 +753,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     check_for_one_of_two_files($dir, $dir, $testctr, \@trna_only_A, ".mask.ps", ".mask.pdf");
     $output = `cat $dir/$dir.ssu-mask.sum`;
     if($output !~ /$dir.trna-5.mask\s+output\s+mask\s+71\s+68\s+3/) { die "ERROR, problem with masking";}
-    remove_files(".", "trna-5.mask");
-    remove_files(".", "trna-5.ssu-mask");
+    remove_files              ($dir, "mask");
 
     # with -a 
     run_mask($dir . "/" . $dir . ".trna-5.stk", "-a -t $trna_psfile -m $trna_cmfile", $testctr);

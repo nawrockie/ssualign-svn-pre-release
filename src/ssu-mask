@@ -208,7 +208,7 @@ if(($opt_H{"-k"} ne "") && ($opt_H{"-f"} ne "")) {
 if(($opt_H{"-f"} ne "") || ($opt_H{"-d"}) || ($opt_H{"-k"} ne "")) {  
     if($do_mask_mode)  { 
 	if($opt_H{"-f"} ne "") { printf STDERR ("\nERROR, -f is incompatible with --pf, --pt, --rfonly, and --gapthresh.\n"); exit(1); }
-	if($opt_H{"-d"})         { printf STDERR ("\nERROR, -d is incompatible with --pf, --pt, --rfonly, and --gapthresh.\n"); exit(1); }
+	if($opt_H{"-d"})        { printf STDERR ("\nERROR, -d is incompatible with --pf, --pt, --rfonly, and --gapthresh.\n"); exit(1); }
 	if($opt_H{"-k"} ne "")  { printf STDERR ("\nERROR, -k is incompatible with --pf, --pt, --rfonly, and --gapthresh.\n"); exit(1); }
     }	   
     $do_mask_mode = 1; 
@@ -830,7 +830,7 @@ sub validate_and_setup_ssu_mask {
     # If -f <s> enabled, make sure the mask file <s> exists either locally (relative to the current working directory)
     # or in SSUALIGNDIR
     my $mask_file;
-    if($opt_HR->{"-f"}) { 
+    if($opt_HR->{"-f"} ne "") { 
 	if($naln != 1) { 
 	    $errmsg = "ERROR, -f only makes sense when masking a single alignment.\n\n";
 	    PrintStringToFile($sum_file, 0, $errmsg);
@@ -856,7 +856,7 @@ sub validate_and_setup_ssu_mask {
     }
 
     # If -d or -k <s> enabled, we should have one mask for each alignment, we make sure below
-    my ($mask_key, $actual_mask_file, $local_mask_file);
+    my ($actual_mask_file, $local_mask_file);
     if($opt_HR->{"-d"} || $opt_HR->{"-k"} ne "") { 
 	foreach $aln_name (@{$stk_list_arr_ref}) { 
 	    # morph aln_name into mask file name
@@ -867,6 +867,8 @@ sub validate_and_setup_ssu_mask {
 	    $mask_file = RemoveDirPath($mask_file);
 	    # remove "$dir." prefix
 	    $mask_file =~ s/^$dir\.//;
+	    # if -a, remove everything up to the final '.'
+	    if($opt_HR->{"-a"}) { $mask_file =~ s/^.+\.//; }
 	    # add mask suffix and look for it, if -k it can be either in cwd or SSUALIGNDIR
 	    # if -d it must be in SSUALIGNDIR
 	    if($opt_HR->{"-k"} ne "") { 
@@ -888,7 +890,7 @@ sub validate_and_setup_ssu_mask {
 		$mask_file .= "-0p1.mask";
 		$actual_mask_file = $ssualigndir . "/" . $mask_file;
 		if(! (-e $actual_mask_file)) { 
-		    PrintErrorAndExit("ERROR, unable to locate default mask file $mask_file for masking alignment $aln_name in the SSUALIGNDIR $ssualigndir.", $sum_file, 1);
+		    PrintErrorAndExit("ERROR, unable to locate default mask file $mask_file for masking alignment $aln_name in\nthe SSUALIGNDIR $ssualigndir.", $sum_file, 1);
 		}		    
 	    }
 	    push(@{$in_mask_list_arr_ref}, $actual_mask_file);
