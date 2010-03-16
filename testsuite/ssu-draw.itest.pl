@@ -8,6 +8,8 @@
 #
 # EPN, Fri Mar 12 09:51:27 2010
 
+require "ssu.itest.pm";
+
 $usage = "perl ssu-draw.itest.pl\n\t<directory with all 5 SSU-ALIGN scripts>\n\t<data directory with fasta files etc.>\n\t<tmpfile and tmpdir prefix>\n\t<test number to perform, if blank, do all tests>\n";
 $testnum = "";
 if(scalar(@ARGV) == 3) { 
@@ -68,7 +70,7 @@ foreach $name (@name_A) {
 $testctr = 1;
 
 # Do ssu-align call, required for all tests:
-run_align($fafile, $dir, "-F", $testctr);
+run_align($ssualign, $fafile, $dir, "-F", $testctr);
 check_for_files($dir, $dir, $testctr, \@name_A, ".hits.list");
 check_for_files($dir, $dir, $testctr, \@name_A, ".hits.fa");
 check_for_files($dir, $dir, $testctr, \@name_A, ".stk");
@@ -80,14 +82,14 @@ check_for_files($dir, $dir, $testctr, \@name_A, ".cmalign");
 #######################################
 # Test -h
 if(($testnum eq "") || ($testnum == $testctr)) {
-    run_draw("", "-h", $testctr);
+    run_draw($ssudraw, "", "-h", $testctr);
     if ($? != 0) { die "FAIL: ssu-draw -h failed unexpectedly"; }
 }
 $testctr++;
 
 # Test default (no options)
 if(($testnum eq "") || ($testnum == $testctr)) {
-    run_draw                  ($dir, "", $testctr);
+    run_draw                  ($ssudraw, $dir, "", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@name_A, ".drawtab");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
@@ -105,9 +107,9 @@ $testctr++;
 
 # Test default (no options) and --no-mask with freshly created mask files in foo/ (masks should automatically be incorporated into the drawings)
 if(($testnum eq "") || ($testnum == $testctr)) {
-    run_mask                  ($dir, "", $testctr);
+    run_mask                  ($ssumask, $dir, "", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@name_A, ".mask");
-    run_draw                  ($dir, "", $testctr);
+    run_draw                  ($ssudraw, $dir, "", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@name_A, ".drawtab");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
@@ -124,7 +126,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     remove_files              ($dir, "\.pdf");
 
     # check that --no-mask works
-    run_draw                  ($dir, "--no-mask", $testctr);
+    run_draw                  ($ssudraw, $dir, "--no-mask", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@name_A, ".drawtab");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
@@ -141,7 +143,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     remove_files              ($dir, "\.pdf");
 
     # test that -a uses the mask
-    run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "-a", $testctr);
+    run_draw                  ($ssudraw, $dir . "/" . $dir . ".bacteria.stk", "-a", $testctr);
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".drawtab");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
@@ -157,7 +159,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     remove_files              (".", "bacteria.ssu-draw");
 
     # and now that -a and --no-mask does not use the mask
-    run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "--no-mask -a", $testctr);
+    run_draw                  ($ssudraw, $dir . "/" . $dir . ".bacteria.stk", "--no-mask -a", $testctr);
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".drawtab");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
@@ -179,7 +181,7 @@ $testctr++;
 
 # Test -a (on $dir.bacteria.stk in $dir/)
 if(($testnum eq "") || ($testnum == $testctr)) {
-    run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "-a", $testctr);
+    run_draw                  ($ssudraw, $dir . "/" . $dir . ".bacteria.stk", "-a", $testctr);
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".drawtab");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
@@ -197,10 +199,10 @@ $testctr++;
 # Test -a (on $dir.bacteria.stk in cwd/)
 if(($testnum eq "") || ($testnum == $testctr)) {
     system("cp " . $dir . "/" . $dir . ".bacteria.stk $dir.bacteria.stk");
-    run_draw                  ($dir . ".bacteria.stk", "-a", $testctr);
+    run_draw                  ($ssudraw, $dir . ".bacteria.stk", "-a", $testctr);
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".drawtab");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
-    check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
     check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".pdf", ".ps");
     $output = `cat $dir.bacteria.ssu-draw.sum`;
     if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.p\w+/) { die "ERROR, problem with drawing"; }
@@ -216,7 +218,7 @@ $testctr++;
 # Test -d
 if(($testnum eq "") || ($testnum == $testctr)) {
     # without -a
-    run_draw                  ($dir, "-d", $testctr);
+    run_draw                  ($ssudraw, $dir, "-d", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@name_A, ".drawtab");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
@@ -231,10 +233,10 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     remove_files              ($dir, "\.pdf");
 
     # with -a
-    run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "-d -a", $testctr);
+    run_draw                  ($ssudraw, $dir . "/" . $dir . ".bacteria.stk", "-d -a", $testctr);
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".drawtab");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
-    check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
     check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".pdf", ".ps");
     $output = `cat $dir.bacteria.ssu-draw.sum`;
     if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.p\w+/) { die "ERROR, problem with drawing"; }
@@ -250,14 +252,14 @@ $testctr++;
 
 # Test -f with -a (on $dir.bacteria.stk in cwd/ freshly created foo.bacteria.mask in $dir/)
 if(($testnum eq "") || ($testnum == $testctr)) {
-    run_mask                  ($dir, "", $testctr);
+    run_mask                  ($ssumask, $dir, "", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@name_A, ".mask");
     system("cp " . $dir . "/" . $dir . ".bacteria.stk $dir.bacteria.stk");
     $in_mask_file = $dir . "/" . $dir . ".bacteria.mask";
-    run_draw                  ($dir . ".bacteria.stk", "-a -f $in_mask_file", $testctr);
+    run_draw                  ($ssudraw, $dir . ".bacteria.stk", "-a -f $in_mask_file", $testctr);
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".drawtab");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
-    check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
     check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".pdf", ".ps");
     $output = `cat $dir.bacteria.ssu-draw.sum`;
     if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.p\w+/) { die "ERROR, problem with drawing"; }
@@ -273,10 +275,10 @@ if(($testnum eq "") || ($testnum == $testctr)) {
 
     # test the negative, using no -f should cause ssu-draw to *not* use a mask
     system("cp " . $dir . "/" . $dir . ".bacteria.stk $dir.bacteria.stk");
-    run_draw                  ($dir . ".bacteria.stk", "-a", $testctr);
+    run_draw                  ($ssudraw, $dir . ".bacteria.stk", "-a", $testctr);
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".drawtab");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
-    check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
     check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".pdf", ".ps");
     $output = `cat $dir.bacteria.ssu-draw.sum`;
     if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.p\w+/) { die "ERROR, problem with drawing"; }
@@ -301,7 +303,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
 	if ($? != 0) { die "FAIL: cp command failed unexpectedly";}
     }
     # without -a 
-    run_draw                  ($dir, "-k $mask_key_in", $testctr);
+    run_draw                  ($ssudraw, $dir, "-k $mask_key_in", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@name_A, ".drawtab");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
@@ -328,7 +330,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
 	system("cp $maskfile $newmaskfile");
 	if ($? != 0) { die "FAIL: cp command failed unexpectedly";}
     }
-    run_draw                  ($dir . "/" . $dir . ".eukarya.stk", "-k $mask_key_in -a", $testctr);
+    run_draw                  ($ssudraw, $dir . "/" . $dir . ".eukarya.stk", "-k $mask_key_in -a", $testctr);
     check_for_files           (".", $dir, $testctr, \@euk_only_A, ".drawtab");
     check_for_files           (".", $dir, $testctr, \@euk_only_A, ".ssu-draw.sum");
     check_for_files           (".", $dir, $testctr, \@euk_only_A, ".ssu-draw.log");
@@ -353,7 +355,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
 	if ($? != 0) { die "FAIL: cp command failed unexpectedly";}
     }
     # without -a 
-    run_draw                  ($dir, "-k $mask_key_in", $testctr);
+    run_draw                  ($ssudraw, $dir, "-k $mask_key_in", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@name_A, ".drawtab");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
@@ -378,10 +380,10 @@ $testctr++;
 # Test -i
 if(($testnum eq "") || ($testnum == $testctr)) {
     #without -a 
-    run_draw                  ($dir, "-i", $testctr);
+    run_draw                  ($ssudraw, $dir, "-i", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@name_A, ".drawtab");
-    check_for_one_of_two_files($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
-    check_for_one_of_two_files($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
+    check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
+    check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
     check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".pdf", ".ps");
     $output = `cat $dir/$dir.ssu-draw.sum`;
     if($output !~ /$dir.archaea.stk\s+$dir.archaea.p\w+/)    { die "ERROR, problem with drawing"; }
@@ -394,7 +396,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     remove_files              (".", "bacteria.ssu-draw");
 
     # with -a
-    run_draw                  ($dir . "/" . $dir . ".eukarya.stk", "-i -a", $testctr);
+    run_draw                  ($ssudraw, $dir . "/" . $dir . ".eukarya.stk", "-i -a", $testctr);
     check_for_files           (".", $dir, $testctr, \@euk_only_A, ".drawtab");
     check_for_files           (".", $dir, $testctr, \@euk_only_A, ".ssu-draw.sum");
     check_for_files           (".", $dir, $testctr, \@euk_only_A, ".ssu-draw.log");
@@ -421,10 +423,10 @@ $testctr++;
 if(($testnum eq "") || ($testnum == $testctr)) {
     system("cp " . $dir . "/" . $dir . ".bacteria.stk $dir.bacteria.stk");
     $ifile = $dir . "/" . $dir . ".bacteria.ifile";
-    run_draw                  ($dir . ".bacteria.stk", "-a --ifile $ifile", $testctr);
+    run_draw                  ($ssudraw, $dir . ".bacteria.stk", "-a --ifile $ifile", $testctr);
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".drawtab");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
-    check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
     check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".pdf", ".ps");
     $output = `cat $dir.bacteria.ssu-draw.sum`;
     if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.p\w+/) { die "ERROR, problem with drawing"; }
@@ -442,7 +444,7 @@ $testctr++;
 # Test --key-out
 if(($testnum eq "") || ($testnum == $testctr)) {
     # without -a
-    run_draw                  ($dir, "--key-out $draw_key_out", $testctr);
+    run_draw                  ($ssudraw, $dir, "--key-out $draw_key_out", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@name_A, ".$draw_key_out.drawtab");
     check_for_files           ($dir, $dir . "." . $draw_key_out, $testctr, \@ssudraw_only_A, ".sum");
     check_for_files           ($dir, $dir . "." . $draw_key_out, $testctr, \@ssudraw_only_A, ".log");
@@ -457,7 +459,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     remove_files              ($dir, "\.pdf");
 
     # with -a
-    run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "--key-out $draw_key_out -a", $testctr);
+    run_draw                  ($ssudraw, $dir . "/" . $dir . ".bacteria.stk", "--key-out $draw_key_out -a", $testctr);
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".$draw_key_out.drawtab");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".$draw_key_out.ssu-draw.sum");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".$draw_key_out.ssu-draw.log");
@@ -478,9 +480,9 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     $mykey = "test-key";
 
     # without -a
-    run_mask                  ($dir, "--key-out $mykey", $testctr);
+    run_mask                  ($ssumask, $dir, "--key-out $mykey", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@name_A, ("." . $mykey . ".mask"));
-    run_draw                  ($dir, "--mask-key $mykey --key-out $mykey", $testctr);
+    run_draw                  ($ssudraw, $dir, "--mask-key $mykey --key-out $mykey", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@name_A, ".$mykey.drawtab");
     check_for_files           ($dir, $dir . "." . $mykey, $testctr, \@ssudraw_only_A, ".sum");
     check_for_files           ($dir, $dir . "." . $mykey, $testctr, \@ssudraw_only_A, ".log");
@@ -496,9 +498,9 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     remove_files              ($dir, "mask");
 
     # with -a
-    run_mask                  ($dir . "/" . $dir . ".bacteria.stk", "--key-out $mykey -a", $testctr);
+    run_mask                  ($ssumask, $dir . "/" . $dir . ".bacteria.stk", "--key-out $mykey -a", $testctr);
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ("." . $mykey . ".mask"));
-    run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "--mask-key $mykey --key-out $mykey -a", $testctr);
+    run_draw                  ($ssudraw, $dir . "/" . $dir . ".bacteria.stk", "--mask-key $mykey --key-out $mykey -a", $testctr);
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".$mykey.drawtab");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".$mykey.ssu-draw.sum");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".$mykey.ssu-draw.log");
@@ -524,7 +526,7 @@ $testctr++;
 # Test --prob
 if(($testnum eq "") || ($testnum == $testctr)) {
     # without -a
-    run_draw                  ($dir, "--prob --no-aln", $testctr);
+    run_draw                  ($ssudraw, $dir, "--prob --no-aln", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@name_A, ".prob.drawtab");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
@@ -538,7 +540,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     remove_files              ($dir, "\.pdf");
 
     # with -a
-    run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "--prob --no-aln -a", $testctr);
+    run_draw                  ($ssudraw, $dir . "/" . $dir . ".bacteria.stk", "--prob --no-aln -a", $testctr);
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".prob.drawtab");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
@@ -555,7 +557,7 @@ $testctr++;
 # Test --ifreq
 if(($testnum eq "") || ($testnum == $testctr)) {
     # without -a
-    run_draw                  ($dir, "--ifreq --no-aln", $testctr);
+    run_draw                  ($ssudraw, $dir, "--ifreq --no-aln", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@name_A, ".ifreq.drawtab");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
@@ -569,7 +571,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     remove_files              ($dir, "\.pdf");
 
     # with -a
-    run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "--ifreq --no-aln -a", $testctr);
+    run_draw                  ($ssudraw, $dir . "/" . $dir . ".bacteria.stk", "--ifreq --no-aln -a", $testctr);
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ifreq.drawtab");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
@@ -586,7 +588,7 @@ $testctr++;
 # Test --iavglen
 if(($testnum eq "") || ($testnum == $testctr)) {
     # without -a
-    run_draw                  ($dir, "--iavglen --no-aln", $testctr);
+    run_draw                  ($ssudraw, $dir, "--iavglen --no-aln", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@name_A, ".iavglen.drawtab");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
@@ -600,7 +602,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     remove_files              ($dir, "\.pdf");
 
     # with -a
-    run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "--iavglen --no-aln -a", $testctr);
+    run_draw                  ($ssudraw, $dir . "/" . $dir . ".bacteria.stk", "--iavglen --no-aln -a", $testctr);
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".iavglen.drawtab");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
@@ -617,7 +619,7 @@ $testctr++;
 # Test --dall
 if(($testnum eq "") || ($testnum == $testctr)) {
     # without -a
-    run_draw                  ($dir, "--dall --no-aln", $testctr);
+    run_draw                  ($ssudraw, $dir, "--dall --no-aln", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@name_A, ".dall.drawtab");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
@@ -631,7 +633,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     remove_files              ($dir, "\.pdf");
 
     # with -a 
-    run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "--dall --no-aln -a", $testctr);
+    run_draw                  ($ssudraw, $dir . "/" . $dir . ".bacteria.stk", "--dall --no-aln -a", $testctr);
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".dall.drawtab");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
@@ -648,7 +650,7 @@ $testctr++;
 # Test --dint
 if(($testnum eq "") || ($testnum == $testctr)) {
     # without -a
-    run_draw                  ($dir, "--dint --no-aln", $testctr);
+    run_draw                  ($ssudraw, $dir, "--dint --no-aln", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@name_A, ".dint.drawtab");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
@@ -662,7 +664,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     remove_files              ($dir, "\.pdf");
 
     # with -a
-    run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "--dint --no-aln -a", $testctr);
+    run_draw                  ($ssudraw, $dir . "/" . $dir . ".bacteria.stk", "--dint --no-aln -a", $testctr);
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".dint.drawtab");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
@@ -679,7 +681,7 @@ $testctr++;
 # Test --span
 if(($testnum eq "") || ($testnum == $testctr)) {
     # without -a
-    run_draw                  ($dir, "--span --no-aln", $testctr);
+    run_draw                  ($ssudraw, $dir, "--span --no-aln", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@name_A, ".span.drawtab");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
@@ -693,7 +695,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     remove_files              ($dir, "\.pdf");
 
     # with -a
-    run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "--span --no-aln -a", $testctr);
+    run_draw                  ($ssudraw, $dir . "/" . $dir . ".bacteria.stk", "--span --no-aln -a", $testctr);
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".span.drawtab");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
@@ -710,7 +712,7 @@ $testctr++;
 # Test --info
 if(($testnum eq "") || ($testnum == $testctr)) {
     # without -a
-    run_draw                  ($dir, "--info --no-aln", $testctr);
+    run_draw                  ($ssudraw, $dir, "--info --no-aln", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@name_A, ".info.drawtab");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
@@ -724,7 +726,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     remove_files              ($dir, "\.pdf");
 
     # with -a
-    run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "--info --no-aln -a", $testctr);
+    run_draw                  ($ssudraw, $dir . "/" . $dir . ".bacteria.stk", "--info --no-aln -a", $testctr);
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".info.drawtab");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
@@ -741,7 +743,7 @@ $testctr++;
 # Test --mutinfo
 if(($testnum eq "") || ($testnum == $testctr)) {
     # without -a
-    run_draw                  ($dir, "--mutinfo --no-aln", $testctr);
+    run_draw                  ($ssudraw, $dir, "--mutinfo --no-aln", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@name_A, ".mutinfo.drawtab");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
@@ -755,7 +757,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     remove_files              ($dir, "\.pdf");
 
     # with -a
-    run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "--mutinfo --no-aln -a", $testctr);
+    run_draw                  ($ssudraw, $dir . "/" . $dir . ".bacteria.stk", "--mutinfo --no-aln -a", $testctr);
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".mutinfo.drawtab");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
@@ -779,7 +781,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
 	if ($? != 0) { die "FAIL: cp command failed unexpectedly";}
     }
     # without -a 
-    run_draw                  ($dir, "--mutinfo --no-aln -k $mask_key_in", $testctr);
+    run_draw                  ($ssudraw, $dir, "--mutinfo --no-aln -k $mask_key_in", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@name_A, ".mutinfo.drawtab");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
@@ -805,7 +807,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
 	system("cp $maskfile $newmaskfile");
 	if ($? != 0) { die "FAIL: cp command failed unexpectedly";}
     }
-    run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "--mutinfo -k $mask_key_in -a", $testctr);
+    run_draw                  ($ssudraw, $dir . "/" . $dir . ".bacteria.stk", "--mutinfo -k $mask_key_in -a", $testctr);
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".mutinfo.drawtab");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
@@ -831,7 +833,7 @@ $testctr++;
 # Test --indi-all
 if(($testnum eq "") || ($testnum == $testctr)) {
     # without -a
-    run_draw                  ($dir, "--indi-all --no-aln", $testctr);
+    run_draw                  ($ssudraw, $dir, "--indi-all --no-aln", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
     check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".indiall.ps", ".indiall.pdf");
@@ -843,7 +845,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     remove_files              ($dir, "\.pdf");
 
     # with -a
-    run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "--indi-all --no-aln -a", $testctr);
+    run_draw                  ($ssudraw, $dir . "/" . $dir . ".bacteria.stk", "--indi-all --no-aln -a", $testctr);
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
     check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".indiall.pdf", ".indiall.ps");
@@ -854,7 +856,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     remove_files              (".", "bacteria.ssu-draw");
 
     # without -a, but with --no-prob
-    run_draw                  ($dir, "--indi-all --no-aln --no-prob", $testctr);
+    run_draw                  ($ssudraw, $dir, "--indi-all --no-aln --no-prob", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
     check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".indiall.ps", ".indiall.pdf");
@@ -870,7 +872,7 @@ $testctr++;
 # Test --indi-list
 if(($testnum eq "") || ($testnum == $testctr)) {
     # first run ssu-mask --list to get a list
-    run_mask                  ($dir . "/" . $dir . ".eukarya.stk", "--list -a", $testctr);
+    run_mask                  ($ssumask, $dir . "/" . $dir . ".eukarya.stk", "--list -a", $testctr);
     check_for_files           (".", $dir, $testctr, \@euk_only_A, ".list");
     $list_file = $dir . ".eukarya.list";
     $seqk_file = $dir . ".eukarya.seqk";
@@ -888,7 +890,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     close(SEQK);
     
     # now run ssu-draw --indi-list -a (it requires -a)
-    run_draw                  ($dir . "/" . $dir . ".eukarya.stk", "--indi-list $seqk_file --no-aln -a", $testctr);
+    run_draw                  ($ssudraw, $dir . "/" . $dir . ".eukarya.stk", "--indi-list $seqk_file --no-aln -a", $testctr);
     check_for_files           (".", $dir, $testctr, \@euk_only_A, ".ssu-draw.sum");
     check_for_files           (".", $dir, $testctr, \@euk_only_A, ".ssu-draw.log");
     check_for_one_of_two_files(".", $dir, $testctr, \@euk_only_A, ".indi.pdf", ".indi.ps");
@@ -899,7 +901,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     remove_files              (".", "eukarya.ssu-draw");
     
     # now run ssu-draw --indi-list -a --no-prob 
-    run_draw                  ($dir . "/" . $dir . ".eukarya.stk", "--indi-list $seqk_file --no-aln -a --no-prob", $testctr);
+    run_draw                  ($ssudraw, $dir . "/" . $dir . ".eukarya.stk", "--indi-list $seqk_file --no-aln -a --no-prob", $testctr);
     check_for_files           (".", $dir, $testctr, \@euk_only_A, ".ssu-draw.sum");
     check_for_files           (".", $dir, $testctr, \@euk_only_A, ".ssu-draw.log");
     check_for_one_of_two_files(".", $dir, $testctr, \@euk_only_A, ".indi.pdf", ".indi.ps");
@@ -916,7 +918,7 @@ $testctr++;
 # Test --rf
 if(($testnum eq "") || ($testnum == $testctr)) {
     # without -a
-    run_draw                  ($dir, "--rf --no-aln", $testctr);
+    run_draw                  ($ssudraw, $dir, "--rf --no-aln", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
     check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".rf.ps", ".rf.pdf");
@@ -928,7 +930,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     remove_files              ($dir, "\.pdf");
 
     # with -a
-    run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "--rf --no-aln -a", $testctr);
+    run_draw                  ($ssudraw, $dir . "/" . $dir . ".bacteria.stk", "--rf --no-aln -a", $testctr);
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
     check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".rf.pdf", ".rf.ps");
@@ -947,7 +949,7 @@ $testctr++;
 # Test --no-leg
 if(($testnum eq "") || ($testnum == $testctr)) {
     # without -a
-    run_draw                  ($dir, "--no-leg --info --no-aln --ps-only", $testctr);
+    run_draw                  ($ssudraw, $dir, "--no-leg --info --no-aln --ps-only", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@name_A, ".info.drawtab");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
@@ -964,7 +966,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     remove_files              ($dir, "\.ps");
 
     # with -a
-    run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "--no-leg --info --no-aln --ps-only -a", $testctr);
+    run_draw                  ($ssudraw, $dir . "/" . $dir . ".bacteria.stk", "--no-leg --info --no-aln --ps-only -a", $testctr);
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".info.drawtab");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
@@ -985,7 +987,7 @@ $testctr++;
 # Test --no-head
 if(($testnum eq "") || ($testnum == $testctr)) {
     # without -a
-    run_draw                  ($dir, "--no-head --info --no-aln --ps-only", $testctr);
+    run_draw                  ($ssudraw, $dir, "--no-head --info --no-aln --ps-only", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@name_A, ".info.drawtab");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
@@ -1002,7 +1004,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     remove_files              ($dir, "\.ps");
 
     # with -a
-    run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "--no-head --info --no-aln --ps-only -a", $testctr);
+    run_draw                  ($ssudraw, $dir . "/" . $dir . ".bacteria.stk", "--no-head --info --no-aln --ps-only -a", $testctr);
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".info.drawtab");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
@@ -1023,7 +1025,7 @@ $testctr++;
 # Test --no-foot
 if(($testnum eq "") || ($testnum == $testctr)) {
     # without -a
-    run_draw                  ($dir, "--no-foot --info --no-aln --ps-only", $testctr);
+    run_draw                  ($ssudraw, $dir, "--no-foot --info --no-aln --ps-only", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@name_A, ".info.drawtab");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
@@ -1040,7 +1042,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     remove_files              ($dir, "\.ps");
 
     # with -a
-    run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "--no-foot --info --no-aln --ps-only -a", $testctr);
+    run_draw                  ($ssudraw, $dir . "/" . $dir . ".bacteria.stk", "--no-foot --info --no-aln --ps-only -a", $testctr);
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".info.drawtab");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
@@ -1061,7 +1063,7 @@ $testctr++;
 # Test combination of --no-leg no-head and --no-foot
 if(($testnum eq "") || ($testnum == $testctr)) {
     # without -a
-    run_draw                  ($dir, "--no-leg --no-head --no-foot --info --no-aln --ps-only", $testctr);
+    run_draw                  ($ssudraw, $dir, "--no-leg --no-head --no-foot --info --no-aln --ps-only", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@name_A, ".info.drawtab");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
@@ -1078,7 +1080,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     remove_files              ($dir, "\.ps");
 
     # with -a
-    run_draw                  ($dir . "/" . $dir . ".bacteria.stk", "--no-leg --no-head --no-foot --info --no-aln --ps-only -a", $testctr);
+    run_draw                  ($ssudraw, $dir . "/" . $dir . ".bacteria.stk", "--no-leg --no-head --no-foot --info --no-aln --ps-only -a", $testctr);
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".info.drawtab");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
@@ -1104,14 +1106,14 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     # first, build new trna.cm 
     $trna_cmfile = "trna-5.cm";
     @trna_only_A = "trna-5";
-    run_build("-F --rf -n $trna_only_A[0] -o $trna_cmfile $trna_stkfile", $testctr);
+    run_build($ssubuild, $trna_stkfile, "-F --rf -n $trna_only_A[0] -o $trna_cmfile", $testctr);
     check_for_files           (".", "", $testctr, \@trna_only_A, ".cm");
     check_for_files           (".", "", $testctr, \@trna_only_A, ".ssu-build.log");
     check_for_files           (".", "", $testctr, \@trna_only_A, ".ssu-build.sum");
     remove_files(".", "trna-5.ssu-build");
 
     # next, call ssu-align with new $trna_cmfile
-    run_align($trna_fafile, $dir, "-F -m $trna_cmfile", $testctr);
+    run_align($ssualign, $trna_fafile, $dir, "-F -m $trna_cmfile", $testctr);
     check_for_files($dir, $dir, $testctr, \@trna_only_A, ".hits.list");
     check_for_files($dir, $dir, $testctr, \@trna_only_A, ".hits.fa");
     check_for_files($dir, $dir, $testctr, \@trna_only_A, ".stk");
@@ -1120,7 +1122,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
 
     # draw alignments with -t $trna_psfile
     # without -a
-    run_draw($dir, "-t $trna_psfile -m $trna_cmfile", $testctr);
+    run_draw($ssudraw, $dir, "-t $trna_psfile -m $trna_cmfile", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@trna_only_A, ".drawtab");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
@@ -1136,7 +1138,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
 
     # mask alignments with -t $trna_psfile
     # again, without -a
-    run_mask($dir, "-t $trna_psfile -m $trna_cmfile", $testctr);
+    run_mask($ssumask, $dir, "-t $trna_psfile -m $trna_cmfile", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@trna_only_A, ".mask");
     check_for_files           ($dir, $dir, $testctr, \@trna_only_A, ".mask.stk");
     check_for_one_of_two_files($dir, $dir, $testctr, \@trna_only_A, ".mask.ps", ".mask.pdf");
@@ -1144,7 +1146,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     if($output !~ /$dir.trna-5.mask\s+output\s+mask\s+71\s+68\s+3/) { die "ERROR, problem with masking";}
 
     # now draw again, should see same output files, but now the diagrams will have masks
-    run_draw($dir, "-t $trna_psfile -m $trna_cmfile", $testctr);
+    run_draw($ssudraw, $dir, "-t $trna_psfile -m $trna_cmfile", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@trna_only_A, ".drawtab");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
@@ -1163,7 +1165,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
 
     # now repeat the same thing but not with -a
     # draw alignments with -t $trna_psfile
-    run_draw($dir . "/" . $dir . ".trna-5.stk", "-t $trna_psfile -m $trna_cmfile -a", $testctr);
+    run_draw($ssudraw, $dir . "/" . $dir . ".trna-5.stk", "-t $trna_psfile -m $trna_cmfile -a", $testctr);
     check_for_files           (".", $dir, $testctr, \@trna_only_A, ".drawtab");
     check_for_files           (".", $dir, $testctr, \@trna_only_A, ".ssu-draw.sum");
     check_for_files           (".", $dir, $testctr, \@trna_only_A, ".ssu-draw.log");
@@ -1179,14 +1181,14 @@ if(($testnum eq "") || ($testnum == $testctr)) {
 
     # mask alignments with -t $trna_psfile
     # again, now with -a
-    run_mask($dir . "/" . $dir . ".trna-5.stk", "-a -t $trna_psfile -m $trna_cmfile", $testctr);
+    run_mask($ssumask, $dir . "/" . $dir . ".trna-5.stk", "-a -t $trna_psfile -m $trna_cmfile", $testctr);
     check_for_files(".", $dir, $testctr, \@trna_only_A, ".mask");
     check_for_files(".", $dir, $testctr, \@trna_only_A, ".mask.stk");
     $output = `cat $dir.trna-5.ssu-mask.sum`;
     if($output !~ /$dir.trna-5.mask\s+output\s+mask\s+71\s+68\s+3/) { die "ERROR, problem with masking";}
 
     # now draw again, should see same output files, but now the diagrams will have masks
-    run_draw($dir . "/" . $dir . ".trna-5.stk", "-t $trna_psfile -m $trna_cmfile -a", $testctr);
+    run_draw($ssudraw, $dir . "/" . $dir . ".trna-5.stk", "-t $trna_psfile -m $trna_cmfile -a", $testctr);
     check_for_files           (".", $dir, $testctr, \@trna_only_A, ".drawtab");
     check_for_files           (".", $dir, $testctr, \@trna_only_A, ".ssu-draw.sum");
     check_for_files           (".", $dir, $testctr, \@trna_only_A, ".ssu-draw.log");
@@ -1210,91 +1212,3 @@ $testctr++;
 
 printf("All commands completed successfully.\n");
 exit 0;
-
-#####################################################
-# run_mask: Delete all '*mask*' files in $dir, then run 
-#           ssu-mask and make sure it finishes.
-#
-# Arguments:
-# $dir:            command-line argument for ssu-mask
-# $extra_opts:     extra options for ssu-mask
-# $testctr:            counter, for informative output when crashes
-sub run_mask { 
-    if(scalar(@_) != 3) { die "TEST SCRIPT ERROR: run_mask called with " . scalar(@_) . " != 3 arguments."; }
-    my ($dir, $extra_opts, $testctr) = @_;
-    if($extra_opts ne "") { $command = "$ssumask $extra_opts $dir > /dev/null"; }
-    else                  { $command = "$ssumask $dir > /dev/null"; }
-    printf("Running  mask command for set %3d: $command\n", $testctr);
-    system("$command");
-    if ($? != 0) { die "FAIL: ssu-mask $testctr failed unexpectedly"; }
-
-    return;
-}
-#####################################################
-sub run_align { 
-    my ($fafile, $dir, $extra_opts, $testctr) = @_;
-    if($extra_opts ne "") { $command = "$ssualign $extra_opts $fafile $dir > /dev/null"; }
-    else                  { $command = "$ssualign $fafile $dir > /dev/null"; }
-    printf("Running align command for set %3d: $command\n", $testctr);
-    system("$command");
-    if ($? != 0) { die "FAIL: ssu-align $testctr failed unexpectedly"; }
-    return;
-}
-#####################################################
-sub run_build { 
-    my ($opts, $testctr) = @_;
-    $command = "$ssubuild $opts > /dev/null"; 
-    printf("Running build command for set %3d: $command\n", $testctr);
-    system("$command");
-    if ($? != 0) { die "FAIL: ssu-build $testctr failed unexpectedly"; }
-    return;
-}
-#####################################################
-sub run_draw {
-    my ($dir, $extra_opts, $testctr) = @_;
-    if($extra_opts ne "") { $command = "$ssudraw $extra_opts $dir > /dev/null"; }
-    else                  { $command = "$ssudraw $dir > /dev/null"; }
-    printf("Running  draw command for set %3d: $command\n", $testctr);
-    system("$command");
-    if ($? != 0) { die "FAIL: ssu-draw $testctr failed unexpectedly"; }
-}
-#####################################################
-# check_for_files: Check if <dir>/<dir>.<name>.<suffix> exists
-#                  for each <name> in $name_AR. Die if any do not exist.
-sub check_for_files {
-    my ($dir, $root, $testctr, $name_AR, $suffix) = @_;
-    foreach $name (@{$name_AR}) { 
-	if($root ne "") { $file = $dir . "/" . $root . "." . $name . $suffix; }
-	else            { $file = $dir . "/" . $name . $suffix; }
-	if(! -e $file) { die "FAIL: ssu-mask $testctr call failed to create file $file"; }
-    }
-    return;
-}
-#####################################################
-# check_for_one_of_two_files: Check if <dir>/<dir>.<name>.<suffix1> OR <dir>/<dir>.<name>.<suffix2> 
-#                             exists for each <name> in $name_AR. Die if neither exist for any <name>.
-sub check_for_one_of_two_files {
-    my ($dir, $root, $testctr, $name_AR, $suffix1, $suffix2) = @_;
-    foreach $name (@{$name_AR}) { 
-	if($root ne "") { 
-	    $file1 = $dir . "/" . $root . "." . $name . $suffix1; 
-	    $file2 = $dir . "/" . $root . "." . $name . $suffix2;
-	}
-	else {
-	    $file1 = $dir . "/" . $name . $suffix1; 
-	    $file2 = $dir . "/" . $name . $suffix2;
-	}
-	if((! -e $file1) && (! -e $file2)) { die "FAIL: ssu-draw $testctr call failed to create either file $file1 or file $file2"; }
-    }
-    return;
-}
-#####################################################
-# remove_files: Remove files that match string <str> in dir <dir>
-sub remove_files {
-    my ($dir, $str) = @_;
-    if(! -d $dir) { return; }
-    foreach $file (glob("$dir/*")) { 
-	if($file =~ m/$str/) { unlink $file || die "TEST SCRIPT ERROR, unable to remove file $file in $dir"; }
-    }
-    return;
-}

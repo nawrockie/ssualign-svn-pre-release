@@ -213,9 +213,6 @@ if($opt_H{"--no-mask"} && ($opt_H{"-k"} ne "")) {
 if($opt_H{"--no-mask"} && ($opt_H{"--mask-key"} ne "")) { 
     printf STDERR ("\nERROR, --mask-key is incompatible with --no-mask.\n"); exit(1); 
 }
-if(($opt_H{"-f"} ne "") && ($opt_H{"-a"} == 0)) { 
-    printf STDERR ("\nERROR, -f requires the -a option.\n"); exit(1);
-}    
 if(($opt_H{"--ifile"} ne "") && ($opt_H{"-a"} == 0)) { 
     printf STDERR ("\nERROR, --ifile requires the -a option.\n"); exit(1);
 }    
@@ -522,7 +519,7 @@ sub validate_and_setup_ssu_draw {
 		$mask_file = RemoveDirPath($opt_HR->{"-f"});
 		PrintErrorAndExit("ERROR, the mask file " . $opt_HR->{"-f"} . " does not exist relative to the current directory.\nAnd $mask_file does not exist in SSUALIGNDIR $ssualigndir.", $sum_file, 1); 
 	    }
-	    push(@{$mask_list_arr_ref}, $opt_HR->{"-f"});
+	    push(@{$mask_list_arr_ref}, $mask_file);
 	}
 	elsif($opt_HR->{"-d"} || $opt_HR->{"-k"}) { 
 	    $mask_file = $aln_name;

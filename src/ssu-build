@@ -63,7 +63,7 @@ $options_usage .= "  -n <s>        : name the CM <s>\n";
 $options_usage .= "  --append <s>  : append this model to CM file <s>\n";
 $options_usage .= "  --key-out <s> : add <s> to all output file names, before the suffix\n";
 
-$options_usage .= "\noptions for building a model from a truncated version of the alignment:\n";
+$options_usage .= "\noption for building a model from a truncated version of the alignment:\n";
 $options_usage .= "  --trunc <s> : only include consensus columns from <x> to <y> (where <s> =\"<x>-<y>\")\n";
 
 $options_usage .= "\noptions for numbering alignment consensus columns (no model will be built):\n";
@@ -81,7 +81,6 @@ $options_usage .= "  --ere <x>       : with --eent, set target relative entropy 
 
 $options_usage .= "\noptions for output of structure diagram, only relevant with -d and --trunc:\n";
 $options_usage .= "  --ps2pdf <s> : command for converting ps to pdf is <s> (not \"ps2pdf\")\n";
-$options_usage .= "  --ps-keep    : if --ps2pdf or ps2pdf is installed, save postscript (& pdf) files\n";
 $options_usage .= "  --ps-only    : only save postscript secondary structure diagram, no pdf\n";
 
 
@@ -108,7 +107,6 @@ $opt_takes_arg_H{"--rf"}        = 0;  push(@opt_order_A, "--rf");
 $opt_takes_arg_H{"--eent"}      = 0;  push(@opt_order_A, "--eent");
 $opt_takes_arg_H{"--ere"}       = 1;  push(@opt_order_A, "--ere");
 $opt_takes_arg_H{"--ps2pdf"}    = 1;  push(@opt_order_A, "--ps2pdf");
-$opt_takes_arg_H{"--ps-keep"}   = 0;  push(@opt_order_A, "--ps-keep");      
 $opt_takes_arg_H{"--ps-only"}   = 0;  push(@opt_order_A, "--ps-only");      
 
 #set default options
@@ -134,7 +132,6 @@ my $opt_return = GetOptions
      'eent'        => \$opt_H{"--eent"},
      'ere=f'       => \$opt_H{"--ere"},
      'ps2pdf=s'    => \$opt_H{"--ps2pdf"},
-     'ps-keep'     => \$opt_H{"--ps-keep"},
      'ps-only'     => \$opt_H{"--ps-only"});
  
 if($opt_return != 1) { print STDERR "\nERROR, GetOptions() did not return 1, but $opt_return\n"; exit(1); }
@@ -205,8 +202,7 @@ if($opt_H{"--num"}) {
        ($opt_H{"--trunc"}     ne "") ||
        ($opt_H{"--eent"})            ||
        ($opt_H{"--ere"}       ne "") ||
-       ($opt_H{"--ps2pdf"})          ||
-       ($opt_H{"--ps-keep"})) {
+       ($opt_H{"--ps2pdf"})) {
 	printf STDERR ("\nERROR, --num is incompatible with all other options except for -F, --rf, -1, --gapthresh and --key-out.\n"); exit(1);
     }
 }
@@ -276,7 +272,7 @@ if($gapthresh eq "")  { $gapthresh = $globals_H{"DF_CMBUILD_GAPTHRESH"}; }
 if(($do_number_mode || $opt_H{"--trunc"} ne "") &&     # condition 1 above
    (((! $opt_H{"-d"}) && (! $opt_H{"--rf"})) || (($opt_H{"-d"}) && ($opt_H{"--gapthresh"} ne "")))) { # condition 2 above
     $tmp_new_rf_aln_file = $aln_file . ".newrf";
-    run_alimanip_to_define_rf_based_on_gapfreq($alimanip, $aln_file, $tmp_new_rf_aln_file, $gapthresh, $sum_file, $log_file);
+    run_alimask_and_alimanip_to_define_rf_based_on_gapfreq($alimask, $alimanip, $aln_file, $tmp_new_rf_aln_file, $gapthresh, $sum_file, $log_file);
     $aln_file_with_rf = $tmp_new_rf_aln_file;
 }
     
@@ -309,7 +305,7 @@ if($do_number_mode)
 ############
 # Conclude #
 ############
-#if($tmp_new_rf_aln_file ne "") { UnlinkFile($tmp_new_rf_aln_file, $log_file); }
+if($tmp_new_rf_aln_file ne "") { UnlinkFile($tmp_new_rf_aln_file, $log_file); }
 
 $total_seconds += SecondsSinceEpoch($time_hires_installed);
 PrintConclusion($sum_file, $log_file, $sum_file, $log_file, $total_seconds, $time_hires_installed, "");
@@ -435,7 +431,7 @@ sub validate_and_setup_ssu_build {
 		$cm_file = $opt_HR->{"-o"};
 	    }
 	    else { 
-		$cm_file = $root . ".cm";
+		$cm_file = $root . $key_out . ".cm";
 	    }
 	    if(-e $cm_file) { 
 		if(!($opt_HR->{"-F"})) { 
@@ -637,7 +633,8 @@ sub run_alimanip_to_number {
 
     PrintStringToFile($sum_file, 1, sprintf("#\n# Numbering consensus columns in alignment file...\n"));
 
-    if(! $opt_HR->{"-i"}) { $extra_opts .= " -1"; }
+    if(! $opt_HR->{"-i"}) { $extra_opts .= " --outformat pfam"; }
+    else                  { $extra_opts .= " --outformat stockholm"; }
     PrintStringToFile($sum_file, 1, sprintf("#\n"));
     
     my $command = "$alimanip $extra_opts -o $num_aln_file $aln_file";
@@ -656,36 +653,45 @@ sub run_alimanip_to_number {
 }
 
 #####################################################################
-# Subroutine: run_alimanip_to_define_rf_based_on_gapfreq()
+# Subroutine: run_alimask_and_alimanip_to_define_rf_based_on_gapfreq()
 # Incept:     EPN, Sun Jan 24 07:59:32 2010
 # 
-# Purpose:    Run esl-alimanip/ssu-esl-alimanip on an alignment file 
-#             to define the RF annotation within it based on gap
-#             frequencies.
+# Purpose:    Run esl-alimask/ssu-esl-alimask and esl-alimanip/ssu-esl-alimanip
+#             on an alignment file to define the RF annotation within it based 
+#             on gap frequencies.
 #
 # Arguments:  
+#   $alimask:          path and name of esl-alimask/ssu-esl-alimask executable
 #   $alimanip:         path and name of esl-alimanip/ssu-esl-alimanip executable
 #   $aln_file:         path and name of alignment file we want to number
-#   $rf_aln_file:       path and name of the newly RF'ed alignment file we'll create here
+#   $rf_aln_file:      path and name of the newly RF'ed alignment file we'll create here
 #   $gapthresh:        gap threshold to use when building the model
 #   $sum_file:         file to print output file notices to
-#   $log_file:           file to print commands to 
+#   $log_file:         file to print commands to 
 # 
 # Returns:  Nothing, if it returns, everything is valid.
 # 
 ####################################################################
-sub run_alimanip_to_define_rf_based_on_gapfreq {
-    my $narg_expected = 6;
+sub run_alimask_and_alimanip_to_define_rf_based_on_gapfreq {
+    my $narg_expected = 7;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, run_alimanip_to_define_rf_based_on_gapfreq() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($alimanip, $aln_file, $rf_aln_file, $gapthresh, $sum_file, $log_file) = @_;
+    my ($alimask, $alimanip, $aln_file, $rf_aln_file, $gapthresh, $sum_file, $log_file) = @_;
 
     my $command_worked;
     
     PrintStringToFile($sum_file, 1, sprintf("#\n# Defining consensus columns based on gap frequency in alignment file...\n"));
 
-    my $command = "$alimanip -g --gapthresh $gapthresh -o $rf_aln_file $aln_file";
+    my $gap_based_mask = RemoveDirPath($aln_file) . ".gmask";
+    my $tmp_aln_file   = RemoveDirPath($aln_file) . ".gmask.stk";
+
+    my $command = "$alimask -o $tmp_aln_file -g --gapthresh $gapthresh --gmask-all $gap_based_mask $aln_file";
+    RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
+    $command = "$alimanip --mask2rf $gap_based_mask --m-keeprf -o $rf_aln_file $aln_file";
     RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
 
+    #remove temp files
+    UnlinkFile($gap_based_mask, $log_file);
+    UnlinkFile($tmp_aln_file, $log_file);
     return;
 }
 
@@ -735,7 +741,7 @@ sub run_alimask_to_truncate {
 	PrintStringToFile($sum_file, 1, sprintf("#\n# Truncating alignment; saving only columns between predefined consensus\n\# columns $start and $end...\n"));
     }
     else { 
-	PrintStringToFile($sum_file, 1, sprintf("#\n# Truncating alignment; defining consensus columns and saving those\n\# between gap frequency determined consensus columns $start and $end...\n"));
+	PrintStringToFile($sum_file, 1, sprintf("#\n# Truncating alignment; defining consensus columns and saving those\n\# between gap-frequency-determined consensus columns $start and $end...\n"));
     }
     if(! $opt_HR->{"-i"}) { $extra_opts .= " --outformat pfam "; }
 
@@ -856,12 +862,9 @@ sub run_ssdraw_for_ssu_build {
 	if($command_worked) { 
 	    PrintStringToFile($sum_file, 1, sprintf("  %-*s\n", $max_width, $pdf_file));
 	}
-	# if --ps-keep is not enabled and we successfully have the pdf ($command_worked above), remove the ps below
-	if(! $opt_HR->{"--ps-keep"}) { 
-	    $keep_ps = 0;
-	}
+	$keep_ps = 0;
     }
-    if($keep_ps) { # $keep_ps is set to 0 only if we successfully make a pdf above and --ps-keep was not enabled
+    if($keep_ps) { # $keep_ps is set to 0 only if we successfully made a pdf above 
 	PrintStringToFile($sum_file, 1, sprintf("  %-*s\n", $max_width, $ps_file));
     }
     else { UnlinkFile($ps_file, $log_file); }

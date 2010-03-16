@@ -852,7 +852,7 @@ sub validate_and_setup_ssu_mask {
 	    $mask_file = RemoveDirPath($opt_HR->{"-f"});
 	    PrintErrorAndExit("ERROR, the mask file " . $opt_HR->{"-f"} . " does not exist relative to the current directory.\nAnd $mask_file does not exist in SSUALIGNDIR $ssualigndir.", $sum_file, 1); 
 	}
-	push(@{$in_mask_list_arr_ref}, $opt_HR->{"-f"});
+	push(@{$in_mask_list_arr_ref}, $mask_file);
     }
 
     # If -d or -k <s> enabled, we should have one mask for each alignment, we make sure below
