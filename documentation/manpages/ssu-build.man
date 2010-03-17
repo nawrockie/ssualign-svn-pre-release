@@ -1,4 +1,4 @@
-.TH "ssu-align" 1 "@RELEASEDATE@" "@PACKAGE@ @RELEASE@" "@PACKAGE@ Manual"
+.TH "ssu-build" 1 "@RELEASEDATE@" "@PACKAGE@ @RELEASE@" "@PACKAGE@ Manual"
 
 .SH NAME
 .TP 
@@ -19,7 +19,7 @@ Build models using default SSU-ALIGN seed alignment:
 
 .PP
 .B ssu-build
-reads an multiple alignment of SSU rRNA sequences from 
+reads a multiple alignment of SSU rRNA sequences from 
 .I alignment-file,
 constructs a covariance model and saves the CM 
 to a file. 
@@ -45,7 +45,7 @@ The
 .B -d
 option is expected to mainly be useful in combination
 with the
-.BI --trunc <s>
+.BI --trunc " <s>"
 option, which specifies that a subset of the input alignment be used
 to construct a non-full length model of a SSU rRNA, such as within
 positions spanned by a specific set of primers designed to target a
@@ -57,7 +57,7 @@ option below for details on its usage.)
 When the
 .B -d 
 option is used in combination with the
-.BI --trunc <s>
+.BI --trunc " <s>"
 option, 
 .B ssu-build
 will create secondary structure diagrams that highlight the specific
@@ -81,11 +81,8 @@ secondary structure diagrams of the default seed models included in the
 User's Guide have consensus positions numbered.
 
 
-.PP 
-PARAGRAPH HERE ON EXPERT BUILDING OPTIONS??
-
 .PP
-.B ssu-buid
+.B ssu-build
 uses the program 
 .B cmbuild 
 from the 
@@ -109,187 +106,178 @@ Print brief help; includes version number and summary of
 all options.
 
 .TP
-.BI -F
-Allow output directory 
-.I output-root
-to be deleted and
-overwritten. Normally, if the
-.I output-root 
-directory already exists, 
-.B ssu-align 
-exits with an error unless the
-.I -F
-option is set.
-
-.TP
-.BI -b " <x>"
-Set the minimum bit score threshold for stage 1 survival of an HMM hit as
-.I <x>.
-Only hits that meet or exceed this threshold will be aligned in stage 2.
-By default, 
-.I <x>
-is 100 bits. 
-
-.TP
-.BI -l " <n>"
-Set the minimum length threshold for stage 1 survival of
-an HMM hit as
-.I <x>.
-Only hits that meet or exceed this threshold will be aligned in stage 2.
-By default, 
-.I <n>
-is 1.
-
-.TP
-.BI -n " <n>"
-Run in special 
-.I "prep"
-mode. Split 
-.I sequence-file
-into multiple files with
-.I <n>
-sequences each, and create scripts to run 
-.B ssu-align 
-on each of the smaller sequence files and merge the resulting
-alignments into master alignments when they are all finished running. 
-These master alignments will be identical to the alignments that would
-have been created if a single
-.B ssu-align
-run was performed for the complete sequence file.
-
-.TP
-.BI -c " <n>"
-Run in special 
-.I "prep"
-mode. Split 
-.I sequence-file
-into 
-.I <n> 
-files, each with the same number of sequences.
-Also, create scripts to run 
-.B ssu-align 
-on each of the smaller sequence files and merge the resulting
-alignments into master alignments when they are all finished running. 
-These master alignments will be identical to the alignments that would
-have been created if a single
-.B ssu-align
-run was performed for the complete sequence file.
-
-.TP
-.B -s 
-Only perform the search stage (stage 1). Determine
-the best-matching model, define the likely begin
-and end positions for each SSU (sub)sequence, and extract those
-subsequence from 
-.I sequence-file. 
-Do not align each extracted sequence to its best matching model.
-
-.TP
-.B -a 
-Skip the stage 1 search and only perform the alignment stage (stage 2).
-Presume that each full length target sequence in
-.I sequence-file
-is a SSU sequence or subsequence that matches
-to the CM in 
-.I cm-file.
-This is only allowed if
-.I cm-file
-contains exactly 1 CM.
-
-.TP
-.B -u 
-Do not truncate each target sequence to its predicted begin and end
-SSU positions from stage 1. Instead, in stage 2, align each 
-full length sequence from
-.I sequence-file
-to its best matching model from stage 1.
-
-.TP
-.BI -i " <x>"
-After creating alignments in stage 2, filter the alignment based on
-sequence identity so that no two sequences in the filtered alignment
-will share more than
-.I <x>
-fractional identity. If this option is used in prep mode
-(when 
-.B -n
-or 
-.B -c 
-is also used), then each small alignment (those created for the
-split-up sequence file) 
-will be filtered prior to merging to create a master
-alignment. The master alignment will also be filtered.
-However, in this case the master alignments will not necessarily be identical to the
-alignments created with a single run of
-.B ssu-align.
-This is because the sequences that are removed by filtering is order
-dependent, so many filterings of the smaller intermediate alignments
-may remove different sequences than a single filtering of the large master
-alignment.
-
-.TP
-.B -t
-In stage 1, do not search the reverse complement of each sequence,
-only search the top strand (the actual sequence as it appears in
-.I sequence-file).
-Use this option if it is known that none of the input
-sequences are reverse complements of SSU sequences. 
-
-.TP
-.B -w
-In stage 1, use the HMM Forward algorithm instead of the HMM Viterbi
-algorithm for searching for hits. Forward is about two-fold slower,
-but may be more sensitive (i.e. result in more accurate definitions of
-start and end positions) in rare cases.
-
-.TP
-.B -g
-In stage 1, use a globally configured HMM for searching that will only
-find hits to full length SSU sequences.  By default, the
-HMM is configured in local mode which will find matches to SSU
-subsequences and full SSU sequences.
-
-.TP
 .B -d
-Do not append posterior probabilities (alignment confidence estimates)
-to the resulting alignments. By default, these probabilities are
-appended to the output alignments. These probabilities are useful for
-automatically masking out ambiguously aligned regions of the output
-alignments prior to phylogenetic inference as described in the User's
-Guide. This option will accelerate the alignment step by about 50%,
-and result in alignment files that take up about 67% less
-space. However, it should only be used if you know you do not want to
-mask or prune the alignments at a later stage.
+Specify that the command-line argument is the name of a SSU-ALIGN 0.1
+seed alignment, either 'archaea', 'bacteria', or 'eukarya'.
 
 .TP
-.B -k
-Do not erase the 
-.I N
-local CM file copies (one for each of the 
-.I N
-CMs in 
-.I cm-file
-) from the 
-.I output-root
-directory after running
-.B ssu-align.
-By default, these CM files, which are temporarily copied to 
-.I output-root
-for convenience during execution of the program are erased
-after the program finishes running.
+.B -F
+Allow overwriting of the CM file. 
 
 .TP
-.BI -x " <x>"
-Change the maximum matrix size for the alignment stage to 
-.I <x> 
-Mb. By default 
-.I <x> 
-is 4096 Mb (4 Gb). This option should only used if
-.B ssu-align
-is crashing due to insufficient RAM. The program should tell you if
-this is the case with an informative error message, but may not in all
-cases. It is 
-.I not 
-necessary to decrease 
+.BI -o " <s>"
+Specify that the CM file be named 
+.I <s>.
+Without this option,
+.B ssu-build
+will automatically name the CM file based on the input alignment file
+name and command-line options that are used.
+
+.TP
+.BI -n " <s>"
+Specify that the CM itself be named 
+.I <s>.
+Without this option,
+.B ssu-build
+will automatically name the CM based on the input alignment file
+name and command-line options that are used. The name of the CM is
+important because it will be included as part of all output file names
+for files created by other SSU-ALIGN scripts that use this CM.
+
+.TP
+.BI --append " <s>"
+Append this CM to CM file 
+.I <s>
+that already exists. This allows creation of multi-CM files that can
+be used for discriminating between SSU sequences from different
+phylogenetic clades, such as the default SSU-ALIGN 0.1 CM file, which
+contains 3 CMs, one for each of the three domains of life.
+
+.TP
+.BI --key-out " <s>"
+Include the string 
+.I <s>
+as part of all output file names from
+.B ssu-build,
+immediately before the final suffix. For example, foo.cm would become
+foo.<s>.cm.
+
+.TP
+.BI --trunc " <s>"
+Specify the range of alignment consensus columns to use for building
+the model. 
+Without this option, the full alignment will be used. The
+.I <s>
+string must not contain any whitespace and must be formatted as
+.I <start>-<end>
+where <start> is the first consensus position to include and <end> is
+the final one, separated by a single '-' character.
+This option can be useful for creating a model that matches
+a specific region of the SSU molecule. For example, running
+.B ssu-build -d --trunc " 525-765 archaea"
+will build a CM that matches the so-called hypervariable V4 region of
+the archaeal SSU molecule.
+See the 
+.B --num
+option for how to create alignments with consensus columns numbered to
+facilitate choosing start and end positions.
+
+.TP
+.BI --num
+Do not build a CM. Instead, create a new alignment that is identical
+to the input alignment (or default seed alignment if
+.B -d) 
+but that has extra annotation numbering consensus positions. This
+option is meant to be helpful for determining start and end positions
+to use with the
+.B --trunc
+option. 
+
+.TP
+.B --num
+Do not build a CM. Instead, create a new alignment that is identical
+to the input alignment (or default seed alignment if
+.B -d) 
+but that has extra annotation numbering consensus positions. This
+option is meant to be helpful for determining start and end positions
+to use with the
+.B --trunc
+option. 
+
+.TP
+.B -i
+Output alignments in interleaved Stockholm format of a fixed width
+that may be more convenient for reading. Without this option,
+output alignments will contain one line per sequence, and thus may
+contain very long lines. 
+
+.TP
+.B --rf
+Use reference coordinate annotation (#=GC RF line in the input
+Stockholm alignment) to determine which columns in the input alignment
+are consensus, and
+which are not. Any non-gap character indicates a consensus
+column. (For example, mark consensus columns with "x", and insert
+columns with ".".). This is true by default if the 
+.B -d
+option is used, in which case 
+.B ssu-build
+will use the #=GC RF annotation in the default seed model. 
+However, if 
+.B -d
+is not used, the default is to determine which columns are consensus
+automatically; if the frequency of gap characters in a column is
+greater than a threshold, gapthresh (default 0.8, but controllable
+with the 
+.B --gapthresh 
+option), the column is not consensus.
+
+.TP
+.BI --gapthresh " <x>"
+Determine which columns in the input alignment are consensus based on
+the frequency of gap characters in each column. If less than or equal
+to 
 .I <x>
-if your computer has less than 4 Gb of RAM. 
+then the column is defined as a consensus one. As discussed in the
+description of the 
+.B --rf
+option, this is default unless the 
+.B -d
+and/or
+.B --rf
+options are enabled, with an
+.I <x>
+of 0.8. 
+
+.TP
+.BI --ps2pdf " <s>"
+Specify that an executable named 
+.I <s>
+in your PATH can be used for converting postscript files to pdf files
+with the usage: 
+.BI <s> " foo.ps foo.pdf"
+This executable will be used for creating a pdf diagram of the
+showing the location of a truncated model on the SSU molecule if the 
+.B --trunc 
+and 
+.B -d 
+options are used.
+By default, 
+.B ssu-build
+will use the executable program named 
+.B ps2pdf 
+if it is in your PATH to do this conversion. If 
+.B ps2pdf 
+does not exist, a postscript file will be generated.
+
+.B --ps-only
+Specify that postscript output is preferable to pdf. 
+No postscript to pdf conversion will be attempted.
+
+.SH EXPERT OPTIONS
+
+.TP
+.B --eent
+Use the entropy weighting strategy to determine the effective sequence
+number that gives a target mean match state relative entropy. 
+The default target mean match state relative entropy is 0.59 bits but can be
+changed to 
+.I <x> 
+with 
+.BI --ere " <x>".
+
+.TP 
+.BI --ere " <x>"
+Set the target mean match state relative entropy as 
+.I <x>.
+By default the target relative entropy per match position is 0.59 bits.

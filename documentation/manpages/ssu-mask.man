@@ -1,0 +1,681 @@
+.TH "ssu-mask" 1 "@RELEASEDATE@" "@PACKAGE@ @RELEASE@" "@PACKAGE@ Manual"
+
+.SH NAME
+.TP 
+ssu-mask - remove columns from SSU rRNA multiple sequence alignments
+
+.SH SYNOPSIS
+
+.TP 
+Mask ssu-align created alignments in directory <dir>:
+.B ssu-mask
+.I [options]
+.I <dir>
+
+.TP 
+Mask alignment file <aln>:
+.B ssu-mask -a
+.I [options]
+.I <aln>
+
+.TP 
+List sequences in alignments in <dir>:
+.B ssu-mask --list
+.I [options]
+.I <dir>
+
+.TP 
+List sequences in alignment file <aln>:
+.B ssu-mask -a --list
+.I [options]
+.I <dir>
+
+.TP 
+Convert Stockholm alignments in <dir> to aligned FASTA:
+.B ssu-mask --stk2afa
+.I [options]
+.I <dir>
+
+.TP 
+Convert Stockholm alignment <aln> to aligned FASTA:
+.B ssu-mask -a --stk2afa
+.I [options]
+.I <dir>
+
+.TP 
+Extract a subset of sequences from an alignment: 
+.B ssu-mask -a --seq-k <listfile>
+.I [options]
+.I <aln>
+
+.TP 
+Remove a subset of sequences from an alignment:
+.B ssu-mask -a --seq-r <listfile>
+.I [options]
+.I <aln>
+
+
+.SH DESCRIPTION
+
+.PP
+.B ssu-mask
+reads multiple sequence alignments created by 
+.B ssu-align
+in the directory
+.I <dir>,
+removes some columns from them (i.e. masks them), and then outputs the
+masked alignments into the same directory. 
+
+.PP 
+Using the 
+.B -a
+option specifies that the single command line argument <dir>
+is a single alignment file to mask, not a directory.
+
+.PP
+The main purpose of masking is to remove the columns from the
+alignment that are most likely to contain alignment errors
+prior to using the alignment as input for a phylogenetic inference
+program.
+
+.PP
+An alignment mask defines which columns will be kept and which will be
+removed. There are several different ways in which masks can be
+constructed, as described below. In all cases, all non-consensus columns
+(called insert columns) are always automatically removed. Residues in
+these columns are 
+.B not aligned.
+Their inclusion in the alignment in insert columns between consensus
+columns only indicates their position relative to consensus columns.
+In 
+.B ssu-align
+created alignments, consensus columns are those which have a non-gap
+(non-'.') character in the reference annotation for the alignment. The
+reference annotation appears in lines beginning with "#=GC RF".
+
+.PP
+By default, 
+.B ssu-mask
+determines a mask based on the 
+posterior probability (PP) annotation for aligned residues.
+PP annotation appears in #=GR PP lines in the alignments.
+Characters in Stockholm alignment PP annotation
+can have 12 possible values: the ten digits '0-9', '*',
+and '.'. If '.', the position corresponds to a gap in the sequence.
+A value of '0' indicates a posterior probability of
+between 0.0 and 0.05, '1' indicates between 0.05 and 0.15, '2'
+indicates between 0.15 and 0.25 and so on up to '9' which indicates
+between 0.85 and 0.95. A value of '*' indicates a posterior
+probability of between 0.95 and 1.0. Higher posterior probabilities
+correspond to greater confidence that the aligned residue belongs
+where it appears in the alignment.
+
+.PP 
+By default, any consensus column in which greater than 95\% 
+of the sequences have a PP of 0.95 or better
+(i.e. have a PP value of '*') will be included by a PP-based
+masked. The 95\% value can be changed to 
+.I <x>
+with the 
+.BI --pf " <x>" 
+option. And the 0.95 PP threshold can be changed to
+.I <y>
+with the 
+.BI --pt " <x>"
+option.
+
+.PP 
+The frequency of gaps in each column will also be considered 
+if the 
+.BI --gapthresh " <x>" 
+option is used. Any consensus column in which more than
+.I <x>
+fraction of the sequences contain gaps will be removed. 
+With 
+.B --gapthresh,
+additional columns will also be removed based on PP as described
+above unless the
+.B --gaponly 
+option is used, which specifies that gap frequency be the only
+determining factor for mask construction.
+
+.PP 
+Alternatively, pre-existing mask files can be used to remove columns from
+the alignments by using the 
+.B -d, -k,
+or 
+.B -f 
+options. See the description of those options below for details.
+A mask file defines which columns to keep/remove.  The mask is a
+string that may only contain the characters '0' and '1'. A '0' at position x of the
+mask indicates that column x is excluded by the mask and should be
+removed during masking.  A '1' at position x of the mask indicates
+that column x is included by the mask and should not be removed during
+masking.  All lines in the
+.I maskfile
+that begin with '#' are considered comment lines and are ignored.  All
+non-whitespace characters in non-comment lines are considered to be
+part of the mask. The length of the mask must equal the consensus
+length (number of consensus columns) of the alignment to be masked,
+
+.PP
+Instead of masking, 
+.B ssu-mask 
+can be used to list the names sequences in alignments with the 
+.B --list 
+option, convert Stockholm formatted alignments to aligned FASTA format
+with the
+.B --stk2afa
+option, or remove a subset of sequences from an alignment with the
+.B --seq-k
+or 
+.B --seq-r
+options, as described below in the Options section.
+
+.PP
+.B ssu-mask
+uses the program 
+.B esl-alimask
+from the 
+.B EASEL
+package to mask alignments. Interested and motivated users can use
+.B esl-alimask
+ directly to create models. The version installed with 
+.B SSU-ALIGN
+is actually called 
+.B ssu-esl-alimask
+to distinguish it from other versions of the program that may be
+installed on your system.
+
+.SH OPTIONS
+
+.TP
+.B -h
+Print brief help; includes version number and summary of
+all options.
+
+.TP
+.B -a
+Specify that the single command-line argument is a Stockholm alignment
+file, not a directory.
+
+.TP
+.B -d
+Use the precalculated, default @PACKAGE@-@PACKAGE_VERSION@ masks.
+These masks were determined by applying the default 95\%/0.95 PP-based masking
+strategy described above on very deep SSU alignments. See the User's
+Guide for details. The default masks are named 
+.I archaea-@PACKAGE-VERSION@.ps,
+.I bacteria-@PACKAGE-VERSION@.ps,
+and
+.I eukarya-@PACKAGE-VERSION@.ps
+and are installed in ENV{$SSUALIGNDIR}.
+
+.TP
+.BI -f " <f>"
+Use the precalculated mask in file 
+.I <f>.
+This option will only work on a single alignment so either
+.B -a
+must be used, or 
+.I <dir> 
+must only contain a single alignment.
+The path and file specified by 
+.I <f>
+must exist either with respect to the current working directory or ENV{$SSUALIGNDIR}.
+
+.TP
+.BI -k " <s>"
+Use precalculated masks in files called
+.I <modelname>.<s>.mask
+for masking alignments created by 
+.B ssu-align 
+with models named
+.I <modelname>. 
+If 
+.B ssu-align
+was used with the default CM file, 
+.I <modelname> 
+will be 'archaea', 'bacteria' or 'eukarya'.
+The path and file specified by 
+.I <f>
+must exist either with respect to the current working directory,
+ENV{$SSUALIGNDIR}, or <dir>.
+
+HERE HERE HERE 
+
+This option will only work on a single alignment so either
+.B -a
+must be used, or 
+.I <dir> 
+must only contain a single alignment.
+
+These masks were determined by applying the default 95\%/0.95 PP-based masking
+strategy described above on very deep SSU alignments. See the User's
+Guide for details. The default masks are named 
+.I archaea-@PACKAGE-VERSION@.ps,
+.I bacteria-@PACKAGE-VERSION@.ps,
+and
+.I eukarya-@PACKAGE-VERSION@.ps
+and are installed in ENV{$SSUALIGNDIR}.
+
+With
+.BI -k " <s>",
+.B ssu-mask
+will search for and use mask files that include the string
+.I <s>
+for each alignment, as described below 
+
+
+
+the default @PACKAGE@-@PACKAGE_VERSION@
+models (i.e. on directories/alignments created by running
+.B ssu-align
+without the 
+.B -m
+option). These masks were determined 
+
+
+
+
+
+
+When
+.B -p 
+is enabled with 
+.BI --ppcons " <x>",
+columns which have a consensus posterior probability of less than
+.I <x>
+will be removed during masking, and all other columns will not be removed.
+
+When
+.B -p 
+is enabled without
+.B --ppcons,
+the number of each possible PP value in each column is counted. 
+If 
+.I <x>
+fraction of the sequences that contain aligned residues (i.e. do not
+contain gaps) in a column have a posterior probability 
+greater than or equal to 
+.I <y>,
+then that column will not be removed during masking. All columns that
+do not meet this criterion will be removed. By default, the values of both
+.I <x>
+and 
+.I <y>
+are 0.95, but they can be changed with the 
+.BI --pfract " <x>"
+and 
+.BI --pthresh " <y>" 
+options, respectively.
+
+In posterior probability mode, all columns that have 0 residues
+(i.e. that are 100% gaps) will be automatically removed, unless the 
+.B --pallgapok
+option is enabled, in which case such columns will not be removed.
+
+Importantly, during posterior probability masking, unless
+.B --pavg 
+is used, PP annotation
+values are always considered to be the minimum numerical value in
+their corresponding range. For example, a PP '9' character is converted
+to a numerical posterior probability of 0.85. If
+.B --pavg 
+is used, PP annotation values are considered to be the average
+numerical value in their range. For example, a PP '9' character is
+converted to a numerical posterior probability of 0.90.
+
+In posterior probability mode, if the alignment is in Stockholm format and
+has RF annotation, then all columns that are gaps in the RF annotation
+will automatically be removed, unless
+.B --saveins
+is enabled.
+
+A single run of
+.B esl-alimask
+can perform both gap frequency-based masking and posterior
+probability-based masking if both the 
+.B -g
+and
+.B -p
+options are enabled. In this case, a gap frequency-based mask and a
+posterior probability-based mask are independently computed.  These
+two masks are combined to create the final mask using a logical 'and'
+operation. Any column that is to be removed by either the gap or PP
+mask will be removed by the final mask.
+
+With the
+.B --small
+option, 
+.B esl-alimask
+will operate in memory saving mode and the required RAM for the masking
+will be minimal (usually less than a Mb) and independent of the
+alignment size. To use 
+.B --small,
+the alignment alphabet must be specified with either
+.B --amino,
+.B --dna, 
+or 
+.B --rna,
+and the alignment must be in Pfam format (non-interleaved, 1
+line/sequence Stockholm format). Pfam format is the default output
+format of INFERNAL's
+.B cmalign 
+program. Without 
+.B --small
+the required RAM will be equal to roughly the size of the first input
+alignment (the size of the alignment file itself if it only contains
+one alignment).
+
+.SH OUTPUT
+
+By default, 
+.B esl-alimask
+will print only the masked alignment to stdout and then exit.
+If the
+.BI -o " <f>"
+option is used, the alignment will be saved to file 
+.I <f>
+, and information on the number of columns kept and removed will be
+printed to stdout. If 
+.B -q
+is used in combination with 
+.B -o,
+nothing is printed to stdout.
+
+The mask(s) computed by 
+.B esl-alimask
+when the 
+.B -t
+,
+.B -p
+,
+.B -g
+,
+or
+.B --rf-is-mask
+options are used can be saved to output files using the options
+.BI --fmask-rf " <f>",
+.BI --fmask-all " <f>",
+.BI --gmask-rf " <f>",
+.BI --gmask-all " <f>",
+.BI --pmask-rf " <f>",
+and 
+.BI --pmask-all " <f>".
+In all cases, 
+.I <f> 
+will contain a single line, a bit vector of length
+.B n,
+where 
+.B n 
+is the either the total number of columns in the alignment (for the
+options suffixed with 'all') or the number of non-gap columns in the
+RF annotation (for the options suffixed with 'rf'). The mask will be a
+string of '0' and '1' characters: a '0' at position x in the mask
+indicates column x was removed (excluded) by the mask, and a '1' at
+position x indicates column x was kept (included) by the mask. For
+the 'rf' suffixed options, the mask only applies to non-gap RF
+columns.  The options beginning with 'f' will save the 'final' mask
+used to keep/remove columns from the alignment. The options beginning
+with 'g' save the masks based on gap frequency and require
+.B -g.
+The options beginning with 'p' save the masks based on posterior
+probabilities and require 
+.B -p.
+
+.SH OPTIONS
+
+.TP
+.B -h
+Print brief help; includes version number and summary of
+all options, including expert options.
+
+.TP
+.BI -o " <f>"
+Output the final, masked alignment to file 
+.I <f>
+instead of to
+.I stdout.
+When this option is used, information about the number of columns
+kept/removed is printed to stdout.
+
+.TP
+.B -q
+Be quiet; do not print anything to stdout. 
+This option can only be used in combination with the
+.B -o 
+option.
+
+.TP
+.B --small
+Operate in memory saving mode. Required RAM will be independent of the
+size of the input alignment to mask, instead of roughly the size of the
+input alignment. When enabled, the alignment must be in
+Pfam Stockholm (non-interleaved 1 line/seq) format (see
+esl-reformat) and the output alignment will be in Pfam format.
+
+.TP 
+.BI --informat "<s> "
+Specify that the input alignment be format 
+.I <s>.
+Choices for 
+.I <s> 
+are: 'stockholm', 'pfam', 'a2m', 'psiblast', 'afa'. 'pfam' is a special
+case of Stockholm format in which each sequence is placed on a single
+line, instead of being interleaved; 'afa' is aligned FASTA. By default
+alignments are assumed to be in Stockholm format (either interleaved
+or Pfam), unless 
+.B --small
+is enabled, in which case alignments are assumed to be in 
+Pfam format.
+
+.TP 
+.BI --outformat " <s>"
+Specify that the output alignment be format 
+.I <s>.
+Choices for 
+.I <s> 
+are: 'stockholm', 'pfam', 'a2m', 'psiblast', 'afa'. 
+By default the alignment is output in interleaved Stockholm format unless 
+.B --small
+is enabled, in which case the alignment is output in Pfam format.
+
+.TP 
+.BI --fmask-rf " <f>"
+Save the non-gap RF-length final mask used to mask the alignment
+to file
+.I <f>.
+The input alignment must be in Stockholm format and contain '#=GC RF'
+annotation for this option to be valid. See the OUTPUT section above for
+more details on output mask files.
+
+.TP 
+.BI --fmask-all " <f>"
+Save the full alignment-length final mask used to mask the alignment
+to file
+.I <f>.
+See the OUTPUT section above for more details on output mask files.
+
+.TP 
+.B --amino
+Specify that the input alignment is a protein alignment.
+By default,
+.B esl-alimask
+will try to autodetect the alphabet, but if the alignment is
+sufficiently small it may be ambiguous. This option defines the
+alphabet as protein. Importantly, if 
+.B --small
+is enabled, the alphabet must be specified with either
+.B --amino,
+.B --dna,
+or 
+.B --rna.
+
+.TP 
+.B --dna
+Specify that the input alignment is a DNA alignment.
+
+.TP 
+.B --rna
+Specify that the input alignment is an RNA alignment. 
+
+.TP 
+.B --t-rf
+With -t, specify that the start and end coordinates defined in
+the second command line argument 
+.I coords
+correspond to non-gap RF coordinates. To use this option, the
+alignment must be in Stockholm format and have "#=GC RF"
+annotation. See the DESCRIPTION section for an example of using the
+.B --t-rf
+option.
+
+.TP 
+.B --t-rmins
+With -t, specify that all columns that are gaps in the reference (RF)
+annotation in between the specified start and end coordinates be
+removed. By default, these columns will be kept.
+To use this option, the alignment must be in  Stockholm format and
+have "#=GC RF" annotation. 
+
+.TP 
+.BI --gapthresh " <x>"
+With -g, specify that a column is kept (included by mask) if no more
+than 
+.I <f>
+fraction of sequences in the alignment have a gap ('.', '-', or '_')
+at that position. All other columns are removed (excluded by mask).
+By default, 
+.I <x>
+is 0.5.
+
+.TP 
+.BI --gmask-rf " <f>"
+Save the non-gap RF-length gap frequency-based mask used to mask the alignment
+to file
+.I <f>.
+The input alignment must be in Stockholm format and contain '#=GC RF'
+annotation for this option to be valid. See the OUTPUT section above for
+more details on output mask files.
+
+.TP 
+.BI --gmask-all " <f>"
+Save the full alignment-length gap frequency-based mask used to mask the alignment
+to file
+.I <f>.
+See the OUTPUT section above for more details on output mask files.
+
+
+.TP 
+.BI --pfract " <x>"
+With -p, specify that a column is kept (included by mask) if the
+fraction of sequences with a non-gap residue in that column with a 
+posterior probability of at least 
+.I <y>
+(from 
+.BI --pthresh " <y>"
+) is 
+.I <x>
+or greater. All other columns are removed (excluded by mask)
+By default 
+.I <x> 
+is 0.95. 
+
+.TP 
+.BI --pthresh " <y>"
+With -p, specify that a column is kept (included by mask) if 
+.I <x>
+(from 
+.BI --pfract " <x>"
+)
+fraction of sequences with a non-gap residue in that column have a 
+posterior probability of at least 
+.I <y>. 
+All other columns are removed (excluded by mask).
+By default 
+.I <y> 
+is 0.95. See the DESCRIPTION section for more on
+posterior probability (PP) masking. 
+Due to the granularity of the PP annotation, different 
+.I <y>
+values within a range covered by a single PP character will be
+have the same effect on masking. For example, using 
+.BI --pthresh " 0.86" 
+will have the same effect as using
+.BI --pthresh " 0.94".
+
+.TP 
+.BI --pavg " <x>"
+With -p, specify that a column is kept (included by mask) if 
+the average posterior probability of non-gap residues in that column
+is at least
+.I <x>.
+See the DESCRIPTION section for more on
+posterior probability (PP) masking. 
+
+.TP 
+.BI --ppcons " <x>"
+With -p, use the '#=GC PP_cons' annotation to define which columns to
+keep/remove. A column is kept (included by mask) if the PP_cons value
+for that column is 
+.I <x>
+or greater. Otherwise it is removed.
+
+.TP 
+.B --pallgapok
+With -p, do not automatically remove any columns that are 100% gaps
+(i.e. contain 0 aligned residues). By default, such columns will be
+removed.
+
+.TP 
+.BI --pmask-rf " <f>"
+Save the non-gap RF-length posterior probability-based mask used to mask the alignment
+to file
+.I <f>.
+The input alignment must be in Stockholm format and contain '#=GC RF'
+annotation for this option to be valid. See the OUTPUT section above for
+more details on output mask files.
+
+.TP 
+.BI --pmask-all " <f>"
+Save the full alignment-length posterior probability-based mask used to mask the alignment
+to file
+.I <f>.
+See the OUTPUT section above for more details on output mask files.
+
+
+.TP
+.B --keepins 
+If 
+.B -p 
+and/or
+.B -g
+is enabled and the alignment is in Stockholm or Pfam format and has '#=GC RF'
+annotation, then allow columns that are gaps in the RF annotation to
+possibly be kept. By default, all gap RF columns would be removed
+automatically, but with this option enabled gap and non-gap RF columns
+are treated identically. 
+To automatically remove all gap RF columns when using a 
+.I maskfile 
+, then define the mask in 
+.I maskfile
+as having length equal to the non-gap RF length in the alignment.
+To automatically remove all gap RF columns when using 
+.B -t,
+use the
+.B --t-rmins
+option.
+
+
+.SH AUTHOR
+
+Easel and its documentation are @EASEL_COPYRIGHT@.
+@EASEL_LICENSE@.
+See COPYING in the source code distribution for more details.
+The Easel home page is: @EASEL_URL@
+
+
+
+
+
