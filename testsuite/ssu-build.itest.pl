@@ -8,8 +8,6 @@
 #
 # EPN, Fri Mar  5 08:33:29 2010
 
-require "ssu.itest.pm";
-
 $usage = "perl ssu-mask.itest.pl\n\t<directory with all 5 SSU-ALIGN scripts>\n\t<data directory with fasta files etc.>\n\t<tmpfile and tmpdir prefix>\n\t<test number to perform, if blank, do all tests>\n";
 $testnum = "";
 if(scalar(@ARGV) == 3) { 
@@ -31,17 +29,21 @@ $ssubuild = $scriptdir . "/ssu-build";
 $ssudraw  = $scriptdir . "/ssu-draw";
 $ssumask  = $scriptdir . "/ssu-mask";
 $ssumerge = $scriptdir . "/ssu-merge";
+$ssu_itest_module = "ssu.itest.pm";
 
-if (! -x "$ssualign") { die "FAIL: ssu-align script $ssualign is not executable"; }
-if (! -x "$ssubuild") { die "FAIL: ssu-build script $ssubuild is not executable"; }
-if (! -x "$ssudraw")  { die "FAIL: ssu-draw script $ssudraw is not executable"; }
-if (! -x "$ssumask")  { die "FAIL: ssu-mask script $ssumask is not executable"; }
-if (! -x "$ssumerge") { die "FAIL: ssu-merge script $ssumerge is not executable"; }
 if (! -e "$ssualign") { die "FAIL: didn't find ssu-align script $ssualign"; }
 if (! -e "$ssubuild") { die "FAIL: didn't find ssu-build script $ssubuild"; }
 if (! -e "$ssudraw")  { die "FAIL: didn't find ssu-draw script $ssudraw"; }
 if (! -e "$ssumask")  { die "FAIL: didn't find ssu-mask script $ssumask"; }
 if (! -e "$ssumerge") { die "FAIL: didn't find ssu-merge script $ssumerge"; }
+if (! -x "$ssualign") { die "FAIL: ssu-align script $ssualign is not executable"; }
+if (! -x "$ssubuild") { die "FAIL: ssu-build script $ssubuild is not executable"; }
+if (! -x "$ssudraw")  { die "FAIL: ssu-draw script $ssudraw is not executable"; }
+if (! -x "$ssumask")  { die "FAIL: ssu-mask script $ssumask is not executable"; }
+if (! -x "$ssumerge") { die "FAIL: ssu-merge script $ssumerge is not executable"; }
+if (! -e "$ssu_itest_module") { die "FAIL: didn't find required Perl module $ssu_itest_module in current directory"; }
+
+require $ssu_itest_module;
 
 $fafile       = $datadir . "/seed-15.fa";
 $trna_stkfile = $datadir . "/trna-5.stk";
@@ -231,6 +233,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     # with -d
     run_build($ssubuild, "bacteria", "-d -F --trunc $trunc_opt", $testctr);
     if(! -e ("bacteria$df_suffix.$trunc_opt.stk"))           { die "ERROR, problem with building" }
+    if(! -e ("bacteria$df_suffix.$trunc_opt.mask"))          { die "ERROR, problem with building" }
     if(! -e ("bacteria$df_suffix.$trunc_opt.cm"))            { die "ERROR, problem with building" }
     if((! -e ("bacteria$df_suffix.$trunc_opt.pdf")) && 
        (! -e ("bacteria$df_suffix.$trunc_opt.ps")))          { die "ERROR, problem with building" }
@@ -428,16 +431,19 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     # first, build new v4.cm with 3 v4 CMs
     run_build($ssubuild, "archaea", "-F -d --trunc 525-765  -n arc-v4 -o       v4.cm", $testctr);
     check_for_files           (".", "", $testctr, \@arc_only_A, "-0p1-sb.525-765.stk");
+    check_for_files           (".", "", $testctr, \@arc_only_A, "-0p1-sb.525-765.mask");
     check_for_one_of_two_files(".", "", $testctr, \@arc_only_A, "-0p1-sb.525-765.ps", "-0p1-sb.525-765.pdf");
     remove_files              (".", "0p1-sb.525-765");
 
     run_build($ssubuild, "bacteria", "-F -d --trunc 584-824  -n bac-v4 --append v4.cm", $testctr);
     check_for_files           (".", "", $testctr, \@bac_only_A, "-0p1-sb.584-824.stk");
+    check_for_files           (".", "", $testctr, \@bac_only_A, "-0p1-sb.584-824.mask");
     check_for_one_of_two_files(".", "", $testctr, \@bac_only_A, "-0p1-sb.584-824.ps", "-0p1-sb.584-824.pdf");
     remove_files              (".", "0p1-sb.584-824");
 
     run_build($ssubuild, "eukarya", "-F -d --trunc 620-1082 -n euk-v4 --append v4.cm", $testctr);
     check_for_files           (".", "", $testctr, \@euk_only_A, "-0p1-sb.620-1082.stk");
+    check_for_files           (".", "", $testctr, \@euk_only_A, "-0p1-sb.620-1082.mask");
     check_for_one_of_two_files(".", "", $testctr, \@euk_only_A, "-0p1-sb.620-1082.ps", "-0p1-sb.620-1082.pdf");
     remove_files              (".", "0p1-sb.620-1082");
 

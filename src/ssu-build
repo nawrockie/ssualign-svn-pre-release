@@ -241,9 +241,10 @@ PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, 
 ##################################################################
 # Validate that everything is go and determine output file names #
 ##################################################################
-my ($aln_file, $cmbuild, $cm_file, $cm_name, $alimanip, $alimask, $ssdraw, $template_file, $num_aln_file, $trunc_aln_file, $sum_file, $log_file, $ps_file, $pdf_file);
+my ($aln_file, $cmbuild, $cm_file, $cm_name, $alimanip, $alimask, $ssdraw, $template_file, $num_aln_file, $trunc_aln_file, $sum_file, $log_file, $ps_file, $pdf_file, $default_mask_file, $trunc_mask_file);
 validate_and_setup_ssu_build($ssualigndir, $aln_file_or_model_name, $key_out, \%opt_H, $do_build_mode, $do_number_mode, $do_draw, 
-			     \$aln_file, \$cmbuild, \$cm_file, \$cm_name, \$alimanip, \$alimask, \$ssdraw, \$template_file, \$ps_file, \$pdf_file, \$num_aln_file, \$trunc_aln_file, \$sum_file, \$log_file);
+			     \$aln_file, \$cmbuild, \$cm_file, \$cm_name, \$alimanip, \$alimask, \$ssdraw, \$template_file, \$ps_file, 
+			     \$pdf_file, \$num_aln_file, \$trunc_aln_file, \$default_mask_file, \$trunc_mask_file, \$sum_file, \$log_file);
 
 
 #########################################
@@ -271,9 +272,9 @@ if($gapthresh eq "")  { $gapthresh = $globals_H{"DF_CMBUILD_GAPTHRESH"}; }
 # 2. we're defining RF (consensus columns) based on gap frequency, not using predefined RF: TRUE if ((! -d && ! --rf) || (-d && --gapthresh))
 if(($do_number_mode || $opt_H{"--trunc"} ne "") &&     # condition 1 above
    (((! $opt_H{"-d"}) && (! $opt_H{"--rf"})) || (($opt_H{"-d"}) && ($opt_H{"--gapthresh"} ne "")))) { # condition 2 above
-    $tmp_new_rf_aln_file = $aln_file . ".newrf";
+    $tmp_new_rf_aln_file = RemoveDirPath($aln_file) . ".newrf";
     run_alimask_and_alimanip_to_define_rf_based_on_gapfreq($alimask, $alimanip, $aln_file, $tmp_new_rf_aln_file, $gapthresh, $sum_file, $log_file);
-    $aln_file_with_rf = $tmp_new_rf_aln_file;
+    $aln_file_with_rf = $tmp_new_rf_aln_file; 
 }
     
 if($do_build_mode) 
@@ -281,6 +282,9 @@ if($do_build_mode)
     if($opt_H{"--trunc"} ne "") { 
  	run_alimask_to_truncate($alimask, $aln_file_with_rf, $trunc_aln_file, $gapthresh, \%opt_H, $sum_file, $log_file);
 	$build_aln_file = $trunc_aln_file;
+	if($opt_H{"-d"} && $opt_H{"--gapthresh"} eq "") { 
+	    truncate_mask($default_mask_file, $trunc_mask_file, \%opt_H, $sum_file, $log_file);
+	}
     }	
     else { 
 	$build_aln_file = $aln_file;
@@ -333,28 +337,30 @@ exit(0);
 #             - determine the name for ps and pdf files, if $do_draw is true
 #
 # Arguments: 
-# $ssualigndir:        dir defined by SSUALIGNDIR environment variable 
-# $aln_file_or_model_name: the alignment file we'll build CM from (or number columns for), 
-#                          or the default ssu-align-0.1 model name (if -d enabled)
-# $key_out:            string to append to names of output files
-# $opt_HR:             reference to the hash of command-line options
-# $do_build_mode:      TRUE if we're in build mode (will build a CM)
-# $do_number_mode:     TRUE if we're in number mode, we'll not build a CM
-# $do_draw:            TRUE to set up variables to attempt and esl-ssdraw later
-# $aln_file_ref:       RETURN; the path to the alignment file we'll use
-# $cmbuild_ref:        RETURN; the cmbuild command
-# $cm_file_ref:        RETURN; the path to the CM file we'll write to
-# $cm_name_ref:        RETURN; the name for the CM (will be empty string if we want cmbuild auto naming)
-# $alimanip_ref:       RETURN; the esl-alimanip command 
-# $alimask_ref:        RETURN; the esl-alimask command 
-# $ssdraw_ref:         RETURN; the esl-ssdraw command 
-# $template_file_ref:  RETURN; the path to the template file for ssdraw (only nec if building truncated model)
-# $ps_file_ref:        RETURN; the postscript file we may or may not create
-# $pdf_file_ref:       RETURN; the pdf file we may or may not create
-# $num_aln_file_ref:   RETURN; the path to the numbered aln file we may or may not create
-# $trunc_aln_file_ref: RETURN; the path to the truncated aln file we may or may not create
-# $sum_file_ref:       RETURN; the path and name of what will become the summary file
-# $log_file_ref:       RETURN; the path and name of what will become the log file
+# $ssualigndir:           dir defined by SSUALIGNDIR environment variable 
+# $aln_file_or_model_name:the alignment file we'll build CM from (or number columns for), 
+#                         or the default ssu-align-0.1 model name (if -d enabled)
+# $key_out:               string to append to names of output files
+# $opt_HR:                reference to the hash of command-line options
+# $do_build_mode:         TRUE if we're in build mode (will build a CM)
+# $do_number_mode:        TRUE if we're in number mode, we'll not build a CM
+# $do_draw:               TRUE to set up variables to attempt and esl-ssdraw later
+# $aln_file_ref:          RETURN; the path to the alignment file we'll use
+# $cmbuild_ref:           RETURN; the cmbuild command
+# $cm_file_ref:           RETURN; the path to the CM file we'll write to
+# $cm_name_ref:           RETURN; the name for the CM (will be empty string if we want cmbuild auto naming)
+# $alimanip_ref:          RETURN; the esl-alimanip command 
+# $alimask_ref:           RETURN; the esl-alimask command 
+# $ssdraw_ref:            RETURN; the esl-ssdraw command 
+# $template_file_ref:     RETURN; the path to the template file for ssdraw (only nec if building truncated model)
+# $ps_file_ref:           RETURN; the postscript file we may or may not create
+# $pdf_file_ref:          RETURN; the pdf file we may or may not create
+# $num_aln_file_ref:      RETURN; the path to the numbered aln file we may or may not create
+# $trunc_aln_file_ref:    RETURN; the path to the truncated aln file we'll create
+# $default_mask_file_ref: RETURN; the path to the default mask file we'll truncate ("" if none)
+# $trunc_mask_file_ref:   RETURN; the path to the truncated mask file we'll create ("" if none)
+# $sum_file_ref:          RETURN; the path and name of what will become the summary file
+# $log_file_ref:          RETURN; the path and name of what will become the log file
 #
 # Returns:    Nothing, if it returns, everything is valid.
 # 
@@ -364,14 +370,14 @@ exit(0);
 #
 ####################################################################
 sub validate_and_setup_ssu_build { 
-    my $narg_expected = 21;
+    my $narg_expected = 23;
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, validate_and_setup_ssu_build() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my($ssualigndir, $aln_file_or_model_name, $key_out, $opt_HR, $do_build_mode, $do_number_mode, $do_draw, $aln_file_ref, $cmbuild_ref, 
-       $cm_file_ref, $cm_name_ref, $alimanip_ref, $alimask_ref, $ssdraw_ref, $template_file_ref, $ps_file_ref, $pdf_file_ref, $num_aln_file_ref, $trunc_aln_file_ref, $sum_file_ref, $log_file_ref) = @_;
+       $cm_file_ref, $cm_name_ref, $alimanip_ref, $alimask_ref, $ssdraw_ref, $template_file_ref, $ps_file_ref, $pdf_file_ref, $num_aln_file_ref, $trunc_aln_file_ref, $default_mask_file_ref, $trunc_mask_file_ref, $sum_file_ref, $log_file_ref) = @_;
 
     my ($aln_file, $root, $command_worked);
 
-    #Validate that the alignment file exists, unless -d.
+    #Validate that the alignment file exists
     if(!($opt_HR->{"-d"})) { 
 	$aln_file = $aln_file_or_model_name;
 	if(!(-e $aln_file)) { printf STDERR ("\nERROR, alignment file $aln_file does not exist.\n"); exit(1); }
@@ -388,7 +394,9 @@ sub validate_and_setup_ssu_build {
     }
     my $num_aln_file   = $root . $key_out . ".num.stk";
 
-    #determine truncated aln file name (we may or may not create this alignment)
+    #determine truncated aln file name we'll create later
+    my $default_mask_file = "";
+    my $trunc_mask_file = "";
     my $trunc_aln_file = "";
     if($opt_HR->{"--trunc"} ne "") { 
 	my ($start, $end);
@@ -401,6 +409,19 @@ sub validate_and_setup_ssu_build {
 	}
 	$root .= "." . $start . "-" . $end;
 	$trunc_aln_file = $root . $key_out . ".stk";
+	
+	if(($opt_HR->{"-d"}) && ($opt_HR->{"--gapthresh"} eq "")) { 
+            # We are building truncated version of a default model, we'll truncate the mask too, determine what its name will be
+	    $default_mask_file = $ssualigndir . "\/" . $aln_file_or_model_name . "-0p1.mask";
+	    # the mask should exist, but if it doesn't, we don't die, we just don't create the truncated mask
+	    if(!(-e $default_mask_file)) { 
+		$default_mask_file = "";
+		$trunc_mask_file = "";
+	    }
+	    else { 
+		$trunc_mask_file   = $root . $key_out . ".mask";
+	    }
+	}
     }
     # determine CM name, if -d or -t we will set it as the $root, if -n <s> enabled, set it as <s>,
     # otherwise, let cmbuild name it (by leaving it as "").
@@ -475,20 +496,22 @@ sub validate_and_setup_ssu_build {
 	$pdf_file = $root . $key_out . ".pdf";
     }
 
-    $$aln_file_ref       = $aln_file;
-    $$cmbuild_ref        = $cmbuild;
-    $$cm_file_ref        = $cm_file;
-    $$cm_name_ref        = $cm_name;
-    $$alimanip_ref       = $alimanip;
-    $$alimask_ref        = $alimask;
-    $$ssdraw_ref         = $ssdraw;
-    $$template_file_ref  = $template_file;
-    $$ps_file_ref        = $ps_file;
-    $$pdf_file_ref       = $pdf_file;
-    $$num_aln_file_ref   = $num_aln_file;
-    $$trunc_aln_file_ref = $trunc_aln_file;
-    $$sum_file_ref       = $sum_file;
-    $$log_file_ref       = $log_file;
+    $$aln_file_ref          = $aln_file;
+    $$cmbuild_ref           = $cmbuild;
+    $$cm_file_ref           = $cm_file;
+    $$cm_name_ref           = $cm_name;
+    $$alimanip_ref          = $alimanip;
+    $$alimask_ref           = $alimask;
+    $$ssdraw_ref            = $ssdraw;
+    $$template_file_ref     = $template_file;
+    $$ps_file_ref           = $ps_file;
+    $$pdf_file_ref          = $pdf_file;
+    $$num_aln_file_ref      = $num_aln_file;
+    $$trunc_aln_file_ref    = $trunc_aln_file;
+    $$default_mask_file_ref = $default_mask_file;
+    $$trunc_mask_file_ref   = $trunc_mask_file;
+    $$sum_file_ref          = $sum_file;
+    $$log_file_ref          = $log_file;
 
     return;
 }
@@ -737,11 +760,18 @@ sub run_alimask_to_truncate {
 
     my $extra_opts = "";
     # determine how the RF annotation was decided, varies depending on if -d was enabled or not
+    my $alignment_and_mask;
+    if(($opt_HR->{"-d"}) && ($opt_HR->{"--trunc"} ne "") && ($opt_HR->{"--gapthresh"} eq "")) { 
+	$alignment_and_mask = "alignment and default mask"; 
+    }
+    else {
+	$alignment_and_mask = "alignment"; 
+    }
     if(($opt_HR->{"--rf"}) || (($opt_HR->{"-d"}) && ($opt_HR->{"--gapthresh"} eq ""))) { # provided RF annotation will be used
-	PrintStringToFile($sum_file, 1, sprintf("#\n# Truncating alignment; saving only columns between predefined consensus\n\# columns $start and $end...\n"));
+	PrintStringToFile($sum_file, 1, sprintf("#\n# Truncating $alignment_and_mask; saving only columns between predefined consensus\n\# columns $start and $end...\n"));
     }
     else { 
-	PrintStringToFile($sum_file, 1, sprintf("#\n# Truncating alignment; defining consensus columns and saving those\n\# between gap-frequency-determined consensus columns $start and $end...\n"));
+	PrintStringToFile($sum_file, 1, sprintf("#\n# Truncating $alignment_and_mask; defining consensus columns and saving those\n\# between gap-frequency-determined consensus columns $start and $end...\n"));
     }
     if(! $opt_HR->{"-i"}) { $extra_opts .= " --outformat pfam "; }
 
@@ -872,3 +902,72 @@ sub run_ssdraw_for_ssu_build {
     return 1; #if ssdraw failed we returned 0 above
 }
 
+
+#####################################################################
+# Subroutine: truncate_mask()
+# Incept:     EPN, Wed Mar 17 07:30:48 2010
+# 
+# Purpose:    Truncate a mask file to create a new one based on the 
+#             truncation coordinates from the --trunc option.
+#
+# Arguments:  
+#   $mask_file:          path and name of original mask file to truncate
+#   $trunc_mask_file:    path and name for truncated mask, created here
+#   $opt_HR:             reference to the hash of command-line options
+#   $sum_file:           file to print output file notices to
+#   $log_file:           file to print commands to 
+# 
+# Returns:  Nothing, if it returns, everything is valid.
+# 
+####################################################################
+sub truncate_mask { 
+    my $narg_expected = 5;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, truncate_mask() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($mask_file, $trunc_mask_file, $opt_HR, $sum_file, $log_file) = @_;
+
+    # sanity check
+    if($opt_H{"--trunc"} eq "") { 
+	PrintErrorAndExit("ERROR, truncate_mask() entered, but -t option argument is the empty string. This shouldn't happen.", $sum_file, 1);
+    }
+    if(! -e ($mask_file)) { 
+	PrintErrorAndExit("ERROR, truncate_mask() entered, but mask file $mask_file does not exist. This shouldn't happen.", $sum_file, 1);
+    }
+    #determine start and end positions:
+    my ($start, $end);
+    if   ($opt_HR->{"--trunc"} =~ /(\d+)\-(\d+)/)  { $start = $1; $end   = $2; }
+    elsif($opt_HR->{"--trunc"} =~ /(\d+)\:(\d+)/)  { $start = $1; $end   = $2; }
+    elsif($opt_HR->{"--trunc"} =~ /(\d+)\.+(\d+)/) { $start = $1; $end   = $2; }
+    else { 
+	PrintErrorAndExit("ERROR, formatting of the --trunc argument " . $opt_H{"--trunc"} . " is invalid.\nIt must include two integers separated by a \"-\"; such as \"-t 822-930\"", $sum_file, 1);
+    }
+
+    open(MASK, $mask_file) || FileOpenFailure($mask_file, $sum_file, $!, "reading");
+    my $mask = <MASK>;
+    while($mask =~ m/^\#/) { 
+	$mask = <MASK>;
+    }
+    chomp($mask);
+    close(MASK);
+
+    open(TRUNCMASK, ">" . $trunc_mask_file) || FileOpenFailure($trunc_mask_file, $sum_file, $!, "writing");
+    my @maskA = split("", $mask);
+    if(scalar(@maskA) < $end) { 
+	PrintErrorAndExit("ERROR, trying to truncate a mask file that is shorter than end truncation position (%d < %d)\n", scalar(@maskA), $end);
+    }
+    my $i;
+    for($i = ($start-1); $i < ($end-1); $i++) { 
+	printf TRUNCMASK ($maskA[$i]);
+    }
+    printf TRUNCMASK ("\n");
+    close(TRUNCMASK);
+
+    my $width = length("truncated mask file name");
+    if($width < length($trunc_mask_file)) { $width = length($trunc_mask_file); }
+    my $dashes = ""; for($i = 0; $i < $width; $i++) { $dashes .= "-"; }
+    PrintStringToFile($sum_file, 1, sprintf("#\n"));
+    PrintStringToFile($sum_file, 1, sprintf("# %-*s\n", $width, "truncated mask file name"));
+    PrintStringToFile($sum_file, 1, sprintf("# %-*s\n", $width, $dashes));
+    PrintStringToFile($sum_file, 1, sprintf("  %-*s\n", $width, $trunc_mask_file)); 
+
+    return; 
+}

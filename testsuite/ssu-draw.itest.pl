@@ -8,8 +8,6 @@
 #
 # EPN, Fri Mar 12 09:51:27 2010
 
-require "ssu.itest.pm";
-
 $usage = "perl ssu-draw.itest.pl\n\t<directory with all 5 SSU-ALIGN scripts>\n\t<data directory with fasta files etc.>\n\t<tmpfile and tmpdir prefix>\n\t<test number to perform, if blank, do all tests>\n";
 $testnum = "";
 if(scalar(@ARGV) == 3) { 
@@ -34,6 +32,7 @@ $ssubuild = $scriptdir . "/ssu-build";
 $ssudraw  = $scriptdir . "/ssu-draw";
 $ssumask  = $scriptdir . "/ssu-mask";
 $ssumerge = $scriptdir . "/ssu-merge";
+$ssu_itest_module = "ssu.itest.pm";
 
 if (! -e "$ssualign") { die "FAIL: didn't find ssu-mask script $ssualign"; }
 if (! -e "$ssubuild") { die "FAIL: didn't find ssu-build script $ssubuild"; }
@@ -45,6 +44,9 @@ if (! -x "$ssubuild") { die "FAIL: ssu-build script $ssubuild is not executable"
 if (! -x "$ssudraw")  { die "FAIL: ssu-draw script $ssudraw is not executable"; }
 if (! -x "$ssumask")  { die "FAIL: ssu-mask script $ssumask is not executable"; }
 if (! -x "$ssumerge") { die "FAIL: ssu-merge script $ssumerge is not executable"; }
+if (! -e "$ssu_itest_module") { die "FAIL: didn't find required Perl module $ssu_itest_module in current directory"; }
+
+require $ssu_itest_module;
 
 $fafile       = $datadir . "/seed-15.fa";
 $trna_stkfile = $datadir . "/trna-5.stk";
