@@ -462,17 +462,15 @@ sub validate_and_setup_ssu_align {
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, validate_and_setup_ssu_align() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my($target_file, $opt_HR, $ssualign_R, $cmsearch_R, $cmalign_R, $reformat_R, $sfetch_R, $seqstat_R, $weight_R, $cm_file_R, $sum_file, $log_file) = @_;
 
-    #Make sure the CM file exists
+    #Make sure the CM file exists either with respect to cwd or SSUALIGNDIR
     my $cm_file = "";
     if($opt_HR->{"-m"} ne "") { # -m <s> invoked, determine the absolute path to the CM file, we'll use this
 	                        # this is important if we are in prep mode and need to specify -m to child ssu-align calls
-	if(-e $opt_HR->{"-m"}) { 
-	    # determine if we already have the absolute path or not
-	    if(-e (getcwd() . "/" . $opt_HR->{"-m"})) { # user did not supply absolute path
-		$cm_file = getcwd() . "/" . $opt_HR->{"-m"};
-	    }
-	    else { # user did supply absolute path
-		$cm_file = $opt_HR->{"-m"};
+	$cm_file = FindPossiblySharedFile($opt_HR->{"-m"}, $ssualigndir);
+	if(-e $cm_file) { 
+	    # $cm_file does exist, we need the absolute path, in case we're spawning/setting up child processes 
+	    if(-e (getcwd() . "/" . $cm_file)) { # user did not supply absolute path $cm_file is relative path from cwd
+		$cm_file = getcwd() . "/" . $cm_file;
 	    }
 	    if(! (-e $cm_file)) { PrintErrorAndExit("ERROR, error processing -m option (cm file: $cm_file), bug in code.\n", $sum_file, 1); }
 	}

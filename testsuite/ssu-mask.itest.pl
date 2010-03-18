@@ -200,7 +200,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     # with -a, need to put mask files in cwd first
     foreach $name (@name_A) {
 	$maskfile     = $datadir . "/" . $name . "." . $mask_key_in . ".mask";
-	$newmaskfile  = $dir . "." . $name . "." . $mask_key_in . ".mask";
+	$newmaskfile  = $name . "." . $mask_key_in . ".mask";
 	system("cp $maskfile $newmaskfile");
 	if ($? != 0) { die "FAIL: cp command failed unexpectedly";}
     }
@@ -214,7 +214,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     remove_files              (".", "eukarya.mask");
     remove_files              (".", "eukarya.ssu-mask");
     foreach $name (@name_A) {
-	$newmaskfile  = $dir . "." . $name . "." . $mask_key_in . ".mask";
+	$newmaskfile  = $name . "." . $mask_key_in . ".mask";
 	remove_files(".", $newmaskfile);
     }
 
@@ -683,17 +683,17 @@ $testctr++;
 ####################################
 if(($testnum eq "") || ($testnum == $testctr)) {
     # first, build new v4.cm with 3 v4 CMs
-    run_build("-F -d --trunc 525-765  -n arc-v4 -o       v4.cm archaea", $testctr);
+    run_build($ssubuild, "archaea", "-F -d --trunc 525-765  -n arc-v4 -o       v4.cm", $testctr);
     check_for_files           (".", "", $testctr, \@arc_only_A, "-0p1-sb.525-765.stk");
     check_for_one_of_two_files(".", "", $testctr, \@arc_only_A, "-0p1-sb.525-765.ps", "-0p1-sb.525-765.pdf");
     remove_files              (".", "0p1-sb.525-765");
 
-    run_build("-F -d --trunc 584-824  -n bac-v4 --append v4.cm bacteria", $testctr);
+    run_build($ssubuild, "bacteria", "-F -d --trunc 584-824  -n bac-v4 --append v4.cm", $testctr);
     check_for_files           (".", "", $testctr, \@bac_only_A, "-0p1-sb.584-824.stk");
     check_for_one_of_two_files(".", "", $testctr, \@bac_only_A, "-0p1-sb.584-824.ps", "-0p1-sb.584-824.pdf");
     remove_files              (".", "0p1-sb.584-824");
 
-    run_build("-F -d --trunc 620-1082 -n euk-v4 --append v4.cm eukarya", $testctr);
+    run_build($ssubuild, "eukarya", "-F -d --trunc 620-1082 -n euk-v4 --append v4.cm", $testctr);
     check_for_files           (".", "", $testctr, \@euk_only_A, "-0p1-sb.620-1082.stk");
     check_for_one_of_two_files(".", "", $testctr, \@euk_only_A, "-0p1-sb.620-1082.ps", "-0p1-sb.620-1082.pdf");
     remove_files              (".", "0p1-sb.620-1082");
@@ -735,7 +735,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     # first, build new trna.cm 
     $trna_cmfile = "trna-5.cm";
     @trna_only_A = "trna-5";
-    run_build("-F --rf -n $trna_only_A[0] -o $trna_cmfile $trna_stkfile", $testctr);
+    run_build($ssubuild, $trna_stkfile, "-F --rf -n $trna_only_A[0] -o $trna_cmfile", $testctr);
     check_for_files           (".", "", $testctr, \@trna_only_A, ".cm");
     check_for_files           (".", "", $testctr, \@trna_only_A, ".ssu-build.log");
     check_for_files           (".", "", $testctr, \@trna_only_A, ".ssu-build.sum");

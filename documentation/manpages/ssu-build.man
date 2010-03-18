@@ -149,8 +149,8 @@ Include the string
 .I <s>
 as part of all output file names from
 .B ssu-build,
-immediately before the final suffix. For example, foo.cm would become
-foo.<s>.cm.
+immediately before the suffix. For example, foo.<s>.cm would be
+created instead of foo.cm.
 
 .TP
 .BI --trunc " <s>"
@@ -260,6 +260,7 @@ if it is in your PATH to do this conversion. If
 .B ps2pdf 
 does not exist, a postscript file will be generated.
 
+.TP
 .B --ps-only
 Specify that postscript output is preferable to pdf. 
 No postscript to pdf conversion will be attempted.

@@ -75,13 +75,13 @@ $options_usage .= "  (if -d is enabled: --rf is default, otherwise: --gapthresh 
 $options_usage .= "  --rf            : use consensus column (#=GC RF) annotation in alignment\n";
 $options_usage .= "  --gapthresh <x> : define consensus columns as those with gap frequency <= <x> [df: 0.8]\n";
 
-$options_usage .= "\nexpert options for model construction:\n";
-$options_usage .= "  --eent          : use 'entropy weighting' method to achieve target relative entropy\n";
-$options_usage .= "  --ere <x>       : with --eent, set target relative entropy as <x>\n";
-
 $options_usage .= "\noptions for output of structure diagram, only relevant with -d and --trunc:\n";
 $options_usage .= "  --ps2pdf <s> : command for converting ps to pdf is <s> (not \"ps2pdf\")\n";
 $options_usage .= "  --ps-only    : only save postscript secondary structure diagram, no pdf\n";
+
+$options_usage .= "\nexpert options for model construction:\n";
+$options_usage .= "  --eent          : use 'entropy weighting' method to achieve target relative entropy\n";
+$options_usage .= "  --ere <x>       : with --eent, set target relative entropy as <x>\n";
 
 
 ###################
@@ -104,10 +104,10 @@ $opt_takes_arg_H{"--num"}       = 0;  push(@opt_order_A, "--num");
 $opt_takes_arg_H{"-i"}          = 0;  push(@opt_order_A, "-i");           
 $opt_takes_arg_H{"--gapthresh"} = 1;  push(@opt_order_A, "--gapthresh");
 $opt_takes_arg_H{"--rf"}        = 0;  push(@opt_order_A, "--rf");
-$opt_takes_arg_H{"--eent"}      = 0;  push(@opt_order_A, "--eent");
-$opt_takes_arg_H{"--ere"}       = 1;  push(@opt_order_A, "--ere");
 $opt_takes_arg_H{"--ps2pdf"}    = 1;  push(@opt_order_A, "--ps2pdf");
 $opt_takes_arg_H{"--ps-only"}   = 0;  push(@opt_order_A, "--ps-only");      
+$opt_takes_arg_H{"--eent"}      = 0;  push(@opt_order_A, "--eent");
+$opt_takes_arg_H{"--ere"}       = 1;  push(@opt_order_A, "--ere");
 
 #set default options
 foreach $opt (keys %opt_takes_arg_H) { 
@@ -129,10 +129,10 @@ my $opt_return = GetOptions
      'i'           => \$opt_H{"-i"},
      'gapthresh=f' => \$opt_H{"--gapthresh"},
      'rf'          => \$opt_H{"--rf"},
-     'eent'        => \$opt_H{"--eent"},
-     'ere=f'       => \$opt_H{"--ere"},
      'ps2pdf=s'    => \$opt_H{"--ps2pdf"},
-     'ps-only'     => \$opt_H{"--ps-only"});
+     'ps-only'     => \$opt_H{"--ps-only"},
+     'eent'        => \$opt_H{"--eent"},
+     'ere=f'       => \$opt_H{"--ere"});
  
 if($opt_return != 1) { print STDERR "\nERROR, GetOptions() did not return 1, but $opt_return\n"; exit(1); }
 
@@ -942,11 +942,11 @@ sub truncate_mask {
     }
 
     open(MASK, $mask_file) || FileOpenFailure($mask_file, $sum_file, $!, "reading");
-    my $mask = <MASK>;
-    while($mask =~ m/^\#/) { 
-	$mask = <MASK>;
+    my($mask, $line);
+    while($line = <MASK>) { 
+	chomp $line;
+	if($line !~ m/^\#/) { $mask .= $line; }
     }
-    chomp($mask);
     close(MASK);
 
     open(TRUNCMASK, ">" . $trunc_mask_file) || FileOpenFailure($trunc_mask_file, $sum_file, $!, "writing");
@@ -955,7 +955,7 @@ sub truncate_mask {
 	PrintErrorAndExit("ERROR, trying to truncate a mask file that is shorter than end truncation position (%d < %d)\n", scalar(@maskA), $end);
     }
     my $i;
-    for($i = ($start-1); $i < ($end-1); $i++) { 
+    for($i = ($start-1); $i <= ($end-1); $i++) { 
 	printf TRUNCMASK ($maskA[$i]);
     }
     printf TRUNCMASK ("\n");

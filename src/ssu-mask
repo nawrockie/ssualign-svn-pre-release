@@ -66,7 +66,7 @@ $options_usage .= "  -i     : -i used with ssu-align, alignments are interleaved
 
 $options_usage .= "\noptions controlling mask construction:\n";
 $options_usage .= "  --pf <x>        : include columns w/<x> fraction of seqs w/prob >= --pt <y> [df: 0.95]\n";
-$options_usage .= "  --pt <y>        : set probability threshold for --pf as <x> [default=0.95]\n";
+$options_usage .= "  --pt <y>        : set probability threshold as <y> [default=0.95]\n";
 $options_usage .= "  --rfonly        : exclude insert (gap in RF) columns only\n";
 $options_usage .= "  --gapthresh <x> : only consider columns with <= <x> fraction gaps\n";
 $options_usage .= "  --gaponly       : do not consider posterior probabilities, only gap frequencies\n";
@@ -709,7 +709,7 @@ sub validate_and_setup_ssu_mask {
     #Validate that we can read the CM file
     my $cm_file = "";
     if($opt_HR->{"-m"} ne "") {
-	$cm_file = $opt_HR->{"-m"};
+	$cm_file = FindPossiblySharedFile($opt_HR->{"-m"}, $ssualigndir);
 	if(!(-e $cm_file)) { PrintErrorAndExit("ERROR, CM file $cm_file, specified with -m does not exist.", $sum_file, 1); }
     }
     else { # -m not enabled, assume the user used the default CM file:
@@ -719,7 +719,7 @@ sub validate_and_setup_ssu_mask {
 
     #Validate that we can read the template postscript diagram file, if we can't that's okay but only if a non-default CM has been specified with -m.
     if($opt_HR->{"-t"} ne "") { 
-	$template_file = $opt_HR->{"-t"};
+	$template_file = FindPossiblySharedFile($opt_HR->{"-t"}, $ssualigndir);
 	if(!(-e $template_file)) { PrintErrorAndExit("ERROR, template postscript file $template_file, specified with -t does not exist.", $sum_file, 1); }
     }
     elsif($opt_HR->{"-m"} eq "") { # -t not enabled and -m not enabled, we assume default template file should exist for the default CM file
@@ -876,12 +876,16 @@ sub validate_and_setup_ssu_mask {
 		$actual_mask_file = FindPossiblySharedFile($mask_file, $ssualigndir);
 		if($actual_mask_file eq "") {
 		    if($opt_HR->{"-a"}) { 
-			PrintErrorAndExit("ERROR, unable to locate mask file $mask_file for masking alignment $aln_name in the\ncurrent working directory or the SSUALIGNDIR $ssualigndir.", $sum_file, 1);
+			if($actual_mask_file eq "") {
+			    PrintErrorAndExit("ERROR, unable to locate mask file $mask_file for masking alignment $aln_name in the\ncurrent working directory, directory " . ReturnDirPath($aln_name) . ", or the SSUALIGNDIR $ssualigndir.", $sum_file, 1);
+			}
 		    }
-		    # check if mask file is in output dir $dir
-		    $actual_mask_file = FindPossiblySharedFile($mask_file, $dir);
-		    if($actual_mask_file eq "") {
-			PrintErrorAndExit("ERROR, unable to locate mask file $mask_file for masking alignment $aln_name in the\ncurrent working directory, directory $dir, or the SSUALIGNDIR $ssualigndir.", $sum_file, 1);
+		    else { 
+			# check if mask file is in output dir $dir
+			$actual_mask_file = FindPossiblySharedFile($mask_file, $dir);
+			if($actual_mask_file eq "") {
+			    PrintErrorAndExit("ERROR, unable to locate mask file $mask_file for masking alignment $aln_name in the\ncurrent working directory, directory $dir, or the SSUALIGNDIR $ssualigndir.", $sum_file, 1);
+			}
 		    }
 		}
 	    }

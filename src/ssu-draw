@@ -70,7 +70,7 @@ $options_usage .= "  --mask-key    : display masks from files named <dir>.<model
 $options_usage .= "                  (typically used after running 'ssu-mask --key-out <s>')\n";
 
 $options_usage .= "\noptions for 1-page alignment summary diagrams (by default, all are drawn):\n";
-$options_usage .= "  --prob    : draw average posterior probability per position (save as *.prob.pdf)\n";
+$options_usage .= "  --prob    : draw average posterior probability per position   (save as *.prob.pdf)\n";
 $options_usage .= "  --ifreq   : draw frequency of insertions per position         (save as *.ifreq.pdf)\n";
 $options_usage .= "  --iavglen : draw average length of insertions per position    (save as *.iavglen.pdf)\n";
 $options_usage .= "  --dall    : draw frequency of deletions per position          (save as *.dall.pdf)\n";
@@ -407,7 +407,7 @@ sub validate_and_setup_ssu_draw {
     #Validate that we can read the CM file
     my $cm_file = "";
     if($opt_HR->{"-m"} ne "") {
-	$cm_file = $opt_HR->{"-m"};
+	$cm_file = FindPossiblySharedFile($opt_HR->{"-m"}, $ssualigndir);
 	if(!(-e $cm_file)) { PrintErrorAndExit("ERROR, CM file $cm_file, specified with -m does not exist.", $sum_file, 1); }
     }
     else { # -m not enabled, assume the user used the default CM file:

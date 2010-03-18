@@ -594,7 +594,7 @@ sub validate_and_setup_ssu_merge_default {
 
     #Make sure the CM file exists (we may have read it as the argument to -m in the ssu-align.prep file)
     if($opt_HR->{"-m"} ne "") { # overwrite whatever we read in the ssu-align.prep file
-	$cm_file = $opt_HR->{"-m"}; 
+	$cm_file = FindPossiblySharedFile($opt_HR->{"-m"}, $ssualigndir);
 	if(!(-e $cm_file))   { PrintErrorAndExit("ERROR, CM file $cm_file, specified with -m does not exist.", $sum_file, 1); }
     }
     elsif($cm_file eq "")  { # -m not enabled and -m not read from the ssu-align prep file, try default

@@ -842,7 +842,6 @@ sub TryPs2Pdf {
 }
 
 
-
 #################################################################
 # Subroutine : SwapOrAppendFileSuffix
 # Incept:      EPN, Mon Nov  9 14:21:07 2009
