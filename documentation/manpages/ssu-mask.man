@@ -73,22 +73,6 @@ option specifies that the command line argument
 is a single alignment file to mask, not a directory.
 
 .PP
-Alternatively to masking,
-.B ssu-mask 
-ddcan also be used to list the names of sequences in alignments with the 
-.B --list 
-option, convert Stockholm formatted alignments to aligned FASTA format
-with the
-.B --stk2afa
-option, or remove a subset of sequences from an alignment with the
-.B --seq-k
-or 
-.B --seq-r
-options, as described below in the 
-.B OPTIONS 
-section.
-
-.PP
 The main purpose of masking is to remove the columns from an
 alignment that are most likely to contain alignment errors
 prior to using it as input for a phylogenetic inference
@@ -100,16 +84,14 @@ removed.
 .B ssu-mask 
 can either calculate an appropriate mask for each alignment based
 on alignment posterior probability values (confidence levels in the
-alignment) or use a precalculated mask from an input file. The former
-is discussed first below, followed by discussion of the latter.
-
-There are several different methods for calculating masks.
+alignment) and/or gap frequencies,  or use a precalculated mask from an
+input file.
 In all cases, all non-consensus columns
-(called insert columns) are always automatically removed. Residues in
+(called insert columns) are automatically removed. Residues in
 these columns are 
 .B not aligned.
-Their inclusion in the alignment in insert columns between consensus
-columns only indicates their position relative to consensus columns.
+.\" Their inclusion in the alignment in insert columns is informative only
+.\" it that it indicates their position relative to bordering consensus columns.
 In 
 .B ssu-align
 created alignments, consensus columns are those which have a non-gap
@@ -134,10 +116,10 @@ correspond to greater confidence that the aligned residue belongs
 where it appears in the alignment.
 
 .PP 
-By default, any consensus column in which greater than 95\% 
+By default, any consensus column in which greater than 95% 
 of the sequences have a PP of 0.95 or better
 (i.e. have a PP value of '*') will be included by a PP-based
-masked. The 95\% value can be changed to 
+masked. The 95% value can be changed to 
 .I <x>
 with the 
 .BI --pf " <x>" 
@@ -179,22 +161,38 @@ masking.  All lines in the
 that begin with '#' are considered comment lines and are ignored.  All
 non-whitespace characters in non-comment lines are considered to be
 part of the mask. The length of the mask must equal the consensus
-length (number of consensus columns) of the alignment to be masked,
+length (number of consensus columns) of the alignment to be masked.
+
+
+.PP
+In addition to masking, 
+.B ssu-mask 
+can be also be used to list the names of sequences in alignments with the 
+.B --list 
+option, convert Stockholm formatted alignments to aligned FASTA format
+with the
+.B --stk2afa
+option, or remove a subset of sequences from an alignment with the
+.B --seq-k
+or 
+.B --seq-r
+options, as described below in the 
+.B OPTIONS 
+section.
 
 .PP
 .B ssu-mask
-uses the program 
-.B esl-alimask
+is a PERL script that uses the C programs
+.B ssu-esl-alimask, 
+.B ssu-esl-alistat, 
+.B ssu-esl-reformat, 
+and
+.B ssu-esl-alimanip
+C programs 
 from the 
 .B EASEL
-package to mask alignments. Interested and motivated users can use
-.B esl-alimask
- directly to create models. The version installed with 
-.B @PACKAGE@
-is actually called 
-.B ssu-esl-alimask
-to distinguish it from other versions of the program that may be
-installed on your system.
+package to mask alignments, list sequences, convert formats, and
+remove sequences, respectively.
 
 .SH OPTIONS
 
@@ -211,7 +209,7 @@ file, not a directory.
 .TP
 .B -d
 Use the precalculated, default @PACKAGE@-@PACKAGE_VERSION@ masks.
-These masks were determined by applying the default 95\%/0.95 PP-based masking
+These masks were determined by applying the default 95%/0.95 PP-based masking
 strategy described above on very deep SSU alignments. See the User's
 Guide for details. The default masks are named 
 .I archaea-@PACKAGE-VERSION@.ps,
@@ -284,7 +282,7 @@ option was used by
 .B ssu-align 
 to create the alignments being masked. 
 
-.TP OPTIONS FOR CONTROLLING MASK CONSTRUCTION:
+.SH OPTIONS FOR CONTROLLING MASK CONSTRUCTION:
 
 .TP 
 .BI --pf " <x>"
@@ -333,7 +331,7 @@ Do not remove any consensus columns based on posterior probabilities
 or gap frequencies.
 
 .TP 
-.BI  --gapthresh "<x>"
+.BI  --gapthresh " <x>"
 Remove all consensus columns for which the fraction of 
 sequences in the alignment that have a gap ('.', '-', or '_')
 at that position is greater than 
@@ -347,11 +345,11 @@ option is used.
 .TP 
 .B  --gaponly
 With
-.BI  --gapthresh "<x>", only
+.BI  --gapthresh " <x>", only
 remove consensus columns based on gap frequencies. Do not remove
 any columns based on PPs. 
 
-.TP MISCELLANEOUS OUTPUT OPTIONS:
+.SH MISCELLANEOUS OUTPUT OPTIONS:
 
 .TP 
 .B --afa
@@ -378,8 +376,7 @@ immediately before the suffix. For example, foo.archaea.<s>.mask would
 be created instead of foo.archaea.mask.
 
 
-.TP OPTIONS FOR CREATING SECONDARY STRUCTURE DIAGRAMS DISPLAYING
-MASKS:
+.SH OPTIONS FOR CREATING SECONDARY STRUCTURE DIAGRAMS DISPLAYING MASKS:
 
 If 
 .B -d
@@ -391,7 +388,7 @@ The diagrams will intially be created as postscript files, but will be
 converted to pdf files if the program 
 .B ps2pdf
 (or another program <s> specified by 
-.BI --ps2pdf "<s>"
+.BI --ps2pdf " <s>"
 ) is installed and is in the user's PATH. Otherwise, the output
 diagrams will be postscript files.
 
@@ -412,7 +409,7 @@ No postscript to pdf conversion will be attempted.
 .B --no-draw
 Do not draw any mask diagrams.
 
-.TP OPTIONS FOR ALTERNATIVES TO MASKING (LISTING, CONVERTING, OR REMOVING SEQUENCES):
+.SH OPTIONS FOR ALTERNATIVES TO MASKING (LISTING, CONVERTING, OR REMOVING SEQUENCES):
 
 .B --list
 For each alignment, create a file that simply lists each sequence in
@@ -444,16 +441,38 @@ combination with
 because it will only work on a single alignment.
 Masking is not performed.
 
+.SH SEE ALSO 
+
+See 
+.B ssu-align-package(1)
+for a master man page with a list of all the individual man pages
+for programs in the SSU-ALIGN package.
+
+.PP
+For complete documentation, see the user guide that came with your
+SSU-ALIGN distribution (Userguide.pdf); or see the SSU-ALIGN web page
+(@SSUALIGN_URL@).
+
+.SH COPYRIGHT
+
+.nf
+@HMMER_COPYRIGHT@
+@HMMER_LICENSE@
+.fi
+
+For additional information on copyright and licensing, see the file
+called COPYRIGHT in your SSU-ALIGN source distribution, or see the SSU-ALIGN
+web page 
+(@SSUALIGN_URL@).
 
 
 .SH AUTHOR
 
-Easel and its documentation are @EASEL_COPYRIGHT@.
-@EASEL_LICENSE@.
-See COPYING in the source code distribution for more details.
-The Easel home page is: @EASEL_URL@
-
-
-
-
+.nf
+Eddy/Rivas Laboratory
+Janelia Farm Research Campus
+19700 Helix Drive
+Ashburn VA 20147 USA
+http://eddylab.org
+.fi
 
