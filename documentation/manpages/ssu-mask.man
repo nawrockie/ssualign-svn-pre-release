@@ -244,10 +244,8 @@ If
 was used with the default CM file, 
 .I <modelname> 
 will be 'archaea', 'bacteria' or 'eukarya'.
-.I <f>
-must be a path that exists with respect to
-either the current working directory, the directory that includes the
-alignments being masked, or $SSUALIGNDIR. 
+The mask files must exist in either the current working directory, the
+directory that includes the alignments being masked, or $SSUALIGNDIR. 
 
 .TP
 .BI -m " <f>"
