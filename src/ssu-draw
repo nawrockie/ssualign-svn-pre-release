@@ -87,7 +87,7 @@ $options_usage .= "  --indi-list <f> : draw sequence and probability diagrams fo
 $options_usage .= "  --rf            : draw reference (consensus) sequence/structure only (save as *.rf.pdf)\n";
 $options_usage .= "  --no-prob       : with --indi-list or --indi-all, omit probability diagrams\n";
 
-$options_usage .= "\noptions for omitting parts of the diagrams:\n";
+$options_usage .= "\noptions for omitting sections of the diagrams:\n";
 $options_usage .= "  --no-leg  : do not draw legends\n";
 $options_usage .= "  --no-head : do not draw headers\n";
 $options_usage .= "  --no-foot : do not draw footers\n";

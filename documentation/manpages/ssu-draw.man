@@ -294,8 +294,41 @@ in each alignment.
 
 .BI --indi-list " <f>"
 Draw sequence and posterior probability diagrams for only those sequences 
-listed 
-HERE HERE HERE
+listed in file
+.I <f>, 
+which must be formatted as a list of sequence names, each on a
+separate line. All sequences listed in 
+.I <f>
+must exist in the alignment.
+
+.B --rf
+Draw a single page diagram displaying the reference (consensus)
+sequence/structure to a file. The sequence displayed will be the
+exact sequence from the #=GC RF annotation of the alignment file. 
+
+.B --no-prob
+With 
+.B --indi-list
+or
+.B --indi-all,
+do not draw posterior probability diagrams, only draw individual
+sequence diagrams.
+
+.SH OPTIONS FOR OMITTING SECTIONS OF STRUCTURE DIAGRAMS:
+
+.B --no-leg 
+Omit the legend from all structure diagrams.
+
+.B --no-head
+Omit the header from all structure diagrams.
+
+.B --no-foot
+Omit the footer from all structure diagrams.
+
+
+
+
+
 
 
 
