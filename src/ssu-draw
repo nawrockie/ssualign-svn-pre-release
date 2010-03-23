@@ -282,7 +282,7 @@ my @stk_list_A = ();
 my @mask_list_A = ();
 my @ifile_list_A = ();
 my ($cm_file, $template_file, $ssdraw);
-validate_and_setup_ssu_draw($ssualigndir, $dir, $root, \%opt_H, \@stk_suffix_A, \$cm_file, \$template_file, \$ssdraw, \@stk_list_A, \@mask_list_A, \@ifile_list_A, $log_file, $sum_file);
+validate_and_setup_ssu_draw($ssualigndir, $dir, $root, \%opt_H, \@stk_suffix_A, \$cm_file, \$template_file, \$ssdraw, \@stk_list_A, \@mask_list_A, \@ifile_list_A, $sum_file, $log_file);
 my $naln = scalar(@stk_list_A);
 my $aln_file;
 
@@ -350,10 +350,10 @@ for($i = 0; $i < $naln; $i++) {
 $total_seconds += SecondsSinceEpoch($time_hires_installed);
 
 if(!($opt_H{"-a"})) { 
-    PrintConclusion($sum_file, $log_file, $sum_file2print, $log_file2print, $total_seconds, $time_hires_installed, $dir);
+    PrintConclusion($sum_file, $log_file, $sum_file2print, $log_file2print, $total_seconds, $time_hires_installed, $dir, \%globals_H);
 }
 else { 
-    PrintConclusion($sum_file, $log_file, $sum_file2print, $log_file2print, $total_seconds, $time_hires_installed, "");
+    PrintConclusion($sum_file, $log_file, $sum_file2print, $log_file2print, $total_seconds, $time_hires_installed, "", \%globals_H);
 }
 
 # Success! Exit normally
@@ -389,8 +389,8 @@ exit(0);
 # $stk_list_arr_ref:  RETURN; ref to array of alignment files to operate on
 # $mask_list_arr_ref: RETURN; ref to array of mask files (one per alignment)
 # $ifile_list_arr_ref:RETURN; ref to array of insert files (one per alignment)
-# $log_file:          the log file
 # $sum_file:          the summary file
+# $log_file:          the log file
 #
 # Returns:    Nothing, if it returns, everything is valid.
 # 
@@ -402,33 +402,33 @@ exit(0);
 sub validate_and_setup_ssu_draw { 
     my $narg_expected = 13;
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, validate_and_setup_ssu_draw() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($ssualigndir, $dir, $root, $opt_HR, $stk_suffix_AR, $cm_file_ref, $template_file_ref, $ssdraw_ref, $stk_list_arr_ref, $mask_list_arr_ref, $ifile_list_arr_ref, $log_file, $sum_file) = @_;
+    my($ssualigndir, $dir, $root, $opt_HR, $stk_suffix_AR, $cm_file_ref, $template_file_ref, $ssdraw_ref, $stk_list_arr_ref, $mask_list_arr_ref, $ifile_list_arr_ref, $sum_file, $log_file) = @_;
 
     #Validate that we can read the CM file
     my $cm_file = "";
     if($opt_HR->{"-m"} ne "") {
 	$cm_file = FindPossiblySharedFile($opt_HR->{"-m"}, $ssualigndir);
-	if(!(-e $cm_file)) { PrintErrorAndExit("ERROR, CM file $cm_file, specified with -m does not exist.", $sum_file, 1); }
+	if(!(-e $cm_file)) { PrintErrorAndExit("ERROR, CM file $cm_file, specified with -m does not exist.", $sum_file, $log_file, 1); }
     }
     else { # -m not enabled, assume the user used the default CM file:
 	$cm_file = $globals_H{"DF_CM_FILE"};
-	if(!(-e $cm_file)) { PrintErrorAndExit("ERROR, the default CM file $cm_file does not exist.\nIf you used a different CM file to create the alignments in $dir, use the -m option.", $sum_file, 1); }
+	if(!(-e $cm_file)) { PrintErrorAndExit("ERROR, the default CM file $cm_file does not exist.\nIf you used a different CM file to create the alignments in $dir, use the -m option.", $sum_file, $log_file, 1); }
     }
 
     #Validate that we can read the template postscript diagram file
     if($opt_HR->{"-t"} ne "") {
 	$template_file = $opt_HR->{"-t"};
-	if(!(-e $template_file)) { PrintErrorAndExit("ERROR, template postscript file $template_file, specified with -t does not exist.", $sum_file, 1); }
+	if(!(-e $template_file)) { PrintErrorAndExit("ERROR, template postscript file $template_file, specified with -t does not exist.", $sum_file, $log_file, 1); }
     }
     else { # -t not enabled, assume the user used the default CM file:
 	$template_file = $globals_H{"DF_TEMPLATE_FILE"};
-	if(!(-e $template_file)) { PrintErrorAndExit("ERROR, the default template file $template_file does not exist.\nIf you want to use a different postscript template file to create the structure diagrams, use the -t option.", $sum_file, 1); }
+	if(!(-e $template_file)) { PrintErrorAndExit("ERROR, the default template file $template_file does not exist.\nIf you want to use a different postscript template file to create the structure diagrams, use the -t option.", $sum_file, $log_file, 1); }
     }
 
     #Validate that esl-ssdraw exist
     my $ssdraw = $globals_H{"esl-ssdraw"};
     my $command_worked;
-    RunCommand("$ssdraw -h > /dev/null", $tfilectr++, 1, 0, $log_file, \$command_worked, "ERROR, the required executable $ssdraw is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
+    RunCommand("$ssdraw -h > /dev/null", $tfilectr++, 1, 0, $sum_file, $log_file, \$command_worked, "ERROR, the required executable $ssdraw is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
     
     # Find the alignments we'll draw
     my $naln = 0;
@@ -437,7 +437,7 @@ sub validate_and_setup_ssu_draw {
     if($opt_HR->{"-a"}) { # special mode, single command line argument is not a directory, it's an alignment
 	$aln_name = $dir;
 	if(! (-e $aln_name)) { 
-	    PrintErrorAndExit("ERROR, the alignment file $aln_name does not exist.", $sum_file, 1); 
+	    PrintErrorAndExit("ERROR, the alignment file $aln_name does not exist.", $sum_file, $log_file, 1); 
 	}
 	push(@{$stk_list_arr_ref}, $aln_name);
 	$naln = 1; 
@@ -446,15 +446,15 @@ sub validate_and_setup_ssu_draw {
 	# Validate there is at least 1 alignment in the input dir
 	if(! (-d $dir)) { 
 	    if(-e $dir) { 
-		PrintErrorAndExit("ERROR, the command-line argument $dir is a file, not a directory.\nIt should be the directory that includes the input alignment files,\nor if you want to operate on a single alignment, use the -a option.", $sum_file, 1); 
+		PrintErrorAndExit("ERROR, the command-line argument $dir is a file, not a directory.\nIt should be the directory that includes the input alignment files,\nor if you want to operate on a single alignment, use the -a option.", $sum_file, $log_file, 1); 
 	    }
 	    else { 
-		PrintErrorAndExit("ERROR, the directory $dir with input alignment files does not exist.", $sum_file, 1); 
+		PrintErrorAndExit("ERROR, the directory $dir with input alignment files does not exist.", $sum_file, $log_file, 1); 
 	    }
 	}
 	my ($name, $line);
 	my @names_A = ();
-	open(CM, $cm_file) || FileOpenFailure($cm_file, $sum_file, $!, "reading");
+	open(CM, $cm_file) || FileOpenFailure($cm_file, $sum_file, $log_file, $!, "reading");
 	while($line = <CM>) { 
 	    if($line =~ s/NAME\s+//) { 
 		chomp $line;
@@ -517,7 +517,7 @@ sub validate_and_setup_ssu_draw {
 	    $mask_file = FindPossiblySharedFile($opt_HR->{"-f"}, $ssualigndir);
 	    if($mask_file eq "") { # file doesn't exist
 		$mask_file = RemoveDirPath($opt_HR->{"-f"});
-		PrintErrorAndExit("ERROR, the mask file " . $opt_HR->{"-f"} . " does not exist relative to the current directory.\nAnd $mask_file does not exist in SSUALIGNDIR $ssualigndir.", $sum_file, 1); 
+		PrintErrorAndExit("ERROR, the mask file " . $opt_HR->{"-f"} . " does not exist relative to the current directory.\nAnd $mask_file does not exist in SSUALIGNDIR $ssualigndir.", $sum_file, $log_file, 1); 
 	    }
 	    push(@{$mask_list_arr_ref}, $mask_file);
 	}
@@ -562,14 +562,14 @@ sub validate_and_setup_ssu_draw {
 	    }
 	    if(! $found_it) { 
 		if($opt_HR->{"-d"}) { 
-		    PrintErrorAndExit("ERROR, unable to locate default mask file $mask_file for masking alignment $aln_name in\nthe SSUALIGNDIR $ssualigndir.", $sum_file, 1);
+		    PrintErrorAndExit("ERROR, unable to locate default mask file $mask_file for masking alignment $aln_name in\nthe SSUALIGNDIR $ssualigndir.", $sum_file, $log_file, 1);
 		}
 		else { #-k must be enabled
 		    if($opt_HR->{"-a"}) {
-			PrintErrorAndExit("ERROR, unable to locate mask file $mask_file for masking alignment $aln_name in the\ncurrent working directory, directory " . ReturnDirPath($aln_name) . ",\nor the SSUALIGNDIR $ssualigndir.", $sum_file, 1);
+			PrintErrorAndExit("ERROR, unable to locate mask file $mask_file for masking alignment $aln_name in the\ncurrent working directory, directory " . ReturnDirPath($aln_name) . ",\nor the SSUALIGNDIR $ssualigndir.", $sum_file, $log_file, 1);
 		    }
 		    else { 
-			PrintErrorAndExit("ERROR, unable to locate mask file $mask_file for masking alignment $aln_name in the\ndirectory " . ReturnDirPath($aln_name) . ",\nor the SSUALIGNDIR $ssualigndir.", $sum_file, 1);
+			PrintErrorAndExit("ERROR, unable to locate mask file $mask_file for masking alignment $aln_name in the\ndirectory " . ReturnDirPath($aln_name) . ",\nor the SSUALIGNDIR $ssualigndir.", $sum_file, $log_file, 1);
 		    }
 		}
 	    }
@@ -599,7 +599,7 @@ sub validate_and_setup_ssu_draw {
 	    }
 	    elsif($opt_HR->{"--mask-key"} ne "") { 
 		# mask doesn't exist, this is not okay if --mask-key enabled
-		PrintErrorAndExit("ERROR, unable to locate mask file $mask_file or " . RemoveDirPath($mask_file) . " for masking alignment $aln_name", $sum_file, 1);
+		PrintErrorAndExit("ERROR, unable to locate mask file $mask_file or " . RemoveDirPath($mask_file) . " for masking alignment $aln_name", $sum_file, $log_file, 1);
 	    }
 	    else { 
 		push(@{$mask_list_arr_ref}, ""); # empty string tells later functions: don't use a mask for this alignment
@@ -615,7 +615,7 @@ sub validate_and_setup_ssu_draw {
     foreach $aln_name (@{$stk_list_arr_ref}) {
 	if($opt_HR->{"--ifile"} ne "") { 
 	    if(!(-e $opt_HR->{"--ifile"})) { 
-		PrintErrorAndExit(sprintf("ERROR, the --ifile file %s does not exist.\n", $opt_HR->{"--ifile"}), $sum_file, 1);
+		PrintErrorAndExit(sprintf("ERROR, the --ifile file %s does not exist.\n", $opt_HR->{"--ifile"}), $sum_file, $log_file, 1);
 	    }
 	    push(@{$ifile_list_arr_ref}, $opt_HR->{"--ifile"});
 	}
@@ -836,7 +836,7 @@ sub run_ssdraw_for_ssu_draw {
     my $ssdraw_output_file = SwapOrAppendFileSuffix($aln_file, \@stk_suffix_A, ".ssdraw", 0);
 
     my $command = "$ssdraw $ssdraw_opts " . $small_opt . $tab_opt . "$aln_file $template_file $draw_ps > $ssdraw_output_file";
-    RunCommand("$command", $tfilectr++, 1, 1, $log_file, \$command_worked, "");
+    RunCommand("$command", $tfilectr++, 1, 1, $sum_file, $log_file, \$command_worked, "");
 
     # parse the ssdraw output 
     my $npages;
@@ -856,7 +856,7 @@ sub run_ssdraw_for_ssu_draw {
 	    $die_if_fails = 1; 
 	    $errmsg = "ERROR, --ps2pdf " . $opt_HR->{"--ps2pdf"} . " was enabled, but command $command did not work."; 
 	}
-	TryPs2Pdf($ps2pdf, $draw_ps, $draw_pdf, $tfilectr++, $die_if_fails, $print_output_upon_failure, $log_file, \$command_worked, $errmsg);
+	TryPs2Pdf($ps2pdf, $draw_ps, $draw_pdf, $tfilectr++, $die_if_fails, $print_output_upon_failure, $sum_file, $log_file, \$command_worked, $errmsg);
 	
 	if($command_worked) { 
 	    PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %-*s\n", $max_width_aln, $aln_file2print, $max_width_draw, $draw_pdf2print, $npages, $max_width_tab, $tabfile2print));
@@ -900,7 +900,7 @@ sub parse_ssdraw_output
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, parse_ssdraw_file() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my ($file, $npages_R, $sum_file, $log_file) = @_;
     
-    open(IN, $file) || FileOpenFailure($file, $log_file, $!, "reading");
+    open(IN, $file) || FileOpenFailure($file, $sum_file, $log_file, $!, "reading");
 
     my ($npages, $line);
     my $nlines = 0;
@@ -911,7 +911,7 @@ sub parse_ssdraw_output
 	    $nlines++;
 	}
     }
-    if($nlines == 0) { PrintErrorAndExit("ERROR, expected a line defining number of pages in ssu-esl-ssdraw output file $file, but didn't read one.", $sum_file, 1); }
+    if($nlines == 0) { PrintErrorAndExit("ERROR, expected a line defining number of pages in ssu-esl-ssdraw output file $file, but didn't read one.", $sum_file, $log_file, 1); }
 
     $$npages_R = $npages;
 

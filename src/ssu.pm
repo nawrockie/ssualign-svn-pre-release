@@ -14,7 +14,8 @@
 # PrintConclusion():               prints final lines of SSU-ALIGN script output
 # PrintTiming():                   prints run time to stdout and summary file.
 # PrintStringToFile():             prints string to a file and optionally stdout.
-# RunCommand():                    runs an executable using system, prints output to log file
+# RunCommand():                    runs an executable using system(), prints output to log file
+# ActuallyRunCommand():            runs an executable using system()
 # TempFilename():                  create a name for a temporary file
 # UnlinkFile():                    unlinks a file, and updates log file.
 # UnlinkDir():                     removes an empty directory, and updates log file.
@@ -83,6 +84,8 @@ sub GetGlobals {
     $globals_HR->{"DF_ALIMASK_PFRACT"}    = 0.95;                                   # original value: 0.95
     $globals_HR->{"DF_ALIMASK_PTHRESH"}   = 0.95;                                   # original value: 0.95
     $globals_HR->{"DF_NCORES_WO_WARNING"} = 8;                                      # original value: 8
+    $globals_HR->{"SUCCESS_STRING"}       = "# SSU-ALIGN-" . $globals_HR->{"VERSION"} . "-success!"; # original value: "# SSU-ALIGN-" . $globals_HR->{"VERSION"} . " success!";
+    $globals_HR->{"FAILURE_STRING"}       = "# SSU-ALIGN-" . $globals_HR->{"VERSION"} . "-failure!"; # original value: "# SSU-ALIGN-" . $globals_HR->{"VERSION"} . " failure!";
 
     # executable programs
     $globals_HR->{"cmalign"}      = "ssu-cmalign";                              # original value: "ssu-cmalign"
@@ -99,6 +102,7 @@ sub GetGlobals {
     $globals_HR->{"esl-weight"}   = "ssu-esl-weight";                           # original value: "ssu-esl-weight"
     $globals_HR->{"ps2pdf"}       = "ps2pdf";                                   # original value: "ps2pdf"
     $globals_HR->{"ssu-align"}    = "ssu-align";                                # original value: "ssu-align"
+    $globals_HR->{"ssu-merge"}    = "ssu-merge";                                # original value: "ssu-merge"
 
     return;
 }
@@ -210,14 +214,15 @@ sub PrintBanner {
 #    $time_hires_installed:   '1' if Time:HiRes is installed (we'll print milliseconds)
 #    $out_dir:                output directory where output files were put,
 #                             "" if it is current dir.
+#    $globals_HR:             REFERENCE to the globals hash
 #
 # Returns:    Nothing.
 # 
 ####################################################################
 sub PrintConclusion { 
-    my $narg_expected = 7;
+    my $narg_expected = 8;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, PrintConclusion() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($sum_file, $log_file, $sum_file2print, $log_file2print, $total_time, $time_hires_installed, $out_dir) = @_;
+    my ($sum_file, $log_file, $sum_file2print, $log_file2print, $total_time, $time_hires_installed, $out_dir, $globals_HR) = @_;
 
     PrintStringToFile($sum_file, 1, sprintf("#\n"));
     #PrintStringToFile($sum_file, 1, sprintf("# Commands executed by this script written to log file:  $log_file2print.\n"));
@@ -236,9 +241,11 @@ sub PrintConclusion {
     if($total_time ne "") { 
 	PrintTiming("# CPU time: ", $total_time, $time_hires_installed, 1, $sum_file); 
 	PrintStringToFile($sum_file, 1, sprintf("# \n"));
+	PrintStringToFile($sum_file, 0, $globals_HR->{"SUCCESS_STRING"}. "\n");
     }
     PrintStringToFile($log_file, 0, `date`);
     PrintStringToFile($log_file, 0, `uname -a`);
+    PrintStringToFile($log_file, 0, $globals_HR->{"SUCCESS_STRING"}. "\n");
 
     return;
 }
@@ -322,6 +329,12 @@ sub PrintStringToFile {
 # Incept: EPN, Fri Oct 30 06:05:37 2009
 #
 # Purpose: Run a command using the system() command.
+#          Command is actually executed using ActuallyRunCommand(),
+#          code wrapping that call is complex. Its purpose is
+#          to capture the output and stderr of the command 
+#          in temporary files and regurgitate that output/stderr
+#          if the command fails.
+#
 #          A new file is created temporarily for the command's
 #          standard error output (STDERR). An additional temp
 #          file is created for the command's standard output
@@ -351,7 +364,8 @@ sub PrintStringToFile {
 #   $key:                       string to add to temp file names
 #   $die_if_fails:              '1' to die if command returns non-zero status
 #   $print_output_upon_failure: '1' to print command output to STDERR if it fails
-#   $log_file:                  file to print command and output to
+#   $sum_file:                  sum file to print error to (if nec)
+#   $log_file:                  log file to print command and output to
 #   $returned_zero_R:           set to '1' if command works (returns 0), else set to '0'         
 #   $errmsg:                    message to print if command returns non-0 exit status
 #                               and $die_if_fails==1, if this is "", print generic error.
@@ -359,24 +373,24 @@ sub PrintStringToFile {
 #
 ###########################################################
 sub RunCommand {
-    my $narg_expected = 7;
+    my $narg_expected = 8;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, RunCommand() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($cmd, $key, $die_if_fails, $print_output_upon_failure, $log_file, $returned_zero_R, $errmsg) = @_;
+    my ($cmd, $key, $die_if_fails, $print_output_upon_failure, $sum_file, $log_file, $returned_zero_R, $errmsg) = @_;
 
     my $have_tmp_stdout = 0;
     my ($stdout_file, $tmp_stderr_file, $line, $returned_zero, $status, $retval);
 
     # contract check, $log_file must not be the empty string
-    if($log_file eq "") { PrintErrorAndExit("ERROR, in RunCommand with empty log file.", $log_file, 1); }
+    if($log_file eq "") { PrintErrorAndExit("ERROR, in RunCommand with empty log file.", $sum_file, $log_file, 1); }
     # contract check, if caller had stderr and output redirected, we die, caller shouldn't do that.
-    if($cmd =~ /\s+2\s*>\s*&\s*1/) { PrintErrorAndExit("ERROR, in RunCommand with illegal substring that matches \"2\>\&1\".", $log_file, 1); }
+    if($cmd =~ /\s+2\s*>\s*&\s*1/) { PrintErrorAndExit("ERROR, in RunCommand with illegal substring that matches \"2\>\&1\".", $sum_file, $log_file, 1); }
 
     # replace multi-spaces due to blank options from caller with single spaces, solely so $log_file output doesn't contain odd looking commands
     $cmd =~ s/\s+/ /g;
 
     if($cmd !~ />/) { 
 	# add stdout redirection
-	$stdout_file = TempFilename($log_file, $key . "out");
+	$stdout_file = TempFilename($sum_file, $log_file, $key . "out");
 	$have_tmp_stdout = 1;
 	$cmd = "$cmd > $stdout_file"
     }
@@ -384,23 +398,15 @@ sub RunCommand {
 	$stdout_file = $1;
     }
     else { 
-	PrintErrorAndExit("ERROR, in RunCommand command: $cmd has output redirection, but unable to parse its output file.", $log_file, 1); 
+	PrintErrorAndExit("ERROR, in RunCommand command: $cmd has output redirection, but unable to parse its output file.", $sum_file, $log_file, 1); 
     }
-    $tmp_stderr_file = TempFilename($log_file, $key . "err");
+    $tmp_stderr_file = TempFilename($sum_file, $log_file, $key . "err");
     
     # add stderr redirection
     $cmd  = "$cmd  2> $tmp_stderr_file";
-    
+
     PrintStringToFile($log_file, 0, ("Executing:      " . $cmd . "\n"));
-    system "$cmd";
-    $status = $?;
-    if(($status&255) != 0) { 
-	$retval = $status&255;
-    }
-    elsif(($status>>8) != 0) { 
-	$retval = $status>>8;
-    }
-    else { $retval = 0; }
+    ActuallyRunCommand($cmd, \$retval);
     PrintStringToFile($log_file, 0, ("Returned:       " . $retval . "\n"));
 
     # get output from $stdout_file and $tmp_stderr_file
@@ -456,7 +462,7 @@ sub RunCommand {
 	if($die_if_fails) { exit(1); }
 	$returned_zero = 0;
     }
-    else { 
+    else { # $retval == 0
 	if(! $have_tmp_stdout) { PrintStringToFile($log_file, 0, ("Output (STDOUT) $stdout_file_message.\n")); }
 	else                   { PrintStringToFile($log_file, 0, ("Output (STDOUT): " . $stdout2print . "\n")); }
 	PrintStringToFile($log_file, 0, ("Output (STDERR): " . $stderr2print . "\n\n"));
@@ -473,6 +479,38 @@ sub RunCommand {
     return;
 }
 
+
+###########################################################
+# Subroutine: ActuallyRunCommand
+# Incept: EPN, Tue Mar 23 06:22:56 2010
+#
+# Purpose: Run a command using the system() command and return
+#          the return value in $retval_R.
+#
+# Arguments:
+#   $cmd:                       command to execute with system()
+#   $retval_R:                  RETURN: return value of $cmd
+#
+# Returns: Nothing (except fills $retval_R).
+#
+###########################################################
+sub ActuallyRunCommand {
+    my $narg_expected = 2;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, RunCommand() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($cmd, $retval_R) = @_;
+
+    my ($status, $retval);
+
+    system "$cmd";
+
+    $status = $?;
+    if   (($status&255) != 0) { $retval = $status&255; }
+    elsif(($status>>8)  != 0) { $retval = $status>>8;  }
+    else                      { $retval = 0; }
+    
+    $$retval_R = $retval;
+    return;
+}
 
 ###########################################################
 # Subroutine: TempFilename()
@@ -496,44 +534,46 @@ sub RunCommand {
 #          two file with identical names. 
 #      
 #          Temp file will be put in the same directory
-#          that $out_file exists in.
+#          that $sum_file exists in.
 # 
 # Arguments:
-# $out_file: file to print error to if we can't open the
-#            file;
+# $sum_file: summary file to print error to if we can't open the
+#            file, "" if none;
+# $log_file: log file to print error to if we can't open the
+#            file, "" if none;
 # $key:      added to temp file name, to possibly make it 
 #            even more unique
 #
 # Returns: Temporary file name. Nothing if unable to get a
-#          name. Prints error message to $out_file and
-#          exits if it can't create the temp file.
+#          name. Prints error message to $sum_file and
+#          $log_file exits if it can't create the temp file.
 #
 ###########################################################
 sub TempFilename {
-    my $narg_expected = 2;
+    my $narg_expected = 3;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, TempFilename() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($out_file, $key) = @_;
+    my ($sum_file, $log_file, $key) = @_;
 
     my ($name, $suffix, $out_dir);
 
-    if($out_file !~ m/\//) { 
+    if($sum_file !~ m/\//) { 
 	$out_dir = ""; 
     }
     else { 
-	$out_dir = $out_file;
+	$out_dir = $sum_file;
 	$out_dir =~ s/\/.+$/\//; # replace final '/' plus file name with full dir path and final '/'
     }
 
     foreach $suffix ("aa".."zz") {
         $name = $out_dir . "ssutmp".$key.$suffix.$$;
         if (! (-e $name)) { 
-            open (TMP,">$name") || FileOpenFailure($name, $out_file, 1, "writing");
+            open (TMP,">$name") || FileOpenFailure($name, $sum_file, 1, "writing");
             close(TMP);
             return "$name"; 
         }
     }
     # if we get here we couldn't open any tmp file, exit
-    PrintErrorAndExit("ERROR, unable to create temporary file, 26*26=676 already exist!.", $out_file, 1);
+    PrintErrorAndExit("ERROR, unable to create temporary file, 26*26=676 already exist!.", $sum_file, $log_file, 1);
 }
 
 
@@ -586,7 +626,7 @@ sub UnlinkDir {
 
     PrintStringToFile($log_file, 0, ("About to remove presumed empty directory ($dir) with perl's rmdir function ... "));
     if(! rmdir($dir)) { 
-	PrintStringToFile($log_file, 0, ("ERROR, couldn't remove it (it may not be empty)."));
+	PrintStringToFile($log_file, 0, ("ERROR, couldn't remove it (it may not be empty).\n"));
 	return 0;
     }
     # if we get here it was removed 
@@ -667,7 +707,7 @@ sub DetermineNumSeqsStockholm {
     if($ileaved) { $small_opt = ""; } 
     else         { $small_opt = " --rna --informat pfam --small"; } 
     $command = "$alistat $small_opt $alifile > $tmp_alistat_file";
-    $output = RunCommand("$command", $key, 1, 1, $log_file, \$command_worked, "");
+    $output = RunCommand("$command", $key, 1, 1, $sum_file, $log_file, \$command_worked, "");
 
     $nseq = 0;
     @{$nseq_AR} = ();
@@ -684,7 +724,7 @@ sub DetermineNumSeqsStockholm {
     }
     close(IN);
     
-    if($nali == 0) { PrintErrorAndExit("ERROR parsing esl-alistat output in file $tmp_alistat_file, couldn't determine number of sequences in $alifile.", $sum_file, 1); }
+    if($nali == 0) { PrintErrorAndExit("ERROR parsing esl-alistat output in file $tmp_alistat_file, couldn't determine number of sequences in $alifile.", $sum_file, $log_file, 1); }
 
     UnlinkFile($tmp_alistat_file, $log_file); 
     $$nali_R = $nali;
@@ -815,6 +855,7 @@ sub SumHashElements
 #   $key:                       string for temp file name
 #   $die_if_fails:              '1' to die if command returns non-zero status
 #   $print_output_upon_failure: '1' to print command output to STDERR if it fails
+#   $sum_file:                  file to print command and output to
 #   $log_file:                  file to print command and output to
 #   $command_worked_ref:        set to '1' if command works (returns 0), else set to '0'         
 #   $errmsg:                    message to print if command returns non-0 exit status
@@ -824,9 +865,9 @@ sub SumHashElements
 #
 ################################################################# 
 sub TryPs2Pdf {
-    my $narg_expected = 9;
+    my $narg_expected = 10;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, TryPs2Pdf() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($ps2pdf, $ps_file, $pdf_file, $key, $die_if_fails, $print_output_upon_failure, $log_file, $command_worked_ref, $errmsg) = @_;
+    my ($ps2pdf, $ps_file, $pdf_file, $key, $die_if_fails, $print_output_upon_failure, $sum_file, $log_file, $command_worked_ref, $errmsg) = @_;
 
     # contract check
     if(! (-e $ps_file)) { die "\nERROR, in TryPs2Pdf(), ps file $ps_file doesn't exist.\n"; }
@@ -835,7 +876,7 @@ sub TryPs2Pdf {
      if($ps2pdf eq "") { $ps2pdf = "ps2pdf"; }
 
     my $command = "$ps2pdf $ps_file $pdf_file";
-    RunCommand("$command", $key, $die_if_fails, $print_output_upon_failure, $log_file, \$command_worked, $errmsg);
+    RunCommand("$command", $key, $die_if_fails, $print_output_upon_failure, $sum_file, $log_file, \$command_worked, $errmsg);
 
     $$command_worked_ref = $command_worked;
     return;
@@ -1001,12 +1042,13 @@ sub SecondsSinceEpoch() {
 #
 # Purpose:     Called if a open() call fails on a file.
 #              Print an informative error message
-#              to <$out_file> and to STDERR, then exit with
-#              <$status>.
+#              to <$sum_file>, <$log_file> and to STDERR, 
+#              then exit with <$status>.
 #
 # Arguments: 
 #   $file_to_open: file that we couldn't open
-#   $out_file:     file to write errmsg to, "" for none
+#   $sum_file:     summary file to write errmsg to, "" for none
+#   $log_file:     log file to write errmsg to, "" for none
 #   $status:       error status
 #   $action:       "reading", "writing", "appending"
 # 
@@ -1014,9 +1056,9 @@ sub SecondsSinceEpoch() {
 #
 ################################################################# 
 sub FileOpenFailure() { 
-    my $narg_expected = 4;
+    my $narg_expected = 5;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, FileOpenForReadingFailure() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($file_to_open, $out_file, $status, $action) = @_;
+    my ($file_to_open, $sum_file, $log_file, $status, $action) = @_;
 
     my $errmsg;
     if(($action eq "reading") && (! (-e $file_to_open))) { 
@@ -1025,7 +1067,7 @@ sub FileOpenFailure() {
     else { 
 	$errmsg = "\nERROR, could not open $file_to_open for $action.\n";
     }
-    PrintErrorAndExit($errmsg, $out_file, $status);
+    PrintErrorAndExit($errmsg, $sum_file, $log_file, $status);
 }
 
 
@@ -1033,28 +1075,33 @@ sub FileOpenFailure() {
 # Subroutine : PrintErrorAndExit()
 # Incept:      EPN, Wed Nov 11 06:22:59 2009
 #
-# Purpose:     Print an error message to STDERR and optionally
-#              to a file, then exit with return status <$status>.
+# Purpose:     Print an error message to STDERR and two files
+#              (should be summary file and log file),
+#              then exit with return status <$status>.
 #
 # Arguments: 
 #   $errmsg:       the error message to write
-#   $out_file:     file to write errmsg to, "" for none
+#   $sum_file:     sum file to write errmsg to, "" for none
+#   $log_file:     log file to write errmsg to, "" for none
 #   $status:       error status to exit with
 # 
 # Returns:     Nothing, this function will exit the program.
 #
 ################################################################# 
 sub PrintErrorAndExit() { 
-    my $narg_expected = 3;
+    my $narg_expected = 4;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, PrintErrorAndExit() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($errmsg, $out_file, $status) = @_;
+    my ($errmsg, $sum_file, $log_file, $status) = @_;
 
     if($errmsg !~ m/\n$/) { $errmsg .= "\n\n"; }
     else                  { $errmsg .= "\n"; }
     if($errmsg !~ m/^\n/) { $errmsg = "\n" . $errmsg; }
 
-    if($out_file ne "") { 
-	PrintStringToFile($out_file, 0, $errmsg);
+    if($sum_file ne "") { 
+	PrintStringToFile($sum_file, 0, $errmsg);
+    }
+    if($log_file ne "") { 
+	PrintStringToFile($log_file, 0, $errmsg);
     }
     printf STDERR $errmsg; 
     exit($status);
@@ -1085,16 +1132,17 @@ sub PrintErrorAndExit() {
 # $nres_hit_cm_HR:       summed length of extracted hits that were best match to each CM
 # $print_to_stdout:      '1' to also print to stdout (in addition to <$sum_file>)
 # $sum_file:             summary file 
+# $log_file:             summary file 
 # 
 # Returns:    Nothing.
 #             
 # 
 ####################################################################
 sub PrintSearchAndAlignStatistics { 
-    my $narg_expected = 14;
+    my $narg_expected = 15;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, PrintSearchAndAlignStatistics() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my ($search_seconds, $align_seconds, $target_nseq, $target_nres, $nseq_all_cms, $nres_total_all_cms, $nres_hit_all_cms, 
-	$indi_cm_name_AR, $cm_used_for_align_HR, $nseq_cm_HR, $nres_total_cm_HR, $nres_hit_cm_HR, $print_to_stdout, $sum_file) = @_;
+	$indi_cm_name_AR, $cm_used_for_align_HR, $nseq_cm_HR, $nres_total_cm_HR, $nres_hit_cm_HR, $print_to_stdout, $sum_file, $log_file) = @_;
 
     my ($cm_name, $i);
     my $nres_aligned_all_cms = 0;
@@ -1142,7 +1190,7 @@ sub PrintSearchAndAlignStatistics {
 	    }
 	}
     }
-    #if($nseq_all_cms == 0) { PrintErrorAndExit("ERROR, no seqs matched to any CM (during stat printing). Program should've exited earlier. Error in code.", $sum_file, 1); }
+    #if($nseq_all_cms == 0) { PrintErrorAndExit("ERROR, no seqs matched to any CM (during stat printing). Program should've exited earlier. Error in code.", $sum_file, $log_file, 1); }
     PrintStringToFile($sum_file, $print_to_stdout, "\#\n");
     PrintStringToFile($sum_file, $print_to_stdout, sprintf("  %-*s  %7d  %8.4f  %13.2f  %8.4f  %13d\n", 
 							   $cm_width, "*all-models*", 
