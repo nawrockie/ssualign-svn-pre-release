@@ -1,45 +1,53 @@
 #!/usr/bin/perl
 #
-# ssu-align-0p1.subs.pm
+# ssu.pm
 # Eric Nawrocki
 # EPN, Thu Nov  5 05:39:37 2009
 #
 # Perl module used by SSU-ALIGN v0.1 perl scripts. This module
-# contains subroutines called by > 1 of the SSU-ALIGN perl scripts.
+# contains subroutines called by > 1 of the SSU-ALIGN perl scripts:
+# ssu-align, ssu-build, ssu-draw, ssu-mask, ssu-merge, ssu-prep.
 #
 # List of subroutines in this file:
 #
-# GetGlobals():                    fill a hash with global variables, called by all SSU-ALIGN scripts
-# PrintBanner():                   prints SSU-ALIGN banner given a script description.
-# PrintConclusion():               prints final lines of SSU-ALIGN script output
-# PrintTiming():                   prints run time to stdout and summary file.
-# PrintStringToFile():             prints string to a file and optionally stdout.
-# RunCommand():                    runs an executable using system(), prints output to log file
-# ActuallyRunCommand():            runs an executable using system()
-# TempFilename():                  create a name for a temporary file
-# UnlinkFile():                    unlinks a file, and updates log file.
-# UnlinkDir():                     removes an empty directory, and updates log file.
-# DetermineNumSeqsFasta():         determine the number of sequences in a FASTA file.
-# DetermineNumSeqsStockholm():     determine the number of sequences in a Stockholm aln file.
-# ArgmaxArray():                   determine the index of the max value scalar in an array
-# MaxLengthScalarInArray():        determine the max length scalar in an array.
-# SumArrayElements():              return sum of values in a numeric array
-# SumHashElements():               return sum of values in a numeric hash 
-# TryPs2Pdf():                     attempt to run 'ps2pdf' to convert ps to pdf file.
-# SwapOrAppendFileSuffix():        given a file name, return a new name with a suffix swapped.
-# RemoveDirPath():                 remove the leading directory path of a filename
-# ReturnDirPath():                 return the leading directory path of a filename
-# UseModuleIfItExists():           use 'use()' to use a module, if it exists on the system
-# SecondsSinceEpoch():             return number of seconds since the epoch 
-# FileOpenFailure():               called if an open() call fails, print error msg and exit
-# PrintErrorAndExit():             print an error message and call exit to kill the program
-# PrintSearchAndAlignStatistics(): print ssu-align summary statistics on search and alignment
-# NumberOfDigits():                determine number of digits before decimal point in a number
-# FindPossiblySharedFile():        given a file, determine if that file exists in cwd or $ENV(SSUALIGNDIR)
-#
+# GetGlobals():                      fill a hash with global variables, called by all SSU-ALIGN scripts
+# PrintBanner():                     prints SSU-ALIGN banner given a script description.
+# PrintConclusion():                 prints final lines of SSU-ALIGN script output
+# PrintTiming():                     prints run time to stdout and summary file.
+# PrintStringToFile():               prints string to a file and optionally stdout.
+# RunCommand():                      runs an executable using system(), prints output to log file
+# ActuallyRunCommand():              runs an executable using system()
+# ValidateRequiredExecutable():      validate that a required executable can be executed by user
+# TempFilename():                    create a name for a temporary file
+# UnlinkFile():                      unlinks a file, and updates log file.
+# UnlinkDir():                       removes an empty directory, and updates log file.
+# DetermineNumSeqsFasta():           determine the number of sequences in a FASTA file.
+# DetermineNumSeqsStockholm():       determine the number of sequences in a Stockholm aln file.
+# MaxArray():                        determine the maximum value scalar in an array
+# ArgmaxArray():                     determine the index of the max value scalar in an array
+# MaxLengthScalarInArray():          determine the max length scalar in an array.
+# SumArrayElements():                return sum of values in a numeric array
+# SumHashElements():                 return sum of values in a numeric hash 
+# TryPs2Pdf():                       attempt to run 'ps2pdf' to convert ps to pdf file.
+# SwapOrAppendFileSuffix():          given a file name, return a new name with a suffix swapped.
+# RemoveDirPath():                   remove the leading directory path of a filename
+# ReturnDirPath():                   return the leading directory path of a filename
+# UseModuleIfItExists():             use 'use()' to use a module, if it exists on the system
+# SecondsSinceEpoch():               return number of seconds since the epoch 
+# FileOpenFailure():                 called if an open() call fails, print error msg and exit
+# PrintErrorAndExit():               print an error message and call exit to kill the program
+# PrintSearchAndAlignStatistics():   print ssu-align summary statistics on search and alignment
+# NumberOfDigits():                  determine number of digits before decimal point in a number
+# FindPossiblySharedFile():          given a file, determine if that file exists in cwd or $ENV(SSUALIGNDIR)
+# SeqstatSeqFilePerSeq():            get per-sequence statistics on a sequence file using 'esl-seqstat'
+# InitializeSsuAlignOptions():       initialize ssu-align options in 'ssu-align' and 'ssu-prep'        
+# CheckSsuAlignOptions():            check for incompatible ssu-align options in 'ssu-align' and 'ssu-prep'        
+# ValidateAndSetupSsuAlignOrPrep():  validate that 'ssu-align' or 'ssu-prep' can run 
+# CreateSsuAlignOutputDir():         create the master output directory for 'ssu-align' or 'ssu-prep'
+# AppendSsuAlignOptionsUsage():      append usage strings for options common to 'ssu-align' and 'ssu-prep'
+
 use strict;
 use warnings;
-
 
 #####################################################################
 # Subroutine: GetGlobals()
@@ -83,9 +91,6 @@ sub GetGlobals {
     $globals_HR->{"DF_CMALIGN_OPTS"}      = " --no-null3 --sub ";                   # original value: " --no-null3 --sub"
     $globals_HR->{"DF_ALIMASK_PFRACT"}    = 0.95;                                   # original value: 0.95
     $globals_HR->{"DF_ALIMASK_PTHRESH"}   = 0.95;                                   # original value: 0.95
-    $globals_HR->{"DF_NCORES_WO_WARNING"} = 8;                                      # original value: 8
-    $globals_HR->{"SUCCESS_STRING"}       = "# SSU-ALIGN-" . $globals_HR->{"VERSION"} . "-success!"; # original value: "# SSU-ALIGN-" . $globals_HR->{"VERSION"} . " success!";
-    $globals_HR->{"FAILURE_STRING"}       = "# SSU-ALIGN-" . $globals_HR->{"VERSION"} . "-failure!"; # original value: "# SSU-ALIGN-" . $globals_HR->{"VERSION"} . " failure!";
 
     # executable programs
     $globals_HR->{"cmalign"}      = "ssu-cmalign";                              # original value: "ssu-cmalign"
@@ -142,26 +147,27 @@ sub PrintGlobalsToFile {
 # Subroutine: PrintBanner()
 # Incept:     EPN, Thu Sep 24 14:40:39 2009
 # 
-# Purpose:    Print the ssu-mask banner.
+# Purpose:    Print the ssu-* banner.
 #
 # Arguments: 
-#    $script_call:      call used to invoke this (ssu-draw) script
-#    $script_desc:      short description of script, printed to stdout
-#    $date:             date to print
-#    $opt_HR:           REFERENCE to hash of command-line options
-#    $opt_takes_arg_HR: REFERENCE to hash telling if each option takes an argument (1) or not (0)
-#    $opt_order_AR:     REFERENCE to array specifying order of options
-#    $argv_R:           REFERENCE to @ARGV, command-line arguments
-#    $print_to_stdout:  '1' to print to stdout, '0' not to
-#    $out_file:         file to print to, "" for not any file
+#    $script_call:       command used to invoke this script
+#    $script_desc:       short description of script, printed to stdout
+#    $date:              date to print
+#    $opt_HR:            REFERENCE to hash of command-line options
+#    $opt_takes_arg_HR:  REFERENCE to hash telling if each option takes an argument (1) or not (0)
+#    $opt_order_AR:      REFERENCE to array specifying order of options
+#    $argv_R:            REFERENCE to @ARGV, command-line arguments
+#    $print_to_stdout:   '1' to print to stdout, '0' not to
+#    $enabled_options_R: RETURN: a string of all enabled options
+#    $out_file:          file to print to, "" for not any file
 #
 # Returns:    Nothing, if it returns, everything is valid.
 # 
 ####################################################################
 sub PrintBanner { 
-    my $narg_expected = 9;
+    my $narg_expected = 10;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, PrintBanner() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($script_call, $script_desc, $date, $opt_HR, $opt_takes_arg_HR, $opt_order_AR, $argv_R, $print_to_stdout, $out_file) = @_;
+    my ($script_call, $script_desc, $date, $opt_HR, $opt_takes_arg_HR, $opt_order_AR, $argv_R, $print_to_stdout, $enabled_options_R, $out_file) = @_;
 
     my ($i, $script_name, $start_log_line, $opt);
     $script_call =~ s/^\.+\///;
@@ -174,8 +180,8 @@ sub PrintBanner {
     }
 
     PrintStringToFile($out_file, $print_to_stdout, sprintf("\# $script_name :: $script_desc\n"));
-    PrintStringToFile($out_file, $print_to_stdout, sprintf("\# SSU-ALIGN 0.1 (November 2009)\n"));
-    PrintStringToFile($out_file, $print_to_stdout, sprintf("\# Copyright (C) 2009 HHMI Janelia Farm Research Campus\n"));
+    PrintStringToFile($out_file, $print_to_stdout, sprintf("\# SSU-ALIGN 0.1 (May 2010)\n"));
+    PrintStringToFile($out_file, $print_to_stdout, sprintf("\# Copyright (C) 2010 HHMI Janelia Farm Research Campus\n"));
     PrintStringToFile($out_file, $print_to_stdout, sprintf("\# Freely distributed under the GNU General Public License (GPLv3)\n"));
     PrintStringToFile($out_file, $print_to_stdout, sprintf("\# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n"));
     PrintStringToFile($out_file, $print_to_stdout, sprintf("%-10s %s ", "# command:", $script_name . $enabled_options));
@@ -193,6 +199,7 @@ sub PrintBanner {
     PrintStringToFile($out_file, $print_to_stdout, sprintf($date));
     PrintStringToFile($out_file, $print_to_stdout, sprintf("\n"));
 
+    $$enabled_options_R = $enabled_options;
     return;
 }
 
@@ -238,15 +245,16 @@ sub PrintConclusion {
 	PrintStringToFile($sum_file, 1, sprintf("# All output files created in the current working directory.\n"));
 	PrintStringToFile($sum_file, 1, sprintf("#\n"));
     }
-    if($total_time ne "") { 
+    if($total_time ne "") { # don't print this if ssu-align is caller
 	PrintTiming("# CPU time: ", $total_time, $time_hires_installed, 1, $sum_file); 
 	PrintStringToFile($sum_file, 1, sprintf("# \n"));
-	PrintStringToFile($sum_file, 0, $globals_HR->{"SUCCESS_STRING"}. "\n");
+	PrintStringToFile($sum_file, 0, "# SSU-ALIGN-SUCCESS\n");
     }
     PrintStringToFile($log_file, 0, `date`);
     PrintStringToFile($log_file, 0, `uname -a`);
-    PrintStringToFile($log_file, 0, $globals_HR->{"SUCCESS_STRING"}. "\n");
-
+    if($total_time ne "") { # don't print this if ssu-align is caller
+	PrintStringToFile($log_file, 0, "# SSU-ALIGN-SUCCESS\n");
+    }
     return;
 }
 
@@ -512,6 +520,41 @@ sub ActuallyRunCommand {
     return;
 }
 
+
+###########################################################
+# Subroutine: ValidateRequiredExecutable()
+# Incept: EPN, Wed Apr 14 09:04:42 2010
+#
+# Purpose: Validate a required executable exists by trying to 
+#          execute it and making sure it returned 0 exit status.
+#
+# Arguments:
+#   $x:        name of executable
+#   $key:      keyword for naming tmp output files
+#   $options:  string of options to supply to executable when testing
+#   $sum_file: the summary file (to print error to, if nec)
+#   $log_file: the log file (to print error to, if nec)
+# 
+# Returns: Nothing. Dies if "$x $options" returns non-0 
+#          exit status.
+#
+###########################################################
+sub ValidateRequiredExecutable {
+    my $narg_expected = 5;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, RunCommand() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($x, $key, $options, $sum_file, $log_file) = @_;
+
+    my $command_worked;
+    # Execute the command, this will die if it fails
+    RunCommand("$x $options > /dev/null", $key, 
+	       1, # die_if_fails, '1' == TRUE, die if we fail
+	       1, # print_output_upon_failure, '1' == TRUE, print it
+	       $sum_file, $log_file, 
+	       \$command_worked, # this is not used, we'll die if the command fails
+	       "ERROR, the required executable $x is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");
+    return;
+}
+
 ###########################################################
 # Subroutine: TempFilename()
 # Incept: EPN, Thu Nov 19 13:19:16 2009
@@ -624,13 +667,13 @@ sub UnlinkDir {
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, UnlinkDir() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my ($dir, $log_file) = @_;
 
-    PrintStringToFile($log_file, 0, ("About to remove presumed empty directory ($dir) with perl's rmdir function ... "));
+    if($log_file ne "") { PrintStringToFile($log_file, 0, ("About to remove presumed empty directory ($dir) with perl's rmdir function ... ")); }
     if(! rmdir($dir)) { 
-	PrintStringToFile($log_file, 0, ("ERROR, couldn't remove it (it may not be empty).\n"));
+	if($log_file ne "") { PrintStringToFile($log_file, 0, ("ERROR, couldn't remove it (it may not be empty).\n")); }
 	return 0;
     }
     # if we get here it was removed 
-    PrintStringToFile($log_file, 0, ("done.\n\n"));
+    if($log_file ne "") { PrintStringToFile($log_file, 0, ("done.\n\n")); }
     return 1;
 }
 
@@ -731,6 +774,34 @@ sub DetermineNumSeqsStockholm {
     return;
 }
 
+
+#################################################################
+# Subroutine : MaxArray()
+# Incept:      EPN, Wed Apr 14 11:52:44 2010
+# 
+# Purpose:     Return the max value in an array.
+#
+# Arguments:
+# $arr_R: reference to the array
+# 
+# Returns:     The max value in the array.
+#
+################################################################# 
+sub MaxArray
+{
+    my $narg_expected = 1;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, MaxArr() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($arr_R) = $_[0];
+    if(scalar(@{$arr_R}) == 0) { printf STDERR ("ERROR, MaxArr() called with empty array."); exit(1); }
+
+    my ($max, $i);
+
+    $max = $arr_R->[0];
+    for($i = 1; $i < scalar(@{$arr_R}); $i++) { 
+	if($arr_R->[$i] > $max) { $max = $arr_R->[$i]; };
+    }
+    return $max;
+}
 
 #################################################################
 # Subroutine : ArgmaxArray()
@@ -907,7 +978,7 @@ sub TryPs2Pdf {
 #              or swapped.
 #
 ################################################################# 
-sub SwapOrAppendFileSuffix() {
+sub SwapOrAppendFileSuffix {
     my $narg_expected = 4;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, SwapOrAppendFileSuffix() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my ($orig_file, $orig_suffix_AR, $new_suffix, $use_orig_dir) = @_;
@@ -942,7 +1013,7 @@ sub SwapOrAppendFileSuffix() {
 # Returns:     The string $orig_file with dir path removed.
 #
 ################################################################# 
-sub RemoveDirPath() {
+sub RemoveDirPath {
     my $narg_expected = 1;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, RemoveDirPath() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my $orig_file = $_[0];
@@ -966,7 +1037,7 @@ sub RemoveDirPath() {
 # Returns:     The string $orig_file with actual file name removed
 #
 ################################################################# 
-sub ReturnDirPath() {
+sub ReturnDirPath {
     my $narg_expected = 1;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, RemoveDirPath() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my $orig_file = $_[0];
@@ -993,7 +1064,7 @@ sub ReturnDirPath() {
 # Returns:     '1' if module is installed and used, '0' if not.
 #
 ################################################################# 
-sub UseModuleIfItExists() { 
+sub UseModuleIfItExists { 
     my $narg_expected = 1;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, UseModuleIfItExists() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my $module = $_[0];
@@ -1021,7 +1092,7 @@ sub UseModuleIfItExists() {
 # Returns:     Number of seconds since the epoch.
 #
 ################################################################# 
-sub SecondsSinceEpoch() { 
+sub SecondsSinceEpoch { 
     my $narg_expected = 1;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, GetSecondsSinceEpoch() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my $time_hires_installed = $_[0];
@@ -1055,7 +1126,7 @@ sub SecondsSinceEpoch() {
 # Returns:     Nothing, this function will exit the program.
 #
 ################################################################# 
-sub FileOpenFailure() { 
+sub FileOpenFailure { 
     my $narg_expected = 5;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, FileOpenForReadingFailure() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my ($file_to_open, $sum_file, $log_file, $status, $action) = @_;
@@ -1088,7 +1159,7 @@ sub FileOpenFailure() {
 # Returns:     Nothing, this function will exit the program.
 #
 ################################################################# 
-sub PrintErrorAndExit() { 
+sub PrintErrorAndExit { 
     my $narg_expected = 4;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, PrintErrorAndExit() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my ($errmsg, $sum_file, $log_file, $status) = @_;
@@ -1099,14 +1170,15 @@ sub PrintErrorAndExit() {
 
     if($sum_file ne "") { 
 	PrintStringToFile($sum_file, 0, $errmsg);
+	PrintStringToFile($sum_file, 0, "# SSU-ALIGN-FAILURE\n");
     }
     if($log_file ne "") { 
 	PrintStringToFile($log_file, 0, $errmsg);
+	PrintStringToFile($log_file, 0, "# SSU-ALIGN-FAILURE\n");
     }
     printf STDERR $errmsg; 
     exit($status);
 }
-
 
 
 #####################################################################
@@ -1307,6 +1379,522 @@ sub FindPossiblySharedFile
     return "";
 }
 
+
+#####################################################################
+# Subroutine: SeqstatSeqFilePerSeq()
+# Incept:     EPN, Wed Nov 11 15:30:40 2009
+# 
+# Purpose:    Get statistics on a sequence file using easel's
+#             esl-seqstat miniapp, including the length of each
+#             sequence. Also, verify that there are not two
+#             sequences with the same name in the sequence
+#             file; if there are, die with an error message.
+#
+# Arguments: 
+# $seqstat:          the esl-seqstat executable
+# $seqfile:          the target sequence file 
+# $seqstat_out_file: output file from seqstat, created here
+# $key:              string for temp file name
+# $total_nres_R:     RETURN: total number of residues in all seqs in the file
+# $total_nseq_R:     RETURN: total number of sequences in the file
+# $format_R:         RETURN: sequence file format (ex: "FASTA")
+# $target_order_AR:  reference to an array to fill with order of sequences
+# $target_len_HR:    reference to a hash to fill with length of sequences
+# $sum_file:         summary file 
+# $log_file:         log file to print commands to
+# 
+# Returns:    <$total_nres_R>, <$total_nseq_R>, <$format_R>, 
+#             <$seq_order_AR>, <$seq_len_HR> filled. Other than
+#             that nothing is returned.
+#             
+# 
+####################################################################
+sub SeqstatSeqFilePerSeq { 
+    my $narg_expected = 11;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, SeqstatSeqFilePerSeq() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($seqstat, $seqfile, $seqstat_out_file, $key, $total_nres_R, $total_nseq_R, $format_R, $seq_order_AR, $seq_len_HR, $sum_file, $log_file) = @_;
+
+    my ($command, $command_worked, $line, $format, $total_nseq, $total_nres);
+    $command = "$seqstat --rna -a $seqfile > $seqstat_out_file";
+    RunCommand("$command", $key, 1, 1, $sum_file, $log_file, \$command_worked, "");
+    
+    # parse seqstat output
+    my $nseq_read = 0;
+    my $nres_read = 0;
+    my ($seqname, $seqlen);
+    open(SEQSTAT, $seqstat_out_file) || FileOpenFailure($seqstat_out_file, $sum_file, $log_file, $!, "reading");
+    while($line = <SEQSTAT>) { 
+	if($line =~ /^\=\s+(\S+)\s+(\d+)/) { 
+	    $seqname = $1;
+	    $seqlen  = $2;
+	    $nseq_read++;
+	    $nres_read += $seqlen;
+	    push(@{$seq_order_AR}, $seqname);
+	    if(exists($seq_len_HR->{$seqname})) { PrintErrorAndExit("ERROR, there are two sequences with the same name ($seqname) in $seqfile.\nAll sequences must have a unique name.", $sum_file, $log_file, 1); }
+	    $seq_len_HR->{$seqname} = $seqlen;
+	}
+	elsif($line =~ s/^Format\:\s+//) { 
+	    chomp $line; 
+	    $format = $line;
+	}
+	elsif($line =~ s/^Number of sequences\:\s+//) { 
+	    chomp $line; 
+	    $total_nseq = $line;
+	}
+	elsif($line =~ s/^Total \# residues\:\s+//) { 
+	    chomp $line; 
+	    $total_nres = $line;
+	}
+    }
+    close(SEQSTAT);
+
+    # validate what we just parsed
+    if($nseq_read == 0)           { PrintErrorAndExit("ERROR, unable to parse $seqstat output in file $seqstat_out_file,\n0 individual sequence lengths read.", $sum_file, $log_file, 1); }
+    if($nseq_read != $total_nseq) { PrintErrorAndExit("ERROR, unable to parse $seqstat output in file $seqstat_out_file,\nnumber of individual sequences disagrees with summary output.", $sum_file, $log_file, 1); }
+    if($nres_read != $total_nres) { PrintErrorAndExit("ERROR, unable to parse $seqstat output in file $seqstat_out_file,\nsummed length of individual sequences disagrees with summary output.", $sum_file, $log_file, 1); }
+    if($format eq "")             { PrintErrorAndExit("ERROR, unable to parse sequence file format in $seqstat output in file $seqstat_out_file.", $sum_file, $log_file, 1); }
+
+    $$total_nres_R = $total_nres;
+    $$total_nseq_R = $total_nseq;
+    $$format_R     = $format;
+    
+    return;
+}
+
+
+#################################################################
+# Subroutine : InitializeSsuAlignOptions()
+# Incept:      EPN, Mon Apr  5 17:16:13 2010
+# 
+#
+# Purpose:     Update the <opt_takes_arg_HR> hash and the <opt_order_AR>
+#              array for ssu-align/ssu-prep command-line options. 
+#              Called by both 'ssu-align' and 'ssu-prep'.
+#
+# Arguments:
+# $opt_takes_arg_HR:  ref to hash, key is option name, value
+#                     is '1' for 'takes an argument', '0' for 
+#                     'doesnt take an argument'
+# $opt_order_AR:      ref to arr, order of options
+# 
+# Returns:     Nothing.
+#
+################################################################# 
+sub InitializeSsuAlignOptions {
+    my $narg_expected = 2;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, InitializeSsuAlignOptions() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($opt_takes_arg_HR, $opt_order_AR) = @_;
+    
+    $opt_takes_arg_HR->{"-h"}          = 0;  push(@{$opt_order_AR}, "-h");
+    $opt_takes_arg_HR->{"-m"}          = 1;  push(@{$opt_order_AR}, "-m");
+    $opt_takes_arg_HR->{"-b"}          = 1;  push(@{$opt_order_AR}, "-b");
+    $opt_takes_arg_HR->{"-l"}          = 1;  push(@{$opt_order_AR}, "-l");
+    $opt_takes_arg_HR->{"-i"}          = 0;  push(@{$opt_order_AR}, "-i");
+    $opt_takes_arg_HR->{"-n"}          = 1;  push(@{$opt_order_AR}, "-n");
+    $opt_takes_arg_HR->{"-f"}          = 0;  push(@{$opt_order_AR}, "-f");
+    $opt_takes_arg_HR->{"--fF"}        = 0;  push(@{$opt_order_AR}, "--fF");
+    $opt_takes_arg_HR->{"--dna"}       = 0;  push(@{$opt_order_AR}, "--dna");
+    $opt_takes_arg_HR->{"--keep"}      = 0;  push(@{$opt_order_AR}, "--keep");
+    $opt_takes_arg_HR->{"--rfonly"}    = 0;  push(@{$opt_order_AR}, "--rfonly");
+    $opt_takes_arg_HR->{"--no-align"}  = 0;  push(@{$opt_order_AR}, "--no-align");
+    $opt_takes_arg_HR->{"--no-search"} = 0;  push(@{$opt_order_AR}, "--no-search");
+    $opt_takes_arg_HR->{"--no-trunc"}  = 0;  push(@{$opt_order_AR}, "--no-trunc");
+    $opt_takes_arg_HR->{"--toponly"}   = 0;  push(@{$opt_order_AR}, "--toponly");
+    $opt_takes_arg_HR->{"--forward"}   = 0;  push(@{$opt_order_AR}, "--forward");
+    $opt_takes_arg_HR->{"--global"}    = 0;  push(@{$opt_order_AR}, "--global");
+    $opt_takes_arg_HR->{"--aln-one"}   = 1;  push(@{$opt_order_AR}, "--aln-one");
+    $opt_takes_arg_HR->{"--filter"}    = 1;  push(@{$opt_order_AR}, "--filter");
+    $opt_takes_arg_HR->{"--no-prob"}   = 0;  push(@{$opt_order_AR}, "--no-prob");
+    $opt_takes_arg_HR->{"--mxsize"}    = 1;  push(@{$opt_order_AR}, "--mxsize");
+
+    return;
+}
+
+
+#################################################################
+# Subroutine : CheckSsuAlignOptions()
+# Incept:      EPN, Mon Apr  5 17:16:13 2010
+# 
+#
+# Purpose:     Check a ssu-align/ssu-prep <opt_HR> hash for incompatible
+#              option combinations/ranges, and die with an error message 
+#              if any exist. This function 'knows' about which options
+#              takes args and which do not.
+#
+# Arguments:
+# $opt_HR:  ref to hash of options, key is actual option,
+#           values are arguments, examples: 
+#               $opt_HR->{"--no-align"}  = 0 => --no-align not set on cmd line
+#               $opt_HR->{"--no-search"} = 1 => --no-search set on cmd line
+#               $opt_HR->{"-m"} = ""         => '-m' not set on cmd line
+#               $opt_HR->{"-m"} = "foo.cm"   => '-m foo.cm' set on cmd line 
+#   
+#
+# Returns:     Nothing, dies if any incompatible combinations exist.
+#
+################################################################# 
+sub CheckSsuAlignOptions {
+    my $narg_expected = 1;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, CheckSsuAlignOptions() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($opt_HR) = @_;
+
+    if(($opt_HR->{"--no-align"}) && 
+       (($opt_HR->{"--filter"} ne "")   ||
+	($opt_HR->{"-i"})               ||
+	($opt_HR->{"--no-prob"})        ||
+	($opt_HR->{"--aln-one"} ne "")  ||
+	($opt_HR->{"--mxsize"}))) { 
+	printf STDERR ("\nERROR, --no-align is incompatible with alignment-specific options: -i,--filter,--no-prob, --aln-one and --mxsize.\n"); exit(1); 
+    }
+
+    if(($opt_HR->{"--no-search"}) && 
+       (($opt_HR->{"-b"} ne "") ||
+	($opt_HR->{"-l"})      ||
+	($opt_HR->{"--toponly"})  ||
+	($opt_HR->{"--no-trunc"})  ||
+	($opt_HR->{"--forward"})  ||
+	($opt_HR->{"--global"}))) {
+	printf STDERR ("\nERROR, --no-search is incompatible with search-specific options: -b,-l,--toponly,--no-trunc,--forward, and --global.\n"); exit(1); 
+    }
+
+    # Check for incompatible option ranges
+    if(($opt_HR->{"-l"} ne "")       && ($opt_HR->{"-l"} <= 0))        { printf STDERR ("\nERROR, with -l <n>, <n> must be greater than 0.\n"); exit(1); }
+    if(($opt_HR->{"--mxsize"} ne "") && ($opt_HR->{"--mxsize"} <= 0.)) { printf STDERR ("\nERROR, with --mxsize <f>, <f> must be greater than 0.\n"); exit(1); }
+    if(($opt_HR->{"--filter"} ne "") && (($opt_HR->{"--filter"} < 0.) || ($opt_HR->{"--filter"} > 1.))) { printf STDERR ("\nERROR, with --filter <f>, <f> must be between 0. and 1.\n"); exit(1); }
+    
+    return;
+}
+
+
+#####################################################################
+# Subroutine: ValidateAndSetupSsuAlignOrPrep()
+# Incept:     EPN, Mon Nov  3 15:05:56 2008
+# 
+# Purpose:    Validation and setup of ssu-align/ssu-prep:
+#             - validate that the sequence file exists
+#             - validate that the required executable programs exist
+#             - validate that the CM file exists
+#
+# Arguments: 
+# $globals_HR:      reference to the 'globals' hash
+# $ssualigndir:     where the library files (CM file, template file) are 
+#                   determined prior to entering this subroutine by 
+#                   $ENV{"SSUALIGNDIR"} by the caller.
+# $target_file:     the target sequence file 
+# $caller_is_ssu_prep: TRUE if called by 'ssu-prep', FALSE if not (caller is probably ssu-align).
+# $caller_will_merge:  TRUE if caller will need 'ssu-merge', FALSE if not
+# $opt_HR:          reference to the hash of command-line options
+# $tfilectr_R:      refernece to counter for naming tmp files
+# $ssualign_R:      RETURN; ssu-align executable command
+# $ssumerge_R:      RETURN; ssu-merge executable command
+# $cmsearch_R:      RETURN; cmsearch executable command
+# $cmalign_R:       RETURN; cmalign executable command
+# $reformat_R:      RETURN; esl-reformat executable command
+# $sfetch_R:        RETURN; esl-sfetch executable command
+# $seqstat_R:       RETURN; esl-seqstat executable command
+# $weight_R:        RETURN; esl-weight executable command
+# $cm_file_R:       RETURN; the path to the CM file, either default CM file or <s> from -m <s>
+# $indi_cm_name_AR: RETURN; array of individual CM names in the
+#                   order they appear in the CM file
+# $sum_file:        summary file
+# $log_file:        file to print commands to 
+# 
+# Returns:    Nothing, if it returns, everything is valid.
+# 
+# Exits:      If a required program does not exist, the program 
+#             prints a message to STDERR explaining why it's
+#             exiting early and then exits with non-zero status.
+#
+####################################################################
+sub ValidateAndSetupSsuAlignOrPrep { 
+    my $narg_expected = 19;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, ValidateAndSetupSsuAlignOrPrep() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my($globals_HR, $ssualigndir, $target_file, $caller_is_ssu_prep, $caller_will_merge, $opt_HR, $tfilectr_R, $ssualign_R, $ssumerge_R, $cmsearch_R, $cmalign_R, $reformat_R, $sfetch_R, $seqstat_R, $weight_R, $cm_file_R, $indi_cm_name_AR, $sum_file, $log_file) = @_;
+
+    #Make sure the CM file exists either with respect to cwd or SSUALIGNDIR
+    my $cm_file = "";
+    if($opt_HR->{"-m"} ne "") { # -m <s> invoked, determine the absolute path to the CM file, we'll use this
+	                        # this is important if we are in prep mode and need to specify -m to child ssu-align calls
+	$cm_file = FindPossiblySharedFile($opt_HR->{"-m"}, $ssualigndir);
+	if(-e $cm_file) { 
+	    # $cm_file does exist, we need the absolute path, in case we're spawning/setting up child processes 
+	    if(-e (getcwd() . "/" . $cm_file)) { # user did not supply absolute path $cm_file is relative path from cwd
+		$cm_file = getcwd() . "/" . $cm_file;
+	    }
+	    if(! (-e $cm_file)) { PrintErrorAndExit("ERROR, error processing -m option (cm file: $cm_file), bug in code.\n", $sum_file, $log_file, 1); }
+	}
+	else { #$opt_HR->{"-m"} does not exist
+	    PrintErrorAndExit("ERROR, CM file $cm_file, specified with -m does not exist.", $sum_file, $log_file, 1); 
+	}
+    }
+    else { # -m not invoked, use default CM file
+	$cm_file = $globals_HR->{"DF_CM_FILE"};
+	if(!(-e $cm_file))   { PrintErrorAndExit("ERROR, the default CM file $cm_file does not exist.", $sum_file, $log_file, 1); }
+    }
+    
+    #Make sure the target file exists
+    if(!(-e $target_file))   { PrintErrorAndExit("ERROR, target sequence file $target_file does not exist.", $sum_file, $log_file, 1); }
+    
+    my ($tmp, $command_worked);
+    my $cmsearch   = $globals_HR->{"cmsearch"};
+    my $cmalign    = $globals_HR->{"cmalign"};
+    my $reformat   = $globals_HR->{"esl-reformat"};
+    my $sfetch     = $globals_HR->{"esl-sfetch"};
+    my $seqstat    = $globals_HR->{"esl-seqstat"};
+    my $weight     = $globals_HR->{"esl-weight"};
+    my $ssualign   = $globals_HR->{"ssu-align"};
+    my $ssumerge   = $globals_HR->{"ssu-merge"};
+
+    # check that the required programs are in the PATH
+    ValidateRequiredExecutable($seqstat, $$tfilectr_R++, "-h", $sum_file, $log_file); 
+    if(!($opt_HR->{"--no-search"})) { 
+	ValidateRequiredExecutable($cmsearch, $$tfilectr_R++, "-h", $sum_file, $log_file);  
+	ValidateRequiredExecutable($sfetch,   $$tfilectr_R++, "-h", $sum_file, $log_file);  
+	ValidateRequiredExecutable($reformat, $$tfilectr_R++, "-h", $sum_file, $log_file); 
+    }
+    if(!($opt_HR->{"--no-align"}))  { ValidateRequiredExecutable($cmalign,  $$tfilectr_R++, "-h", $sum_file, $log_file); } 
+    if($opt_HR->{"--filter"} ne "") { ValidateRequiredExecutable($weight,   $$tfilectr_R++, "-h", $sum_file, $log_file); }
+    if($caller_is_ssu_prep)         { ValidateRequiredExecutable($ssualign, $$tfilectr_R++, "-h", $sum_file, $log_file); }
+    if($caller_will_merge)          { ValidateRequiredExecutable($ssumerge, $$tfilectr_R++, "-h", $sum_file, $log_file); }
+
+    # Finally, validate and process the CM file by making sure each CM has a unique name,
+    # and store those names in @{$indi_cm_name_AR}
+    my($line, $cm_name);
+    my %cm_name_exists_H = ();
+    my $found_aln_one_name = 0;
+    my $found_only_name = 0;
+    my $cms_read = "";
+
+    open(CM, $cm_file) || FileOpenFailure($cm_file, $sum_file, $log_file, $!, "reading");
+    while($line = <CM>) {
+	# the lines we're interested in look like this:
+	#NAME     archaea
+	if($line =~ /^NAME\s+(\S+)/) { 
+	    $cm_name = $1;
+	    $cms_read .= "\t$cm_name\n";
+	    if(($opt_HR->{"-n"} eq "") || # -n not enabled
+	       ($opt_HR->{"-n"} ne "") && ($cm_name eq $opt_HR->{"-n"})) { #-n enabled and we have a match!
+		push(@{$indi_cm_name_AR}, $cm_name);
+		if(exists($cm_name_exists_H{$cm_name})) { 
+		    PrintErrorAndExit("ERROR, two CMs in CM file $cm_file have the name $cm_name. Each CM must have a unique name.", $sum_file, $log_file, 1); 
+		}
+		$cm_name_exists_H{$cm_name} = 1;
+		
+		if($cm_name eq $globals_HR->{"DF_NO_NAME"}) { 
+		    PrintErrorAndExit("ERROR, you can't use a CM with the name " . $globals_HR->{"DF_NO_NAME"} . ", that's reserved for indicating which sequences are not the best-match to any models.", $sum_file, $log_file, 1); 
+		}
+		if(($opt_HR->{"--aln-one"} ne "") && ($cm_name eq $opt_HR->{"--aln-one"})) { 
+		    $found_aln_one_name = 1; 
+		}
+		if(($opt_HR->{"-n"} ne "") && ($cm_name eq $opt_HR->{"-n"})) { 
+		    $found_only_name = 1; 
+		}
+	    }
+	}
+    }
+    close(CM);
+    my $ncm = scalar(@{$indi_cm_name_AR});
+    if(($opt_HR->{"--aln-one"} ne "") && (! $found_aln_one_name)) { 
+	PrintErrorAndExit(sprintf("\nERROR, --aln-one %s enabled, but no CM named %s exists in $cm_file.\nCMs that do exist are:\n$cms_read\n", $opt_HR->{"--aln-one"}, $opt_HR->{"--aln-one"}), $sum_file, $log_file, 1);
+    }
+    if(($opt_HR->{"-n"} ne "") && (! $found_only_name)) { 
+	PrintErrorAndExit(sprintf("\nERROR, -n %s enabled, but no CM named %s exists in $cm_file.\nCMs that do exist are:\n$cms_read\n", $opt_HR->{"-n"}, $opt_HR->{"-n"}), $sum_file, $log_file, 1);
+    }
+    if(($opt_HR->{"--no-search"}) && ($ncm > 1)) { 
+       	PrintErrorAndExit("ERROR, the --no-search option only works if either -n <s> is used or the CM file contains exactly 1 CM.\n$cm_file has $ncm CMs in it.", $sum_file, $log_file, 1);
+    }
+
+    $$ssualign_R = $ssualign;
+    $$ssumerge_R = $ssumerge;
+    $$cmsearch_R = $cmsearch;
+    $$cmalign_R  = $cmalign;
+    $$reformat_R = $reformat;
+    $$sfetch_R   = $sfetch;
+    $$seqstat_R  = $seqstat;
+    $$weight_R   = $weight;
+    $$cm_file_R  = $cm_file;
+
+    return;
+}									 
+
+
+#####################################################################
+# Subroutine: CreateSsuAlignOutputDir()
+# Incept:     EPN, Mon Nov  3 15:22:26 2008
+# 
+# Purpose:    Create a new directory <$outdir> for the output files. 
+#
+#             If the directory already exists and contains subdirectories
+#             with names suggesting they were created by ssu-align, then
+#             delete all files within $outdir only if $opt_HR->{"--ff"} 
+#             is '1'. 
+#
+#             If the directory already exists and does not contain 
+#             subdirectories that appear to have been created by 
+#             ssu-align, delete all of the files within it only if
+#             $opt_HR->{"-f"} is '1'.
+#
+# Arguments:  
+# $out_dir:   directory to create
+# $out_root:  lowest level subdirectory in $out_dir (same as $out_dir if $out_dir contains 0 subdirs)
+# $opt_HR:    reference to the hash of command-line options
+# $sum_file:  summary file, created (opened) here
+# $log_file:  log file, created (opened) here
+#
+# Returns:    Nothing.
+#
+# Exits:      If the directory already exists and <$do_clobber> is
+#             FALSE. If a system call unexpectedly fails and returns 
+#             a non-zero status code. 
+# 
+####################################################################
+sub CreateSsuAlignOutputDir { 
+    my $narg_expected = 5;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, CreateSsuAlignOutputDir() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my($out_dir, $out_root, $opt_HR, $sum_file, $log_file) = @_;
+
+    my ($command, $tmp, $command_worked, $maybe_dir, $has_subdir, $has_ssualign_subdir, $ran_command, $output, $errmsg);
+    $has_subdir = 0;
+    $has_ssualign_subdir = 0;
+    $ran_command = 0;
+    my $retval = 0;
+    my $status = 0;
+
+    # create output directory
+    if(-f $out_dir) { 
+	printf STDERR ("\nERROR, $out_dir was specified as the output directory, but a file with the same name exists. Delete it and rerun.\n");
+	exit(1);
+    }
+    if(-d $out_dir) { 
+	if((! $opt_HR->{"-f"}) && (! $opt_HR->{"--ff"})) { 
+	    printf STDERR ("\nERROR, output directory $out_dir already exists. Delete it or use -f to overwrite it.\n");
+	    exit(1);
+	}
+	elsif(($opt_HR->{"-f"}) && (! $opt_HR->{"--ff"})) { 
+            # directory $out_dir exists, -f enabled  but --ff not enabled, check to see if there's any subdirectories in it:
+	    foreach $maybe_dir (glob("$out_dir/*")) { 
+		if(-d $maybe_dir) { # $maybe_dir is a dir
+		    $has_subdir = 1;
+		    if($maybe_dir !~ m/^$out_dir\/$out_root\.(\d+)/) { # subdirectory not created by ssu-align
+			printf STDERR "Subdirectory $maybe_dir of $out_dir exists; it doesn't appear to have been created by ssu-align.\nEither delete it, or use --ff to remove all subdirectories of $out_dir.\n";
+		    }
+		    else { # subdirectory (probably) created by ssu-align
+			$has_ssualign_subdir = 1;
+		    }
+		}
+	    }
+	    if($has_ssualign_subdir) { 
+		$errmsg = "\nERROR, subdirectories of $out_dir exist that appear to have been created by ssu-align.\nEither delete them, or use --ff to remove them all.\n";
+		PrintStringToFile($sum_file, 0, $errmsg);
+		printf STDERR $errmsg;
+	    }
+	    if($has_subdir) { exit(1); }
+	}
+	# if we get here, $out_dir exists, but either it has no subdirectories, or --ff was enabled, or both
+	# remove the contents of the directory with rm -rf and remove the directory
+	$command = "rm -rf $out_dir 2>&1";
+	system "$command"; 
+	$status = $?;
+        # Note: we can't use RunCommand, b/c that requires a output file to write to, which will be put
+	# into $out_dir, and since that hasn't been created yet, we can't write to it. Instead if the command
+	# succeeds, we write it to the log file at the end of the function.
+	if   (($status&255) != 0) { $retval = ($status&255); }
+	elsif(($status>>8) != 0)  { $retval = ($status>>8);  }
+	else { $retval = $status; }
+	if($retval != 0) { printf STDERR "\nERROR, the command \"rm -rf $out_dir did not successfully complete."; exit(1); }
+	$ran_command = 1;
+	if(-d $out_dir) { printf STDERR "\nERROR, output directory $out_dir still exists after the command \"rm -rf $out_dir\".\n"; exit(1); }
+    }
+
+    # make the directory 
+    if(! mkdir($out_dir)) { 
+	printf STDERR "ERROR, unable to make directory $out_dir with PERL's mkdir command.";
+	exit(1); 
+    }
+
+    # open the sum and log files
+    open(OUT, ">" . $sum_file) || die "\nERROR, creating file $sum_file.\n";
+    close(OUT);
+    open(OUT, ">" . $log_file) || die "\nERROR, creating file $log_file.\n";
+    close(OUT);
+
+    #if we did a 'rm -rf' command, print that to the log file:
+    if($ran_command) { 
+	PrintStringToFile($log_file, 0, ("Executing:      " . $command . "\n"));
+	PrintStringToFile($log_file, 0, ("Returned:       " . $retval . "\n"));
+    }
+    return;
+}
+
+
+#####################################################################
+# Subroutine: AppendSsuAlignOptionsUsage()
+# Incept:     EPN, Wed Apr 14 08:45:08 2010
+# 
+# Purpose:    Append usage strings for 'ssu-align' options that get
+#             printed by both 'ssu-align' and 'ssu-prep'.
+#
+# Arguments:  
+# $options_usage_R: REFERENCE to the options usage string to append to
+# $caller_is_prep:  '1' (TRUE) if caller is ssu-prep, else '0' (FALSE)
+#
+# Returns:    Nothing. Updates $$options_usage_R.
+#
+####################################################################
+sub AppendSsuAlignOptionsUsage { 
+    my $narg_expected = 2;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, CreateSsuAlignOutputDir() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my($options_usage_R, $caller_is_prep) = @_;
+
+    if($caller_is_prep) { $$options_usage_R .= "\ngeneral options to use for ssu-align jobs:\n"; }
+    $$options_usage_R .= "  -m <f> : use CM file <f> instead of the default CM file\n";
+    $$options_usage_R .= "  -b <x> : set minimum bit score of a surviving subsequence as <x> (default: 50)\n";
+    $$options_usage_R .= "  -l <n> : set minimum length    of a surviving subsequence as <n> (default: 1)\n";
+    $$options_usage_R .= "  -i     : output alignments in interleaved Stockholm format (not 1 line/seq)\n";
+    $$options_usage_R .= "  -n <s> : only search for and align to single CM named <s> in CM file\n"; 
+    $$options_usage_R .= "           (default CM file includes 'archaea', 'bacteria', 'eukarya')\n";
+    if(! $caller_is_prep) { 
+	$$options_usage_R .= "  -f     : force; if dir named <output dir> already exists, empty it first\n";
+	$$options_usage_R .= "  --ff   : really force; remove dir named <output dir> and all its subdirs\n";
+    }
+    
+    $$options_usage_R .= "\nmiscellaneous output options"; 
+    if($caller_is_prep) { $$options_usage_R .= " for ssu-align jobs"; }
+    $$options_usage_R .= ":\n"; 
+    $$options_usage_R .= "  --dna    : output alignments as DNA, default is RNA (even if input is DNA)\n";
+    $$options_usage_R .= "  --keep   : keep intermediate files which are normally removed\n";
+    $$options_usage_R .= "  --rfonly : discard inserts, only keep consensus (non-gap RF) columns in alignments\n";
+    $$options_usage_R .= "             (alignments will be fixed width but won't include all target residues)\n";
+    
+    if(! $caller_is_prep) { 
+	$$options_usage_R .= "\noptions for merging parallelized ssu-align jobs:\n";
+	$$options_usage_R .= "  --merge <n> : once finished, merge <n> parallel jobs created by 'ssu-prep' script\n";
+    }
+    
+    $$options_usage_R .= "\noptions for skipping the 1st (search) stage or 2nd (alignment) stage";
+    if($caller_is_prep) { $$options_usage_R .= " in ssu-align"; }
+    $$options_usage_R .= ":\n"; 
+    $$options_usage_R .= "  --no-align  : only search target sequence file for hits, skip alignment step\n";
+    $$options_usage_R .= "  --no-search : only align  target sequence file, skip initial search step\n"; 
+    
+    $$options_usage_R .= "\nexpert options for tuning the initial search stage";
+    if($caller_is_prep) { $$options_usage_R .= " in ssu-align jobs"; }
+    $$options_usage_R .= ":\n"; 
+    $$options_usage_R .= "  --toponly  : only search the top strand [default: search both strands]\n";
+    $$options_usage_R .= "  --forward  : use the HMM forward algorithm for searching, not HMM viterbi\n";
+    $$options_usage_R .= "  --global   : search with globally configured HMM [default: local]\n";
+    
+    $$options_usage_R .= "\nexpert options for tuning the alignment stage";
+    if($caller_is_prep) { $$options_usage_R .= " in ssu-align jobs"; }
+    $$options_usage_R .= ":\n"; 
+    $$options_usage_R .= "  --no-trunc    : do not truncate seqs to HMM predicted start/end, align full seqs\n";
+    $$options_usage_R .= "  --aln-one <s> : only align best-matching sequences to the CM named <s> in CM file\n";
+    #$$options_usage_R .= "  --filter <f>  : filter aln based on seq identity, allow no 2 seqs > <f> identical\n";
+    $$options_usage_R .= "  --no-prob     : do not append posterior probabilities to alignments\n";
+    $$options_usage_R .= "  --mxsize <f>  : increase mx size for cmalign to <f> Mb (default: 4096)\n";
+
+    return;
+}
 
 ####################################################################
 # the next line is critical, a perl module must return a true value

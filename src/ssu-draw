@@ -98,6 +98,7 @@ $options_usage .= "  --no-foot : do not draw footers\n";
 my %opt_H = ();              # key: option (example "-h"); value: option argument (example ("0" or "1") if option takes no arg, actual argument if option takes arg)
 my %opt_takes_arg_H  = ();   # key: option; value: "1" if option takes argument, "0" if not
 my @opt_order_A  = ();       # order of options for printing in banner
+my $enabled_options = "";    # string of all enabled options and their arguments (prob not in same order as they were on cmd line)
 my $opt;
 
 $opt_takes_arg_H{"-h"}          = 0;  push(@opt_order_A, "-h");           
@@ -173,7 +174,7 @@ my $opt_return = GetOptions
 if($opt_return != 1) { print STDERR "\nERROR, GetOptions() did not return 1, but $opt_return\n"; exit(1); }
 
 if ($opt_H{"-h"}) { 
-    PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, ""); 
+    PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, \$enabled_options, ""); 
     print $usage . "\n"; 
     print $options_usage; 
     exit(0); 
@@ -271,8 +272,8 @@ close(OUT);
 open(OUT, ">" . $log_file) || die "\nERROR, couldn't open file $log_file for writing.\n";
 close(OUT);
 
-PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, $sum_file);
-PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 0, $log_file);
+PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, \$enabled_options, $sum_file);
+PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 0, \$enabled_options, $log_file);
 PrintGlobalsToFile(\%globals_H, $log_file);
 
 ##################################
@@ -428,7 +429,7 @@ sub validate_and_setup_ssu_draw {
     #Validate that esl-ssdraw exist
     my $ssdraw = $globals_H{"esl-ssdraw"};
     my $command_worked;
-    RunCommand("$ssdraw -h > /dev/null", $tfilectr++, 1, 0, $sum_file, $log_file, \$command_worked, "ERROR, the required executable $ssdraw is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
+    ValidateRequiredExecutable($ssdraw, $tfilectr++, "-h", $sum_file, $log_file); 
     
     # Find the alignments we'll draw
     my $naln = 0;

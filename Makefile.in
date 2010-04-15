@@ -62,7 +62,8 @@ PROGS = ssu-align\
 	ssu-build\
 	ssu-draw\
 	ssu-merge\
-	ssu-mask
+	ssu-mask\
+	ssu-prep
 
 INFPROGS = ssu-cmalign\
 	   ssu-cmbuild\
@@ -73,6 +74,7 @@ ESLPROGS = ssu-esl-alimanip\
            ssu-esl-alimerge\
            ssu-esl-alistat\
 	   ssu-esl-reformat\
+	   ssu-esl-seqrange\
 	   ssu-esl-seqstat\
 	   ssu-esl-sfetch\
 	   ssu-esl-ssdraw\

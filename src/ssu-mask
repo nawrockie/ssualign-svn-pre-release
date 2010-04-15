@@ -98,6 +98,7 @@ $options_usage .= "  --seq-r <f> : with -a, remove sequences with names listed i
 my %opt_H = ();              # key: option (example "-h"); value: option argument (example ("0" or "1") if option takes no arg, actual argument if option takes arg)
 my %opt_takes_arg_H  = ();   # key: option; value: "1" if option takes argument, "0" if not
 my @opt_order_A  = ();       # order of options for printing in banner
+my $enabled_options = "";    # string of all enabled options and their arguments (prob not in same order as they were on cmd line)
 my $opt;
 
 $opt_takes_arg_H{"-h"}          = 0;  push(@opt_order_A, "-h");           
@@ -161,7 +162,7 @@ my $opt_return = GetOptions
 if($opt_return != 1) { exit(1); }
 
 if ($opt_H{"-h"}) { 
-    PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, "");
+    PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, \$enabled_options, "");
     print $usage . "\n"; 
     print $options_usage; 
     exit(0); 
@@ -314,8 +315,8 @@ close(OUT);
 open(OUT, ">" . $log_file) || die "ERROR, couldn't open file $log_file for writing";
 close(OUT);
 
-PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, $sum_file);
-PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 0, $log_file);
+PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, \$enabled_options, $sum_file);
+PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 0, \$enabled_options, $log_file);
 PrintGlobalsToFile(\%globals_H, $log_file);
 
 ##################################
@@ -736,27 +737,28 @@ sub validate_and_setup_ssu_mask {
     #Validate that esl-alimask, esl-ssdraw, and esl-alimanip (if we need them) exist
     my $command_worked;
     my $alimask = $globals_H{"esl-alimask"};
-    RunCommand("$alimask -h > /dev/null", $tfilectr++, 1, 0, $sum_file, $log_file, \$command_worked, "ERROR, the required executable $alimask is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
+    ValidateRequiredExecutable($alimask, $tfilectr++, "-h", $sum_file, $log_file); 
+
     my $alimanip = $globals_H{"esl-alimanip"};
-    RunCommand("$alimanip -h > /dev/null", $tfilectr++, 1, 0, $sum_file, $log_file, \$command_worked, "ERROR, the required executable $alimanip is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
+    ValidateRequiredExecutable($alimanip, $tfilectr++, "-h", $sum_file, $log_file); 
 
     my $ssdraw = "";
     if($template_file ne "") { 
 	$ssdraw = $globals_H{"esl-ssdraw"};
-	RunCommand("$ssdraw -h > /dev/null", $tfilectr++, 1, 0, $sum_file, $log_file, \$command_worked, "ERROR, the required executable $ssdraw is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
+	ValidateRequiredExecutable($ssdraw, $tfilectr++, "-h", $sum_file, $log_file); 
     }
 
     #Validate that 'esl-weight' and 'esl-alistat' exist if --filter enabled.
     my $weight = "";
     if($opt_HR->{"--filter"} ne "") { 
 	$weight = $globals_H{"esl-weight"};
-	RunCommand("$weight -h > /dev/null", $tfilectr++, 1, 0, $sum_file, $log_file, \$command_worked, "ERROR, the required executable $weight (required b/c --filter enabled) is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
+	ValidateRequiredExecutable($weight, $tfilectr++, "-h", $sum_file, $log_file); 
     }
 
     #Validate that 'esl-alistat' works if --seq-r or --seq-k or --list or --filter
     if(($opt_HR->{"--seq-r"} ne "") || ($opt_HR->{"--seq-k"} ne "") || ($opt_HR->{"--list"}) || ($opt_HR->{"--filter"})) { 
 	$alistat = $globals_H{"esl-alistat"};
-	RunCommand("$alistat -h > /dev/null", $tfilectr++, 1, 0, $sum_file, $log_file, \$command_worked, "ERROR, the required executable $alistat (required b/c --seq-r or --seq-k enabled) is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
+	ValidateRequiredExecutable($alistat, $tfilectr++, "-h", $sum_file, $log_file); 
     }	
 
 
@@ -764,7 +766,7 @@ sub validate_and_setup_ssu_mask {
     my $reformat = "";
     if(($opt_H{"--afa"}) || ($opt_H{"--stk2afa"}) || ($opt_H{"--filter"} ne "")) { 
 	$reformat = $globals_H{"esl-reformat"};
-	RunCommand("$reformat -h > /dev/null", $tfilectr++, 1, 0, $sum_file, $log_file, \$command_worked, "ERROR, the required executable $reformat (required b/c --afa or --stk2afa enabled) is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
+	ValidateRequiredExecutable($reformat, $tfilectr++, "-h", $sum_file, $log_file); 
     }	
 
     # Find the alignments we'll mask

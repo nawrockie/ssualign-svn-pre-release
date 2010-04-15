@@ -4,12 +4,14 @@
 # Eric Nawrocki
 # EPN, Tue Oct 27 14:07:30 2009
 #
-# Usage: ssu-merge [options] <directory created by ssu-align --prep-n or --prep-p call>
+# Usage: ssu-merge [options] <directory created by ssu-prep>
 #             
 # Synopsis:
-# Merges alignments created by ssu-align. When ssu-align is run with the 
-# --prep-n or --prep-p 'preparation mode' options it generates a script that
-# performs multiple ssu-align jobs. When these are finished running, 
+# Merges alignments created by multiple jobs of ssu-align following 
+# a ssu-prep call to split up a large job into many smaller ones.
+# ssu-align calls this script directly if it is invoked with the
+# --merge option enabled, which is typically only done with the final 
+# job following an ssu-prep preparation. 
 # ssu-merge is used to merge the alignments from the multiple jobs 
 # together into a single alignment for each CM used by ssu-align.
 #
@@ -53,14 +55,14 @@ my $total_seconds = -1 * SecondsSinceEpoch($time_hires_installed);
 
 my $script_desc    = "merge SSU rRNA alignments";
 my $date           = scalar localtime();
-my $usage          = "Usage: ssu-merge [-options] <dir created by ssu-align --prep-n or --prep-p call>\n";
+my $usage          = "Usage: ssu-merge [-options] <output dir created by ssu-prep>\n";
    $usage         .= "Usage: ssu-merge [-options] --list <file listing n>1 alns to merge> <name for merged aln>\n";
 my $options_usage  = "where general options are:\n";
 #                           1         2         3         4         5         6         7         8
 #                  12345678901234567890123456789012345678901234567890123456789012345678901234567890
 $options_usage .= "  -h        : show brief help on version and usage\n";
 $options_usage .= "  -m <s>    : use CM file <s> instead of the default CM file\n";
-$options_usage .= "  -F        : force; allow file clobbering\n";
+$options_usage .= "  -f        : force; allow file clobbering\n";
 $options_usage .= "  --rfonly  : when merging alignments, only keep consensus (non-gap RF) columns\n";
 $options_usage .= "  --keep    : don't remove original files after they have been merged\n";
 $options_usage .= "\noptions that only work with --list:\n";
@@ -73,12 +75,13 @@ $options_usage .= "  --dna     : output alignments as DNA, default is RNA (even 
 my %opt_H = ();              # key: option (example "-h"); value: option argument (example ("0" or "1") if option takes no arg, actual argument if option takes arg)
 my %opt_takes_arg_H  = ();   # key: option; value: "1" if option takes argument, "0" if not
 my @opt_order_A  = ();       # order of options for printing in banner
+my $enabled_options = "";    # string of all enabled options and their arguments (prob not in same order as they were on cmd line)
 my $opt;
 
 $opt_takes_arg_H{"--list"}    = 0;  push(@opt_order_A, "--list");
 $opt_takes_arg_H{"-h"}        = 0;  push(@opt_order_A, "-h");
 $opt_takes_arg_H{"-m"}        = 1;  push(@opt_order_A, "-m");
-$opt_takes_arg_H{"-F"}        = 0;  push(@opt_order_A, "-F");
+$opt_takes_arg_H{"-f"}        = 0;  push(@opt_order_A, "-f");
 $opt_takes_arg_H{"--rfonly"}  = 0;  push(@opt_order_A, "--rfonly");
 $opt_takes_arg_H{"--keep"}    = 0;  push(@opt_order_A, "--keep");
 $opt_takes_arg_H{"-i"}        = 0;  push(@opt_order_A, "-i");
@@ -95,7 +98,7 @@ my $opt_return = GetOptions
     ('list'      => \$opt_H{"--list"}, 
      'h'         => \$opt_H{"-h"}, 
      'm=s'       => \$opt_H{"-m"},
-     'F'         => \$opt_H{"-F"},
+     'f'         => \$opt_H{"-f"},
      'rfonly'    => \$opt_H{"--rfonly"},
      'keep'      => \$opt_H{"--keep"},
      'i'         => \$opt_H{"-i"},
@@ -104,7 +107,7 @@ my $opt_return = GetOptions
 if($opt_return != 1) { print STDERR "\nERROR, GetOptions() did not return 1.\n"; exit(1); }
 
 if ($opt_H{"-h"}) { 
-    PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, "");
+    PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, \$enabled_options, "");
     print $usage . "\n"; 
     print $options_usage; 
     exit(0); 
@@ -172,15 +175,15 @@ close(OUT);
 open(OUT, ">" . $log_file) || die "ERROR, couldn't open file $log_file for writing";
 close(OUT);
 
-PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, $sum_file);
-PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 0, $log_file);
+PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, \$enabled_options, $sum_file);
+PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 0, \$enabled_options, $log_file);
 PrintGlobalsToFile(\%globals_H, $log_file);
 
 
 ##################################
 # Validate that everything is go #
 ##################################
-my ($alimerge, $cm_file, $no_search_enabled, $no_align_enabled, $ssu_align_prep_sum_read, $aln_one_cm, $ileaved_enabled, $dna_enabled, $nseq_merged, $line);
+my ($alimerge, $cm_file, $no_search_enabled, $no_align_enabled, $ssu_prep_sum_read, $aln_one_cm, $ileaved_enabled, $dna_enabled, $nseq_merged, $line);
 my @subdir_A = ();
 my @score_to_merge_A = ();
 my @sum_to_merge_A = ();
@@ -257,7 +260,7 @@ $max_file_name_width  = MaxLengthScalarInArray(\@cm_names_A) + 1 + length($root)
 if(scalar(@sum_to_merge_A)   == 0)   { PrintErrorAndExit("ERROR, no *.sum files found.", $sum_file, $log_file, 1); }
 if(scalar(@log_to_merge_A)   == 0)   { PrintErrorAndExit("ERROR, no *.log files found.", $sum_file, $log_file, 1); }
 if(scalar(@nomatch_to_merge_A) == 0) { ; } # this is okay, .nomatch files are only generated if at least one sequence did not match a CM 
-if(! $no_search_enabled) { # we determine --no-search was enabled in validate_and_setup_ssu_merge, by parsing the ssu-align prep summary file
+if(! $no_search_enabled) { # we determine --no-search was enabled in validate_and_setup_ssu_merge, by parsing the ssu-prep summary file
     if(scalar(@tab_to_merge_A)   == 0) { 
 	PrintErrorAndExit("ERROR, unexpectedly unable to locate any *.tab files even though \"--no-search\" was not enabled in the ssu_align runs.", $sum_file, $log_file, 1); 
     }
@@ -480,13 +483,13 @@ exit(0);
 #             - validate that the required executable programs exist
 #             - determine which directories have alignments we will
 #               merge together, and that they look as if they were
-#               created with a ssu-align --prep-p or --prep-n call.
+#               created with a ssu-prep call.
 #             - verify that all ssu-align runs are done
 #
 # Arguments: 
 # $ssualigndir:               dir defined by SSUALIGNDIR environment variable 
 # $opt_HR:                    reference to hash of command line options
-# $dir:                       main directory created by ssu-align --prep-* that 
+# $dir:                       main directory created by ssu-prep that 
 #                             includes subdirectories with alignments
 # $root:                      the keyword we'll use for root of output file names (this is same as 
 #                             $dir unless $dir includes >=1 subdirs)
@@ -510,11 +513,11 @@ exit(0);
 # $cm_names_AR:               reference to array of CM names
 # $alimerge_R:                RETURN; esl-alimerge executable command
 # $cm_file_R:                 RETURN; the path to the CM file, either default CM file or <s> from -m <s>
-# $no_search_enabled_R:       RETURN; '1' if we examine the ssu-align prep summary file and find that --no-search was used
-# $no_align_enabled_R:        RETURN; '1' if we examine the ssu-align prep summary file and find that --no-align was used
+# $no_search_enabled_R:       RETURN; '1' if we examine the ssu-prep summary file and find that --no-search was used
+# $no_align_enabled_R:        RETURN; '1' if we examine the ssu-prep summary file and find that --no-align was used
 # $aln_one_cm_R:              RETURN; <s> if --aln-one <s> used in ssu-align runs, or "" if --aln-one not used
-# $ileaved_enabled_R:         RETURN; '1' if we examine the ssu-align prep summary file and find that -i was used
-# $dna_enabled_R:             RETURN; '1' if we examine the ssu-align prep summary file and find that --dna was used
+# $ileaved_enabled_R:         RETURN; '1' if we examine the ssu-prep summary file and find that -i was used
+# $dna_enabled_R:             RETURN; '1' if we examine the ssu-prep summary file and find that --dna was used
 # $sum_file:                  ssu-merge summary file
 # $log_file:                  ssu-merge log file
 # 
@@ -537,9 +540,9 @@ sub validate_and_setup_ssu_merge_default {
     #Make sure $dir exists
     if(!(-d $dir)) { PrintErrorAndExit("ERROR, directory $dir does not exist.", $sum_file, $log_file, 1); }
 
-    # Read the ssu-align-prep.sum file to determine what options were used, including -m, --no-search, and --no-align
+    # Read the ssu-prep.sum file to determine what options were used, including -m, --no-search, and --no-align
     my $cm_file = "";
-    my $ssu_align_prep_sum = $dir . "/" . $root . ".ssu-align.prep.sum";
+    my $ssu_prep_sum = $dir . "/" . $root . ".ssu-prep.sum";
     my $no_search_enabled = 0;
     my $no_align_enabled = 0;
     my $read_command_line = 0;
@@ -549,11 +552,11 @@ sub validate_and_setup_ssu_merge_default {
     my $fa_file = "";
     my $ileaved_enabled = 0;
     my $dna_enabled = 0;
-    if(! (-e $ssu_align_prep_sum)) { 
-	PrintErrorAndExit("ERROR, unable to locate summary file created by ssu-align in prep mode: $ssu_align_prep_sum.", $sum_file, $log_file, 1);
+    if(! (-e $ssu_prep_sum)) { 
+	PrintErrorAndExit("ERROR, unable to locate summary file created by ssu-prep: $ssu_prep_sum.", $sum_file, $log_file, 1);
     }
     else { 
-	open(SUM, $ssu_align_prep_sum) || FileOpenFailure($ssu_align_prep_sum, $sum_file, $log_file, $!, "reading");
+	open(SUM, $ssu_prep_sum) || FileOpenFailure($ssu_prep_sum, $sum_file, $log_file, $!, "reading");
 	my $line;
 	while($line = <SUM>) { 
 	    if($line =~ s/^\#\s+command\:\s+//) { 
@@ -566,15 +569,15 @@ sub validate_and_setup_ssu_merge_default {
 		my $nels = scalar(@prep_argv);
 		for($a = 1; $a < scalar(@prep_argv); $a++) { 
 		    if($prep_argv[$a] eq "-m") { 
-			if($a == ($nels-1)) { PrintErrorAndExit("ERROR, processing ssu-align prep summary file, -m was read as final command line arg to ssu-align. This shouldn't happen.", $sum_file, $log_file, 1); }
+			if($a == ($nels-1)) { PrintErrorAndExit("ERROR, processing ssu-prep summary file, -m was read as final command line arg to ssu-align. This shouldn't happen.", $sum_file, $log_file, 1); }
 			$cm_file = $prep_argv[$a+1];
 		    }
 		    if($prep_argv[$a] eq "--aln-one")   { 
-			if($a == ($nels-1)) { PrintErrorAndExit("ERROR, processing ssu-align prep summary file, --aln-one was read as final command line arg to ssu-align. This shouldn't happen.", $sum_file, $log_file, 1); }
+			if($a == ($nels-1)) { PrintErrorAndExit("ERROR, processing ssu-prep summary file, --aln-one was read as final command line arg to ssu-align. This shouldn't happen.", $sum_file, $log_file, 1); }
 			$aln_one_cm = $prep_argv[$a+1];
 		    }
-		    if($prep_argv[$a] eq "-s")   { 
-			if($a == ($nels-1)) { PrintErrorAndExit("ERROR, processing ssu-align prep summary file, -s was read as final command line arg to ssu-align. This shouldn't happen.", $sum_file, $log_file, 1); }
+		    if($prep_argv[$a] eq "-n")   { 
+			if($a == ($nels-1)) { PrintErrorAndExit("ERROR, processing ssu-prep summary file, -n was read as final command line arg to ssu-align. This shouldn't happen.", $sum_file, $log_file, 1); }
 			$single_cm = $prep_argv[$a+1];
 		    }
 		    if($prep_argv[$a] eq "--no-search") { $no_search_enabled = 1; }
@@ -590,20 +593,20 @@ sub validate_and_setup_ssu_merge_default {
 	}
     }
     if(! $read_command_line) { 
-	PrintErrorAndExit("ERROR, unable to read line beginning \"\# command\:\" in ssu-align prep mode summary file: $ssu_align_prep_sum.", $sum_file, $log_file, 1);
+	PrintErrorAndExit("ERROR, unable to read line beginning \"\# command\:\" in ssu-prep summary file: $ssu_prep_sum.", $sum_file, $log_file, 1);
     }
 
-    #Make sure the CM file exists (we may have read it as the argument to -m in the ssu-align.prep file)
-    if($opt_HR->{"-m"} ne "") { # overwrite whatever we read in the ssu-align.prep file
+    #Make sure the CM file exists (we may have read it as the argument to -m in the ssu-prep file)
+    if($opt_HR->{"-m"} ne "") { # overwrite whatever we read in the ssu-prep file
 	$cm_file = FindPossiblySharedFile($opt_HR->{"-m"}, $ssualigndir);
 	if(!(-e $cm_file))   { PrintErrorAndExit("ERROR, CM file $cm_file, specified with -m does not exist.", $sum_file, $log_file, 1); }
     }
-    elsif($cm_file eq "")  { # -m not enabled and -m not read from the ssu-align prep file, try default
+    elsif($cm_file eq "")  { # -m not enabled and -m not read from the ssu-prep file, try default
 	$cm_file = $ssualigndir . "/ssu-align-0p1.cm";
 	if(!(-e $cm_file))   { PrintErrorAndExit("ERROR, the default CM file $cm_file does not exist.", $sum_file, $log_file, 1); }
     }
-    else { # cm file read from ssu-align prep summary file
-	if(!(-e $cm_file))   { PrintErrorAndExit("ERROR, the CM file $cm_file read as the -m argument in ssu-align prep summary\nfile $ssu_align_prep_sum does not exist.\nUse -m <s> to specify that CM file <s> was used.", $sum_file, $log_file, 1); }	
+    else { # cm file read from ssu-prep summary file
+	if(!(-e $cm_file))   { PrintErrorAndExit("ERROR, the CM file $cm_file read as the -m argument in ssu-prep summary\nfile $ssu_prep_sum does not exist.\nUse -m <s> to specify that CM file <s> was used.", $sum_file, $log_file, 1); }	
     }
 
     # determine CM names
@@ -618,7 +621,7 @@ sub validate_and_setup_ssu_merge_default {
 	if($line =~ /^NAME\s+(\S+)/) { 
 	    $cm_name = $1;
 	    if(exists($cm_name_idx_H{$cm_name})) { PrintErrorAndExit("ERROR, two CMs in CM file $cm_file have the name $cm_name. Each CM must have a unique name.", $sum_file, $log_file, 1); }
-	    if(($single_cm eq "") || ($single_cm eq $cm_name)) { # if -s <s> was enabled to ssu-align, we'll only use this cm if it is named <s>
+	    if(($single_cm eq "") || ($single_cm eq $cm_name)) { # if -n <s> was enabled to ssu-align, we'll only use this cm if it is named <s>
 		push(@{$cm_names_AR}, $cm_name);
 		# initialize arrays for this cm:
 		@{$cmalign_to_merge_AAR->[$ncm]} = ();
@@ -637,7 +640,7 @@ sub validate_and_setup_ssu_merge_default {
     # check that cmalign is in the PATH
     my ($command, $command_worked);
     my $alimerge = $globals_H{"esl-alimerge"};
-    RunCommand("$alimerge -h > /dev/null", $tfilectr++, 1, 0, $sum_file, $log_file, \$command_worked, "ERROR, the required executable $alimerge is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
+    ValidateRequiredExecutable($alimerge, $tfilectr++, "-h", $sum_file, $log_file); 
 
     # determine which subdirectories in $dir were created by ssu-align
     my %subdir_H = ();
@@ -660,7 +663,7 @@ sub validate_and_setup_ssu_merge_default {
     # of which contains a finished sum file that indicates ssu-align is done running there.
     my @cpu_A = ();
     my ($child_sum_file, $seen_cpu);
-    if($max_num == 0) { PrintErrorAndExit("ERROR, couldn't find any subdirectories created by ssu-align in $dir.\nDid you run the shell script created by your initial ssu-align --prep-* call\nto create alignments?", $sum_file, $log_file, 1); }
+    if($max_num == 0) { PrintErrorAndExit("ERROR, couldn't find any subdirectories created by ssu-align in $dir.\nDid you run the shell script created by your initial ssu-prep call\nto create alignments?", $sum_file, $log_file, 1); }
     # Make sure we have all directories from <dir>.1 to <dir>.$max_num, and they all
     # contain ssu-align sum files in them that are finished running.
     my @unstarted_A = ();
@@ -811,8 +814,8 @@ sub run_alimerge {
     my ($output, $stk, $command, $command_worked, $line);
 
     if(-e $merged_aln_file) { 
-	if(! ($opt_HR->{"-F"})) { 
-	    PrintErrorAndExit("ERROR, alignment file $merged_aln_file already exists. Delete it or use -F to overwrite it.", $sum_file, $log_file, 1); 
+	if(! ($opt_HR->{"-f"})) { 
+	    PrintErrorAndExit("ERROR, alignment file $merged_aln_file already exists. Delete it or use -f to overwrite it.", $sum_file, $log_file, 1); 
 	}
 	else {
 	    UnlinkFile($merged_aln_file, $log_file);
@@ -901,8 +904,8 @@ sub concatenate_a_list_of_files {
 
     # check if concat file already exists
     if(-e $concat_file) { 
-	if(! ($opt_HR->{"-F"})) { 
-	    PrintErrorAndExit("ERROR, file $concat_file already exists. Delete it or use -F to overwrite it.", $sum_file, $log_file, 1); 
+	if(! ($opt_HR->{"-f"})) { 
+	    PrintErrorAndExit("ERROR, file $concat_file already exists. Delete it or use -f to overwrite it.", $sum_file, $log_file, 1); 
 	}
 	else {
 	    UnlinkFile($concat_file, $log_file);
@@ -985,8 +988,8 @@ sub concatenate_sum_files_and_merge_statistics {
 
     # check if concat file already exists
     if(-e $concat_file) { 
-	if(! ($opt_HR->{"-F"})) { 
-	    PrintErrorAndExit("ERROR, file $concat_file already exists. Delete it or use -F to overwrite it.", $sum_file, $log_file, 1); 
+	if(! ($opt_HR->{"-f"})) { 
+	    PrintErrorAndExit("ERROR, file $concat_file already exists. Delete it or use -f to overwrite it.", $sum_file, $log_file, 1); 
 	}
 	else {
 	    UnlinkFile($concat_file, $log_file);
@@ -1094,7 +1097,7 @@ sub concatenate_sum_files_and_merge_statistics {
 #             merged.
 #
 # Arguments: 
-# $dir:                       main directory created by ssu-align --prep-* 
+# $dir:                       main directory created by ssu-prep
 # $root:                      the lowest level subdirectory in $dir (this is $dir if it has 0 subdirectories)
 # $opt_HR:                    reference to command-line options hash
 # $subdir_AR:                 reference to the array of subdirectories created by ssu-align
@@ -1206,7 +1209,8 @@ sub clean_up_post_merge {
 	    if(! -d $subdir2rm) { PrintErrorAndExit("ERROR, subdirectory $subdir2rm unexpectedly does not exist during cleanup.", $sum_file, $log_file, 1); }
 	    if(! UnlinkDir($subdir2rm, $log_file)) { 
 		if(! $printed_error) { PrintStringToFile($sum_file, 1, sprintf("\n")); }
-		PrintStringToFile($log_file, 1, sprintf("# Unable to remove directory \"$subdir2rm\". It may contain files not created by ssu-align.\n"));
+		PrintStringToFile($sum_file, 1, sprintf("# Unable to remove directory \"$subdir2rm\". It may contain files not created by ssu-align.\n"));
+		PrintStringToFile($log_file, 0, sprintf("# Unable to remove directory \"$subdir2rm\". It may contain files not created by ssu-align.\n"));
 		$printed_error = 1;
 	    }
 	}
@@ -1307,8 +1311,8 @@ sub create_list_file {
 
     my $aln;
     if(-e $list_file) { 
-	if(! ($opt_HR->{"-F"})) { 
-	    PrintErrorAndExit("ERROR, list file $list_file already exists. Delete it or use -F to overwrite it.", $sum_file, $log_file, 1); 
+	if(! ($opt_HR->{"-f"})) { 
+	    PrintErrorAndExit("ERROR, list file $list_file already exists. Delete it or use -f to overwrite it.", $sum_file, $log_file, 1); 
 	}
 	else {
 	    UnlinkFile($list_file, $log_file);

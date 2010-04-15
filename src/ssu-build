@@ -57,7 +57,7 @@ my $options_usage  = "where general options are:\n";
 #                  12345678901234567890123456789012345678901234567890123456789012345678901234567890
 $options_usage .= "  -h            : show brief help on version and usage\n";
 $options_usage .= "  -d            : command-line argument is a default ssu-align-0.1 seed alignment\n";
-$options_usage .= "  -F            : force; allow overwriting of CM file\n" ,
+$options_usage .= "  -f            : force; allow overwriting of CM file\n" ,
 $options_usage .= "  -o <s>        : name the CM *file* <s>\n";
 $options_usage .= "  -n <s>        : name the CM <s>\n";
 $options_usage .= "  --append <s>  : append this model to CM file <s>\n";
@@ -90,11 +90,12 @@ $options_usage .= "  --ere <x>       : with --eent, set target relative entropy 
 my %opt_H = ();              # key: option (example "-h"); value: option argument (example ("0" or "1") if option takes no arg, actual argument if option takes arg)
 my %opt_takes_arg_H  = ();   # key: option; value: "1" if option takes argument, "0" if not
 my @opt_order_A  = ();       # order of options for printing in banner
+my $enabled_options = "";    # string of all enabled options and their arguments (prob not in same order as they were on cmd line)
 my $opt;
 
 $opt_takes_arg_H{"-h"}          = 0;  push(@opt_order_A, "-h");           
 $opt_takes_arg_H{"-d"}          = 0;  push(@opt_order_A, "-d");           
-$opt_takes_arg_H{"-F"}          = 0;  push(@opt_order_A, "-F");           
+$opt_takes_arg_H{"-f"}          = 0;  push(@opt_order_A, "-f");           
 $opt_takes_arg_H{"-o"}          = 1;  push(@opt_order_A, "-o");           
 $opt_takes_arg_H{"-n"}          = 1;  push(@opt_order_A, "-n");           
 $opt_takes_arg_H{"--append"}    = 1;  push(@opt_order_A, "--append");
@@ -119,7 +120,7 @@ Getopt::Long::Configure ("bundling");
 my $opt_return = GetOptions
     ('h'           => \$opt_H{"-h"}, 
      'd'           => \$opt_H{"-d"},
-     'F'           => \$opt_H{"-F"},
+     'f'           => \$opt_H{"-f"},
      'o=s'         => \$opt_H{"-o"},
      'n=s'         => \$opt_H{"-n"},
      'append=s'    => \$opt_H{"--append"},
@@ -137,7 +138,7 @@ my $opt_return = GetOptions
 if($opt_return != 1) { print STDERR "\nERROR, GetOptions() did not return 1, but $opt_return\n"; exit(1); }
 
 if ($opt_H{"-h"}) { 
-    PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, ""); 
+    PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, \$enabled_options, ""); 
     print $usage . "\n"; 
     print $options_usage; 
     exit(0);  
@@ -203,7 +204,7 @@ if($opt_H{"--num"}) {
        ($opt_H{"--eent"})            ||
        ($opt_H{"--ere"}       ne "") ||
        ($opt_H{"--ps2pdf"})) {
-	printf STDERR ("\nERROR, --num is incompatible with all other options except for -F, --rf, -1, --gapthresh and --key-out.\n"); exit(1);
+	printf STDERR ("\nERROR, --num is incompatible with all other options except for -f, --rf, -1, --gapthresh and --key-out.\n"); exit(1);
     }
 }
 if(($opt_H{"--ere"} ne "") && (! ($opt_H{"--eent"}))) { 
@@ -233,7 +234,7 @@ if(scalar(@ARGV) != 1) {
 }
 my ($aln_file_or_model_name) = $ARGV[0];
 
-PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, "");
+PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, \$enabled_options, "");
 
 # Note: We don't define sum and log file names here, nor open those files here (as in the other ssu-* scripts)
 #       This is because definition of the names is somewhat complex and handled in validate_and_setup_ssu_build()
@@ -250,8 +251,8 @@ validate_and_setup_ssu_build($ssualigndir, $aln_file_or_model_name, $key_out, \%
 #########################################
 # Print banner to summary and log files #
 #########################################
-PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 0, $sum_file);
-PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 0, $log_file);
+PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 0, \$enabled_options, $sum_file);
+PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 0, \$enabled_options, $log_file);
 PrintGlobalsToFile(\%globals_H, $log_file);
 
 ###########################
@@ -329,7 +330,7 @@ exit(0);
 # Purpose:    Validation and setup:
 #             - validate that the alignment file exists
 #             - validate that the required executable programs exist.
-#             - validate that the CM file we're building does not exist (unless -F or -A)
+#             - validate that the CM file we're building does not exist (unless -f or -A)
 #             - determine name for output '.log' file
 #             - determine name for numbered alignment file (we may or may not need this)
 #             - determine name for truncated alignment file (we may or may not need this)
@@ -455,15 +456,15 @@ sub validate_and_setup_ssu_build {
 		$cm_file = $root . $key_out . ".cm";
 	    }
 	    if(-e $cm_file) { 
-		if(!($opt_HR->{"-F"})) { 
-		    printf STDERR ("ERROR, CM file $cm_file already exists. Delete it or use -F to overwrite it.\n"); exit(1); 
+		if(!($opt_HR->{"-f"})) { 
+		    printf STDERR ("ERROR, CM file $cm_file already exists. Delete it or use -f to overwrite it.\n"); exit(1); 
 		}
 	    }
 	}
 
 	#Validate that our cmbuild exists and is in path
 	$cmbuild = $globals_H{"cmbuild"};
-	RunCommand("$cmbuild -h > /dev/null", $tfilectr++, 1, 0, $sum_file, $log_file, \$command_worked, "ERROR, the required executable $cmbuild is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");;
+	ValidateRequiredExecutable($cmbuild, $tfilectr++, "-h", $sum_file, $log_file);  
     }
 
     my $alimanip = "";
@@ -475,10 +476,11 @@ sub validate_and_setup_ssu_build {
 
     # verify that we can run esl-alimanip
     $alimanip = $globals_H{"esl-alimanip"};
-    RunCommand("$alimanip -h > /dev/null", $tfilectr++, 1, 0, $sum_file, $log_file, \$command_worked, "ERROR, the required executable $alimanip is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");
+    ValidateRequiredExecutable($alimanip, $tfilectr++, "-h", $sum_file, $log_file); 
+
     # verify that we can run esl-alimask
     $alimask = $globals_H{"esl-alimask"};
-    RunCommand("$alimask -h > /dev/null", $tfilectr++, 1, 0, $sum_file, $log_file, \$command_worked, "ERROR, the required executable $alimask is not in your PATH environment\nvariable or can't run on this system. See the User's Guide Installation section.");
+    ValidateRequiredExecutable($alimask, $tfilectr++, "-h", $sum_file, $log_file); 
 
     # if $do_draw (passed in), we'll try to draw a secondary structure diagram showing the part of the model included/excluded by the truncation,
     # if we can find the template file and esl-ssdraw
@@ -544,7 +546,7 @@ sub run_cmbuild {
     my $extra_opts = "";
 
     if($opt_HR->{"--append"} ne "") { $extra_opts .= " -A "; }
-    if($opt_HR->{"-F"})             { $extra_opts .= " -F"; }
+    if($opt_HR->{"-f"})             { $extra_opts .= " -f"; }
 
     if($opt_HR->{"--eent"})  { $extra_opts .= " --eent"; }
     else                     { $extra_opts .= " --enone"; }
@@ -754,7 +756,7 @@ sub run_alimask_to_truncate {
     elsif($opt_HR->{"--trunc"} =~ /(\d+)\:(\d+)/)  { $start = $1; $end   = $2; }
     elsif($opt_HR->{"--trunc"} =~ /(\d+)\.+(\d+)/) { $start = $1; $end   = $2; }
     else { 
-	PrintErrorAndExit("ERROR, formatting of the --trunc argument " . $opt_H{"--trunc"} . " is invalid.\nIt must include two integers separated by a \"-\"; such as \"-t 822-930\"", $sum_file, $log_file, 1);
+	PrintErrorAndExit("ERROR, formatting of the --trunc argument " . $opt_H{"--trunc"} . " is invalid.\nIt must include two integers separated by a \"-\"; such as \"--trunc 822-930\"", $sum_file, $log_file, 1);
 	exit(1);
     }
 
