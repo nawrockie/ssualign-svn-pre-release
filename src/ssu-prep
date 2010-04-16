@@ -517,22 +517,18 @@ sub partition_seqfile_and_write_shell_script {
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, partition_seqfile_and_write_shell_script() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my($seqfile, $out_dir, $out_root, $opt_HR, $opt_takes_arg_HR, $opt_passed_HR, $opt_order_AR, $ssualign, $cm_file, $njobs, $nseq_total, $nseq_per_job_AR, $nres_per_job_AR, $shell_script_R, $sum_file, $log_file) = @_;
 
-    my ($i, $n, $nseq_this_file, $nseq_total_regurg, $line, $tmp2print, $target_subfile, $merge_opt);
-    my $shell_script       = $out_root . ".ssu-align.sh";
-    my $shell_script2print = $out_root . ".ssu-align.sh";
-    open(SH, ">" . $shell_script) || FileOpenFailure($shell_script, $sum_file, $log_file, $!, "writing");
+    my ($i, $n, $nseq_this_file, $nseq_total_regurg, $line, $target_subfile, $target_subfile_root);
 
+    my $shell_script = $out_root . ".ssu-align.sh";
     my $ndig_jobs = NumberOfDigits($njobs);
     my $ndig_seqs = NumberOfDigits(MaxArray($nseq_per_job_AR));
     my $ndig_res  = 0;
     my $do_print_res = 0;
     if(scalar(@{$nres_per_job_AR}) > 0) { $do_print_res = 1; } 
     if($do_print_res) { $ndig_res = NumberOfDigits(MaxArray($nres_per_job_AR)); }
-    my $max_file_name_width = length($shell_script2print);
-    my $target_subfile_root = $seqfile . ".0";
-    $target_subfile_root =~ s/^.+\///;  # remove path 
-    if($max_file_name_width < (length($target_subfile_root) + $ndig_jobs)) { 
-	$max_file_name_width = length($target_subfile_root) + $ndig_jobs;
+    my $max_file_name_width = length($shell_script);
+    if($max_file_name_width < (length(RemoveDirPath($seqfile)) + $ndig_jobs)) { 
+	$max_file_name_width = length(RemoveDirPath($seqfile)) + $ndig_jobs;
     }
     if($max_file_name_width < (length("output file name"))) { 
 	$max_file_name_width = length("output file name"); 
@@ -558,14 +554,66 @@ sub partition_seqfile_and_write_shell_script {
     PrintStringToFile($sum_file, 1, sprintf("#\n"));
     PrintStringToFile($sum_file, 1, sprintf("# %-*s  %-*s\n", $max_file_name_width, "output file name", $description_width, "description"));
     PrintStringToFile($sum_file, 1, sprintf("# %-*s  %-*s\n", $max_file_name_width, $dashes1, $description_width, $dashes2));
-    
-    $n = 1;
-    $target_subfile_root = $seqfile . "." . $n;
-    $target_subfile_root =~ s/^.+\///;  # remove path 
-    $target_subfile      = $out_dir . "/" . $target_subfile_root;
 
-    #determine options we'd use for subsequent ssu-align calls on split dataset if we're in prep mode
+    ###############################
+    # Partition the sequence file #
+    ###############################
+    $nseq_this_file = 0;
+    $nseq_total_regurg = 0;
+    $n = 0;
+    my $command;
+    open(FULL, $seqfile)            || FileOpenFailure($seqfile, $sum_file, $log_file, $!, "reading");
+    while($line = <FULL>) { 
+	$line =~ s/^\s+//; # chomp up leading whitespace
+	if($line =~ m/^>/) { 
+	    # new sequence line
+	    if((($n == 0) && ($nseq_this_file == 0)) || # TRUE if first file, and we haven't printed any seqs
+	       (($n >  0) && ($nseq_this_file == $nseq_per_job_AR->[($n-1)]))) # TRUE if not first file, printed enough seqs
+	    {
+		if($n > 0) 
+		{ 
+		    # we've printed enough sequences to the current file, close it
+		    close(SUB); 
+		    PrintStringToFile($sum_file, 1, sprintf("  %-*s  partition %*d FASTA sequence file (%*d %s",
+							    $max_file_name_width, $target_subfile_root, $ndig_jobs, $n, $ndig_seqs, $nseq_this_file, (($nseq_this_file == 1) ? "seq" : "seqs")));
+		    if($do_print_res) { PrintStringToFile($sum_file, 1, sprintf("; %*d nt", $ndig_res, $nres_per_job_AR->[$n-1])); }
+		    PrintStringToFile($sum_file, 1, sprintf(")\n"));
+		    $nseq_this_file = 0;
+		}
+		# open a new file:
+		$n++;
+		$target_subfile_root = RemoveDirPath($seqfile) . "." . ($n);
+		$target_subfile      = $out_dir . "/" . $target_subfile_root;
+		open(SUB, ">". $target_subfile) || FileOpenFailure($target_subfile, $sum_file, $log_file, $!, "writing");
+	    }
+	    $nseq_this_file++;
+	    $nseq_total_regurg++;
+	}
+	if($line =~ m/\w+/) { print SUB ($line); } # print each line that has >= 1 alphanumeric
+    }
+    close(FULL);
+    # close the final file that was opened, but not closed
+    close(SUB);
+    if($nseq_this_file == 0) { # we opened a new sequence file for output, but didn't output anything to it
+	PrintErrorAndExit("ERROR, splitting up fasta file, final file got 0 sequences.\n", $sum_file, $log_file, 1);
+    }
+    PrintStringToFile($sum_file, 1, sprintf("  %-*s  partition %*d FASTA sequence file (%*d %s",
+					    $max_file_name_width, $target_subfile_root, $ndig_jobs, $n, $ndig_seqs, $nseq_this_file, (($nseq_this_file == 1) ? "seq" : "seqs")));
+    if($do_print_res) { PrintStringToFile($sum_file, 1, sprintf("; %*d nt", $ndig_res, $nres_per_job_AR->[$n-1])); }
+    PrintStringToFile($sum_file, 1, sprintf(")\n"));
+    if($nseq_total_regurg != $nseq_total) { 
+	PrintErrorAndExit(sprintf("ERROR, problem partitioning target FASTA file $seqfile into $njobs files, %d of the %d sequences were copied.", $nseq_total_regurg, $nseq_total), $sum_file, $log_file,  1);
+    }
+    if($n != $njobs) { 
+	PrintErrorAndExit("ERROR, problem partitioning target FASTA file $seqfile into $njobs files, $n files were successfully created.", $sum_file, $log_file, 1);
+    }    
+
+    ###############################################################
+    # Write the shell script that will execute the ssu-align jobs #
+    ###############################################################
+    open(SH, ">" . $shell_script) || FileOpenFailure($shell_script, $sum_file, $log_file, $!, "writing");
     my $ssualign_enabled_options = "";
+    my $ssualign_command = "";
     my $opt;
     foreach $opt (@{$opt_order_AR}) { 
 	if($opt_passed_HR->{$opt}) { 
@@ -574,78 +622,62 @@ sub partition_seqfile_and_write_shell_script {
 	    else                             { if($opt_HR->{$opt})       { $ssualign_enabled_options .= $opt . " "; } }
 	}
     }
-    $ssualign_enabled_options =~ s/\S+$//; #remove trailing space, if any
+    if($ssualign_enabled_options eq "") { $ssualign_enabled_options = " "; }
 
-    open(SUB, ">". $target_subfile) || FileOpenFailure($target_subfile, $sum_file, $log_file, $!, "writing");
-    open(FULL, $seqfile) || FileOpenFailure($seqfile, $sum_file, $log_file, $!, "reading");
-    $nseq_this_file = 0;
-    $nseq_total_regurg = 0;
-    my $command;
-    while($line = <FULL>) { 
-	if($line =~ m/^>/) { 
-	    if($nseq_this_file == $nseq_per_job_AR->[($n-1)]) {
-		close(SUB); 
-		if($nseq_this_file == 1) { $tmp2print = "seq"; } 
-		else                     { $tmp2print = "seqs"; }
-		if($do_print_res) { 
-		    PrintStringToFile($sum_file, 1, sprintf("  %-*s  partition %*d FASTA sequence file (%*d $tmp2print; %*d nt)\n", $max_file_name_width, $target_subfile_root, $ndig_jobs, $n, $ndig_seqs, $nseq_this_file, $ndig_res, $nres_per_job_AR->[$n-1]));
-}
-		else { 
-		    PrintStringToFile($sum_file, 1, sprintf("  %-*s  partition %*d FASTA sequence file (%*d $tmp2print)\n", $max_file_name_width, $target_subfile_root, $ndig_jobs, $n, $ndig_seqs, $nseq_this_file));
-		}
-		if($prefix ne "") { $command = $prefix . " "; }
-		else              { $command = ""; }
-		$command .= "$ssualign -f $ssualign_enabled_options $out_dir/$target_subfile_root $out_dir/$out_root." . $n . " > /dev/null";
-		if($suffix ne "") { $command .= " " . $suffix; }
-		
-		#printf SH ("echo \"\# Executing: $command\"\n");
-		printf SH ("%s\n", $command);
-		
-		$target_subfile_root = $seqfile . "." . (++$n);
-		$target_subfile_root =~ s/^.+\///;  # remove path 
-		$target_subfile      = $out_dir . "/" . $target_subfile_root;
-		open(SUB, ">". $target_subfile) || FileOpenFailure($target_subfile, $sum_file, $log_file, $!, "writing");
-		$nseq_total_regurg += $nseq_this_file;
-		$nseq_this_file = 1;
-	    }
-	    else { $nseq_this_file++; }
-	}
-	print SUB ($line);
-    }
-    close(FULL);
-    close(SUB);
-    $nseq_total_regurg += $nseq_this_file;
-    if($nseq_this_file == 0) { # we opened a new sequence file for output, but didn't output anything to it
-	PrintErrorAndExit("ERROR, splitting up fasta file, final file got 0 sequences.\n", $sum_file, $log_file, 1);
-    }
-    if($nseq_this_file == 1) { $tmp2print = "seq"; } 
-    else                     { $tmp2print = "seqs"; }
-    if($do_print_res) { 
-	PrintStringToFile($sum_file, 1, sprintf("  %-*s  partition %*d FASTA sequence file (%*d $tmp2print; %*d nt)\n", $max_file_name_width, $target_subfile_root, $ndig_jobs, $n, $ndig_seqs, $nseq_this_file, $ndig_res, $nres_per_job_AR->[$n-1]));
+    $target_subfile_root = RemoveDirPath($seqfile) . ".\$i";
+    $command   = ($prefix eq "")           ? "" : $prefix . " ";
+    $command  .= "$ssualign -f " . $ssualign_enabled_options . "$out_dir/$target_subfile_root $out_dir/$out_root.\$i";
+    if($suffix ne "") { $command .= " " . $suffix; }
+
+#	                  1         2         3         4         5         6         7         8
+#	        012345678901234567890123456789012345678901234567890123456789012345678901234567890
+    printf SH ("# Bash shell script created by ssu-prep for running $njobs ssu-align jobs in parallel.\n");
+    printf SH ("#\n");
+    printf SH ("# When executed, this script will run/submit %d ssu-align jobs, each of which\n", $njobs);
+    printf SH ("# will process a separate partition of the sequence file $seqfile.\n");
+    printf SH ("#\n");
+    if(! $opt_HR->{"--no-merge"}) { 
+#	                      1         2         3         4         5         6         7         8
+#	            012345678901234567890123456789012345678901234567890123456789012345678901234567890
+	printf SH ("# The final job is special, when it finishes running it will wait for all\n");
+	printf SH ("# other jobs to finish and then merge the output of all jobs together.\n");
+	printf SH ("# The final merged output files will be in the directory: \'\.\/$out_dir\'\n");
+	printf SH ("#\n");
+	printf SH ("# The for loop will execute the first %d of %d jobs.\n", $njobs-1, $njobs);
+	printf SH ("# The final ssu-align job does the merging and so is executed separately.\n", $njobs-1, $njobs);
+	printf SH ("#\n");
     }
     else { 
-	PrintStringToFile($sum_file, 1, sprintf("  %-*s  partition %*d FASTA sequence file (%*d $tmp2print)\n", $max_file_name_width, $target_subfile_root, $ndig_jobs, $n, $ndig_seqs, $nseq_this_file));
+	printf SH ("# The --no-merge option was selected and so the user is responsible for manually\n");
+	printf SH ("# merging all jobs once they have all finished. To do this from the current\n");
+	printf SH ("# working directory, execute:\n");
+	printf SH ("#\t'ssu-merge $out_dir\n");
+	printf SH ("#\n");
+	printf SH ("# The for loop will execute all %d jobs:\n", $njobs-1, $njobs);
+	printf SH ("#\n");
     }
-    # write final chunk's command
-    if($prefix ne "") { $command = $prefix . " "; }
-    else              { $command = ""; }
-    $merge_opt = "";
-    if(! $opt_HR->{"--no-merge"}) { $merge_opt = "--merge $n"; }
-    $command .= "$ssualign -f $merge_opt $ssualign_enabled_options $out_dir/$target_subfile_root $out_dir/$out_root." . $n;
-    if($suffix ne "") { $command .= " " . $suffix; }
-    #printf SH ("echo \"\# Executing: $command\"\n");
-    printf SH ("%s\n", $command);
+
+    printf SH ("for i in \{ 1..%d \}\n", ($opt_HR->{"--no-merge"}) ? $njobs : ($njobs-1));
+    printf SH ("do\n");
+    printf SH ("\techo \"\# Executing: %s\"\n", $command);
+    printf SH ("\t%s\n", $command);
+    printf SH ("done\n");
+    # if we're merging, we print the final command separately, b/c it needs to supply --merge 
+    if(! $opt_HR->{"--no-merge"}) { 
+	$target_subfile_root = RemoveDirPath($seqfile) . ".$njobs";
+	$command  = ($prefix eq "")           ? "" : $prefix . " ";
+	$command .= "$ssualign -f --merge $njobs " . $ssualign_enabled_options . "$out_dir/$target_subfile_root $out_dir/$out_root.$njobs";
+	if($suffix ne "") { $command .= " " . $suffix; }
+	printf SH ("echo \"\# Executing: %s\"\n", $command);
+	printf SH ("%s\n", $command);
+    }
     close(SH); 
 
-    if($nseq_total_regurg != $nseq_total) { 
-	PrintErrorAndExit(sprintf("ERROR, problem partitioning target FASTA file $seqfile into $njobs files, %d of the %d sequences were copied.", $nseq_total_regurg, $nseq_total), $sum_file, $log_file,  1);
-    }
-    if($n != $njobs) { 
-	PrintErrorAndExit("ERROR, problem partitioning target FASTA file $seqfile into $njobs files, $n files were successfully created.", $sum_file, $log_file, 1);
-    }    
-    PrintStringToFile($sum_file, 1, sprintf("  %-*s  shell script that will execute %d ssu-align jobs\n", $max_file_name_width, $shell_script2print, $njobs));
+    PrintStringToFile($sum_file, 1, sprintf("  %-*s  shell script that will execute %d ssu-align jobs\n", $max_file_name_width, $shell_script, $njobs));
 
-    PrintStringToFile($sum_file, 1, sprintf("#\n# To perform all %d ssu-align jobs, execute the script with:\n#\tsh $shell_script2print\n", $njobs));
+    PrintStringToFile($sum_file, 1, sprintf("#\n################################################################################\n"));
+    PrintStringToFile($sum_file, 1, sprintf("# To execute all %d ssu-align jobs, run the script with:\n#\tsh $shell_script\n", $njobs));
+    PrintStringToFile($sum_file, 1, sprintf("################################################################################\n"));
     if(! $opt_H{"--no-merge"}) {
 	PrintStringToFile($sum_file, 1, sprintf("#\n# The final job will merge the output from all jobs once they are finished.\n"));
 

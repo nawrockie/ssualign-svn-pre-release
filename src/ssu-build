@@ -330,7 +330,7 @@ exit(0);
 # Purpose:    Validation and setup:
 #             - validate that the alignment file exists
 #             - validate that the required executable programs exist.
-#             - validate that the CM file we're building does not exist (unless -f or -A)
+#             - validate that the CM file we're building does not exist (unless -f or --append)
 #             - determine name for output '.log' file
 #             - determine name for numbered alignment file (we may or may not need this)
 #             - determine name for truncated alignment file (we may or may not need this)
@@ -546,7 +546,7 @@ sub run_cmbuild {
     my $extra_opts = "";
 
     if($opt_HR->{"--append"} ne "") { $extra_opts .= " -A "; }
-    if($opt_HR->{"-f"})             { $extra_opts .= " -f"; }
+    if($opt_HR->{"-f"})             { $extra_opts .= " -F "; }
 
     if($opt_HR->{"--eent"})  { $extra_opts .= " --eent"; }
     else                     { $extra_opts .= " --enone"; }

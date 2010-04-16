@@ -745,7 +745,7 @@ sub draw_alignment {
 	$draw_opts = "--indi";
 	if($opt_HR->{"--no-prob"}) { $draw_opts .= " --no-iprob"; }
 	$draw_key = $key_out . ".indiall";
-	$do_tabfile = 0;
+	$do_tabfile = 1;
 	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
 						   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
     }
@@ -753,7 +753,7 @@ sub draw_alignment {
 	$draw_opts = "--indi --list " . $opt_HR->{"--indi-list"}; 
 	if($opt_HR->{"--no-prob"}) { $draw_opts .= " --no-iprob"; }
 	$draw_key = $key_out . ".indi";
-	$do_tabfile = 0;
+	$do_tabfile = 1;
 	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
 						   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
     }
@@ -798,7 +798,7 @@ sub run_ssdraw_for_ssu_draw {
     my $narg_expected = 13;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, run_ssdraw_for_ssu_draw() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my ($ssdraw, $ssdraw_opts, $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, $draw_key, $max_width_aln,
-	$max_width_draw, $max_width_tab,$opt_HR, $sum_file, $log_file) = @_;
+	$max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file) = @_;
 
     my($draw_ps, $draw_pdf, $draw_ps2print, $draw_pdf2print, $command_worked, $aln_file2print);
     my $tabfile = "-";

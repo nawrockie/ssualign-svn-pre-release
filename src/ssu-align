@@ -229,8 +229,8 @@ if(! $opt_H{"--no-align"}) {
 #############################
 my $scores_file        = $out_dir_and_root . ".scores";
 my $scores_file2print  = $out_root         . ".scores";
-my $nomatch_file       = $out_dir_and_root . ".nomatch.list";
-my $nomatch_file2print = $out_root         . ".nomatch.list";
+my $nomatch_file       = $out_dir_and_root . ".nomatch";
+my $nomatch_file2print = $out_root         . ".nomatch";
 my $n_nomatch = 0;
 if(! $opt_H{"--no-search"}) { 
     $n_nomatch = print_scores_and_nomatch_files(\%opt_H, $target_file, $ncm, $scores_file, $nomatch_file, $max_seq_name_width, \@indi_cm_name_A, \%bestmatch_cm_H, \%cmscores2print_H, \%hmmscores2print_H, $sum_file, $log_file);
@@ -350,7 +350,7 @@ sub search_sequences_with_each_model {
     $description_width   += length("list of sequences to align with  CM");
     if($description_width < length("boundaries/scores of hits defined by HMM(s)")) { $description_width = length("boundaries/scores of hits defined by HMM(s)"); }
 
-    $max_file_name_width += length($out_root . "." . ".hits.list");
+    $max_file_name_width += length($out_root . "." . ".hitlist");
     if($max_file_name_width < length("output file name")) { $max_file_name_width = length("output file name"); }
     $dashes1 = ""; for($i = 0; $i < $max_file_name_width; $i++) { $dashes1 .= "-"; } 
     $dashes2 = ""; for($i = 0; $i < $description_width; $i++)   { $dashes2 .= "-"; } 
@@ -551,8 +551,8 @@ sub classify_and_extract_subseqs {
 
     for($m = 0; $m < scalar(@{$indi_cm_name_AR}); $m++) { 
 	$cm_name = $indi_cm_name_AR->[$m];
-	$list_file = $out_dir_and_root      . "." . $cm_name . ".hits.list"; 
-	$list_file2print = $out_root        . "." . $cm_name . ".hits.list"; 
+	$list_file = $out_dir_and_root      . "." . $cm_name . ".hitlist"; 
+	$list_file2print = $out_root        . "." . $cm_name . ".hitlist"; 
 	$sfetch_in_file = $out_dir_and_root . "." . $cm_name . ".hits.in";
 	if(!(exists($by_cm_name_HA{$cm_name}))) { $nwinners = 0; }
 	else                                    { $nwinners = scalar(@{$by_cm_name_HA{$cm_name}}); }
@@ -592,8 +592,8 @@ sub classify_and_extract_subseqs {
 	    close(SFETCHIN);
 	    PrintStringToFile($sum_file, 1, sprintf("  %-*s  list of sequences to align with $cm_name CM\n", $max_file_name_width, $list_file2print));
 
-	    $hits_file = $out_dir_and_root . "." . $cm_name . ".hits.fa";
-	    $hits_file2print = $out_root . "." . $cm_name . ".hits.fa";
+	    $hits_file = $out_dir_and_root . "." . $cm_name . ".fa";
+	    $hits_file2print = $out_root . "." . $cm_name . ".fa";
 	    # if somehow this file already exists, remove it
 	    if(-e ($hits_file)) { UnlinkFile($hits_file, $log_file); }
 	    if($do_truncate) { $sfetch_options = "-Cf"; }
@@ -1238,7 +1238,7 @@ sub wait_for_all_parallel_jobs_to_finish {
     for($i = 1; $i <= $njobs; $i++) { 
 	$dir = $out_dir_root . "." . $i; 
 	if(! -d ($dir)) { 
-	    PrintErrorAndExit("ERROR, expected to find a directory named $dir to merge, but it doesn't exist.\n\nNOTE: It is possible it will be created by a job that hasn't started yet.\nIf this is true, wait for all jobs to finish, then execute\n\t \'ssu-merge $out_dir_root\'\nto manually merge the output of all jobs together.", $sum_file, $log_file, 1);
+	    PrintErrorAndExit("ERROR, expected to find a directory named $dir to merge, but it doesn't exist.\n\nNOTE: It is possible it will be created by a job that hasn't started yet.\n      If this is true, wait for all jobs to finish, then execute\n\t \'ssu-merge $merge_out_dir\'\n      to manually merge the output of all jobs together.", $sum_file, $log_file, 1);
 	}
 	$sum_A[$i] = $dir . "/" . RemoveDirPath($dir) . ".ssu-align.sum";
     }
