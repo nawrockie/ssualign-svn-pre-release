@@ -714,7 +714,7 @@ sub validate_and_setup_ssu_mask {
 	if(!(-e $cm_file)) { PrintErrorAndExit("ERROR, CM file $cm_file, specified with -m does not exist.", $sum_file, $log_file, 1); }
     }
     else { # -m not enabled, assume the user used the default CM file:
-	$cm_file = $ssualigndir . "/ssu-align-0p1.cm";
+	$cm_file = $globals_HR->{"DF_CM_FILE"};
 	if(!(-e $cm_file)) { PrintErrorAndExit("ERROR, the default CM file $cm_file does not exist.\nIf you used a different CM file to create the alignments in $dir, use the -m option.", $sum_file, $log_file, 1); }
     }
 

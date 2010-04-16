@@ -602,8 +602,8 @@ sub validate_and_setup_ssu_merge_default {
 	$cm_file = FindPossiblySharedFile($opt_HR->{"-m"}, $ssualigndir);
 	if(!(-e $cm_file))   { PrintErrorAndExit("ERROR, CM file $cm_file, specified with -m does not exist.", $sum_file, $log_file, 1); }
     }
-    elsif($cm_file eq "")  { # -m not enabled and -m not read from the ssu-prep file, try default
-	$cm_file = $ssualigndir . "/ssu-align-0p1.cm";
+    elsif($cm_file eq "")  { # -m not read from the ssu-prep file, try default
+	$cm_file = $globals_H{"DF_CM_FILE"};
 	if(!(-e $cm_file))   { PrintErrorAndExit("ERROR, the default CM file $cm_file does not exist.", $sum_file, $log_file, 1); }
     }
     else { # cm file read from ssu-prep summary file
@@ -1200,19 +1200,26 @@ sub clean_up_post_merge {
     }
     foreach $fa_file (@{$fa_files_AR}) { 
 	if($do_actually_remove) { UnlinkFile(($fa_file), $log_file); }
-	else                    { printf CLEANUP ("rm -f $fa_file\n"); }
+	else                    { $fa_file =~ s/^$dir\///; printf CLEANUP ("rm -f $fa_file\n"); }
     }
-    foreach $subdir (@{$subdir_AR}) { 
+    for($i = 0; $i < scalar(@{$subdir_AR}); $i++) { 
 	# determine number for subdir 
+	$subdir = $subdir_AR->[$i];
 	$subdir2rm = $dir . "/" . $subdir;
 
 	if($do_actually_remove) { 
 	    if(! -d $subdir2rm) { PrintErrorAndExit("ERROR, subdirectory $subdir2rm unexpectedly does not exist during cleanup.", $sum_file, $log_file, 1); }
 	    if(! UnlinkDir($subdir2rm, $log_file)) { 
-		if(! $printed_error) { PrintStringToFile($sum_file, 1, sprintf("\n")); }
-		PrintStringToFile($sum_file, 1, sprintf("# Unable to remove directory \"$subdir2rm\". It may contain files not created by ssu-align.\n"));
-		PrintStringToFile($log_file, 0, sprintf("# Unable to remove directory \"$subdir2rm\". It may contain files not created by ssu-align.\n"));
-		$printed_error = 1;
+		if($i != (scalar(@{$subdir_AR})-1)) { 
+		    # Special case, if we're removing the final subdir, its possible we won't be able to remove it
+		    # just because we've called 'ssu-merge' from within a 'ssu-align --merge' call, in this case
+		    # the dir may have a system temp file (not a ssu-merge temp file) still in it and thus not be removable.
+		    # So we don't want to tell the user this is an error in this special case.
+		    if(! $printed_error) { PrintStringToFile($sum_file, 1, sprintf("\n")); }
+		    PrintStringToFile($sum_file, 1, sprintf("# Unable to remove directory \"$subdir2rm\". It may contain files not created by ssu-align.\n"));
+		    PrintStringToFile($log_file, 0, sprintf("# Unable to remove directory \"$subdir2rm\". It may contain files not created by ssu-align.\n"));
+		    $printed_error = 1;
+		}
 	    }
 	}
 	else { 
@@ -1222,16 +1229,14 @@ sub clean_up_post_merge {
     if(! $printed_error)      { PrintStringToFile($sum_file, 1, sprintf("done.\n")); }
     if(! $do_actually_remove) { 
 	if($dir eq ".") { 
-	    PrintStringToFile($sum_file, 1, sprintf("# To remove the original files that were just merged, do:\n# sh $cleanup_script2print\n from this directory.\n")); 
+	    PrintStringToFile($sum_file, 1, sprintf("# To remove the original files that were just merged, do:\n#\tsh $cleanup_script2print\n from this directory.\n")); 
 	}
 	else {
-	    PrintStringToFile($sum_file, 1, sprintf("# To remove the original files that were just merged, do:\n# cd $dir; sh $cleanup_script2print.\n")); 
+	    PrintStringToFile($sum_file, 1, sprintf("# To remove the original files that were just merged, do:\n# cd $dir;\tsh $cleanup_script2print.\n")); 
 	}
     }
     return;
 }
-
-
 
 #####################################################################
 # Subroutine: validate_and_setup_ssu_merge_list()
@@ -1285,7 +1290,6 @@ sub validate_and_setup_ssu_merge_list {
     $$alimerge_R          = $alimerge;
     return;
 }
-
 
 #####################################################################
 # Subroutine: create_list_file

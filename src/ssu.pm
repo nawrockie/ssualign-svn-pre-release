@@ -76,21 +76,23 @@ sub GetGlobals {
     my ($globals_HR, $ssualigndir) = @_;
 
     # default values, files and parameters
-    $globals_HR->{"VERSION"}              = "0.1";                                  # original value: "0.1"
-    $globals_HR->{"DF_CM_FILE"}           = $ssualigndir . "/ssu-align-0p1.cm";     # original value: $ssualigndir . "/ssu-align-0p1.cm"
-    $globals_HR->{"DF_TEMPLATE_FILE"}     = $ssualigndir . "/ssu-align-0p1.ps";     # original value: $ssualigndir . "/ssu-align-0p1.ps"
-    $globals_HR->{"DF_MASK_FILE"}         = $ssualigndir . "/ssu-align-0p1.mask";   # original value: $ssualigndir . "/ssu-align-0p1.mask"
-    $globals_HR->{"DF_MINBIT"}            = 50;                                     # original value: "50"
-    $globals_HR->{"DF_MINLEN"}            = 1;                                      # original value: "1"
-    $globals_HR->{"DF_MXSIZE"}            = 4096;                                   # original value: "4096"
-    $globals_HR->{"DF_CMSEARCH_T"}        = -1;                                     # original value: "-1"
-    $globals_HR->{"DF_CMBUILD_GAPTHRESH"} = 0.80;                                   # original value: 0.80
-    $globals_HR->{"DF_NO_NAME"}           = "<NONE>";                               # original value: <NONE>
-    $globals_HR->{"DF_CMSEARCH_OPTS"}     = " --hmm-cW 1.5 --no-null3 --noalign ";  # original value: " --hmm-cW 1.5 --no-null3 --noalign "
-    $globals_HR->{"DF_CMSEARCH_ALG_FLAG"} = "--viterbi";                            # original value: " --viterbi"
-    $globals_HR->{"DF_CMALIGN_OPTS"}      = " --no-null3 --sub ";                   # original value: " --no-null3 --sub"
-    $globals_HR->{"DF_ALIMASK_PFRACT"}    = 0.95;                                   # original value: 0.95
-    $globals_HR->{"DF_ALIMASK_PTHRESH"}   = 0.95;                                   # original value: 0.95
+    $globals_HR->{"VERSION"}                 = "0.1";                                  # original value: "0.1"
+    $globals_HR->{"DF_CM_FILE"}              = $ssualigndir . "/ssu-align-0p1.cm";     # original value: $ssualigndir . "/ssu-align-0p1.cm"
+    $globals_HR->{"DF_TEMPLATE_FILE"}        = $ssualigndir . "/ssu-align-0p1.ps";     # original value: $ssualigndir . "/ssu-align-0p1.ps"
+    $globals_HR->{"DF_MASK_FILE"}            = $ssualigndir . "/ssu-align-0p1.mask";   # original value: $ssualigndir . "/ssu-align-0p1.mask"
+    $globals_HR->{"DF_MINBIT"}               = 50;                                     # original value: "50"
+    $globals_HR->{"DF_MINLEN"}               = 1;                                      # original value: "1"
+    $globals_HR->{"DF_MXSIZE"}               = 4096;                                   # original value: "4096"
+    $globals_HR->{"DF_CMSEARCH_T"}           = -1;                                     # original value: "-1"
+    $globals_HR->{"DF_CMBUILD_GAPTHRESH"}    = 0.80;                                   # original value: 0.80
+    $globals_HR->{"DF_NO_NAME"}              = "<NONE>";                               # original value: <NONE>
+    $globals_HR->{"DF_CMSEARCH_OPTS"}        = " --hmm-cW 1.5 --no-null3 --noalign ";  # original value: " --hmm-cW 1.5 --no-null3 --noalign "
+    $globals_HR->{"DF_CMSEARCH_ALG_FLAG"}    = " --viterbi";                           # original value: " --viterbi"
+    $globals_HR->{"DF_CMALIGN_OPTS"}         = " --no-null3 --sub ";                   # original value: " --no-null3 --sub"
+    $globals_HR->{"DF_ALIMASK_PFRACT"}       = 0.95;                                   # original value: 0.95
+    $globals_HR->{"DF_ALIMASK_PTHRESH"}      = 0.95;                                   # original value: 0.95
+    $globals_HR->{"DF_MERGE_INIT_WAIT_SECS"} = 3;                                      # original value: 3
+    $globals_HR->{"DF_MERGE_MAX_WAIT_SECS"}  = 3600;                                   # original value: 3600
 
     # executable programs
     $globals_HR->{"cmalign"}      = "ssu-cmalign";                              # original value: "ssu-cmalign"
@@ -220,7 +222,8 @@ sub PrintBanner {
 #    $total_time:             total number of seconds, "" to not print timing
 #    $time_hires_installed:   '1' if Time:HiRes is installed (we'll print milliseconds)
 #    $out_dir:                output directory where output files were put,
-#                             "" if it is current dir.
+#                             "" if it is current dir. '-1' to not print notice about
+#                             which directory files were created in.
 #    $globals_HR:             REFERENCE to the globals hash
 #
 # Returns:    Nothing.
@@ -237,12 +240,12 @@ sub PrintConclusion {
     PrintStringToFile($sum_file, 1, sprintf("# List of executed commands saved in:     $log_file2print.\n"));
     PrintStringToFile($sum_file, 1, sprintf("# Output printed to the screen saved in:  $sum_file2print.\n"));
     PrintStringToFile($sum_file, 1, sprintf("#\n"));
-    if($out_dir ne "") { 
-	PrintStringToFile($sum_file, 1, sprintf("# All output files created in directory \.\/%s\/\n", $out_dir));
+    if($out_dir eq "") { 
+	PrintStringToFile($sum_file, 1, sprintf("# All output files created in the current working directory.\n"));
 	PrintStringToFile($sum_file, 1, sprintf("#\n"));
     }
-    else { 
-	PrintStringToFile($sum_file, 1, sprintf("# All output files created in the current working directory.\n"));
+    elsif($out_dir ne -1) { 
+	PrintStringToFile($sum_file, 1, sprintf("# All output files created in directory \.\/%s\/\n", $out_dir));
 	PrintStringToFile($sum_file, 1, sprintf("#\n"));
     }
     if($total_time ne "") { # don't print this if ssu-align is caller
@@ -1486,15 +1489,14 @@ sub InitializeSsuAlignOptions {
     my ($opt_takes_arg_HR, $opt_order_AR) = @_;
     
     $opt_takes_arg_HR->{"-h"}          = 0;  push(@{$opt_order_AR}, "-h");
+    $opt_takes_arg_HR->{"-f"}          = 0;  push(@{$opt_order_AR}, "-f");
     $opt_takes_arg_HR->{"-m"}          = 1;  push(@{$opt_order_AR}, "-m");
     $opt_takes_arg_HR->{"-b"}          = 1;  push(@{$opt_order_AR}, "-b");
     $opt_takes_arg_HR->{"-l"}          = 1;  push(@{$opt_order_AR}, "-l");
     $opt_takes_arg_HR->{"-i"}          = 0;  push(@{$opt_order_AR}, "-i");
     $opt_takes_arg_HR->{"-n"}          = 1;  push(@{$opt_order_AR}, "-n");
-    $opt_takes_arg_HR->{"-f"}          = 0;  push(@{$opt_order_AR}, "-f");
-    $opt_takes_arg_HR->{"--fF"}        = 0;  push(@{$opt_order_AR}, "--fF");
     $opt_takes_arg_HR->{"--dna"}       = 0;  push(@{$opt_order_AR}, "--dna");
-    $opt_takes_arg_HR->{"--keep"}      = 0;  push(@{$opt_order_AR}, "--keep");
+    $opt_takes_arg_HR->{"--keep-int"}  = 0;  push(@{$opt_order_AR}, "--keep-int");
     $opt_takes_arg_HR->{"--rfonly"}    = 0;  push(@{$opt_order_AR}, "--rfonly");
     $opt_takes_arg_HR->{"--no-align"}  = 0;  push(@{$opt_order_AR}, "--no-align");
     $opt_takes_arg_HR->{"--no-search"} = 0;  push(@{$opt_order_AR}, "--no-search");
@@ -1726,7 +1728,7 @@ sub ValidateAndSetupSsuAlignOrPrep {
 #
 #             If the directory already exists and contains subdirectories
 #             with names suggesting they were created by ssu-align, then
-#             delete all files within $outdir only if $opt_HR->{"--ff"} 
+#             delete all files within $outdir only if $opt_HR->{"-f"} 
 #             is '1'. 
 #
 #             If the directory already exists and does not contain 
@@ -1753,9 +1755,7 @@ sub CreateSsuAlignOutputDir {
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, CreateSsuAlignOutputDir() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my($out_dir, $out_root, $opt_HR, $sum_file, $log_file) = @_;
 
-    my ($command, $tmp, $command_worked, $maybe_dir, $has_subdir, $has_ssualign_subdir, $ran_command, $output, $errmsg);
-    $has_subdir = 0;
-    $has_ssualign_subdir = 0;
+    my ($command, $tmp, $command_worked, $ran_command, $output, $errmsg);
     $ran_command = 0;
     my $retval = 0;
     my $status = 0;
@@ -1766,31 +1766,11 @@ sub CreateSsuAlignOutputDir {
 	exit(1);
     }
     if(-d $out_dir) { 
-	if((! $opt_HR->{"-f"}) && (! $opt_HR->{"--ff"})) { 
+	if(! $opt_HR->{"-f"}) { 
 	    printf STDERR ("\nERROR, output directory $out_dir already exists. Delete it or use -f to overwrite it.\n");
 	    exit(1);
 	}
-	elsif(($opt_HR->{"-f"}) && (! $opt_HR->{"--ff"})) { 
-            # directory $out_dir exists, -f enabled  but --ff not enabled, check to see if there's any subdirectories in it:
-	    foreach $maybe_dir (glob("$out_dir/*")) { 
-		if(-d $maybe_dir) { # $maybe_dir is a dir
-		    $has_subdir = 1;
-		    if($maybe_dir !~ m/^$out_dir\/$out_root\.(\d+)/) { # subdirectory not created by ssu-align
-			printf STDERR "Subdirectory $maybe_dir of $out_dir exists; it doesn't appear to have been created by ssu-align.\nEither delete it, or use --ff to remove all subdirectories of $out_dir.\n";
-		    }
-		    else { # subdirectory (probably) created by ssu-align
-			$has_ssualign_subdir = 1;
-		    }
-		}
-	    }
-	    if($has_ssualign_subdir) { 
-		$errmsg = "\nERROR, subdirectories of $out_dir exist that appear to have been created by ssu-align.\nEither delete them, or use --ff to remove them all.\n";
-		PrintStringToFile($sum_file, 0, $errmsg);
-		printf STDERR $errmsg;
-	    }
-	    if($has_subdir) { exit(1); }
-	}
-	# if we get here, $out_dir exists, but either it has no subdirectories, or --ff was enabled, or both
+	# if we get here, $out_dir exists, but either it has no subdirectories, -f was enabled, or both
 	# remove the contents of the directory with rm -rf and remove the directory
 	$command = "rm -rf $out_dir 2>&1";
 	system "$command"; 
@@ -1847,28 +1827,28 @@ sub AppendSsuAlignOptionsUsage {
     my($options_usage_R, $caller_is_prep) = @_;
 
     if($caller_is_prep) { $$options_usage_R .= "\ngeneral options to use for ssu-align jobs:\n"; }
+    if(! $caller_is_prep) { 
+	$$options_usage_R .= "  -f     : force; if dir named <output dir> already exists, empty it first\n";
+    }
     $$options_usage_R .= "  -m <f> : use CM file <f> instead of the default CM file\n";
-    $$options_usage_R .= "  -b <x> : set minimum bit score of a surviving subsequence as <x> (default: 50)\n";
-    $$options_usage_R .= "  -l <n> : set minimum length    of a surviving subsequence as <n> (default: 1)\n";
+    $$options_usage_R .= "  -b <x> : set minimum bit score of a surviving subsequence as <x> [default: 50]\n";
+    $$options_usage_R .= "  -l <n> : set minimum length    of a surviving subsequence as <n> [default: 1]\n";
     $$options_usage_R .= "  -i     : output alignments in interleaved Stockholm format (not 1 line/seq)\n";
     $$options_usage_R .= "  -n <s> : only search for and align to single CM named <s> in CM file\n"; 
     $$options_usage_R .= "           (default CM file includes 'archaea', 'bacteria', 'eukarya')\n";
-    if(! $caller_is_prep) { 
-	$$options_usage_R .= "  -f     : force; if dir named <output dir> already exists, empty it first\n";
-	$$options_usage_R .= "  --ff   : really force; remove dir named <output dir> and all its subdirs\n";
-    }
     
     $$options_usage_R .= "\nmiscellaneous output options"; 
     if($caller_is_prep) { $$options_usage_R .= " for ssu-align jobs"; }
     $$options_usage_R .= ":\n"; 
-    $$options_usage_R .= "  --dna    : output alignments as DNA, default is RNA (even if input is DNA)\n";
-    $$options_usage_R .= "  --keep   : keep intermediate files which are normally removed\n";
-    $$options_usage_R .= "  --rfonly : discard inserts, only keep consensus (non-gap RF) columns in alignments\n";
-    $$options_usage_R .= "             (alignments will be fixed width but won't include all target residues)\n";
+    $$options_usage_R .= "  --dna      : output alignments as DNA, default is RNA (even if input is DNA)\n";
+    $$options_usage_R .= "  --keep-int : keep intermediate files which are normally removed\n";
+    $$options_usage_R .= "  --rfonly   : discard inserts, only keep consensus (nongap RF) columns in alignments\n";
+    $$options_usage_R .= "               (alignments will be fixed width but won't include all target nucleotides)\n";
     
     if(! $caller_is_prep) { 
 	$$options_usage_R .= "\noptions for merging parallelized ssu-align jobs:\n";
-	$$options_usage_R .= "  --merge <n> : once finished, merge <n> parallel jobs created by 'ssu-prep' script\n";
+	$$options_usage_R .= "  --merge <n>      : once finished, merge <n> parallel jobs created by ssu-prep\n";
+	$$options_usage_R .= "  --keep-merge <n> : w/--merge, do not remove smaller files as they're merged\n";
     }
     
     $$options_usage_R .= "\noptions for skipping the 1st (search) stage or 2nd (alignment) stage";
@@ -1891,7 +1871,7 @@ sub AppendSsuAlignOptionsUsage {
     $$options_usage_R .= "  --aln-one <s> : only align best-matching sequences to the CM named <s> in CM file\n";
     #$$options_usage_R .= "  --filter <f>  : filter aln based on seq identity, allow no 2 seqs > <f> identical\n";
     $$options_usage_R .= "  --no-prob     : do not append posterior probabilities to alignments\n";
-    $$options_usage_R .= "  --mxsize <f>  : increase mx size for cmalign to <f> Mb (default: 4096)\n";
+    $$options_usage_R .= "  --mxsize <f>  : increase mx size for cmalign to <f> Mb [default: 4096]\n";
 
     return;
 }

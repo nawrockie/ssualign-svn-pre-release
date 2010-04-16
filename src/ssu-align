@@ -46,7 +46,7 @@ my $tfilectr = 0;
 my $time_hires_installed = UseModuleIfItExists("Time::HiRes qw(gettimeofday)");
 my $total_seconds = -1 * SecondsSinceEpoch($time_hires_installed);
 
-my $script_desc    = "define and align SSU rRNA sequences";
+my $script_desc    = "align SSU rRNA sequences";
 my $date           = scalar localtime();
 my $usage          = "Usage: ssu-align [-options] <sequence file> <project name>\n";
 my $options_usage  = "where general options are:\n";
@@ -65,7 +65,8 @@ my @opt_order_A  = ();       # order of options for printing in banner
 my $enabled_options = "";    # string of all enabled options and their arguments (prob not in same order as they were on cmd line)
 my $opt;
 
-$opt_takes_arg_H{"--merge"} = 1;  push(@opt_order_A, "--merge");
+$opt_takes_arg_H{"--merge"}      = 1;  push(@opt_order_A, "--merge");
+$opt_takes_arg_H{"--keep-merge"} = 0;  push(@opt_order_A, "--keep-merge");
 # Set-up the hashes and arrays that keep track of options that are in 
 # common b/t ssu-align and ssu-prep. 
 InitializeSsuAlignOptions(\%opt_takes_arg_H, \@opt_order_A);
@@ -78,28 +79,28 @@ foreach $opt (keys %opt_takes_arg_H) {
 
 Getopt::Long::Configure ("bundling");
 my $opt_return = GetOptions
-    ('h'         => \$opt_H{"-h"}, 
-     'm=s'       => \$opt_H{"-m"},
-     'b=f'       => \$opt_H{"-b"},
-     'l=n'       => \$opt_H{"-l"},
-     'i'         => \$opt_H{"-i"},
-     'f'         => \$opt_H{"-f"},
-     'ff'        => \$opt_H{"--ff"},
-     'dna'       => \$opt_H{"--dna"},
-     'rfonly'    => \$opt_H{"--rfonly"},
-     'keep'      => \$opt_H{"--keep"},
-     'n=s'       => \$opt_H{"-n"},
-     'no-align'  => \$opt_H{"--no-align"},
-     'no-search' => \$opt_H{"--no-search"},
-     'no-trunc'  => \$opt_H{"--no-trunc"},
-     'toponly'   => \$opt_H{"--toponly"},
-     'forward'   => \$opt_H{"--forward"},
-     'global'    => \$opt_H{"--global"},
-     'aln-one=s' => \$opt_H{"--aln-one"},
-     'filter=f'  => \$opt_H{"--filter"},
-     'no-prob'   => \$opt_H{"--no-prob"},
-     'mxsize'    => \$opt_H{"--mxsize"},
-     'merge=s'   => \$opt_H{"--merge"});
+    ('h'            => \$opt_H{"-h"}, 
+     'f'            => \$opt_H{"-f"},
+     'm=s'          => \$opt_H{"-m"},
+     'b=f'          => \$opt_H{"-b"},
+     'l=n'          => \$opt_H{"-l"},
+     'i'            => \$opt_H{"-i"},
+     'dna'          => \$opt_H{"--dna"},
+     'rfonly'       => \$opt_H{"--rfonly"},
+     'keep-int'     => \$opt_H{"--keep-int"},
+     'n=s'          => \$opt_H{"-n"},
+     'no-align'     => \$opt_H{"--no-align"},
+     'no-search'    => \$opt_H{"--no-search"},
+     'no-trunc'     => \$opt_H{"--no-trunc"},
+     'toponly'      => \$opt_H{"--toponly"},
+     'forward'      => \$opt_H{"--forward"},
+     'global'       => \$opt_H{"--global"},
+     'aln-one=s'    => \$opt_H{"--aln-one"},
+     'filter=f'     => \$opt_H{"--filter"},
+     'no-prob'      => \$opt_H{"--no-prob"},
+     'mxsize'       => \$opt_H{"--mxsize"},
+     'merge=s'      => \$opt_H{"--merge"},
+     'keep-merge'   => \$opt_H{"--keep-merge"});
 
 if($opt_return != 1) { print STDERR "\nERROR, GetOptions() did not return 1, but $opt_return\n"; exit(1); }
 
@@ -117,6 +118,11 @@ if ($opt_H{"-h"}) {
 # function (instead of repeating this code in both ssu-prep and ssu-align).
 # CheckSsuAlignOptions() will die if any incompatible options/ranges exist.
 CheckSsuAlignOptions(\%opt_H);
+
+# one final check, --keep-merge requires --merge
+if(($opt_H{"--keep-merge"}) && ($opt_H{"--merge"} eq "")) { 
+    printf STDERR ("\nERROR, --keep-merge only makes sense in combination with --merge.\n"); exit(1);
+}    
 
 ###################################################
 # Process command-line arguments and print banner #
@@ -252,11 +258,11 @@ compile_search_and_align_statistics(\%opt_H, \@indi_cm_name_A, \@target_order_A,
 				    \$target_nseq2, \$target_nres2, \$nseq_all_cms, \$nres_total_all_cms, \$nres_hit_all_cms,
 				    \%nseq_cm_H, \%nres_total_cm_H, \%nres_hit_cm_H, $sum_file);
 if($target_nseq2 != $target_nseq) { PrintErrorAndExit(sprintf("ERROR, seqstat call and statistics compilation function disagree on number of target sequences (%d != %d).", $target_nseq, $target_nseq2), $sum_file, $log_file, 1); }
-if($target_nres2 != $target_nres) { PrintErrorAndExit(sprintf("ERROR, seqstat call and statistics compilation function disagree on number of target residues (%d != %d).", $target_nres, $target_nres2), $sum_file, $log_file, 1); }
+if($target_nres2 != $target_nres) { PrintErrorAndExit(sprintf("ERROR, seqstat call and statistics compilation function disagree on number of target nucleotides (%d != %d).", $target_nres, $target_nres2), $sum_file, $log_file, 1); }
 
 #remove esl-sfetch index file we may have created for the target file
 my $ssi_file = $target_file . ".ssi";
-if((-e $ssi_file) && (! $opt_H{"--keep"})) { UnlinkFile($ssi_file, $log_file); }
+if((-e $ssi_file) && (! $opt_H{"--keep-int"})) { UnlinkFile($ssi_file, $log_file); }
 
 my %cm_used_for_align_H = ();
 foreach $cm_name (@indi_cm_name_A) { 
@@ -374,7 +380,7 @@ sub search_sequences_with_each_model {
     RunCommand("$command", $tfilectr++, 1, 1, $sum_file, $log_file, \$command_worked, "");
     PrintStringToFile($sum_file, 1, sprintf("  %-*s  locations/scores of hits defined by HMM(s)\n", $max_file_name_width, $tab_file2print));
 
-    if(! $opt_HR->{"--keep"}) { UnlinkFile($cmsearch_outfile, $log_file); }
+    if(! $opt_HR->{"--keep-int"}) { UnlinkFile($cmsearch_outfile, $log_file); }
 
     $$tab_file_R            = $tab_file;
     $$max_file_name_width_R = $max_file_name_width;
@@ -611,7 +617,7 @@ sub classify_and_extract_subseqs {
 		if($nwinners > 1) { PrintStringToFile($sum_file, 1, sprintf("  %-*s  %7d sequences to align with $cm_name CM\n", $max_file_name_width, $hits_file2print, scalar(@{$by_cm_name_HA{$cm_name}}))); }
 		else              { PrintStringToFile($sum_file, 1, sprintf("  %-*s  %7d sequence  to align with $cm_name CM\n", $max_file_name_width, $hits_file2print, scalar(@{$by_cm_name_HA{$cm_name}}))); }
 	    }
-	    if(! $opt_HR->{"--keep"}) { UnlinkFile($sfetch_in_file, $log_file); }
+	    if(! $opt_HR->{"--keep-int"}) { UnlinkFile($sfetch_in_file, $log_file); }
 	    $new_target_file_per_cm_name_HR->{$cm_name} = $hits_file;
 	    if($cur_max_seq_name_width > $max_seq_name_width) { $max_seq_name_width = $cur_max_seq_name_width; };
 	}
@@ -1175,7 +1181,9 @@ sub wait_then_merge {
     else { 
 	# All runs succeeded!
 	# Run ssu-merge, don't use RunCommand() script, because ssu-merge handles its own errors/output etc.
-	my $merge_command = $ssumerge . " -f " . $merge_out_dir;
+	my $keep_opt = " ";
+	if($opt_HR->{"--keep-merge"}) { $keep_opt = " --keep "; }
+	my $merge_command = $ssumerge . $keep_opt . $merge_out_dir;
 	PrintStringToFile($sum_file, 1, ("#\n# All " . $opt_HR->{"--merge"} . " jobs successfully completed.\n# About to merge their output:\n"));
 	PrintStringToFile($log_file, 0, ("#\n# All " . $opt_HR->{"--merge"} . " jobs successfully completed.\n# About to merge their output:\n"));
 	PrintStringToFile($sum_file, 1, ("#\n# Executing:  " . $merge_command . "\n#\n"));
@@ -1183,11 +1191,8 @@ sub wait_then_merge {
 	PrintStringToFile($sum_file, 1, ("################################################################################\n#\n"));
 	PrintStringToFile($log_file, 0, ("################################################################################\n#\n"));
 	ActuallyRunCommand($merge_command, \$retval);
-
-	# merge is complete, one final thing: remove $out_dir IFF it is empty (which is what UnlinkDir does)
-	# ssu-merge will have tried this already and failed, presumably b/c *this* ssu-align call has some 
-	# type of hold on $out_dir (?)
-	UnlinkDir($out_dir, ""); # "" tells it not to print anything about this to $log_file
+	# we ignore $retval; if it is non-zero (ssu-merge failed) ssu-merge should have printed informative error
+	# messages to stdout, *.ssu-merge.sum and *.ssu-merge.log, that the user can see.
     }
     return;
 }
@@ -1242,7 +1247,7 @@ sub wait_for_all_parallel_jobs_to_finish {
 	}
 	$sum_A[$i] = $dir . "/" . RemoveDirPath($dir) . ".ssu-align.sum";
     }
-    my $time2sleep  = 3; # seconds
+    my $time2sleep  = $globals_H{"DF_MERGE_INIT_WAIT_SECS"}; # default is 3 seconds
     my $time_waited = 0;
 
     # now, step through all summary files looking for the special strings indicating they're finished, 
@@ -1251,7 +1256,7 @@ sub wait_for_all_parallel_jobs_to_finish {
     my $failure_string = "SSU-ALIGN-FAILURE";
     my $strlen = length($out_dir_root) + 1;
     while(($nfinished < $njobs) && ($time_waited < $max_secs_to_wait)) { 
-	sleep($time2sleep);
+	if($time_waited > 0) { sleep($time2sleep); }
 	$time_waited += $time2sleep;
 	for($i = 1; $i <= $njobs; $i++) { 
 	    if(! $finished_AR->[$i]) { 

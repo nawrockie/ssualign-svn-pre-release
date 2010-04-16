@@ -50,16 +50,18 @@ my $script_desc    = "prepare SSU rRNA sequences for parallel ssu-align jobs";
 my $date           = scalar localtime();
 my $usage          = "Usage: ssu-prep [-options] <sequence file> <project name> <number of ssu-align jobs>\n";
 my $options_usage  = "where general options are:\n";
-#                           1         2         3         4         5         6         7         8
-#                  12345678901234567890123456789012345678901234567890123456789012345678901234567890
-$options_usage .= "  -h         : show brief help on version and usage\n";
-$options_usage .= "  -q         : third command line arg is number of seqs per job, not number of jobs\n";
-$options_usage .= "  -e         : split seqs so each job has an equal number of seqs, not residues\n";
-$options_usage .= "  -f         : force; if dir named <output dir> already exists, empty it first\n";
-$options_usage .= "  --ff       : really force; remove dir named <output dir> and all its subdirs\n";
-$options_usage .= "  --no-merge : do not have final ssu-align job automatically merge all jobs\n";
+#                           1         2         3         4         5         6         7         8         9        10
+#                  1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
+$options_usage .= "  -h           : show brief help on version and usage\n";
+$options_usage .= "  -f           : force; if dir named <output dir> already exists, empty it first\n";
+$options_usage .= "  -q           : third command line arg is number of seqs per job, not number of jobs\n";
+$options_usage .= "  -x           : run all <n> jobs in parallel on a single <n>-core machine\n";
+$options_usage .= "  -e           : split seqs so each job has an equal number of seqs, not nucleotides\n";
+$options_usage .= "  --no-bash    : write generic shell script instead of a bash-specific one\n";
+$options_usage .= "  --no-merge   : do not have final ssu-align job automatically merge all jobs\n";
+$options_usage .= "  --keep-merge : have final ssu-align job not remove small files as they are merged\n";
 
-$options_usage .= "\noptions for adding prefixes and/or suffices to the ssu-align commands:\n";
+$options_usage .= "\noptions for adding prefixes and/or suffixes to the ssu-align commands:\n";
 $options_usage .= "  -p <s>     : <s> is prefix for ssu-align commands\n";
 $options_usage .= "  -s <s>     : <s> is suffix for ssu-align commands\n";
 $options_usage .= "  --fp <f>   : file <f> contains 1 line the prefix for the ssu-align jobs\n";
@@ -80,13 +82,16 @@ my %opt_passed_H = ();       # key: option; value: "1" if option will get passed
 my $enabled_options = "";    # string of all enabled options and their arguments (prob not in same order as they were on cmd line)
 my $opt;
 
-$opt_takes_arg_H{"-q"}         = 0;  push(@opt_order_A, "-q");
-$opt_takes_arg_H{"-e"}         = 0;  push(@opt_order_A, "-e");
-$opt_takes_arg_H{"--no-merge"} = 0;  push(@opt_order_A, "--no-merge");
-$opt_takes_arg_H{"-p"}         = 1;  push(@opt_order_A, "-p");
-$opt_takes_arg_H{"-s"}         = 1;  push(@opt_order_A, "-s");
-$opt_takes_arg_H{"--fp"}       = 1;  push(@opt_order_A, "--fp");
-$opt_takes_arg_H{"--fs"}       = 1;  push(@opt_order_A, "--fs");
+$opt_takes_arg_H{"-q"}           = 0;  push(@opt_order_A, "-q");
+$opt_takes_arg_H{"-x"}           = 0;  push(@opt_order_A, "-x");
+$opt_takes_arg_H{"-e"}           = 0;  push(@opt_order_A, "-e");
+$opt_takes_arg_H{"--no-bash"}    = 0;  push(@opt_order_A, "--no-bash");
+$opt_takes_arg_H{"--no-merge"}   = 0;  push(@opt_order_A, "--no-merge");
+$opt_takes_arg_H{"--keep-merge"} = 0;  push(@opt_order_A, "--keep-merge");
+$opt_takes_arg_H{"-p"}           = 1;  push(@opt_order_A, "-p");
+$opt_takes_arg_H{"-s"}           = 1;  push(@opt_order_A, "-s");
+$opt_takes_arg_H{"--fp"}         = 1;  push(@opt_order_A, "--fp");
+$opt_takes_arg_H{"--fs"}         = 1;  push(@opt_order_A, "--fs");
 
 #Update opt_takes_arg_H, opt_order_A and opt_passed_H for 
 InitializeSsuAlignOptions(\%opt_takes_arg_H, \@opt_order_A);
@@ -95,16 +100,18 @@ InitializeSsuAlignOptions(\%opt_takes_arg_H, \@opt_order_A);
 #Most do, so we initialize all of them to '1' (TRUE)
 foreach $opt (@opt_order_A) { $opt_passed_H{$opt} = 1; }
 #Now manually set some to '0' (FALSE):
-$opt_passed_H{"-h"}         = 0;
-$opt_passed_H{"-q"}         = 0;
-$opt_passed_H{"-e"}         = 0;
-$opt_passed_H{"-f"}         = 0;
-$opt_passed_H{"--ff"}       = 0;
-$opt_passed_H{"-p"}         = 0;
-$opt_passed_H{"-s"}         = 0;
-$opt_passed_H{"--fp"}       = 0;
-$opt_passed_H{"--fs"}       = 0;
-$opt_passed_H{"--no-merge"} = 0;
+$opt_passed_H{"-h"}           = 0;
+$opt_passed_H{"-f"}           = 0;
+$opt_passed_H{"-q"}           = 0;
+$opt_passed_H{"-x"}           = 0;
+$opt_passed_H{"-e"}           = 0;
+$opt_passed_H{"-p"}           = 0;
+$opt_passed_H{"-s"}           = 0;
+$opt_passed_H{"--fp"}         = 0;
+$opt_passed_H{"--fs"}         = 0;
+$opt_passed_H{"--no-bash"}    = 0;
+$opt_passed_H{"--no-merge"}   = 0;
+$opt_passed_H{"--keep-merge"} = 0;
 
 #set default options
 foreach $opt (keys %opt_takes_arg_H) { 
@@ -114,35 +121,36 @@ foreach $opt (keys %opt_takes_arg_H) {
 
 Getopt::Long::Configure ("bundling");
 my $opt_return = GetOptions
-    ('h'         => \$opt_H{"-h"}, 
-     'q'         => \$opt_H{"-q"},
-     'e'         => \$opt_H{"-e"},
-     'no-merge'  => \$opt_H{"--no-merge"},
-     'p=s'       => \$opt_H{"-p"},
-     's=s'       => \$opt_H{"-s"},
-     'fp=s'      => \$opt_H{"--fp"},
-     'fs=s'      => \$opt_H{"--fs"},
-     'm=s'       => \$opt_H{"-m"},
-     'b=f'       => \$opt_H{"-b"},
-     'l=n'       => \$opt_H{"-l"},
-     'i'         => \$opt_H{"-i"},
-     'x=s'       => \$opt_H{"-x"},
-     'f'         => \$opt_H{"-f"},
-     'ff'        => \$opt_H{"--ff"},
-     'dna'       => \$opt_H{"--dna"},
-     'rfonly'    => \$opt_H{"--rfonly"},
-     'keep'      => \$opt_H{"--keep"},
-     'x=s'       => \$opt_H{"-x"},
-     'no-align'  => \$opt_H{"--no-align"},
-     'no-search' => \$opt_H{"--no-search"},
-     'no-trunc'  => \$opt_H{"--no-trunc"},
-     'toponly'   => \$opt_H{"--toponly"},
-     'forward'   => \$opt_H{"--forward"},
-     'global'    => \$opt_H{"--global"},
-     'aln-one=s' => \$opt_H{"--aln-one"},
-     'filter=f'  => \$opt_H{"--filter"},
-     'no-prob'   => \$opt_H{"--no-prob"},
-     'mxsize'    => \$opt_H{"--mxsize"});
+    ('h'          => \$opt_H{"-h"}, 
+     'q'          => \$opt_H{"-q"},
+     'e'          => \$opt_H{"-e"},
+     'x'          => \$opt_H{"-x"},
+     'no-bash'    => \$opt_H{"--no-bash"},
+     'no-merge'   => \$opt_H{"--no-merge"},
+     'keep-merge' => \$opt_H{"--keep-merge"},
+     'p=s'        => \$opt_H{"-p"},
+     's=s'        => \$opt_H{"-s"},
+     'fp=s'       => \$opt_H{"--fp"},
+     'fs=s'       => \$opt_H{"--fs"},
+     'm=s'        => \$opt_H{"-m"},
+     'b=f'        => \$opt_H{"-b"},
+     'l=n'        => \$opt_H{"-l"},
+     'i'          => \$opt_H{"-i"},
+     'f'          => \$opt_H{"-f"},
+     'dna'        => \$opt_H{"--dna"},
+     'rfonly'     => \$opt_H{"--rfonly"},
+     'keep'       => \$opt_H{"--keep"},
+     'n=s'        => \$opt_H{"-n"},
+     'no-align'   => \$opt_H{"--no-align"},
+     'no-search'  => \$opt_H{"--no-search"},
+     'no-trunc'   => \$opt_H{"--no-trunc"},
+     'toponly'    => \$opt_H{"--toponly"},
+     'forward'    => \$opt_H{"--forward"},
+     'global'     => \$opt_H{"--global"},
+     'aln-one=s'  => \$opt_H{"--aln-one"},
+     'filter=f'   => \$opt_H{"--filter"},
+     'no-prob'    => \$opt_H{"--no-prob"},
+     'mxsize'     => \$opt_H{"--mxsize"});
 
 if($opt_return != 1) { print STDERR "\nERROR, GetOptions() did not return 1, but $opt_return\n"; exit(1); }
 
@@ -171,7 +179,12 @@ if(($opt_H{"-p"} ne "") && ($opt_H{"--fp"} ne "")) {
 if(($opt_H{"-s"} ne "") && ($opt_H{"--fs"} ne "")) { 
     printf STDERR ("\nERROR, -s and --fs are incompatible, choose one or the other.\n"); exit(1);
 }    
-
+if(($opt_H{"-x"}) && (($opt_H{"-p"} ne "") || ($opt_H{"--fp"} ne "") ||($opt_H{"-s"} ne "") || ($opt_H{"--fs"} ne ""))) {
+    printf STDERR ("\nERROR, -x is incompatible with -s, -p, --fp and --fs.\n"); exit(1);
+}    
+if(($opt_H{"--no-merge"}) && ($opt_H{"--keep-merge"})) { 
+    printf STDERR ("\nERROR, --no-merge is incompatible with --keep-merge.\n"); exit(1);
+}    
 
 ###################################################
 # Process command-line arguments and print banner #
@@ -197,9 +210,9 @@ my $out_dir_and_root = $out_dir . "/" . $out_root;
 my ($sum_file, $sum_file2print);
 my ($log_file, $log_file2print);
 $sum_file       = $out_dir_and_root . ".ssu-prep.sum";
-$sum_file2print = $out_root         . ".ssu-prep.sum";
+$sum_file2print = $out_dir_and_root . ".ssu-prep.sum";
 $log_file       = $out_dir_and_root . ".ssu-prep.log";
-$log_file2print = $out_root         . ".ssu-prep.log";
+$log_file2print = $out_dir_and_root . ".ssu-prep.log";
 
 CreateSsuAlignOutputDir($out_dir, $out_root, \%opt_H, $sum_file, $log_file); 
 PrintBanner($0, $script_desc, $date, \%opt_H, \%opt_takes_arg_H, \@opt_order_A, \@ARGV, 1, \$enabled_options, $sum_file);
@@ -256,7 +269,9 @@ partition_seqfile_and_write_shell_script($seqfile, $out_dir, $out_root, \%opt_H,
 # Conclude #
 ############
 $total_seconds += SecondsSinceEpoch($time_hires_installed);
-PrintConclusion($sum_file, $log_file, $sum_file2print, $log_file2print, $total_seconds, $time_hires_installed, $out_dir, \%globals_H);
+PrintConclusion($sum_file, $log_file, $sum_file2print, $log_file2print, $total_seconds, $time_hires_installed, 
+		-1,  # don't print any info on where output files were created (b/c fasta files and shell script created in different dirs)
+		\%globals_H);
 
 exit(0);
 
@@ -320,7 +335,7 @@ sub determine_prefix_and_suffix {
     }
 
     # Note: we've enforced during option processing that at most one of -p and --fp, and at most one of -s and --fs  
-    # were enabled.
+    # were enabled. We've also enforced that -x was only used if none of -p, --fp, -s, and --fs were used.
 
     $$prefix_R = $prefix;
     $$suffix_R = $suffix;
@@ -517,7 +532,7 @@ sub partition_seqfile_and_write_shell_script {
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, partition_seqfile_and_write_shell_script() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my($seqfile, $out_dir, $out_root, $opt_HR, $opt_takes_arg_HR, $opt_passed_HR, $opt_order_AR, $ssualign, $cm_file, $njobs, $nseq_total, $nseq_per_job_AR, $nres_per_job_AR, $shell_script_R, $sum_file, $log_file) = @_;
 
-    my ($i, $n, $nseq_this_file, $nseq_total_regurg, $line, $target_subfile, $target_subfile_root);
+    my ($i, $n, $nseq_this_file, $nseq_total_regurg, $line, $target_subfile, $target_subfile_root, $str);
 
     my $shell_script = $out_root . ".ssu-align.sh";
     my $ndig_jobs = NumberOfDigits($njobs);
@@ -527,8 +542,8 @@ sub partition_seqfile_and_write_shell_script {
     if(scalar(@{$nres_per_job_AR}) > 0) { $do_print_res = 1; } 
     if($do_print_res) { $ndig_res = NumberOfDigits(MaxArray($nres_per_job_AR)); }
     my $max_file_name_width = length($shell_script);
-    if($max_file_name_width < (length(RemoveDirPath($seqfile)) + $ndig_jobs)) { 
-	$max_file_name_width = length(RemoveDirPath($seqfile)) + $ndig_jobs;
+    if($max_file_name_width < (length($seqfile) + $ndig_jobs)) { 
+	$max_file_name_width = length($seqfile) + $ndig_jobs;
     }
     if($max_file_name_width < (length("output file name"))) { 
 	$max_file_name_width = length("output file name"); 
@@ -547,10 +562,10 @@ sub partition_seqfile_and_write_shell_script {
     }
     my $dashes1 = ""; for($i = 0; $i < $max_file_name_width; $i++) { $dashes1 .= "-"; } 
     my $dashes2 = ""; for($i = 0; $i < $description_width; $i++)   { $dashes2 .= "-"; } 
-    PrintStringToFile($sum_file, 1, sprintf("#\n# Preparing %d ssu-align jobs", $njobs));
+    PrintStringToFile($sum_file, 1, sprintf("#\n# Preparing %d ssu-align jobs.\n", $njobs));
     # write informative message regarding how seqs were split:
-    if($opt_HR->{"-q"} || $opt_HR->{"-e"})  { PrintStringToFile($sum_file, 1, sprintf(" each with the same number of sequences to align.\n")); }
-    else                                    { PrintStringToFile($sum_file, 1, sprintf(" each with the same number of nucleotides to align.\n")); }
+    if($opt_HR->{"-q"} || $opt_HR->{"-e"})  { PrintStringToFile($sum_file, 1, sprintf("# Partitioning seqs with goal of equalizing number of sequences per job.\n")); }
+    else                                    { PrintStringToFile($sum_file, 1, sprintf("# Partitioning seqs with goal of equalizing total number of nucleotides per job.\n")); }
     PrintStringToFile($sum_file, 1, sprintf("#\n"));
     PrintStringToFile($sum_file, 1, sprintf("# %-*s  %-*s\n", $max_file_name_width, "output file name", $description_width, "description"));
     PrintStringToFile($sum_file, 1, sprintf("# %-*s  %-*s\n", $max_file_name_width, $dashes1, $description_width, $dashes2));
@@ -575,7 +590,7 @@ sub partition_seqfile_and_write_shell_script {
 		    # we've printed enough sequences to the current file, close it
 		    close(SUB); 
 		    PrintStringToFile($sum_file, 1, sprintf("  %-*s  partition %*d FASTA sequence file (%*d %s",
-							    $max_file_name_width, $target_subfile_root, $ndig_jobs, $n, $ndig_seqs, $nseq_this_file, (($nseq_this_file == 1) ? "seq" : "seqs")));
+							    $max_file_name_width, $target_subfile, $ndig_jobs, $n, $ndig_seqs, $nseq_this_file, (($nseq_this_file == 1) ? "seq " : "seqs")));
 		    if($do_print_res) { PrintStringToFile($sum_file, 1, sprintf("; %*d nt", $ndig_res, $nres_per_job_AR->[$n-1])); }
 		    PrintStringToFile($sum_file, 1, sprintf(")\n"));
 		    $nseq_this_file = 0;
@@ -598,7 +613,7 @@ sub partition_seqfile_and_write_shell_script {
 	PrintErrorAndExit("ERROR, splitting up fasta file, final file got 0 sequences.\n", $sum_file, $log_file, 1);
     }
     PrintStringToFile($sum_file, 1, sprintf("  %-*s  partition %*d FASTA sequence file (%*d %s",
-					    $max_file_name_width, $target_subfile_root, $ndig_jobs, $n, $ndig_seqs, $nseq_this_file, (($nseq_this_file == 1) ? "seq" : "seqs")));
+					    $max_file_name_width, $target_subfile, $ndig_jobs, $n, $ndig_seqs, $nseq_this_file, (($nseq_this_file == 1) ? "seq " : "seqs")));
     if($do_print_res) { PrintStringToFile($sum_file, 1, sprintf("; %*d nt", $ndig_res, $nres_per_job_AR->[$n-1])); }
     PrintStringToFile($sum_file, 1, sprintf(")\n"));
     if($nseq_total_regurg != $nseq_total) { 
@@ -612,9 +627,10 @@ sub partition_seqfile_and_write_shell_script {
     # Write the shell script that will execute the ssu-align jobs #
     ###############################################################
     open(SH, ">" . $shell_script) || FileOpenFailure($shell_script, $sum_file, $log_file, $!, "writing");
+    PrintStringToFile($sum_file, 1, sprintf("  %-*s  shell script that will execute %d ssu-align jobs\n", $max_file_name_width, $shell_script, $njobs));
     my $ssualign_enabled_options = "";
     my $ssualign_command = "";
-    my $opt;
+    my ($opt, $keep_merge_opt);
     foreach $opt (@{$opt_order_AR}) { 
 	if($opt_passed_HR->{$opt}) { 
 	    if($opt eq "-m")                 { if($opt_HR->{"-m"} ne "") { $ssualign_enabled_options .= $opt . " " . $cm_file . " ";} } #special case, cm file must include full path to the file
@@ -622,30 +638,36 @@ sub partition_seqfile_and_write_shell_script {
 	    else                             { if($opt_HR->{$opt})       { $ssualign_enabled_options .= $opt . " "; } }
 	}
     }
-    if($ssualign_enabled_options eq "") { $ssualign_enabled_options = " "; }
-
-    $target_subfile_root = RemoveDirPath($seqfile) . ".\$i";
-    $command   = ($prefix eq "")           ? "" : $prefix . " ";
-    $command  .= "$ssualign -f " . $ssualign_enabled_options . "$out_dir/$target_subfile_root $out_dir/$out_root.\$i";
-    if($suffix ne "") { $command .= " " . $suffix; }
 
 #	                  1         2         3         4         5         6         7         8
 #	        012345678901234567890123456789012345678901234567890123456789012345678901234567890
-    printf SH ("# Bash shell script created by ssu-prep for running $njobs ssu-align jobs in parallel.\n");
+    if(! $opt_HR->{"--no-bash"}) { 
+	printf SH ("# Bash shell script created by ssu-prep for running $njobs ssu-align jobs.\n");
+    }
+    else { 
+	printf SH ("# Shell script created by ssu-prep for running $njobs ssu-align jobs\n");
+    }
+    printf SH ("# Each job will process a separate partition of the sequence file:\n");
+    printf SH ("# \'$seqfile\'.\n");
     printf SH ("#\n");
-    printf SH ("# When executed, this script will run/submit %d ssu-align jobs, each of which\n", $njobs);
-    printf SH ("# will process a separate partition of the sequence file $seqfile.\n");
-    printf SH ("#\n");
+    if($opt_HR->{"-x"}) { 
+	printf SH ("# This script will execute all %d jobs at once, in parallel. It is only\n", $njobs);
+	printf SH ("# meant to be executed on a system with %d cpus/cores. The first %d jobs\n", $njobs, ($njobs-1));
+	printf SH ("# will run in the background and output to /dev/null. The final job will\n");
+	printf SH ("# output to STDOUT, allowing you to follow its progress.\n#\n");
+    }
     if(! $opt_HR->{"--no-merge"}) { 
 #	                      1         2         3         4         5         6         7         8
 #	            012345678901234567890123456789012345678901234567890123456789012345678901234567890
-	printf SH ("# The final job is special, when it finishes running it will wait for all\n");
+	printf SH ("# The final job is special, after computing its alignments it will wait for all\n");
 	printf SH ("# other jobs to finish and then merge the output of all jobs together.\n");
-	printf SH ("# The final merged output files will be in the directory: \'\.\/$out_dir\'\n");
+	printf SH ("# The merged output files will be in the directory: \'\/$out_dir\/\'\n");
 	printf SH ("#\n");
-	printf SH ("# The for loop will execute the first %d of %d jobs.\n", $njobs-1, $njobs);
-	printf SH ("# The final ssu-align job does the merging and so is executed separately.\n", $njobs-1, $njobs);
-	printf SH ("#\n");
+	if(! $opt_HR->{"--no-bash"}) { 
+	    printf SH ("# The for loop below will execute/submit the first %d of %d jobs.\n", $njobs-1, $njobs);
+	    printf SH ("# The final ssu-align job is executed separately because it does the merging.\n");
+	    printf SH ("#\n");
+	}
     }
     else { 
 	printf SH ("# The --no-merge option was selected and so the user is responsible for manually\n");
@@ -653,41 +675,116 @@ sub partition_seqfile_and_write_shell_script {
 	printf SH ("# working directory, execute:\n");
 	printf SH ("#\t'ssu-merge $out_dir\n");
 	printf SH ("#\n");
-	printf SH ("# The for loop will execute all %d jobs:\n", $njobs-1, $njobs);
-	printf SH ("#\n");
+	if(! $opt_HR->{"--no-bash"}) { 
+	    printf SH ("# The for loop will execute all %d jobs:\n", $njobs-1, $njobs);
+	    printf SH ("#\n");
+	}
     }
-
-    printf SH ("for i in \{ 1..%d \}\n", ($opt_HR->{"--no-merge"}) ? $njobs : ($njobs-1));
-    printf SH ("do\n");
-    printf SH ("\techo \"\# Executing: %s\"\n", $command);
-    printf SH ("\t%s\n", $command);
-    printf SH ("done\n");
+    # If none of -x, -s, --fs, -p, and --fp were set, we don't have a prefix or suffix and the
+    # shell script, if left unmodified, will just execute all jobs in a serial fashion on the 
+    # machine on which it is executed. A non-expert user will probably not know this, so we 
+    # tell them with a comment in the .sh file here:
+    if((! $opt_HR->{"-x"}) && 
+       ($opt_HR->{"-s"} eq "") && ($opt_HR->{"--fs"} eq "") && 
+       ($opt_HR->{"-p"} eq "")  && ($opt_HR->{"--fp"} eq "")) { 
+	$str = "#\n###############################################################################\n";
+	printf SH ($str);
+	PrintStringToFile($sum_file, 1, $str);
+	$str = "# WARNING: None of [-s, --fs, -p, --fp, -x] were set on the command line.\n";
+	printf SH ($str);
+	PrintStringToFile($sum_file, 1, $str);
+	$str = "# This means this shell script will simply run the $njobs ssu-align jobs in\n";
+	printf SH ($str);
+	$str = "# This means that \'$shell_script\' will simply run the $njobs ssu-align jobs in\n";
+	PrintStringToFile($sum_file, 1, $str);
+	$str = "# succession, one after another, not in parallel. If you want to run the jobs in\n";
+	printf SH ($str);
+	PrintStringToFile($sum_file, 1, $str);
+	$str = "# parallel you'll either have to manually edit this file or rerun ssu-prep using\n";
+	printf SH ($str);
+	$str = "# parallel you'll either have to manually edit that file or rerun ssu-prep using\n";
+	PrintStringToFile($sum_file, 1, $str);
+	$str = "# the options listed above to specify prefix and/or suffix strings for the\n";
+	printf SH ($str);
+	PrintStringToFile($sum_file, 1, $str);
+	$str = "# ssu-align commands, so they are, for example, submitted to run on a cluster\n";
+	printf SH ($str);
+	PrintStringToFile($sum_file, 1, $str);
+	$str = "# using a queing system manager like SGE. Or you can run <n> jobs in parallel on\n";
+	printf SH ($str);
+	PrintStringToFile($sum_file, 1, $str);
+	$str = "# a single <n>-core machine by rerunning ssu-prep using \'-x\'.\n";
+	printf SH ($str);
+	PrintStringToFile($sum_file, 1, $str);
+	$str = "# Do \'ssu-prep -h\' or see the User Guide for more information.\n";
+	printf SH ($str);
+	PrintStringToFile($sum_file, 1, $str);
+	$str = "################################################################################\n#\n";
+	printf SH ($str);
+	PrintStringToFile($sum_file, 1, $str);
+    }	
+    if($opt_HR->{"--no-bash"}) { 
+	for($i = 1; $i <= $njobs-1; $i++) { 
+	    $target_subfile_root = RemoveDirPath($seqfile) . ".$i";
+	    $command   = ($prefix eq "")           ? "" : $prefix . " ";
+	    $command  .= "$ssualign " . $ssualign_enabled_options . "$out_dir/$target_subfile_root $out_dir/$out_root.$i";
+	    if($opt_HR->{"-x"}) { $command .= " > /dev/null &"; }
+	    if($suffix ne "") { $command .= " " . $suffix; }
+	    # Note: -x is incompatible with -s and --fs, so $suffix will be "" if -x
+	    printf SH ("echo \"\# Executing: %s\"\n", $command);
+	    printf SH ("%s\n", $command);
+	}
+    }
+    else { # --no-bash not enabled
+	$target_subfile_root = RemoveDirPath($seqfile) . ".\$i";
+	$command   = ($prefix eq "")           ? "" : $prefix . " ";
+	$command  .= "$ssualign " . $ssualign_enabled_options . "$out_dir/$target_subfile_root $out_dir/$out_root.\$i";
+	if($opt_HR->{"-x"}) { $command .= " > /dev/null &"; }
+	if($suffix ne "") { $command .= " " . $suffix; }
+	# Note: -x is incompatible with -s and --fs, so $suffix will be "" if -x
+	printf SH ("for i in \{1..%d\}\n", ($opt_HR->{"--no-merge"}) ? $njobs : ($njobs-1));
+	printf SH ("do\n");
+	printf SH ("\techo \"\# Executing: %s\"\n", $command);
+	printf SH ("\t%s\n", $command);
+	printf SH ("done\n");
+    }
     # if we're merging, we print the final command separately, b/c it needs to supply --merge 
     if(! $opt_HR->{"--no-merge"}) { 
 	$target_subfile_root = RemoveDirPath($seqfile) . ".$njobs";
+	$keep_merge_opt = "";
+	if($opt_HR->{"--keep-merge"}) { $keep_merge_opt = "--keep-merge "; }
 	$command  = ($prefix eq "")           ? "" : $prefix . " ";
-	$command .= "$ssualign -f --merge $njobs " . $ssualign_enabled_options . "$out_dir/$target_subfile_root $out_dir/$out_root.$njobs";
+	$command .= "$ssualign --merge $njobs " . $keep_merge_opt . $ssualign_enabled_options . "$out_dir/$target_subfile_root $out_dir/$out_root.$njobs";
 	if($suffix ne "") { $command .= " " . $suffix; }
+	# Note: -x is incompatible with -s and --fs, so $suffix will be "" if -x
+	# Further special handling of the final job, we remove its directory after it finishes, 
+	# because its impossible to remove it (at least on our system) while it is still running
+	# because its never actually empty (a temporary .nfs* file stays in it until ssu-align finishes).
+	if(! $opt_HR->{"--keep-merge"}) { 
+	    $command .= "; rmdir $out_dir/$out_root.$njobs;";
+	}
 	printf SH ("echo \"\# Executing: %s\"\n", $command);
 	printf SH ("%s\n", $command);
     }
     close(SH); 
 
-    PrintStringToFile($sum_file, 1, sprintf("  %-*s  shell script that will execute %d ssu-align jobs\n", $max_file_name_width, $shell_script, $njobs));
-
     PrintStringToFile($sum_file, 1, sprintf("#\n################################################################################\n"));
-    PrintStringToFile($sum_file, 1, sprintf("# To execute all %d ssu-align jobs, run the script with:\n#\tsh $shell_script\n", $njobs));
+    PrintStringToFile($sum_file, 1, sprintf("# To execute all %d ssu-align jobs, run the shell script with:\n#\tsh $shell_script\n", $njobs));
     PrintStringToFile($sum_file, 1, sprintf("################################################################################\n"));
     if(! $opt_H{"--no-merge"}) {
-	PrintStringToFile($sum_file, 1, sprintf("#\n# The final job will merge the output from all jobs once they are finished.\n"));
+	#                                                 1         2         3         4         5         6         7         8
+	#                                        12345678901234567890123456789012345678901234567890123456789012345678901234567890
+	PrintStringToFile($sum_file, 1, sprintf("#\n# The final job will merge the output from all jobs once they are all finished.\n"));
 
-	PrintStringToFile($sum_file, 1, sprintf("#\n# If one or more jobs fail: rerun the failed jobs, then do a manual merge by\n"));
-	PrintStringToFile($sum_file, 1, sprintf("# moving into *this directory* and executing:\n#\tssu-merge $out_dir\n"));
+	PrintStringToFile($sum_file, 1, sprintf("#\n# If one or more jobs fail: rerun the failed jobs, wait for them to finish,\n"));
+	PrintStringToFile($sum_file, 1, sprintf("# and then perform manual merge from this directory by executing:\n#\tssu-merge $out_dir\n"));
     }
     else { 
-	PrintStringToFile($sum_file, 1, sprintf("#\n# Because you enabled --no-merge, the jobs will not be automatically merged once finished.\n"));
-	PrintStringToFile($sum_file, 1, sprintf("# You can manually perform the merge once they are finished, by moving into this directory and executing:\n"));
-	PrintStringToFile($sum_file, 1, sprintf("#\tssu-merge $out_dir\n"));
+	#                                                 1         2         3         4         5         6         7         8
+	#                                        12345678901234567890123456789012345678901234567890123456789012345678901234567890
+	PrintStringToFile($sum_file, 1, sprintf("#\n# Because you enabled --no-merge, the jobs will not be automatically merged.\n"));
+	PrintStringToFile($sum_file, 1, sprintf("# You can manually perform the merge from this directory once all jobs are\n"));
+	PrintStringToFile($sum_file, 1, sprintf("# finished, by executing:\n#\tssu-merge $out_dir\n"));
     }
 
     $$shell_script_R = $shell_script;
