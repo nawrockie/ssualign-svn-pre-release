@@ -1,14 +1,14 @@
 #! /usr/bin/perl
 #
-# Integrated test number 1 of the SSU-ALIGN scripts, focusing on ssu-mask.
+# Integrated test of the ssu-build script.
 #
-# Usage:     ./ssu-mask.itest.1.pl <directory with all 5 SSU-ALIGN scripts> <data directory with fasta files etc.> <tmpfile and tmpdir prefix> <test number to perform, if blank do all tests>
-# Examples:  ./ssu-mask.itest.pl ../src/ data/ foo   (do all tests)
-#            ./ssu-mask.itest.pl ../src/ data/ foo 4 (do only test 4)
+# Usage:     ./ssu-build.itest.1.pl <directory with all 5 SSU-ALIGN scripts> <data directory with fasta files etc.> <tmpfile and tmpdir prefix> <test number to perform, if blank do all tests>
+# Examples:  ./ssu-build.itest.pl ../src/ data/ foo   (do all tests)
+#            ./ssu-build.itest.pl ../src/ data/ foo 4 (do only test 4)
 #
 # EPN, Fri Mar  5 08:33:29 2010
 
-$usage = "perl ssu-mask.itest.pl\n\t<directory with all 5 SSU-ALIGN scripts>\n\t<data directory with fasta files etc.>\n\t<tmpfile and tmpdir prefix>\n\t<test number to perform, if blank, do all tests>\n";
+$usage = "perl ssu-build.itest.pl\n\t<directory with all 5 SSU-ALIGN scripts>\n\t<data directory with fasta files etc.>\n\t<tmpfile and tmpdir prefix>\n\t<test number to perform, if blank, do all tests>\n";
 $testnum = "";
 if(scalar(@ARGV) == 3) { 
     ($scriptdir, $datadir, $dir) = @ARGV;

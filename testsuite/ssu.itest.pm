@@ -65,7 +65,7 @@ sub check_for_files {
     foreach $name (@{$name_AR}) { 
 	if($root ne "") { $file = $dir . "/" . $root . "." . $name . $suffix; }
 	else            { $file = $dir . "/" . $name . $suffix; }
-	if(! -e $file) { die "FAIL: ssu-mask $testctr call failed to create file $file"; }
+	if(! -e $file) { die "FAIL: set $testctr failed to create file $file"; }
     }
     return;
 }
@@ -85,7 +85,7 @@ sub check_for_one_of_two_files {
 	    $file1 = $dir . "/" . $name . $suffix1; 
 	    $file2 = $dir . "/" . $name . $suffix2;
 	}
-	if((! -e $file1) && (! -e $file2)) { die "FAIL: ssu-mask $testctr call failed to create either file $file1 or file $file2"; }
+	if((! -e $file1) && (! -e $file2)) { die "FAIL: set $testctr call failed to create either file $file1 or file $file2"; }
     }
     return;
 }
