@@ -1271,8 +1271,8 @@ sub PrintSearchAndAlignStatistics {
 							   $cm_width, "*all-models*", 
 							   $nseq_all_cms,
 							   $nseq_all_cms / $target_nseq,
-							   $nres_hit_all_cms / $nseq_all_cms, 
-							   $nres_hit_all_cms / $nres_total_all_cms, 
+							   ($nseq_all_cms       > 0) ? ($nres_hit_all_cms / $nseq_all_cms)       : 0., 
+							   ($nres_total_all_cms > 0) ? ($nres_hit_all_cms / $nres_total_all_cms) : 0, 
 							   $nres_hit_all_cms));
     if($target_nseq > $nseq_all_cms) { 
 	PrintStringToFile($sum_file, $print_to_stdout, sprintf("  %-*s  %7d  %8.4f  %13.2f  %8.4f  %13d\n", 
@@ -1545,7 +1545,7 @@ sub CheckSsuAlignOptions {
 	($opt_HR->{"-i"})               ||
 	($opt_HR->{"--no-prob"})        ||
 	($opt_HR->{"--aln-one"} ne "")  ||
-	($opt_HR->{"--mxsize"}))) { 
+	($opt_HR->{"--mxsize"} ne ""))) { 
 	printf STDERR ("\nERROR, --no-align is incompatible with alignment-specific options: -i,--filter,--no-prob, --aln-one and --mxsize.\n"); exit(1); 
     }
 
@@ -1555,8 +1555,9 @@ sub CheckSsuAlignOptions {
 	($opt_HR->{"--toponly"})  ||
 	($opt_HR->{"--no-trunc"})  ||
 	($opt_HR->{"--forward"})  ||
-	($opt_HR->{"--global"}))) {
-	printf STDERR ("\nERROR, --no-search is incompatible with search-specific options: -b,-l,--toponly,--no-trunc,--forward, and --global.\n"); exit(1); 
+	($opt_HR->{"--global"}) ||
+	($opt_HR->{"--keep-int"}))) {
+	printf STDERR ("\nERROR, --no-search is incompatible with search-specific options: -b,-l,--toponly,--no-trunc,--forward, --keep-int, and --global.\n"); exit(1); 
     }
 
     # Check for incompatible option ranges
@@ -1841,15 +1842,14 @@ sub AppendSsuAlignOptionsUsage {
     if($caller_is_prep) { $$options_usage_R .= " for ssu-align jobs"; }
     $$options_usage_R .= ":\n"; 
     $$options_usage_R .= "  --dna      : output alignments as DNA, default is RNA (even if input is DNA)\n";
-    $$options_usage_R .= "  --keep-int : keep intermediate files which are normally removed\n";
     $$options_usage_R .= "  --rfonly   : discard inserts, only keep consensus (nongap RF) columns in alignments\n";
     $$options_usage_R .= "               (alignments will be fixed width but won't include all target nucleotides)\n";
     
-    if(! $caller_is_prep) { 
-	$$options_usage_R .= "\noptions for merging parallelized ssu-align jobs:\n";
-	$$options_usage_R .= "  --merge <n>      : once finished, merge <n> parallel jobs created by ssu-prep\n";
-	$$options_usage_R .= "  --keep-merge <n> : w/--merge, do not remove smaller files as they're merged\n";
-    }
+    #if(! $caller_is_prep) { 
+    #$$options_usage_R .= "\noptions for merging parallelized ssu-align jobs:\n";
+    #$$options_usage_R .= "  --merge <n>      : once finished, merge <n> parallel jobs created by ssu-prep\n";
+    #$$options_usage_R .= "  --keep-merge <n> : w/--merge, do not remove smaller files as they're merged\n";
+    #}
     
     $$options_usage_R .= "\noptions for skipping the 1st (search) stage or 2nd (alignment) stage";
     if($caller_is_prep) { $$options_usage_R .= " in ssu-align"; }
@@ -1863,6 +1863,7 @@ sub AppendSsuAlignOptionsUsage {
     $$options_usage_R .= "  --toponly  : only search the top strand [default: search both strands]\n";
     $$options_usage_R .= "  --forward  : use the HMM forward algorithm for searching, not HMM viterbi\n";
     $$options_usage_R .= "  --global   : search with globally configured HMM [default: local]\n";
+    $$options_usage_R .= "  --keep-int : keep intermediate files which are normally removed\n";
     
     $$options_usage_R .= "\nexpert options for tuning the alignment stage";
     if($caller_is_prep) { $$options_usage_R .= " in ssu-align jobs"; }

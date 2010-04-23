@@ -7,29 +7,28 @@
 
 use strict;
 use warnings;
-
-#####################################################
-sub run_mask { 
-    if(scalar(@_) != 4) { die "TEST SCRIPT ERROR: run_mask called with " . scalar(@_) . " != 4 arguments."; }
-    my ($ssumask, $dir, $extra_opts, $testctr) = @_;
-    my $command;
-    if($extra_opts ne "") { $command = "$ssumask $extra_opts $dir > /dev/null"; }
-    else                  { $command = "$ssumask $dir > /dev/null"; }
-    printf("Running  mask command for set %3d: $command\n", $testctr);
-    system("$command");
-    if ($? != 0) { die "FAIL: ssu-mask $testctr failed unexpectedly"; }
-    return;
-}
 #####################################################
 sub run_align { 
     if(scalar(@_) != 5) { die "TEST SCRIPT ERROR: run_align called with " . scalar(@_) . " != 5 arguments."; }
     my ($ssualign, $fafile, $dir, $extra_opts, $testctr) = @_;
     my $command;
-    if($extra_opts ne "") { $command = "$ssualign $extra_opts $fafile $dir > /dev/null"; }
-    else                  { $command = "$ssualign $fafile $dir > /dev/null"; }
+    $extra_opts =~ s/^\s*/ /; $extra_opts =~ s/s*$/ /;
+    $command = "$ssualign" . $extra_opts . "$fafile $dir > /dev/null"; 
     printf("Running align command for set %3d: $command\n", $testctr);
     system("$command");
     if ($? != 0) { die "FAIL: ssu-align $testctr failed unexpectedly"; }
+    return;
+}
+#####################################################
+sub run_align_post_prep { 
+    if(scalar(@_) != 2) { die "TEST SCRIPT ERROR: run_align_post_prep called with " . scalar(@_) . " != 2 arguments."; }
+    my ($dir, $testctr) = @_;
+    my $command;
+    my $shell_script = $dir . ".ssu-align.sh";
+    $command = "sh $shell_script > /dev/null"; 
+    printf("Running align command for set %3d: $command\n", $testctr);
+    system("$command");
+    if ($? != 0) { die "FAIL: ssu-align post-prep $testctr failed unexpectedly"; }
     return;
 }
 #####################################################
@@ -37,7 +36,8 @@ sub run_build {
     if(scalar(@_) != 4) { die "TEST SCRIPT ERROR: run_build called with " . scalar(@_) . " != 4 arguments."; }
     my ($ssubuild, $stk, $extra_opts, $testctr) = @_;
     my $command;
-    $command = "$ssubuild $extra_opts $stk > /dev/null"; 
+    $extra_opts =~ s/^\s*/ /; $extra_opts =~ s/\s*$/ /;
+    $command = "$ssubuild" .  $extra_opts . "$stk > /dev/null"; 
     printf("Running build command for set %3d: $command\n", $testctr);
     system("$command");
     if ($? != 0) { die "FAIL: ssu-build $testctr failed unexpectedly"; }
@@ -48,11 +48,47 @@ sub run_draw {
     if(scalar(@_) != 4) { die "TEST SCRIPT ERROR: run_draw called with " . scalar(@_) . " != 4 arguments."; }
     my ($ssudraw, $dir, $extra_opts, $testctr) = @_;
     my $command;
-    if($extra_opts ne "") { $command = "$ssudraw $extra_opts $dir > /dev/null"; }
-    else                  { $command = "$ssudraw $dir > /dev/null"; }
+    $extra_opts =~ s/^\s*/ /; $extra_opts =~ s/\s*$/ /;
+    $command = "$ssudraw" . $extra_opts . "$dir > /dev/null"; 
     printf("Running  draw command for set %3d: $command\n", $testctr);
     system("$command");
     if ($? != 0) { die "FAIL: ssu-draw $testctr failed unexpectedly"; }
+    return;
+}
+#####################################################
+sub run_mask { 
+    if(scalar(@_) != 4) { die "TEST SCRIPT ERROR: run_mask called with " . scalar(@_) . " != 4 arguments."; }
+    my ($ssumask, $dir, $extra_opts, $testctr) = @_;
+    my $command;
+    $extra_opts =~ s/^\s*/ /; $extra_opts =~ s/\s*$/ /;
+    $command = "$ssumask" . $extra_opts . "$dir > /dev/null"; 
+    printf("Running  mask command for set %3d: $command\n", $testctr);
+    system("$command");
+    if ($? != 0) { die "FAIL: ssu-mask $testctr failed unexpectedly"; }
+    return;
+}
+#####################################################
+sub run_merge { 
+    if(scalar(@_) != 4) { die "TEST SCRIPT ERROR: run_merge called with " . scalar(@_) . " != 4 arguments."; }
+    my ($ssumerge, $dir, $extra_opts, $testctr) = @_;
+    my $command;
+    $extra_opts =~ s/^\s*/ /; $extra_opts =~ s/\s*$/ /;
+    $command = "$ssumerge" . $extra_opts . "$dir > /dev/null"; 
+    printf("Running merge command for set %3d: $command\n", $testctr);
+    system("$command");
+    if ($? != 0) { die "FAIL: ssu-merge $testctr failed unexpectedly"; }
+    return;
+}
+#####################################################
+sub run_prep { 
+    if(scalar(@_) != 6) { die "TEST SCRIPT ERROR: run_prep called with " . scalar(@_) . " != 6 arguments."; }
+    my ($ssuprep, $fafile, $dir, $nprocs, $extra_opts, $testctr) = @_;
+    my $command;
+    $extra_opts =~ s/^\s*/ /; $extra_opts =~ s/\s*$/ /;
+    $command = "$ssuprep" . $extra_opts . "$fafile $dir $nprocs > /dev/null"; 
+    printf("Running  prep command for set %3d: $command\n", $testctr);
+    system("$command");
+    if ($? != 0) { die "FAIL: ssu-prep $testctr failed unexpectedly"; }
     return;
 }
 #####################################################

@@ -190,19 +190,21 @@ my @sum_to_merge_A = ();
 my @log_to_merge_A = ();
 my @tab_to_merge_A = ();
 my @nomatch_to_merge_A = ();
+my @cmsearch_to_merge_A = ();
 my @cmalign_to_merge_AA = ();
 my @hitfa_to_merge_AA = ();
 my @hitlist_to_merge_AA = ();
 my @stk_to_merge_AA = ();
 my @ifile_to_merge_AA = ();
+my @sfetch_to_merge_AA = ();
 my @fa_files_A = ();
 my @cm_names_A = ();
 
 # validation differs depending if we're running in default or list mode (if --list is enabled or not)
 if(! $opt_H{"--list"}) { 
     validate_and_setup_ssu_merge_default($ssualigndir, \%opt_H, $dir, $root, \@subdir_A, \@score_to_merge_A, \@sum_to_merge_A, \@log_to_merge_A, \@tab_to_merge_A, \@nomatch_to_merge_A, 
-					 \@cmalign_to_merge_AA, \@hitfa_to_merge_AA, \@hitlist_to_merge_AA, \@stk_to_merge_AA, \@ifile_to_merge_AA, \@fa_files_A, \@cm_names_A, 
-					 \$alimerge, \$cm_file, \$no_search_enabled, \$no_align_enabled, \$aln_one_cm, \$ileaved_enabled, \$dna_enabled, $sum_file, $log_file);
+					 \@cmsearch_to_merge_A, \@cmalign_to_merge_AA, \@hitfa_to_merge_AA, \@hitlist_to_merge_AA, \@stk_to_merge_AA, \@ifile_to_merge_AA, \@sfetch_to_merge_AA, 
+					 \@fa_files_A, \@cm_names_A, \$alimerge, \$cm_file, \$no_search_enabled, \$no_align_enabled, \$aln_one_cm, \$ileaved_enabled, \$dna_enabled, $sum_file, $log_file);
 }
 else { #--list enabled 
     validate_and_setup_ssu_merge_list($list_file, \$alimerge, $sum_file);
@@ -249,17 +251,20 @@ else { #--list enabled
 ####################################
 
 my ($i, $j, $cm_idx, $nhitsfa, $nhitslist, $ncmalign, $nstk);
-my ($scores_file, $nomatch_file, $ssu_align_sum_file, $ssu_align_log_file, $tab_file, $cmalign_file, $hitsfa_file, $hitslist_file, $merged_stk_file, $merged_ifile);
-my ($scores_file2print, $nomatch_file2print, $ssu_align_sum_file2print, $ssu_align_log_file2print, $tab_file2print, $cmalign_file2print, $hitsfa_file2print, $hitslist_file2print, $merged_stk_file2print, $merged_ifile2print);
+my ($scores_file, $nomatch_file, $cmsearch_file, $ssu_align_sum_file, $ssu_align_log_file, $tab_file, $cmalign_file, $hitsfa_file, $hitslist_file, $merged_stk_file, $merged_ifile, $merged_sfetch);
+my ($scores_file2print, $nomatch_file2print, $cmsearch_file2print, $ssu_align_sum_file2print, $ssu_align_log_file2print, $tab_file2print, $cmalign_file2print);
+my ($hitsfa_file2print, $hitslist_file2print, $merged_stk_file2print, $merged_ifile2print, $merged_sfetch2print);
 my ($max_file_name_width, $max_cm_name_width, $file_dashes, $cm_dashes);
 
 # merge one-per-run files:
 # *.sum, *.log in all cases
 # *.tab, *.scores and possibly *.nomatch unless --no-search enabled
+# *.cmsearch only if --keep-int and ! --no-search
 $max_file_name_width  = MaxLengthScalarInArray(\@cm_names_A) + 1 + length($root) + 1;
 if(scalar(@sum_to_merge_A)   == 0)   { PrintErrorAndExit("ERROR, no *.sum files found.", $sum_file, $log_file, 1); }
 if(scalar(@log_to_merge_A)   == 0)   { PrintErrorAndExit("ERROR, no *.log files found.", $sum_file, $log_file, 1); }
-if(scalar(@nomatch_to_merge_A) == 0) { ; } # this is okay, .nomatch files are only generated if at least one sequence did not match a CM 
+if(scalar(@nomatch_to_merge_A) == 0)  { ; } # this is okay, .nomatch files are only generated if at least one sequence did not match a CM 
+if(scalar(@cmsearch_to_merge_A) == 0) { ; } # this is okay, .cmsearch files are only generated if --keep-int enabled
 if(! $no_search_enabled) { # we determine --no-search was enabled in validate_and_setup_ssu_merge, by parsing the ssu-prep summary file
     if(scalar(@tab_to_merge_A)   == 0) { 
 	PrintErrorAndExit("ERROR, unexpectedly unable to locate any *.tab files even though \"--no-search\" was not enabled in the ssu_align runs.", $sum_file, $log_file, 1); 
@@ -293,11 +298,13 @@ PrintStringToFile($sum_file, 1, sprintf("# %-*s  %-*s  %7s  %9s\n", $max_file_na
 
 $scores_file              = $dir . "/" . $root . ".scores";
 $nomatch_file             = $dir . "/" . $root . ".nomatch";
+$cmsearch_file            = $dir . "/" . $root . ".cmsearch";
 $ssu_align_sum_file       = $dir . "/" . $root . ".ssu-align.sum";
 $ssu_align_log_file       = $dir . "/" . $root . ".ssu-align.log";
 $tab_file                 = $dir . "/" . $root . ".tab";
 $scores_file2print        = $root . ".scores";
 $nomatch_file2print       = $root . ".nomatch";
+$cmsearch_file2print      = $root . ".cmsearch";
 $ssu_align_sum_file2print = $root . ".ssu-align.sum";
 $ssu_align_log_file2print = $root . ".ssu-align.log";
 $tab_file2print           = $root . ".tab";
@@ -313,6 +320,10 @@ if(scalar(@score_to_merge_A) > 0) {
 if(scalar(@nomatch_to_merge_A) > 0) { 
     concatenate_a_list_of_files(\%opt_H, $nomatch_file, \@nomatch_to_merge_A, $sum_file, $log_file);
     PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9s\n", $max_file_name_width, $nomatch_file2print, $max_cm_name_width, "-", scalar(@score_to_merge_A), "-"));
+}
+if(scalar(@cmsearch_to_merge_A) > 0) { 
+    concatenate_a_list_of_files(\%opt_H, $cmsearch_file, \@cmsearch_to_merge_A, $sum_file, $log_file);
+    PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9s\n", $max_file_name_width, $cmsearch_file2print, $max_cm_name_width, "-", scalar(@score_to_merge_A), "-"));
 }
 
 my ($summed_search_seconds, $summed_align_seconds, $summed_total_seconds);
@@ -332,7 +343,7 @@ PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9s\n", $max_file_na
 PrintStringToFile($sum_file, 1, sprintf("#\n"));
 
 # merge per-CM files
-my ($nseq_cur, $cur_cm, $nali, $nifile, $do_newline, $alimerge_out_file, $alimerge_list_file);
+my ($nseq_cur, $cur_cm, $nali, $nifile, $nsfetch, $do_newline, $alimerge_out_file, $alimerge_list_file);
 my @nseq_cur_A = ();
 for($i = 0; $i < scalar(@cm_names_A); $i++) { 
     $nhitsfa   = scalar(@{$hitfa_to_merge_AA[$i]});
@@ -340,6 +351,7 @@ for($i = 0; $i < scalar(@cm_names_A); $i++) {
     $ncmalign  = scalar(@{$cmalign_to_merge_AA[$i]});
     $nstk      = scalar(@{$stk_to_merge_AA[$i]});
     $nifile    = scalar(@{$ifile_to_merge_AA[$i]});
+    $nsfetch   = scalar(@{$sfetch_to_merge_AA[$i]});
     $cm_idx    = $i+1;
     $cur_cm    = $cm_names_A[$i];
     $do_newline= 0;
@@ -349,11 +361,13 @@ for($i = 0; $i < scalar(@cm_names_A); $i++) {
     $hitslist_file         = $dir . "/" . $root . "." . $cm_names_A[$i] . ".hitlist";
     $merged_stk_file       = $dir . "/" . $root . "." . $cm_names_A[$i] . ".stk";
     $merged_ifile          = $dir . "/" . $root . "." . $cm_names_A[$i] . ".ifile";
+    $merged_sfetch         = $dir . "/" . $root . "." . $cm_names_A[$i] . ".sfetch";
     $cmalign_file2print    = $root . "." . $cm_names_A[$i] . ".cmalign";
     $hitsfa_file2print     = $root . "." . $cm_names_A[$i] . ".fa";
     $hitslist_file2print   = $root . "." . $cm_names_A[$i] . ".hitlist";
     $merged_stk_file2print = $root . "." . $cm_names_A[$i] . ".stk";
     $merged_ifile2print    = $root . "." . $cm_names_A[$i] . ".ifile";
+    $merged_sfetch2print   = $root . "." . $cm_names_A[$i] . ".sfetch";
 
     # check we have all the files we expect, and determine number of sequences we'll merge for this CM
     if((! $no_search_enabled) && (! $no_align_enabled)) { # neither --no-search nor --no-align enabled
@@ -392,19 +406,24 @@ for($i = 0; $i < scalar(@cm_names_A); $i++) {
 	PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9d\n", $max_file_name_width, $hitslist_file2print, $max_cm_name_width, $cm_names_A[$i], $nhitslist, $nseq_merged));
 	$do_newline = 1;
     }
+    if($nsfetch > 0) { # this will only be true if --keep-int, though we don't check that that option was enabled
+	concatenate_a_list_of_files(\%opt_H, $merged_sfetch, \@{$sfetch_to_merge_AA[$i]}, $sum_file, $log_file); 
+	PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9d\n", $max_file_name_width, $merged_sfetch2print, $max_cm_name_width, $cm_names_A[$i], $nsfetch, $nseq_merged));
+	$do_newline = 1;
+    }
     if($ncmalign != 0) { # merge all alignments, cmalign output files, and insert files 
 	# we made sure $ncmalign == $nstk above (unless --no-align enabled, in which case they're both 0)
+
+	$alimerge_out_file = $dir . "/" . $root . "." .  $cm_names_A[$i] . ".alimerge";
+	$alimerge_list_file = $dir . "/" . $cm_names_A[$i] . ".merge.list";
+	create_list_file($alimerge_list_file, \%opt_H, \@{$stk_to_merge_AA[$i]}, $sum_file, $log_file);
+	run_alimerge($alimerge, \%opt_H, $alimerge_list_file, $alimerge_out_file, $merged_stk_file, $ileaved_enabled, $dna_enabled, 1, 1, \$nseq_merged, $sum_file, $log_file);
 
 	concatenate_a_list_of_files(\%opt_H, $cmalign_file,  \@{$cmalign_to_merge_AA[$i]}, $sum_file, $log_file);
 	PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9d\n", $max_file_name_width, $cmalign_file2print, $max_cm_name_width, $cm_names_A[$i], $ncmalign, $nseq_merged));
 
 	concatenate_a_list_of_files(\%opt_H, $merged_ifile,  \@{$ifile_to_merge_AA[$i]}, $sum_file, $log_file);
 	PrintStringToFile($sum_file, 1, sprintf("  %-*s  %-*s  %7d  %9d\n", $max_file_name_width, $merged_ifile2print, $max_cm_name_width, $cm_names_A[$i], $nifile, $nseq_merged));
-
-	$alimerge_out_file = $dir . "/" . $root . "." .  $cm_names_A[$i] . ".alimerge";
-	$alimerge_list_file = $dir . "/" . $cm_names_A[$i] . ".merge.list";
-	create_list_file($alimerge_list_file, \%opt_H, \@{$stk_to_merge_AA[$i]}, $sum_file, $log_file);
-	run_alimerge($alimerge, \%opt_H, $alimerge_list_file, $alimerge_out_file, $merged_stk_file, $ileaved_enabled, $dna_enabled, 1, 1, \$nseq_merged, $sum_file, $log_file);
 
 	# verify that esl-alimerge output detailing number of sequences in each alignment we just merged
 	# matches what we read from the ssu-align summary statistics (it should match, this is just another integrity check)
@@ -455,8 +474,8 @@ PrintTiming("# Summed ssu-align CPU time (total):     ", $summed_total_seconds, 
 ########################################
 # Note: this is purposefully done at very end of run so that if any
 # error causes us to exit early, we don't remove original files
-clean_up_post_merge($dir, $root, \%opt_H, \@subdir_A, \@score_to_merge_A, \@sum_to_merge_A, \@log_to_merge_A, \@tab_to_merge_A, \@nomatch_to_merge_A, \@fa_files_A, 
-		    \@cmalign_to_merge_AA, \@hitfa_to_merge_AA, \@hitlist_to_merge_AA, \@stk_to_merge_AA, \@ifile_to_merge_AA, $sum_file, $log_file);
+clean_up_post_merge($dir, $root, \%opt_H, \@subdir_A, \@score_to_merge_A, \@sum_to_merge_A, \@log_to_merge_A, \@tab_to_merge_A, \@nomatch_to_merge_A, \@cmsearch_to_merge_A,
+		    \@fa_files_A, \@cmalign_to_merge_AA, \@hitfa_to_merge_AA, \@hitlist_to_merge_AA, \@stk_to_merge_AA, \@ifile_to_merge_AA, \@sfetch_to_merge_AA, $sum_file, $log_file);
 
 
 $total_seconds += SecondsSinceEpoch($time_hires_installed);
@@ -499,15 +518,18 @@ exit(0);
 # $log_to_merge_AR:           reference to array of ssu-align .log files to merge (concatenate)
 # $tab_to_merge_AR:           reference to array of ssu-align .tab files to merge (concatenate)
 # $nomatch_to_merge_AR:       reference to array of ssu-align .nomatch files to merge (concatenate)
+# $cmsearch_to_merge_AR:      reference to array of ssu-align .cmsearch files to merge (concatenate)
 # $cmalign_to_merge_AAR:      reference to 2D array of ssu-align .cmalign output files to merge,
 #                             first dimension is the corresponding CM's index in the cm file
-# $hitfa_to_merge_AAR:      reference to 2D array of ssu-align .fa output file to merges,
+# $hitfa_to_merge_AAR:        reference to 2D array of ssu-align .fa output file to merges,
 #                             first dimension is the corresponding CM's index in the cm file
-# $hitlist_to_merge_AAR:    reference to 2D array of ssu-align .hitlist output files to merge,
+# $hitlist_to_merge_AAR:      reference to 2D array of ssu-align .hitlist output files to merge,
 #                             first dimension is the corresponding CM's index in the cm file
 # $stk_to_merge_AAR:          reference to 2D array of ssu-align .stk alignment files to merge
 #                             first dimension is the corresponding CM's index in the cm file
 # $ifile_to_merge_AAR:        reference to 2D array of ssu-align .ifile alignment files to merge
+#                             first dimension is the corresponding CM's index in the cm file
+# $sfetch_to_merge_AAR:       reference to 2D array of ssu-align .sfetch files to merge
 #                             first dimension is the corresponding CM's index in the cm file
 # $fa_files_AR:               reference to array of individual fasta files 
 # $cm_names_AR:               reference to array of CM names
@@ -530,11 +552,11 @@ exit(0);
 #
 ####################################################################
 sub validate_and_setup_ssu_merge_default { 
-    my $narg_expected = 26;
+    my $narg_expected = 28;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, validate_and_setup_ssu_merge_default() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my($ssualigndir, $opt_HR, $dir, $root, $subdir_AR, $score_to_merge_AR, $sum_to_merge_AR, $log_to_merge_AR, 
-       $tab_to_merge_AR, $nomatch_to_merge_AR, $cmalign_to_merge_AAR, $hitfa_to_merge_AAR, $hitlist_to_merge_AAR, 
-       $stk_to_merge_AAR, $ifile_to_merge_AAR, $fa_files_AR, $cm_names_AR, $alimerge_R, $cm_file_R, $no_search_enabled_R, 
+       $tab_to_merge_AR, $nomatch_to_merge_AR, $cmsearch_to_merge_AR, $cmalign_to_merge_AAR, $hitfa_to_merge_AAR, $hitlist_to_merge_AAR, 
+       $stk_to_merge_AAR, $ifile_to_merge_AAR, $sfetch_to_merge_AAR, $fa_files_AR, $cm_names_AR, $alimerge_R, $cm_file_R, $no_search_enabled_R, 
        $no_align_enabled_R, $aln_one_cm_R, $ileaved_enabled_R, $dna_enabled_R, $sum_file, $log_file) = @_;
 
     #Make sure $dir exists
@@ -709,13 +731,22 @@ sub validate_and_setup_ssu_merge_default {
     if($errmsg ne "") { PrintErrorAndExit($errmsg, $sum_file, $log_file, 1); }
     
     # make a list of files to merge, by checking each subdirectory for each possible file, either 0 or 1 alignment per CM should exist,
+    # first, initialize the arrays for each CM, (the sfetch array may remain empty which is why its impt to initialize them) 
+    foreach $cm (keys (%cm_name_idx_H)) { 
+	@{$cmalign_to_merge_AAR->[$cm_name_idx_H{$cm}]} = ();
+	@{$hitfa_to_merge_AAR->[$cm_name_idx_H{$cm}]}   = ();
+	@{$hitlist_to_merge_AAR->[$cm_name_idx_H{$cm}]} = ();
+	@{$stk_to_merge_AAR->[$cm_name_idx_H{$cm}]}     = ();
+	@{$ifile_to_merge_AAR->[$cm_name_idx_H{$cm}]}   = ();
+	@{$sfetch_to_merge_AAR->[$cm_name_idx_H{$cm}]}  = ();
+    }    
     foreach $subdir (@{$subdir_AR}) { 
 	# each directory should have:
 	# $subdir.ssu-align.sum:  
 	# $subdir.scores:         unless --no-search enabled
 	# $subdir.tab:            unless --no-search enabled
 	# $subdir.nomatch:        will not exist if --no-search enabled, or if all seqs matched a CM
-	# $subdir.nomatch:        will not exist if --no-search enabled, or if all seqs matched a CM
+	# $subdir.cmsearch:       will only exist if --keep-int enabled
 	#
 	# and potentially for each CM $cm:
 	# $subdir.$cm.cmalign
@@ -723,6 +754,7 @@ sub validate_and_setup_ssu_merge_default {
 	# $subdir.$cm.hitist
 	# $subdir.$cm.stk
 	# $subdir.$cm.ifile
+	# $subdir.$cm.sfetch:     will only exist if --keep-int enabled
 	# 
 
 	foreach $file (glob("$dir/$subdir/*")) { 
@@ -740,6 +772,9 @@ sub validate_and_setup_ssu_merge_default {
 	    }
 	    if($file =~ m/$subdir\.nomatch/) { 
 		push(@{$nomatch_to_merge_AR}, $file);
+	    }
+	    if($file =~ m/$subdir\.cmsearch/) { 
+		push(@{$cmsearch_to_merge_AR}, $file);
 	    }
 	    if($file =~ m/$subdir\.(\S+)\.cmalign/) { 
 		$cm = $1;
@@ -765,6 +800,11 @@ sub validate_and_setup_ssu_merge_default {
 		$cm = $1;
 		if(! (exists($cm_name_idx_H{$cm}))) { PrintErrorAndExit("ERROR, found ssu-align output file $file in subdirectory $subdir/ created for a CM named $cm\nNo such CM exists in $cm_file.\nDid you use -m <s> when you ran ssu-align? If so pass -m <s> to ssu-merge as well.", $sum_file, $log_file, 1); }
 		push(@{$ifile_to_merge_AAR->[$cm_name_idx_H{$cm}]}, $file);
+	    }
+	    if($file =~ m/$subdir\.(\S+)\.sfetch/) { 
+		$cm = $1;
+		if(! (exists($cm_name_idx_H{$cm}))) { PrintErrorAndExit("ERROR, found ssu-align output file $file in subdirectory $subdir/ created for a CM named $cm\nNo such CM exists in $cm_file.\nDid you use -m <s> when you ran ssu-align? If so pass -m <s> to ssu-merge as well.", $sum_file, $log_file, 1); }
+		push(@{$sfetch_to_merge_AAR->[$cm_name_idx_H{$cm}]}, $file);
 	    }
 	}
     }	
@@ -1107,16 +1147,19 @@ sub concatenate_sum_files_and_merge_statistics {
 # $log_to_remove_AR:          reference to array of ssu-align .log files to clean-up
 # $tab_to_remove_AR:          reference to array of ssu-align .tab files to clean-up
 # $nomatch_to_remove_AR:      reference to array of ssu-align .nomatch files to clean-up
+# $cmsearch_to_remove_AR:     reference to array of ssu-align .cmsearch files to clean-up
 # $fa_files_AR:               reference to array of original fasta files 
 # $cmalign_to_remove_AAR:     reference to 2D array of ssu-align .cmalign output files to merge,
 #                             first dimension is the corresponding CM's index in the cm file
-# $hitfa_to_remove_AAR:     reference to 2D array of ssu-align .fa output file to merges,
+# $hitfa_to_remove_AAR:       reference to 2D array of ssu-align .fa output file to merges,
 #                             first dimension is the corresponding CM's index in the cm file
-# $hitlist_to_remove_AAR:   reference to 2D array of ssu-align .hitlist output files to merge,
+# $hitlist_to_remove_AAR:     reference to 2D array of ssu-align .hitlist output files to merge,
 #                             first dimension is the corresponding CM's index in the cm file
 # $stk_to_remove_AAR:         reference to 2D array of ssu-align .stk alignment files to merge
 #                             first dimension is the corresponding CM's index in the cm file
 # $ifile_to_remove_AAR:       reference to 2D array of ssu-align .ifile output files to merge,
+#                             first dimension is the corresponding CM's index in the cm file
+# $sfetch_to_remove_AAR:      reference to 2D array of ssu-align .sfetch output files to merge,
 #                             first dimension is the corresponding CM's index in the cm file
 # $sum_file:                  summary file
 # $log_file:                  log file     
@@ -1128,10 +1171,10 @@ sub concatenate_sum_files_and_merge_statistics {
 #
 ####################################################################
 sub clean_up_post_merge {
-    my $narg_expected = 17;
+    my $narg_expected = 19;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, clean_up_post_merge() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($dir, $root, $opt_HR, $subdir_AR, $score_to_remove_AR, $sum_to_remove_AR, $log_to_remove_AR, $tab_to_remove_AR, $nomatch_to_remove_AR, $fa_files_AR, 
-       $cmalign_to_remove_AAR, $hitfa_to_remove_AAR, $hitlist_to_remove_AAR, $stk_to_remove_AAR, $ifile_to_remove_AAR, $sum_file, $log_file) = @_;
+    my($dir, $root, $opt_HR, $subdir_AR, $score_to_remove_AR, $sum_to_remove_AR, $log_to_remove_AR, $tab_to_remove_AR, $nomatch_to_remove_AR, $cmsearch_to_remove_AR,
+       $fa_files_AR, $cmalign_to_remove_AAR, $hitfa_to_remove_AAR, $hitlist_to_remove_AAR, $stk_to_remove_AAR, $ifile_to_remove_AAR, $sfetch_to_remove_AAR, $sum_file, $log_file) = @_;
 
     my ($file, $subdir, $subdir2rm, $num, $cleanup_script, $cleanup_script2print, $fa_file);
     my $printed_error = 0;
@@ -1168,6 +1211,10 @@ sub clean_up_post_merge {
 	if($do_actually_remove) { UnlinkFile($file, $log_file); }
 	else                    { $file =~ s/^$dir\///; printf CLEANUP ("rm -f $file\n"); }
     }
+    foreach $file (@{$cmsearch_to_remove_AR}) { 
+	if($do_actually_remove) { UnlinkFile($file, $log_file); }
+	else                    { $file =~ s/^$dir\///; printf CLEANUP ("rm -f $file\n"); }
+    }
     for($i = 0; $i < scalar(@{$cmalign_to_remove_AAR}); $i++) { 
 	foreach $file (@{$cmalign_to_remove_AAR->[$i]}) { 
 	    if($do_actually_remove) { UnlinkFile($file, $log_file); }
@@ -1194,6 +1241,12 @@ sub clean_up_post_merge {
     }
     for($i = 0; $i < scalar(@{$ifile_to_remove_AAR}); $i++) { 
 	foreach $file (@{$ifile_to_remove_AAR->[$i]}) { 
+	    if($do_actually_remove) { UnlinkFile($file, $log_file); }
+	    else                    { $file =~ s/^$dir\///; printf CLEANUP ("rm -f $file\n"); }
+	}
+    }
+    for($i = 0; $i < scalar(@{$sfetch_to_remove_AAR}); $i++) { 
+	foreach $file (@{$sfetch_to_remove_AAR->[$i]}) { 
 	    if($do_actually_remove) { UnlinkFile($file, $log_file); }
 	    else                    { $file =~ s/^$dir\///; printf CLEANUP ("rm -f $file\n"); }
 	}

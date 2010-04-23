@@ -87,7 +87,6 @@ my $opt_return = GetOptions
      'i'            => \$opt_H{"-i"},
      'dna'          => \$opt_H{"--dna"},
      'rfonly'       => \$opt_H{"--rfonly"},
-     'keep-int'     => \$opt_H{"--keep-int"},
      'n=s'          => \$opt_H{"-n"},
      'no-align'     => \$opt_H{"--no-align"},
      'no-search'    => \$opt_H{"--no-search"},
@@ -95,10 +94,11 @@ my $opt_return = GetOptions
      'toponly'      => \$opt_H{"--toponly"},
      'forward'      => \$opt_H{"--forward"},
      'global'       => \$opt_H{"--global"},
+     'keep-int'     => \$opt_H{"--keep-int"},
      'aln-one=s'    => \$opt_H{"--aln-one"},
      'filter=f'     => \$opt_H{"--filter"},
      'no-prob'      => \$opt_H{"--no-prob"},
-     'mxsize'       => \$opt_H{"--mxsize"},
+     'mxsize=s'     => \$opt_H{"--mxsize"},
      'merge=s'      => \$opt_H{"--merge"},
      'keep-merge'   => \$opt_H{"--keep-merge"});
 
@@ -336,16 +336,17 @@ sub search_sequences_with_each_model {
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, search_sequences_with_each_model() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my($opt_HR, $cmsearch, $cm_file, $target_file, $out_dir_and_root, $target_nseq, $indi_cm_name_AR, $tab_file_R, $max_file_name_width_R, $sum_file, $log_file) = @_;
 
-    my ($i, $cmsearch_opts, $tab_file, $tab_file2print, $alg_flag, $max_file_name_width, $dashes1, $dashes2, $tmp, $command, $command_worked, $cmsearch_outfile);
+    my ($i, $cmsearch_opts, $tab_file, $tab_file2print, $alg_flag, $max_file_name_width, $dashes1, $dashes2, $tmp, $command, $command_worked, $cmsearch_outfile, $cmsearch_outfile2print);
 
     # contract check
     if($opt_HR->{"-n"} ne "") { 
 	if(scalar(@{$indi_cm_name_AR}) != 1) { PrintErrorAndExit("ERROR, -n enabled, but more than 1 CMs read from CM file. This shouldn't happen.", $sum_file, $log_file, 1); }
     }
 
-    $tab_file          = $out_dir_and_root . ".tab";
-    $tab_file2print    = $out_root         . ".tab";
-    $cmsearch_outfile  = $out_dir_and_root . ".cmsearch";
+    $tab_file                = $out_dir_and_root . ".tab";
+    $tab_file2print          = $out_root         . ".tab";
+    $cmsearch_outfile        = $out_dir_and_root . ".cmsearch";
+    $cmsearch_outfile2print  = $out_root . ".cmsearch";
     $alg_flag = $globals_H{"DF_CMSEARCH_ALG_FLAG"};
     if   ($opt_HR->{"--forward"}) { $alg_flag = "--forward"; } 
     if   ($opt_HR->{"--global"})  { $alg_flag .= " -g"; }
@@ -381,7 +382,9 @@ sub search_sequences_with_each_model {
     PrintStringToFile($sum_file, 1, sprintf("  %-*s  locations/scores of hits defined by HMM(s)\n", $max_file_name_width, $tab_file2print));
 
     if(! $opt_HR->{"--keep-int"}) { UnlinkFile($cmsearch_outfile, $log_file); }
-
+    else { 
+	PrintStringToFile($sum_file, 1, sprintf("  %-*s  cmsearch output\n", $max_file_name_width, $cmsearch_outfile2print));
+    }
     $$tab_file_R            = $tab_file;
     $$max_file_name_width_R = $max_file_name_width;
     return;
@@ -546,8 +549,7 @@ sub classify_and_extract_subseqs {
 
     # For each CM c, list the target sequences that score highest to c in tabular format
     # and then fetch them with esl-sfetch
-    my ($index_file, $ncm_with_at_least_one_seq, $list_file, $list_file2print, $sfetch_in_file, $nwinners, $hits_file, $hits_file2print, $sfetch_options, $reformat_options);
-    $ncm_with_at_least_one_seq = 0;
+    my ($index_file, $list_file, $list_file2print, $sfetch_in_file, $sfetch_in_file2print, $nwinners, $hits_file, $hits_file2print, $sfetch_options, $reformat_options);
     $index_file = $target_file . ".ssi";
     
     #if index file exists, remove it and remake it (wasteful, but this is the only way to know for sure that the index was created for this specific file)
@@ -559,17 +561,17 @@ sub classify_and_extract_subseqs {
 	$cm_name = $indi_cm_name_AR->[$m];
 	$list_file = $out_dir_and_root      . "." . $cm_name . ".hitlist"; 
 	$list_file2print = $out_root        . "." . $cm_name . ".hitlist"; 
-	$sfetch_in_file = $out_dir_and_root . "." . $cm_name . ".hits.in";
+	$sfetch_in_file = $out_dir_and_root . "." . $cm_name . ".sfetch";
+	$sfetch_in_file2print = $out_root   . "." . $cm_name . ".sfetch";
 	if(!(exists($by_cm_name_HA{$cm_name}))) { $nwinners = 0; }
 	else                                    { $nwinners = scalar(@{$by_cm_name_HA{$cm_name}}); }
 
 	if($nwinners > 0) { 
-	    $ncm_with_at_least_one_seq++;
 	    open(OUTLIST,  ">" . $list_file)      || FileOpenFailure($list_file, $sum_file, $log_file, $!, "writing");
 	    open(SFETCHIN, ">" . $sfetch_in_file) || FileOpenFailure($sfetch_in_file, $sum_file, $log_file, $!, "writing");
 
 	    # determine max seq name width 
-	    $cur_max_seq_name_width = length("target name");
+	    $cur_max_seq_name_width = length("sequence name");
 	    for($i = 0; $i < $nwinners; $i++) { if(length($by_cm_name_HA{$cm_name}[$i]) > $cur_max_seq_name_width) { $cur_max_seq_name_width = length($by_cm_name_HA{$cm_name}[$i]); } }
 	    $dashes = "";
 	    for($i = 0; $i < $cur_max_seq_name_width; $i++) { $dashes .= "-"; }
@@ -618,12 +620,12 @@ sub classify_and_extract_subseqs {
 		else              { PrintStringToFile($sum_file, 1, sprintf("  %-*s  %7d sequence  to align with $cm_name CM\n", $max_file_name_width, $hits_file2print, scalar(@{$by_cm_name_HA{$cm_name}}))); }
 	    }
 	    if(! $opt_HR->{"--keep-int"}) { UnlinkFile($sfetch_in_file, $log_file); }
+	    else { 
+		PrintStringToFile($sum_file, 1, sprintf("  %-*s  esl-sfetch input for fetching $cm_name seqs\n", $max_file_name_width, $sfetch_in_file2print));
+	    }
 	    $new_target_file_per_cm_name_HR->{$cm_name} = $hits_file;
 	    if($cur_max_seq_name_width > $max_seq_name_width) { $max_seq_name_width = $cur_max_seq_name_width; };
 	}
-    }
-    if($ncm_with_at_least_one_seq == 0) { 
-	PrintErrorAndExit(sprintf("ERROR, 0 seqs had cmsearch hits with bit score > $min_bit and length > $min_len to any of the %d CMs in the tab file $tab_file.\nYou can change the minimum bit score to <x> with -b <x>, and minimum length to <n> with -l <n>.", scalar(@{$indi_cm_name_AR})), $sum_file, $log_file, 1);
     }
 
     $$max_seq_name_width_R = $max_seq_name_width;
@@ -969,8 +971,14 @@ sub compile_search_and_align_statistics {
 	    $nseq_all_cms++;
 	    $nres_total_cm_H{$cm_name} += $target_len_HR->{$target};
 	    $nres_total_all_cms        += $target_len_HR->{$target};
-	    $nres_hit_cm_H{$cm_name}   += $hit_len_HR->{$target};
-	    $nres_hit_all_cms          += $hit_len_HR->{$target};
+	    if($opt_HR->{"--no-trunc"}) { 
+		$nres_hit_cm_H{$cm_name}   += $target_len_HR->{$target};
+		$nres_hit_all_cms          += $target_len_HR->{$target};
+	    }
+	    else { # --no-trunc NOT enabled
+		$nres_hit_cm_H{$cm_name}   += $hit_len_HR->{$target};
+		$nres_hit_all_cms          += $hit_len_HR->{$target};
+	    }
 	}
     }
 

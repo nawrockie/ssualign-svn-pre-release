@@ -139,7 +139,6 @@ my $opt_return = GetOptions
      'f'          => \$opt_H{"-f"},
      'dna'        => \$opt_H{"--dna"},
      'rfonly'     => \$opt_H{"--rfonly"},
-     'keep'       => \$opt_H{"--keep"},
      'n=s'        => \$opt_H{"-n"},
      'no-align'   => \$opt_H{"--no-align"},
      'no-search'  => \$opt_H{"--no-search"},
@@ -147,10 +146,11 @@ my $opt_return = GetOptions
      'toponly'    => \$opt_H{"--toponly"},
      'forward'    => \$opt_H{"--forward"},
      'global'     => \$opt_H{"--global"},
+     'keep-int'   => \$opt_H{"--keep-int"},
      'aln-one=s'  => \$opt_H{"--aln-one"},
      'filter=f'   => \$opt_H{"--filter"},
      'no-prob'    => \$opt_H{"--no-prob"},
-     'mxsize'     => \$opt_H{"--mxsize"});
+     'mxsize=s'   => \$opt_H{"--mxsize"});
 
 if($opt_return != 1) { print STDERR "\nERROR, GetOptions() did not return 1, but $opt_return\n"; exit(1); }
 
@@ -642,6 +642,7 @@ sub partition_seqfile_and_write_shell_script {
 #	                  1         2         3         4         5         6         7         8
 #	        012345678901234567890123456789012345678901234567890123456789012345678901234567890
     if(! $opt_HR->{"--no-bash"}) { 
+	printf SH ("#!/bin/bash\n");
 	printf SH ("# Bash shell script created by ssu-prep for running $njobs ssu-align jobs.\n");
     }
     else { 
@@ -719,7 +720,7 @@ sub partition_seqfile_and_write_shell_script {
 	$str = "# Do \'ssu-prep -h\' or see the User Guide for more information.\n";
 	printf SH ($str);
 	PrintStringToFile($sum_file, 1, $str);
-	$str = "################################################################################\n#\n";
+	$str = "################################################################################\n";
 	printf SH ($str);
 	PrintStringToFile($sum_file, 1, $str);
     }	
@@ -755,14 +756,15 @@ sub partition_seqfile_and_write_shell_script {
 	if($opt_HR->{"--keep-merge"}) { $keep_merge_opt = "--keep-merge "; }
 	$command  = ($prefix eq "")           ? "" : $prefix . " ";
 	$command .= "$ssualign --merge $njobs " . $keep_merge_opt . $ssualign_enabled_options . "$out_dir/$target_subfile_root $out_dir/$out_root.$njobs";
-	if($suffix ne "") { $command .= " " . $suffix; }
-	# Note: -x is incompatible with -s and --fs, so $suffix will be "" if -x
-	# Further special handling of the final job, we remove its directory after it finishes, 
+	# Special handling of the final job, we remove its directory after it finishes, 
+	# it's important we put this rmdir command prior to the suffix (so it's part of a qsub command, for ex)
 	# because its impossible to remove it (at least on our system) while it is still running
 	# because its never actually empty (a temporary .nfs* file stays in it until ssu-align finishes).
 	if(! $opt_HR->{"--keep-merge"}) { 
-	    $command .= "; rmdir $out_dir/$out_root.$njobs;";
+	    ;#$command .= "; if [ -d $out_dir/$out_root.$njobs ] then rmdir $out_dir/$out_root.$njobs fi;";
 	}
+	if($suffix ne "") { $command .= " " . $suffix; }
+	# Note: -x is incompatible with -s and --fs, so $suffix will be "" if -x
 	printf SH ("echo \"\# Executing: %s\"\n", $command);
 	printf SH ("%s\n", $command);
     }
