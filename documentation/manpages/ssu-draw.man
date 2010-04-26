@@ -28,6 +28,14 @@ calculates per-consensus-column statistics on them and creates
 secondary structure diagrams that display those statistics using "heat
 map"-like color schemes. The statistics are also printed in tabular
 format to output text files for easy parsing. 
+.B ssu-draw
+can also draw secondary structure diagrams of individual
+sequences in the alignment with the 
+.B --indi-all
+and
+.B --indi-list
+options.
+
 
 Alignment masks,
 which define a subset of consensus positions to exclude from an alignment
@@ -38,22 +46,14 @@ Consensus columns are those which have a non-gap
 (non-'.') character in the reference annotation for the alignment. The
 reference annotation appears in lines beginning with "#=GC RF".
 .B ssu-draw 
-will use automatically display masks created by
+will automatically display masks created by
 .B ssu-mask
 if they exist in the same directory as the alignments.
-
-.B ssu-draw
-can also draw secondary structure diagrams of individual
-sequences in the alignment with the 
-.B --indi-all
-and
-.B --indi-list
-options.
 
 An important caveat of 
 .B ssu-draw
 is that only consensus positions of the SSU models
-models are drawn. Inserted residues (i.e. and target residue that does
+models are drawn. Inserted residues (i.e. any target residue that does
 not align to a consensus alignment position) are not drawn. 
 Another important limitation is that 
 .B ssu-draw 
@@ -63,7 +63,7 @@ using models other than the default ones (with the
 .B -m
 option to 
 .B ssu-align
-), unless the motivated user creates their own template postscript
+) unless the motivated user creates their own template postscript
 file for the models being used. For more information on this, see the 
 .B ssu-esl-ssdraw
 manual page.
@@ -114,7 +114,7 @@ will appear as open circles.
 .BI -f " <f>"
 Display the precalculated mask in file 
 .I <f>.
-This option will only work on a single alignment so either
+This option will only work on a single alignment, so either
 .B -a
 must be used, or 
 .I <dir> 
@@ -232,29 +232,36 @@ alignment statistics, each of the nine statistics can be drawn on
 single page diagrams using the following options. The output files
 will be named automatically based on the alignment file name.
 
+.TP 
 .B --prob
 Draw a single page diagram displaying average posterior probability
 per consensus position for each alignment to a file.
 
+.TP 
 .B --ifreq
 Draw a single page diagram displaying frequency of inserts after each
 consensus position for each alignment to a file.
 
+.TP 
 .B --iavglen
 Draw a single page diagram displaying average insert length after each
 consensus position for each alignment to a file.
 
-
+.TP 
 .B --dall
 Draw a single page diagram displaying the fraction of sequences that
 have a gap (deletion) at each consensus position for each alignment to a
 file.
 
-.B --dall
+.TP 
+.B --dint
 Draw a single page diagram displaying the fraction of sequences that
-have a gap (deletion) at each consensus position for each alignment to
-a file.
+have an internal gap (internal deletion) at each consensus position for each
+alignment to a file. An internal gap for a sequence is one that
+occurs after (3' of) the first aligned nongap residue in the sequence
+and before (5' of) the final aligned nongap residue in the sequence.
 
+.TP 
 .B --span
 Draw a single page diagram displaying the fraction of sequences that
 span each consensus position for each alignment to a file.  A sequence
@@ -262,14 +269,17 @@ s spans consensus position 'x' that is actual alignment position 'a'
 if s has at least one non-gap residue aligned to a position 'b' <= 'a'
 and at least one non-gap residue aligned to a position 'c' >= 'a'
 
+.TP 
 .B --info
 Draw a single page diagram displaying the information content
 of each consensus position for each alignment to a file. 
 
+.TP 
 .B --mutinfo
 Draw a single page diagram displaying the mutual information per
 basepaired position for each alignment to a file. 
 
+.TP 
 .B --no-aln
 Do not draw the default nine page diagram displaying all available
 statistics.
@@ -288,24 +298,28 @@ alignments. For pdfs, the file size will be about 1
 Mb for every 20 sequences. For postscript file, the size will be about
 1 Mb for every 2 sequences. 
 
+.TP 
 .B --indi-all
 Draw sequence and posterior probability diagrams for all sequences 
 in each alignment.
 
+.TP 
 .BI --indi-list " <f>"
 Draw sequence and posterior probability diagrams for only those sequences 
 listed in file
-.I <f>, 
+.I <f>
 which must be formatted as a list of sequence names, each on a
 separate line. All sequences listed in 
 .I <f>
 must exist in the alignment.
 
+.TP 
 .B --rf
 Draw a single page diagram displaying the reference (consensus)
 sequence/structure to a file. The sequence displayed will be the
 exact sequence from the #=GC RF annotation of the alignment file. 
 
+.TP 
 .B --no-prob
 With 
 .B --indi-list
@@ -316,12 +330,15 @@ sequence diagrams.
 
 .SH OPTIONS FOR OMITTING SECTIONS OF STRUCTURE DIAGRAMS:
 
+.TP 
 .B --no-leg 
 Omit the legend from all structure diagrams.
 
+.TP 
 .B --no-head
 Omit the header from all structure diagrams.
 
+.TP 
 .B --no-foot
 Omit the footer from all structure diagrams.
 

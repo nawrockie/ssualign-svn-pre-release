@@ -54,8 +54,8 @@ my $options_usage  = "where general options are:\n";
 #                  1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
 $options_usage .= "  -h           : show brief help on version and usage\n";
 $options_usage .= "  -f           : force; if dir named <output dir> already exists, empty it first\n";
-$options_usage .= "  -q           : third command line arg is number of seqs per job, not number of jobs\n";
 $options_usage .= "  -x           : run all <n> jobs in parallel on a single <n>-core machine\n";
+$options_usage .= "  -q           : third command line arg is number of seqs per job, not number of jobs\n";
 $options_usage .= "  -e           : split seqs so each job has an equal number of seqs, not nucleotides\n";
 $options_usage .= "  --no-bash    : write generic shell script instead of a bash-specific one\n";
 $options_usage .= "  --no-merge   : do not have final ssu-align job automatically merge all jobs\n";
@@ -82,8 +82,8 @@ my %opt_passed_H = ();       # key: option; value: "1" if option will get passed
 my $enabled_options = "";    # string of all enabled options and their arguments (prob not in same order as they were on cmd line)
 my $opt;
 
-$opt_takes_arg_H{"-q"}           = 0;  push(@opt_order_A, "-q");
 $opt_takes_arg_H{"-x"}           = 0;  push(@opt_order_A, "-x");
+$opt_takes_arg_H{"-q"}           = 0;  push(@opt_order_A, "-q");
 $opt_takes_arg_H{"-e"}           = 0;  push(@opt_order_A, "-e");
 $opt_takes_arg_H{"--no-bash"}    = 0;  push(@opt_order_A, "--no-bash");
 $opt_takes_arg_H{"--no-merge"}   = 0;  push(@opt_order_A, "--no-merge");
@@ -102,8 +102,8 @@ foreach $opt (@opt_order_A) { $opt_passed_H{$opt} = 1; }
 #Now manually set some to '0' (FALSE):
 $opt_passed_H{"-h"}           = 0;
 $opt_passed_H{"-f"}           = 0;
-$opt_passed_H{"-q"}           = 0;
 $opt_passed_H{"-x"}           = 0;
+$opt_passed_H{"-q"}           = 0;
 $opt_passed_H{"-e"}           = 0;
 $opt_passed_H{"-p"}           = 0;
 $opt_passed_H{"-s"}           = 0;
@@ -122,8 +122,8 @@ foreach $opt (keys %opt_takes_arg_H) {
 Getopt::Long::Configure ("bundling");
 my $opt_return = GetOptions
     ('h'          => \$opt_H{"-h"}, 
-     'q'          => \$opt_H{"-q"},
      'e'          => \$opt_H{"-e"},
+     'q'          => \$opt_H{"-q"},
      'x'          => \$opt_H{"-x"},
      'no-bash'    => \$opt_H{"--no-bash"},
      'no-merge'   => \$opt_H{"--no-merge"},
@@ -325,7 +325,7 @@ sub determine_prefix_and_suffix {
 	    PrintErrorAndExit("ERROR, the input file " . $opt_HR->{"--fs"} . "specified with --fs does not exist.", $sum_file, $log_file, 1);
 	}
 	open(SUF, $opt_HR->{"--fs"}) || FileOpenFailure($opt_HR->{"--fs"}, $sum_file, $log_file, $!, "reading");
-	while($line = <PRE>) { 
+	while($line = <SUF>) { 
 	    if($line !~ m/^#/) { #skip comment lines
 		chomp $line;
 		$suffix .= $line;
@@ -674,7 +674,7 @@ sub partition_seqfile_and_write_shell_script {
 	printf SH ("# The --no-merge option was selected and so the user is responsible for manually\n");
 	printf SH ("# merging all jobs once they have all finished. To do this from the current\n");
 	printf SH ("# working directory, execute:\n");
-	printf SH ("#\t'ssu-merge $out_dir\n");
+	printf SH ("#\tssu-merge $out_dir\n");
 	printf SH ("#\n");
 	if(! $opt_HR->{"--no-bash"}) { 
 	    printf SH ("# The for loop will execute all %d jobs:\n", $njobs-1, $njobs);
@@ -725,7 +725,8 @@ sub partition_seqfile_and_write_shell_script {
 	PrintStringToFile($sum_file, 1, $str);
     }	
     if($opt_HR->{"--no-bash"}) { 
-	for($i = 1; $i <= $njobs-1; $i++) { 
+	my $last_job2print = ($opt_HR->{"--no-merge"}) ? $njobs : $njobs-1;
+	for($i = 1; $i <= $last_job2print; $i++) { 
 	    $target_subfile_root = RemoveDirPath($seqfile) . ".$i";
 	    $command   = ($prefix eq "")           ? "" : $prefix . " ";
 	    $command  .= "$ssualign " . $ssualign_enabled_options . "$out_dir/$target_subfile_root $out_dir/$out_root.$i";

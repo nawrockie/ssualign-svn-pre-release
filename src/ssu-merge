@@ -61,7 +61,7 @@ my $options_usage  = "where general options are:\n";
 #                           1         2         3         4         5         6         7         8
 #                  12345678901234567890123456789012345678901234567890123456789012345678901234567890
 $options_usage .= "  -h        : show brief help on version and usage\n";
-$options_usage .= "  -m <s>    : use CM file <s> instead of the default CM file\n";
+#$options_usage .= "  -m <s>    : use CM file <s> instead of the default CM file\n";
 $options_usage .= "  -f        : force; allow file clobbering\n";
 $options_usage .= "  --rfonly  : when merging alignments, only keep consensus (non-gap RF) columns\n";
 $options_usage .= "  --keep    : don't remove original files after they have been merged\n";
@@ -207,7 +207,7 @@ if(! $opt_H{"--list"}) {
 					 \@fa_files_A, \@cm_names_A, \$alimerge, \$cm_file, \$no_search_enabled, \$no_align_enabled, \$aln_one_cm, \$ileaved_enabled, \$dna_enabled, $sum_file, $log_file);
 }
 else { #--list enabled 
-    validate_and_setup_ssu_merge_list($list_file, \$alimerge, $sum_file);
+    validate_and_setup_ssu_merge_list($list_file, \$alimerge, $sum_file, $log_file);
     PrintStringToFile($sum_file, 1, "#\n");
 
     ####################################
@@ -237,6 +237,7 @@ else { #--list enabled
 	}
     }
     close(ALIMERGE);
+    UnlinkFile($alimerge_out_file, $log_file);
 
     $total_seconds += SecondsSinceEpoch($time_hires_installed);
     PrintConclusion($sum_file, $log_file, $sum_file2print, $log_file2print, $total_seconds, $time_hires_installed, $dir, \%globals_H);
@@ -534,7 +535,7 @@ exit(0);
 # $fa_files_AR:               reference to array of individual fasta files 
 # $cm_names_AR:               reference to array of CM names
 # $alimerge_R:                RETURN; esl-alimerge executable command
-# $cm_file_R:                 RETURN; the path to the CM file, either default CM file or <s> from -m <s>
+# $cm_file_R:                 RETURN; the path to the CM file, either default CM file or <s> from -m <s> used by ssu-align
 # $no_search_enabled_R:       RETURN; '1' if we examine the ssu-prep summary file and find that --no-search was used
 # $no_align_enabled_R:        RETURN; '1' if we examine the ssu-prep summary file and find that --no-align was used
 # $aln_one_cm_R:              RETURN; <s> if --aln-one <s> used in ssu-align runs, or "" if --aln-one not used
@@ -619,7 +620,12 @@ sub validate_and_setup_ssu_merge_default {
 	PrintErrorAndExit("ERROR, unable to read line beginning \"\# command\:\" in ssu-prep summary file: $ssu_prep_sum.", $sum_file, $log_file, 1);
     }
 
-    #Make sure the CM file exists (we may have read it as the argument to -m in the ssu-prep file)
+    # Make sure the CM file exists:
+    # if 'ssu-merge -m <s>' enabled, use <s> (NOTE: -m not listed with ssu-merge -h, it should not be necessary,
+    # b/c *.ssu-prep.sum will have its own -m <s> if it was used in ssu-prep, however I left -m in in case
+    # the user moved the CM file or something, they can still get ssu-merge to work. They'll have to have
+    # it fail first, and the error message will tell them they can use 'ssu-merge -m <s>' to specify the
+    # CM file to use.
     if($opt_HR->{"-m"} ne "") { # overwrite whatever we read in the ssu-prep file
 	$cm_file = FindPossiblySharedFile($opt_HR->{"-m"}, $ssualigndir);
 	if(!(-e $cm_file))   { PrintErrorAndExit("ERROR, CM file $cm_file, specified with -m does not exist.", $sum_file, $log_file, 1); }
@@ -1313,7 +1319,7 @@ sub clean_up_post_merge {
 ####################################################################
 sub validate_and_setup_ssu_merge_list { 
     my $narg_expected = 4;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, validate_and_setup_ssu_merge_default() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, validate_and_setup_ssu_merge_list() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
     my($list_file, $alimerge_R, $sum_file, $log_file) = @_;
 
     my ($line, $file);

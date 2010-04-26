@@ -749,7 +749,7 @@ sub DetermineNumSeqsStockholm {
     my($alistat, $alifile, $ileaved, $key, $sum_file, $log_file, $nseq_AR, $nali_R) = @_;
 
     my ($nseq, $command, $line, $command_worked, $output, $small_opt);
-    my $tmp_alistat_file = TempFilename($log_file, $key);
+    my $tmp_alistat_file = TempFilename($sum_file, $log_file, $key);
     if($ileaved) { $small_opt = ""; } 
     else         { $small_opt = " --rna --informat pfam --small"; } 
     $command = "$alistat $small_opt $alifile > $tmp_alistat_file";

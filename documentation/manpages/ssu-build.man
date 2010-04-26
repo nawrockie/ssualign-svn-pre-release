@@ -5,6 +5,9 @@
 ssu-build - build small subunit ribosomal RNA (16s/18s SSU rRNA) covariance models
 
 .SH SYNOPSIS
+
+.TP
+Build models using a user-created Stockholm alignment:
 .B ssu-build
 .I [options]
 .I alignment-file
@@ -50,7 +53,7 @@ option, which specifies that a subset of the input alignment be used
 to construct a non-full length model of a SSU rRNA, such as within
 positions spanned by a specific set of primers designed to target a
 variable region. (See the description of the
-.BI --trunc <s>
+.BI --trunc " <s>"
 option below for details on its usage.)
 
 .PP
@@ -65,7 +68,7 @@ SSU rRNA region that the newly constructed model represents.
 
 .PP
 The 
-.BI --trunc <s>
+.BI --trunc " <s>"
 option requires the user to know the beginning and ending 
 .I consensus
 position of the desired region. Running
@@ -89,7 +92,7 @@ from the
 .B INFERNAL
 package to construct CMs. Interested and motivated users can use
 .B cmbuild
- directly to create models. The version installed with 
+directly to create models. The version installed with 
 .B SSU-ALIGN
 is actually called 
 .B ssu-cmbuild
@@ -184,17 +187,6 @@ to use with the
 option. 
 
 .TP
-.B --num
-Do not build a CM. Instead, create a new alignment that is identical
-to the input alignment (or default seed alignment if
-.B -d) 
-but that has extra annotation numbering consensus positions. This
-option is meant to be helpful for determining start and end positions
-to use with the
-.B --trunc
-option. 
-
-.TP
 .B -i
 Output alignments in interleaved Stockholm format of a fixed width
 that may be more convenient for reading. Without this option,
@@ -208,7 +200,7 @@ Stockholm alignment) to determine which columns in the input alignment
 are consensus, and
 which are not. Any non-gap character indicates a consensus
 column. (For example, mark consensus columns with "x", and insert
-columns with ".".). This is true by default if the 
+columns with "."). This is true by default if the 
 .B -d
 option is used, in which case 
 .B ssu-build

@@ -18,41 +18,41 @@ Mask single alignment file <aln>:
 .I [options]
 .I aln
 
-.\".TP 
-.\"List sequences in alignments in <dir>:
-.\".B ssu-mask --list
-.\".I [options]
-.\".I <dir>
+.TP 
+List sequences in alignments in <dir>:
+.B ssu-mask --list
+.I [options]
+.I <dir>
 
-.\".TP 
-.\"List sequences in alignment file <aln>:
-.\".B ssu-mask -a --list
-.\".I [options]
-.\".I <dir>
+.TP 
+List sequences in alignment file <aln>:
+.B ssu-mask -a --list
+.I [options]
+.I <dir>
 
-.\".TP 
-.\"Convert Stockholm alignments in <dir> to aligned FASTA:
-.\".B ssu-mask --stk2afa
-.\".I [options]
-.\".I <dir>
+.TP 
+Convert Stockholm alignments in <dir> to aligned FASTA:
+.B ssu-mask --stk2afa
+.I [options]
+.I <dir>
 
-.\".TP 
-.\"Convert Stockholm alignment <aln> to aligned FASTA:
-.\".B ssu-mask -a --stk2afa
-.\".I [options]
-.\".I <dir>
+.TP 
+Convert Stockholm alignment <aln> to aligned FASTA:
+.B ssu-mask -a --stk2afa
+.I [options]
+.I <dir>
 
-.\".TP 
-.\"Extract a subset of sequences from an alignment: 
-.\".B ssu-mask -a --seq-k <listfile>
-.\".I [options]
-.\".I <aln>
+.TP 
+Extract a subset of sequences from an alignment: 
+.B ssu-mask -a --seq-k <listfile>
+.I [options]
+.I <aln>
 
-.\".TP 
-.\"Remove a subset of sequences from an alignment:
-.\".B ssu-mask -a --seq-r <listfile>
-.\".I [options]
-.\".I <aln>
+.TP 
+Remove a subset of sequences from an alignment:
+.B ssu-mask -a --seq-r <listfile>
+.I [options]
+.I <aln>
 
 
 .SH DESCRIPTION
@@ -71,6 +71,17 @@ The
 .B -a
 option specifies that the command line argument 
 is a single alignment file to mask, not a directory.
+
+.PP
+By default, the alignment masks are automatically computed by 
+.B ssu-mask
+based on alignment confidence estimates in the alignment files
+(posterior probabilities) and applied to remove columns from the
+alignments, as described below. Alternatively, pre-computed masks can
+be used to enable comparison across multiple datasets. To use a
+the default @PACKAGE@-@PACKAGE_VERSION@ mask, see the 
+.B -d 
+option.
 
 .PP
 The main purpose of masking is to remove the columns from an
@@ -212,10 +223,10 @@ Use the precalculated, default @PACKAGE@-@PACKAGE_VERSION@ masks.
 These masks were determined by applying the default 95%/0.95 PP-based masking
 strategy described above on very deep SSU alignments. See the User's
 Guide for details. The default masks are named 
-.I archaea-@PACKAGE-VERSION@.ps,
-.I bacteria-@PACKAGE-VERSION@.ps,
+.I archaea-@PACKAGE-VERSION@.mask,
+.I bacteria-@PACKAGE-VERSION@.mask,
 and
-.I eukarya-@PACKAGE-VERSION@.ps
+.I eukarya-@PACKAGE-VERSION@.mask
 and are installed in ENV{$SSUALIGNDIR}.
 
 .TP
@@ -409,14 +420,17 @@ Do not draw any mask diagrams.
 
 .SH OPTIONS FOR ALTERNATIVES TO MASKING (LISTING, CONVERTING, OR REMOVING SEQUENCES):
 
+.TP 
 .B --list
 For each alignment, create a file that simply lists each sequence in
 the aligment on a separate line. Masking is not performed.
 
+.TP 
 .B --stk2afa
 Convert each Stockholm alignment to aligned FASTA format. Masking
 is not performed.
 
+.TP 
 .BI --seq-k " <f>"
 Remove all sequences 
 .B except 
@@ -429,6 +443,7 @@ combination with
 because it will only work on a single alignment.
 Masking is not performed.
 
+.TP 
 .BI --seq-r " <f>"
 Remove all sequences listed in file 
 .I <f>.
