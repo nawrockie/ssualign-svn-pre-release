@@ -21,6 +21,9 @@ else {
     exit 0;
 }
 
+if(($dir eq ".") || ($dir eq "./")) { die "ERROR, the output temporary directory cannot be \."; }
+if($dir eq "data") { die "ERROR, the output temporary directory cannot be \"data\""; }
+
 $scriptdir =~ s/\/$//; # remove trailing "/" 
 $datadir   =~ s/\/$//; # remove trailing "/" 
 
@@ -67,9 +70,9 @@ foreach $name (@name_A) {
 $testctr = 1;
 
 # Do ssu-align call, required for all tests:
-run_align($ssualign, $fafile, $dir, "-F", $testctr);
-check_for_files($dir, $dir, $testctr, \@name_A, ".hits.list");
-check_for_files($dir, $dir, $testctr, \@name_A, ".hits.fa");
+run_align($ssualign, $fafile, $dir, "-f", $testctr);
+check_for_files($dir, $dir, $testctr, \@name_A, ".hitlist");
+check_for_files($dir, $dir, $testctr, \@name_A, ".fa");
 check_for_files($dir, $dir, $testctr, \@name_A, ".stk");
 check_for_files($dir, $dir, $testctr, \@name_A, ".ifile");
 check_for_files($dir, $dir, $testctr, \@name_A, ".cmalign");
@@ -611,6 +614,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     if($output !~ /$dir.eukarya.stk\s+$dir.eukarya.afa/) { die "ERROR, problem with stockholm to aligned fasta conversion"; }
     remove_files              (".", $dir . ".eukarya.afa");
     remove_files              (".", $dir . ".eukarya.ssu-mask");
+    remove_files              (".", $dir . ".eukarya.ssu-mask");
 }
 $testctr++;
 
@@ -642,7 +646,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     if($output !~ /$dir.eukarya.seqk.stk\s+3/) { die "ERROR, problem with stockholm to aligned fasta conversion"; }
     remove_files              (".", $dir . ".eukarya.list");
     remove_files              (".", $dir . ".eukarya.seqk");
-    remove_files              (".", $dir . ".eukarya.ssu-mask.sum");
+    remove_files              (".", $dir . ".eukarya.ssu-mask");
 }
 $testctr++;
 
@@ -674,7 +678,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     if($output !~ /$dir.eukarya.seqr.stk\s+2/) { die "ERROR, problem with stockholm to aligned fasta conversion"; }
     remove_files              (".", $dir . ".eukarya.list");
     remove_files              (".", $dir . ".eukarya.seqr");
-    remove_files              (".", $dir . ".eukarya.ssu-mask.sum");
+    remove_files              (".", $dir . ".eukarya.ssu-mask");
 }
 $testctr++;
 
@@ -683,17 +687,17 @@ $testctr++;
 ####################################
 if(($testnum eq "") || ($testnum == $testctr)) {
     # first, build new v4.cm with 3 v4 CMs
-    run_build($ssubuild, "archaea", "-F -d --trunc 525-765  -n arc-v4 -o       v4.cm", $testctr);
+    run_build($ssubuild, "archaea", "-f -d --trunc 525-765  -n arc-v4 -o       v4.cm", $testctr);
     check_for_files           (".", "", $testctr, \@arc_only_A, "-0p1-sb.525-765.stk");
     check_for_one_of_two_files(".", "", $testctr, \@arc_only_A, "-0p1-sb.525-765.ps", "-0p1-sb.525-765.pdf");
     remove_files              (".", "0p1-sb.525-765");
 
-    run_build($ssubuild, "bacteria", "-F -d --trunc 584-824  -n bac-v4 --append v4.cm", $testctr);
+    run_build($ssubuild, "bacteria", "-f -d --trunc 584-824  -n bac-v4 --append v4.cm", $testctr);
     check_for_files           (".", "", $testctr, \@bac_only_A, "-0p1-sb.584-824.stk");
     check_for_one_of_two_files(".", "", $testctr, \@bac_only_A, "-0p1-sb.584-824.ps", "-0p1-sb.584-824.pdf");
     remove_files              (".", "0p1-sb.584-824");
 
-    run_build($ssubuild, "eukarya", "-F -d --trunc 620-1082 -n euk-v4 --append v4.cm", $testctr);
+    run_build($ssubuild, "eukarya", "-f -d --trunc 620-1082 -n euk-v4 --append v4.cm", $testctr);
     check_for_files           (".", "", $testctr, \@euk_only_A, "-0p1-sb.620-1082.stk");
     check_for_one_of_two_files(".", "", $testctr, \@euk_only_A, "-0p1-sb.620-1082.ps", "-0p1-sb.620-1082.pdf");
     remove_files              (".", "0p1-sb.620-1082");
@@ -702,9 +706,9 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     @v4_arc_only_A = ("arc-v4");
 
     # next, call ssu-align with new v4.cm
-    run_align($ssualign, $fafile, $dir, "-F -m v4.cm", $testctr);
-    check_for_files($dir, $dir, $testctr, \@v4_name_A, ".hits.list");
-    check_for_files($dir, $dir, $testctr, \@v4_name_A, ".hits.fa");
+    run_align($ssualign, $fafile, $dir, "-f -m v4.cm", $testctr);
+    check_for_files($dir, $dir, $testctr, \@v4_name_A, ".hitlist");
+    check_for_files($dir, $dir, $testctr, \@v4_name_A, ".fa");
     check_for_files($dir, $dir, $testctr, \@v4_name_A, ".stk");
     check_for_files($dir, $dir, $testctr, \@v4_name_A, ".ifile");
     check_for_files($dir, $dir, $testctr, \@v4_name_A, ".cmalign");
@@ -735,16 +739,16 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     # first, build new trna.cm 
     $trna_cmfile = "trna-5.cm";
     @trna_only_A = "trna-5";
-    run_build($ssubuild, $trna_stkfile, "-F --rf -n $trna_only_A[0] -o $trna_cmfile", $testctr);
+    run_build($ssubuild, $trna_stkfile, "-f --rf -n $trna_only_A[0] -o $trna_cmfile", $testctr);
     check_for_files           (".", "", $testctr, \@trna_only_A, ".cm");
     check_for_files           (".", "", $testctr, \@trna_only_A, ".ssu-build.log");
     check_for_files           (".", "", $testctr, \@trna_only_A, ".ssu-build.sum");
     remove_files(".", "trna-5.ssu-build");
 
     # next, call ssu-align with new $trna_cmfile
-    run_align($ssualign, $trna_fafile, $dir, "-F -m $trna_cmfile", $testctr);
-    check_for_files($dir, $dir, $testctr, \@trna_only_A, ".hits.list");
-    check_for_files($dir, $dir, $testctr, \@trna_only_A, ".hits.fa");
+    run_align($ssualign, $trna_fafile, $dir, "-f -m $trna_cmfile", $testctr);
+    check_for_files($dir, $dir, $testctr, \@trna_only_A, ".hitlist");
+    check_for_files($dir, $dir, $testctr, \@trna_only_A, ".fa");
     check_for_files($dir, $dir, $testctr, \@trna_only_A, ".stk");
     check_for_files($dir, $dir, $testctr, \@trna_only_A, ".ifile");
     check_for_files($dir, $dir, $testctr, \@trna_only_A, ".cmalign");
@@ -771,6 +775,13 @@ if(($testnum eq "") || ($testnum == $testctr)) {
 }
 $testctr++;
 
+# Clean up
+if(-d $dir) { 
+    foreach $file (glob("$dir/*")) { 
+	unlink $file;
+    }
+    rmdir $dir;
+}
 
 printf("All commands completed successfully.\n");
 exit 0;

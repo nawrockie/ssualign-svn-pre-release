@@ -24,6 +24,9 @@ if($dir =~ m/draw/) {
     die "ERROR, <tmpfile and tmpdir prefix> cannot contain 'draw'";
 }
 
+if(($dir eq ".") || ($dir eq "./")) { die "ERROR, the output temporary directory cannot be \."; }
+if($dir eq "data") { die "ERROR, the output temporary directory cannot be \"data\""; }
+
 $scriptdir =~ s/\/$//; # remove trailing "/" 
 $datadir   =~ s/\/$//; # remove trailing "/" 
 
@@ -58,7 +61,6 @@ $trna_psfile  = $datadir . "/trna-ssdraw.ps";
 @euk_only_A = ("eukarya");
 @ssudraw_only_A = ("ssu-draw");
 $mask_key_in  = "181";
-$mask_key_out = "1.8.1";
 $draw_key_out = "1.8.1";
 
 if (! -e "$fafile")       { die "FAIL: didn't find fasta file $fafile in data dir $datadir"; }
@@ -72,9 +74,9 @@ foreach $name (@name_A) {
 $testctr = 1;
 
 # Do ssu-align call, required for all tests:
-run_align($ssualign, $fafile, $dir, "-F", $testctr);
-check_for_files($dir, $dir, $testctr, \@name_A, ".hits.list");
-check_for_files($dir, $dir, $testctr, \@name_A, ".hits.fa");
+run_align($ssualign, $fafile, $dir, "-f", $testctr);
+check_for_files($dir, $dir, $testctr, \@name_A, ".hitlist");
+check_for_files($dir, $dir, $testctr, \@name_A, ".fa");
 check_for_files($dir, $dir, $testctr, \@name_A, ".stk");
 check_for_files($dir, $dir, $testctr, \@name_A, ".ifile");
 check_for_files($dir, $dir, $testctr, \@name_A, ".cmalign");
@@ -175,7 +177,8 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     if($output =~ /Executing\:\s+ssu-esl-ssdraw.+\-\-mask/) { die "ERROR, problem with drawing"; } 
     remove_files              (".", "bacteria.draw");
     remove_files              (".", "bacteria.ssu-draw");
-
+    remove_files              (".", "bacteria.pdf");
+    remove_files              (".", "bacteria.ps");
     # remove masks
     remove_files              ($dir, "mask");
 }
@@ -410,6 +413,8 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     if($output !~ /span\s+1\s+0.6\d+\s+5\s*span/)                  { die "ERROR, problem with drawing"; } 
     remove_files              (".", "eukarya.draw");
     remove_files              (".", "eukarya.ssu-draw");
+    remove_files              (".", "eukarya.pdf");
+    remove_files              (".", "eukarya.ps");
 }
 $testctr++;
 
@@ -473,6 +478,8 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     if($output !~ /span\s+1\s+0.4\d+\s+4\s*span/)                  { die "ERROR, problem with drawing"; } 
     remove_files              (".", "bacteria.$draw_key_out.draw");
     remove_files              (".", "bacteria.$draw_key_out.ssu-draw");
+    remove_files              (".", "bacteria.$draw_key_out.pdf");
+    remove_files              (".", "bacteria.$draw_key_out.ps");
 }
 $testctr++;
 
@@ -514,8 +521,10 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     if($output !~ /span\s+1\s+0.4\d+\s+4\s+1\s*span/)                  { die "ERROR, problem with drawing"; } 
     remove_files              (".", "bacteria.$mykey.draw");
     remove_files              (".", "bacteria.$mykey.ssu-draw");
-    remove_files              (".", "bacteria.mask");
-    remove_files              (".", "bacteria.ssu-mask");
+    remove_files              (".", "bacteria.$mykey.mask");
+    remove_files              (".", "bacteria.$mykey.ssu-mask");
+    remove_files              (".", "bacteria.$mykey.pdf");
+    remove_files              (".", "bacteria.$mykey.ps");
 }
 $testctr++;
 
@@ -809,14 +818,14 @@ if(($testnum eq "") || ($testnum == $testctr)) {
 	system("cp $maskfile $newmaskfile");
 	if ($? != 0) { die "FAIL: cp command failed unexpectedly";}
     }
-    run_draw                  ($ssudraw, $dir . "/" . $dir . ".bacteria.stk", "--mutinfo -k $mask_key_in -a", $testctr);
+    run_draw                  ($ssudraw, $dir . "/" . $dir . ".bacteria.stk", "--mutinfo --no-aln -k $mask_key_in -a", $testctr);
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".mutinfo.drawtab");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
     check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".mutinfo.pdf", ".mutinfo.ps");
     $output = `cat $dir.bacteria.ssu-draw.sum`;
     if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.mutinfo.p\w+\s+1\s*/)    { die "ERROR, problem with drawing"; }
-    $output = `cat $dir.bacteria.drawtab`;
+    $output = `cat $dir.bacteria.mutinfo.drawtab`;
     if($output !~ /mutualinfo\s+62\s+140\s+246\s+1.18\d+\s+1.18\d+\s+0.40\d+\s+4\s+3\s+0\s+1\s*mutualinfo/) { die "ERROR, problem with drawing"; }
     remove_files              (".", "bacteria.mutinfo");
     remove_files              (".", "bacteria.ssu-draw");
@@ -912,6 +921,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     # NOTE: no drawtab file is created, and the postscript is not checked (I could do that, but don't)
     remove_files              (".", "eukarya.indi");
     remove_files              (".", "eukarya.ssu-draw");
+    remove_files              (".", "eukarya.ssu-mask");
     remove_files              (".", "eukarya.list");
     remove_files              (".", "eukarya.seqk");
 }
@@ -1097,27 +1107,29 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     if($output =~ /\(alignment file\:/)                 { die "ERROR, problem with drawing"; }
     remove_files              (".", "bacteria.info");
     remove_files              (".", "bacteria.ssu-draw");
+    remove_files              (".", "bacteria.pdf");
+    remove_files              (".", "bacteria.ps");
 }
 $testctr++;
 
 ####################################
 # Test the special -m and -t options
 ####################################
-# Note: the build parts of these tests are identical to those found in other test scripts: ssu-align.itest.pl, ssu-mask.itest.pl
+# Note: the build parts of these tests are identical to those found in other test scripts: ssu-align-merge-prep.itest.pl, ssu-mask.itest.pl
 if(($testnum eq "") || ($testnum == $testctr)) {
     # first, build new trna.cm 
     $trna_cmfile = "trna-5.cm";
     @trna_only_A = "trna-5";
-    run_build($ssubuild, $trna_stkfile, "-F --rf -n $trna_only_A[0] -o $trna_cmfile", $testctr);
+    run_build($ssubuild, $trna_stkfile, "-f --rf -n $trna_only_A[0] -o $trna_cmfile", $testctr);
     check_for_files           (".", "", $testctr, \@trna_only_A, ".cm");
     check_for_files           (".", "", $testctr, \@trna_only_A, ".ssu-build.log");
     check_for_files           (".", "", $testctr, \@trna_only_A, ".ssu-build.sum");
     remove_files(".", "trna-5.ssu-build");
 
     # next, call ssu-align with new $trna_cmfile
-    run_align($ssualign, $trna_fafile, $dir, "-F -m $trna_cmfile", $testctr);
-    check_for_files($dir, $dir, $testctr, \@trna_only_A, ".hits.list");
-    check_for_files($dir, $dir, $testctr, \@trna_only_A, ".hits.fa");
+    run_align($ssualign, $trna_fafile, $dir, "-f -m $trna_cmfile", $testctr);
+    check_for_files($dir, $dir, $testctr, \@trna_only_A, ".hitlist");
+    check_for_files($dir, $dir, $testctr, \@trna_only_A, ".fa");
     check_for_files($dir, $dir, $testctr, \@trna_only_A, ".stk");
     check_for_files($dir, $dir, $testctr, \@trna_only_A, ".ifile");
     check_for_files($dir, $dir, $testctr, \@trna_only_A, ".cmalign");
@@ -1207,10 +1219,18 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     # now remove mask files
     remove_files(".", "trna-5.mask");
     remove_files(".", "trna-5.ssu-mask");
-
+    remove_files(".", "trna-5.ssu-draw");
     remove_files(".", "trna-5.cm");
 }
 $testctr++;
+
+# Clean up
+if(-d $dir) { 
+    foreach $file (glob("$dir/*")) { 
+	unlink $file;
+    }
+    rmdir $dir;
+}
 
 printf("All commands completed successfully.\n");
 exit 0;

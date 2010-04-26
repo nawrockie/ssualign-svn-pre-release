@@ -80,6 +80,18 @@ sub run_merge {
     return;
 }
 #####################################################
+sub run_merge_in_list_mode { 
+    if(scalar(@_) != 5) { die "TEST SCRIPT ERROR: run_merge_in_list_mode called with " . scalar(@_) . " != 5 arguments."; }
+    my ($ssumerge, $listfile, $outfile, $extra_opts, $testctr) = @_;
+    my $command;
+    $extra_opts =~ s/^\s*/ /; $extra_opts =~ s/\s*$/ /;
+    $command = "$ssumerge --list" . $extra_opts . "$listfile $outfile > /dev/null"; 
+    printf("Running merge --list command for set %3d: $command\n", $testctr);
+    system("$command");
+    if ($? != 0) { die "FAIL: ssu-merge --list $testctr failed unexpectedly"; }
+    return;
+}
+#####################################################
 sub run_prep { 
     if(scalar(@_) != 6) { die "TEST SCRIPT ERROR: run_prep called with " . scalar(@_) . " != 6 arguments."; }
     my ($ssuprep, $fafile, $dir, $nprocs, $extra_opts, $testctr) = @_;
