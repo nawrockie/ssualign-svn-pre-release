@@ -48,7 +48,7 @@ my $total_seconds = -1 * SecondsSinceEpoch($time_hires_installed);
 
 my $script_desc    = "align SSU rRNA sequences";
 my $date           = scalar localtime();
-my $usage          = "Usage: ssu-align [-options] <sequence file> <project name>\n";
+my $usage          = "Usage: ssu-align [-options] <sequence file> <output dir>\n";
 my $options_usage  = "where general options are:\n";
 $options_usage .= "  -h     : show brief help on version and usage\n";
 # Append all other option descriptions, this is done by a external function so it's always
@@ -130,7 +130,7 @@ if(($opt_H{"--keep-merge"}) && ($opt_H{"--merge"} eq "")) {
 if(scalar(@ARGV) != 2) {   
     print "Incorrect number of command line arguments.\n";
     print $usage;
-    print "\nTo see more help on available options, do ssu-draw -h\n\n";
+    print "\nTo see more help on available options, do ssu-align -h\n\n";
     exit(1);
 }
 my ($target_file, $out_dir) = @ARGV;

@@ -48,24 +48,41 @@ my $total_seconds = -1 * SecondsSinceEpoch($time_hires_installed);
 
 my $script_desc    = "prepare SSU rRNA sequences for parallel ssu-align jobs";
 my $date           = scalar localtime();
-my $usage          = "Usage: ssu-prep [-options] <sequence file> <project name> <number of ssu-align jobs>\n";
+my $usage          = "";
+$usage          = "Usage: ssu-prep    [-options] <seqfile> <output dir> <num jobs> <prefix/suffix file>\n";
+$usage         .= "Usage: ssu-prep -x [-options] <seqfile> <output dir> <num jobs>\n";
+$usage         .= "Usage: ssu-prep -y [-options] <seqfile> <output dir> <num jobs>\n";
+$usage         .= "\n";
+$usage         .= "ssu-prep splits up <seqfile> into <num jobs> smaller files and creates a shell\n";
+$usage         .= "script that will execute <num jobs> ssu-align jobs in parallel, each processing\n";
+$usage         .= "one of the small sequence files. The results of all jobs will automatically be\n";
+$usage         .= "merged together by the final job, giving the same results as if a single\n";
+$usage         .= "ssu-align job was run for the complete <seqfile>.\n";
+$usage         .= "\n";
+$usage         .= "The 3 different usages control how the prefix and suffix are defined for the jobs\n";
+$usage         .= "in the output shell script, allowing, for example, the user to wrap the ssu-align\n";
+$usage         .= "commands in a cluster submission command (such as Sun Grid Engine's \"qsub\"):\n";
+$usage         .= "\n";
+$usage         .= "Default: (neither -x nor -y enabled) prefix and suffix for ssu-align jobs in\n";
+$usage         .= "         output shell script are defined in <prefix/suffix file>. First line is\n";
+$usage         .= "         the prefix, second line is the suffix.\n";
+$usage         .= "With -x: do not specify <prefix/suffix file>; output shell script will run all\n";
+$usage         .= "         <num jobs> jobs in parallel on one machine with <num jobs> cores/cpus.\n";
+$usage         .= "With -y: do not specify <prefix/suffix file>; user will manually add the desired\n";
+$usage         .= "         prefix/suffix to ssu-align commands after ssu-prep finishes.";
+$usage         .= "\n";
 my $options_usage  = "where general options are:\n";
 #                           1         2         3         4         5         6         7         8         9        10
 #                  1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
 $options_usage .= "  -h           : show brief help on version and usage\n";
+#$options_usage .= "  -x           : run all <n> jobs in parallel on a single <n>-core machine (see above)\n";
+#$options_usage .= "  -y           : no job prefix/suffix; user will manually add these later  (see above)\n";
 $options_usage .= "  -f           : force; if dir named <output dir> already exists, empty it first\n";
-$options_usage .= "  -x           : run all <n> jobs in parallel on a single <n>-core machine\n";
 $options_usage .= "  -q           : third command line arg is number of seqs per job, not number of jobs\n";
 $options_usage .= "  -e           : split seqs so each job has an equal number of seqs, not nucleotides\n";
 $options_usage .= "  --no-bash    : write generic shell script instead of a bash-specific one\n";
 $options_usage .= "  --no-merge   : do not have final ssu-align job automatically merge all jobs\n";
 $options_usage .= "  --keep-merge : have final ssu-align job not remove small files as they are merged\n";
-
-$options_usage .= "\noptions for adding prefixes and/or suffixes to the ssu-align commands:\n";
-$options_usage .= "  -p <s>     : <s> is prefix for ssu-align commands\n";
-$options_usage .= "  -s <s>     : <s> is suffix for ssu-align commands\n";
-$options_usage .= "  --fp <f>   : file <f> contains 1 line the prefix for the ssu-align jobs\n";
-$options_usage .= "  --fs <f>   : file <f> contains 1 line the suffix for the ssu-align jobs\n";
 
 # Append all other option descriptions, this is done by a external function so it's always
 # sync'ed between ssu-align and ssu-prep (which also displays ssu-align's options)
@@ -83,15 +100,12 @@ my $enabled_options = "";    # string of all enabled options and their arguments
 my $opt;
 
 $opt_takes_arg_H{"-x"}           = 0;  push(@opt_order_A, "-x");
+$opt_takes_arg_H{"-y"}           = 0;  push(@opt_order_A, "-y");
 $opt_takes_arg_H{"-q"}           = 0;  push(@opt_order_A, "-q");
 $opt_takes_arg_H{"-e"}           = 0;  push(@opt_order_A, "-e");
 $opt_takes_arg_H{"--no-bash"}    = 0;  push(@opt_order_A, "--no-bash");
 $opt_takes_arg_H{"--no-merge"}   = 0;  push(@opt_order_A, "--no-merge");
 $opt_takes_arg_H{"--keep-merge"} = 0;  push(@opt_order_A, "--keep-merge");
-$opt_takes_arg_H{"-p"}           = 1;  push(@opt_order_A, "-p");
-$opt_takes_arg_H{"-s"}           = 1;  push(@opt_order_A, "-s");
-$opt_takes_arg_H{"--fp"}         = 1;  push(@opt_order_A, "--fp");
-$opt_takes_arg_H{"--fs"}         = 1;  push(@opt_order_A, "--fs");
 
 #Update opt_takes_arg_H, opt_order_A and opt_passed_H for 
 InitializeSsuAlignOptions(\%opt_takes_arg_H, \@opt_order_A);
@@ -103,12 +117,9 @@ foreach $opt (@opt_order_A) { $opt_passed_H{$opt} = 1; }
 $opt_passed_H{"-h"}           = 0;
 $opt_passed_H{"-f"}           = 0;
 $opt_passed_H{"-x"}           = 0;
+$opt_passed_H{"-y"}           = 0;
 $opt_passed_H{"-q"}           = 0;
 $opt_passed_H{"-e"}           = 0;
-$opt_passed_H{"-p"}           = 0;
-$opt_passed_H{"-s"}           = 0;
-$opt_passed_H{"--fp"}         = 0;
-$opt_passed_H{"--fs"}         = 0;
 $opt_passed_H{"--no-bash"}    = 0;
 $opt_passed_H{"--no-merge"}   = 0;
 $opt_passed_H{"--keep-merge"} = 0;
@@ -125,13 +136,10 @@ my $opt_return = GetOptions
      'e'          => \$opt_H{"-e"},
      'q'          => \$opt_H{"-q"},
      'x'          => \$opt_H{"-x"},
+     'y'          => \$opt_H{"-y"},
      'no-bash'    => \$opt_H{"--no-bash"},
      'no-merge'   => \$opt_H{"--no-merge"},
      'keep-merge' => \$opt_H{"--keep-merge"},
-     'p=s'        => \$opt_H{"-p"},
-     's=s'        => \$opt_H{"-s"},
-     'fp=s'       => \$opt_H{"--fp"},
-     'fs=s'       => \$opt_H{"--fs"},
      'm=s'        => \$opt_H{"-m"},
      'b=f'        => \$opt_H{"-b"},
      'l=n'        => \$opt_H{"-l"},
@@ -173,15 +181,6 @@ CheckSsuAlignOptions(\%opt_H);
 if(($opt_H{"-q"}) && ($opt_H{"-e"})) { 
     printf STDERR ("\nERROR, -q and -e are incompatible, choose one or the other.\n"); exit(1);
 }    
-if(($opt_H{"-p"} ne "") && ($opt_H{"--fp"} ne "")) { 
-    printf STDERR ("\nERROR, -p and --fp are incompatible, choose one or the other.\n"); exit(1);
-}    
-if(($opt_H{"-s"} ne "") && ($opt_H{"--fs"} ne "")) { 
-    printf STDERR ("\nERROR, -s and --fs are incompatible, choose one or the other.\n"); exit(1);
-}    
-if(($opt_H{"-x"}) && (($opt_H{"-p"} ne "") || ($opt_H{"--fp"} ne "") ||($opt_H{"-s"} ne "") || ($opt_H{"--fs"} ne ""))) {
-    printf STDERR ("\nERROR, -x is incompatible with -s, -p, --fp and --fs.\n"); exit(1);
-}    
 if(($opt_H{"--no-merge"}) && ($opt_H{"--keep-merge"})) { 
     printf STDERR ("\nERROR, --no-merge is incompatible with --keep-merge.\n"); exit(1);
 }    
@@ -189,16 +188,29 @@ if(($opt_H{"--no-merge"}) && ($opt_H{"--keep-merge"})) {
 ###################################################
 # Process command-line arguments and print banner #
 ###################################################
-if(scalar(@ARGV) != 3) {   
-    print "Incorrect number of command line arguments.\n";
+my $usage_is_correct = 0;
+if((scalar(@ARGV) == 4) && (! $opt_H{"-x"}) && (! $opt_H{"-y"})) { $usage_is_correct = 1; }
+if((scalar(@ARGV) == 3) && (  $opt_H{"-x"}) && (! $opt_H{"-y"})) { $usage_is_correct = 1; }
+if((scalar(@ARGV) == 3) && (! $opt_H{"-x"}) && (  $opt_H{"-y"})) { $usage_is_correct = 1; }
+
+if(! $usage_is_correct) { 
+    if(($opt_H{"-x"}) && ($opt_H{"-y"})) { print "-x and -y are incompatible.\n"; }
+    else                                 { print "Incorrect number of command line arguments.\n"; }
     print $usage;
-    print "\nTo see more help on available options, do ssu-draw -h\n\n";
+    print "\nTo see more help on available options, do ssu-prep -h\n\n";
     exit(1);
 }
-my ($seqfile, $out_dir, $third_cmdline_arg) = @ARGV;
+my ($seqfile, $out_dir, $third_cmdline_arg, $presuf_file) = ("", "", "", "");
+if(($opt_H{"-x"}) || ($opt_H{"-y"})) { 
+    ($seqfile, $out_dir, $third_cmdline_arg) = @ARGV;
+}
+else { 
+    ($seqfile, $out_dir, $third_cmdline_arg, $presuf_file) = @ARGV;
+}
+
 $out_dir=~ s/\/$//; # remove trailing slash if it exists
 if(($third_cmdline_arg !~ m/^\d+$/) || ($third_cmdline_arg <= 0)) { 
-    printf STDERR "ERROR, third command-line argument must be a positive integer";
+    printf STDERR "ERROR, third command-line argument must be a positive integer\n";
     exit(1);
 }
 
@@ -229,6 +241,15 @@ ValidateAndSetupSsuAlignOrPrep(\%globals_H, $ssualigndir, $seqfile,
 			       0, # caller doesn't need to be able to call ssu-merge
 			       \%opt_H, \$tfilectr, \$ssualign, \$ssumerge, \$cmsearch, \$cmalign, \$reformat, \$sfetch, \$seqstat, \$weight, \$cm_file, \@indi_cm_name_A, $sum_file, $log_file);
 
+#####################################
+# Read the prefix/suffix file, if nec
+#####################################
+my $prefix = "";
+my $suffix = "";
+if($presuf_file ne "") { # if $presuf_file is "", -x or -y was enabled, in which case we don't have a prefix/suffix file
+    read_prefix_suffix_file($ssualigndir, $presuf_file, \$prefix, \$suffix, $sum_file, $log_file); 
+} 
+
 # Get stats on the input sequences, including the length of each sequence
 my $seqstat_out_file = $out_dir_and_root . ".seqstat";
 my ($target_nres, $nseq_total, $target_format);
@@ -243,12 +264,6 @@ UnlinkFile($seqstat_out_file, $log_file);
 $target_format =~ tr/a-z/A-Z/;
 if($target_format ne "FASTA") { PrintErrorAndExit("ERROR, the target sequence file must be FASTA formatted.", $sum_file, $log_file, 1); }
 PrintStringToFile($sum_file, 1, sprintf("done.\n"));
-
-##########################################################
-# Determine prefix and suffix for ssu-align jobs, if nec #
-##########################################################
-my ($prefix, $suffix);
-determine_prefix_and_suffix(\%opt_H, \$prefix, \$suffix, $sum_file, $log_file); 
 
 ##################################################
 # Determine the number of sequences for each job #
@@ -277,14 +292,39 @@ exit(0);
 
 
 #####################################################################
-# Subroutine: determine_prefix_and_suffix()
+# Subroutine: read_prefix_suffix_file()
 # Incept:     EPN, Tue Apr 13 13:44:08 2010
 # 
-# Purpose:    Determine the prefix and suffix for each ssu-align job,
-#             if any.
-#
+# Purpose:    Read the prefix and suffix from an input file.
+#             Comment lines, prefixed with "#" are ignored,
+#             Exactly 2 non-comment lines are expected, but 
+#             we can deal if there's more than 2 as long as lines
+#             3 on contain only whitespace (so the program doesn't
+#             exit in error if the user left blank lines at the
+#             end of the file), or if there's less (we assume they're
+#             supposed to be blank).
+# 
+#             All possible cases:
+#             1. Exactly 2 non-comment lines
+#                OR 2 non-comment lines followed by >= 1 all whitespace lines
+#                This is okay. Either or both of the non-comment
+#                lines can be blank ("").
+#                Prefix is first  non-comment line (without \n)
+#                Suffix is second non-comment line (without \n)
+#             2. 1 non-comment lines, it is not blank.
+#                This is okay.
+#                Prefix is first non-comment line (without \n)
+#                Suffix is set as empty string ("")
+#             3. 0 non-comment lines.
+#                This is okay.
+#                Prefix is set as empty string ("")
+#                Suffix is set as empty string ("")
+#             4. >2 non-blank non-comment lines
+#                This is not okay.
+#             
 # Arguments:
-# $opt_HR:            reference to the hash of command-line options
+# $ssualigndir:       SSUALIGNDIR, environment variable
+# $presuf_file:       the prefix/suffix file
 # $prefix_R:          RETURN: the prefix
 # $suffix_R:          RETURN: the suffix
 # $sum_file:          summary file (only to print errors to)
@@ -293,49 +333,38 @@ exit(0);
 # Returns:    Nothing. Dies if there's any errors.
 #             
 ####################################################################
-sub determine_prefix_and_suffix {
-    my $narg_expected = 5;
-    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, determine_prefix_and_suffix() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($opt_HR, $prefix_R, $suffix_R, $sum_file, $log_file) = @_;
+sub read_prefix_suffix_file {
+    my $narg_expected = 6;
+    if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, read_prefix_suffix_file() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
+    my ($ssualigndir, $presuf_file, $prefix_R, $suffix_R, $sum_file, $log_file) = @_;
 
     my $line;
     my $prefix = "";
     my $suffix = "";
-    if($opt_HR->{"-p"} ne "") { $prefix = $opt_HR->{"-p"}; }
-    if($opt_HR->{"-s"} ne "") { $suffix = $opt_HR->{"-s"}; }
 
-    # Read prefix input file, if nec
-    if($opt_HR->{"--fp"} ne "") { 
-	if(! (-e $opt_HR->{"--fp"})) {     
-	    PrintErrorAndExit("ERROR, the input file " . $opt_HR->{"--fp"} . "specified with --fp does not exist.", $sum_file, $log_file, 1);
-	}
-	open(PRE, $opt_HR->{"--fp"}) || FileOpenFailure($opt_HR->{"--fp"}, $sum_file, $log_file, $!, "reading");
-	while($line = <PRE>) { 
-	    if($line !~ m/^#/ && $line =~ m/\w+/) { #skip comment and blank lines
-		chomp $line;
-		$prefix .= $line;
+    # First, find the prefix/suffix file, it could be in the path specified on the command line,
+    # OR in the $SSUALIGNDIR
+
+    my $actual_presuf_file = FindPossiblySharedFile($presuf_file, $ssualigndir);
+    if(!(-e $actual_presuf_file)) { PrintErrorAndExit("ERROR, prefix/suffix file $presuf_file does not exist\nrelative to the current dir, nor SSUALIGNDIR.", $sum_file, $log_file, 1); }
+
+    open(PRE, $actual_presuf_file) || FileOpenFailure($actual_presuf_file, $sum_file, $log_file, $!, "reading");
+
+    # first, skip comment lines
+    my $seen_line1 = 0;
+    my $seen_line2 = 0;
+    while($line = <PRE>) { 
+	chomp $line;
+	if($line !~ m/^#/) { 
+	    if   (! $seen_line1) { $prefix = $line; $seen_line1 = 1; }
+	    elsif(! $seen_line2) { $suffix = $line; $seen_line2 = 1; }
+	    else                 { 
+		if($line =~ m/\w/) { 
+		    PrintErrorAndExit("ERROR, prefix/suffix file $presuf_file has more than 2 non-blank non-comment (non-\# prefixed) lines.", $sum_file, $log_file, 1); 
+		}
 	    }
 	}
-	close(PRE);
-    }
-    
-    # Read suffix input file, if nec
-    if($opt_HR->{"--fs"} ne "") { 
-	if(! (-e $opt_HR->{"--fs"})) {     
-	    PrintErrorAndExit("ERROR, the input file " . $opt_HR->{"--fs"} . "specified with --fs does not exist.", $sum_file, $log_file, 1);
-	}
-	open(SUF, $opt_HR->{"--fs"}) || FileOpenFailure($opt_HR->{"--fs"}, $sum_file, $log_file, $!, "reading");
-	while($line = <SUF>) { 
-	    if($line !~ m/^#/) { #skip comment lines
-		chomp $line;
-		$suffix .= $line;
-	    }
-	}
-	close(SUF);
-    }
-
-    # Note: we've enforced during option processing that at most one of -p and --fp, and at most one of -s and --fs  
-    # were enabled. We've also enforced that -x was only used if none of -p, --fp, -s, and --fs were used.
+    }    
 
     $$prefix_R = $prefix;
     $$suffix_R = $suffix;
@@ -562,10 +591,10 @@ sub partition_seqfile_and_write_shell_script {
     }
     my $dashes1 = ""; for($i = 0; $i < $max_file_name_width; $i++) { $dashes1 .= "-"; } 
     my $dashes2 = ""; for($i = 0; $i < $description_width; $i++)   { $dashes2 .= "-"; } 
-    PrintStringToFile($sum_file, 1, sprintf("#\n# Preparing %d ssu-align jobs.\n", $njobs));
+    PrintStringToFile($sum_file, 1, sprintf("#\n# Preparing %d ssu-align jobs ...\n", $njobs));
     # write informative message regarding how seqs were split:
-    if($opt_HR->{"-q"} || $opt_HR->{"-e"})  { PrintStringToFile($sum_file, 1, sprintf("# Partitioning seqs with goal of equalizing number of sequences per job.\n")); }
-    else                                    { PrintStringToFile($sum_file, 1, sprintf("# Partitioning seqs with goal of equalizing total number of nucleotides per job.\n")); }
+    if($opt_HR->{"-q"} || $opt_HR->{"-e"})  { PrintStringToFile($sum_file, 1, sprintf("# Partitioning seqs with goal of equalizing number of sequences per job ...\n")); }
+    else                                    { PrintStringToFile($sum_file, 1, sprintf("# Partitioning seqs with goal of equalizing total number of nucleotides per job ...\n")); }
     PrintStringToFile($sum_file, 1, sprintf("#\n"));
     PrintStringToFile($sum_file, 1, sprintf("# %-*s  %-*s\n", $max_file_name_width, "output file name", $description_width, "description"));
     PrintStringToFile($sum_file, 1, sprintf("# %-*s  %-*s\n", $max_file_name_width, $dashes1, $description_width, $dashes2));
@@ -681,17 +710,15 @@ sub partition_seqfile_and_write_shell_script {
 	    printf SH ("#\n");
 	}
     }
-    # If none of -x, -s, --fs, -p, and --fp were set, we don't have a prefix or suffix and the
-    # shell script, if left unmodified, will just execute all jobs in a serial fashion on the 
-    # machine on which it is executed. A non-expert user will probably not know this, so we 
-    # tell them with a comment in the .sh file here:
-    if((! $opt_HR->{"-x"}) && 
-       ($opt_HR->{"-s"} eq "") && ($opt_HR->{"--fs"} eq "") && 
-       ($opt_HR->{"-p"} eq "")  && ($opt_HR->{"--fp"} eq "")) { 
+    # If -y was set, we don't have a prefix or suffix and the shell script, 
+    # if left unmodified, will just execute all jobs in a serial fashion on the 
+    # machine on which it is executed. A non-expert user will probably not know
+    # this, so we tell them with a comment in the .sh file here:
+    if($opt_HR->{"-y"}) { 
 	$str = "#\n###############################################################################\n";
 	printf SH ($str);
 	PrintStringToFile($sum_file, 1, $str);
-	$str = "# WARNING: None of [-s, --fs, -p, --fp, -x] were set on the command line.\n";
+	$str = "# WARNING: -y was set on the command line.\n";
 	printf SH ($str);
 	PrintStringToFile($sum_file, 1, $str);
 	$str = "# This means this shell script will simply run the $njobs ssu-align jobs in\n";
@@ -732,7 +759,7 @@ sub partition_seqfile_and_write_shell_script {
 	    $command  .= "$ssualign " . $ssualign_enabled_options . "$out_dir/$target_subfile_root $out_dir/$out_root.$i";
 	    if($opt_HR->{"-x"}) { $command .= " > /dev/null &"; }
 	    if($suffix ne "") { $command .= " " . $suffix; }
-	    # Note: -x is incompatible with -s and --fs, so $suffix will be "" if -x
+	    # Note: $suffix will be "" if -x
 	    printf SH ("echo \"\# Executing: %s\"\n", $command);
 	    printf SH ("%s\n", $command);
 	}
@@ -743,7 +770,7 @@ sub partition_seqfile_and_write_shell_script {
 	$command  .= "$ssualign " . $ssualign_enabled_options . "$out_dir/$target_subfile_root $out_dir/$out_root.\$i";
 	if($opt_HR->{"-x"}) { $command .= " > /dev/null &"; }
 	if($suffix ne "") { $command .= " " . $suffix; }
-	# Note: -x is incompatible with -s and --fs, so $suffix will be "" if -x
+	# Note: $suffix will be "" if -x
 	printf SH ("for i in \{1..%d\}\n", ($opt_HR->{"--no-merge"}) ? $njobs : ($njobs-1));
 	printf SH ("do\n");
 	printf SH ("\techo \"\# Executing: %s\"\n", $command);
@@ -765,7 +792,7 @@ sub partition_seqfile_and_write_shell_script {
 	    ;#$command .= "; if [ -d $out_dir/$out_root.$njobs ] then rmdir $out_dir/$out_root.$njobs fi;";
 	}
 	if($suffix ne "") { $command .= " " . $suffix; }
-	# Note: -x is incompatible with -s and --fs, so $suffix will be "" if -x
+	# Note: $suffix will be "" if -x
 	printf SH ("echo \"\# Executing: %s\"\n", $command);
 	printf SH ("%s\n", $command);
     }

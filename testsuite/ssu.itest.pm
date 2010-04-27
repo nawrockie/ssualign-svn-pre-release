@@ -93,11 +93,16 @@ sub run_merge_in_list_mode {
 }
 #####################################################
 sub run_prep { 
-    if(scalar(@_) != 6) { die "TEST SCRIPT ERROR: run_prep called with " . scalar(@_) . " != 6 arguments."; }
-    my ($ssuprep, $fafile, $dir, $nprocs, $extra_opts, $testctr) = @_;
+    if(scalar(@_) != 7) { die "TEST SCRIPT ERROR: run_prep called with " . scalar(@_) . " != 7 arguments."; }
+    my ($ssuprep, $fafile, $dir, $nprocs, $presuf_file, $extra_opts, $testctr) = @_;
     my $command;
     $extra_opts =~ s/^\s*/ /; $extra_opts =~ s/\s*$/ /;
-    $command = "$ssuprep" . $extra_opts . "$fafile $dir $nprocs > /dev/null"; 
+    if(($extra_opts =~ m/\s*\-x\s*/) && ($extra_opts =~ m/\s*\-y\s*/)) { 
+	$command = "$ssuprep" . $extra_opts . "$fafile $dir $nprocs > /dev/null"; 
+    }
+    else { 
+	$command = "$ssuprep" . $extra_opts . "$fafile $dir $nprocs $presuf_file > /dev/null"; 
+    }
     printf("Running  prep command for set %3d: $command\n", $testctr);
     system("$command");
     if ($? != 0) { die "FAIL: ssu-prep $testctr failed unexpectedly"; }

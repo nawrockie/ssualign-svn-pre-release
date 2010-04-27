@@ -229,7 +229,7 @@ if($opt_H{"-i"} && ($opt_H{"--trunc"} eq "" && (! $opt_H{"--num"}))) {
 if(scalar(@ARGV) != 1) {   
     print "Incorrect number of command line arguments.\n";
     print $usage;
-    print "\nTo see more help on available options, do ssu-draw -h\n\n";
+    print "\nTo see more help on available options, do ssu-build -h\n\n";
     exit(1);
 }
 my ($aln_file_or_model_name) = $ARGV[0];

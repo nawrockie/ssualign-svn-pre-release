@@ -586,6 +586,9 @@ sub validate_and_setup_ssu_merge_default {
 		$read_command_line = 1;
 		chomp $line;
 		my @prep_argv = split(/\s+/, $line);
+		if(($line !~ m/\s+\-x\s+/) && ($line !~ m/\s+\-y\s+/)) { # -x nor -y were enabled, 4 command line vars for ssu-prep 
+		    my $trash_presuf_file = pop(@prep_argv);
+		}
 		my $trash_njobs   = pop(@prep_argv);
 		my $trash_out_dir = pop(@prep_argv);
 		$orig_fa_file = pop(@prep_argv);

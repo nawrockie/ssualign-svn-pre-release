@@ -66,18 +66,60 @@ if (! -e "$fafile_full") { die "FAIL: didn't find required fasta file $fafile_fu
 if (! -e "$fafile_15")   { die "FAIL: didn't find required fasta file $fafile_15"; }
 $testctr = 1;
 
-open(PFXFILE, ">$dir.pfx") || die "FAIL: couldn't open $dir.pfx for writing prefix file";
-print PFXFILE << "EOF";
-qsub -N ssu-align -o /dev/null -b y -j y -cwd -V \"
+open(PRESUFFILE1, ">$dir.presuf1") || die "FAIL: couldn't open $dir.presuf1 for writing prefix/suffix file";
+print PRESUFFILE1 << "EOF";
+qsub -N ssu-align -o /dev/null -b y -j y -cwd -V "
+"
 EOF
-close PFXFILE;
+close PRESUFFILE1;
 
-open(SFXFILE, ">$dir.sfx") || die "FAIL: couldn't open $dir.sfx for writing prefix file";
-print SFXFILE << "EOF";
-\"
+open(PRESUFFILE2, ">$dir.presuf2") || die "FAIL: couldn't open $dir.presuf2 for writing prefix/suffix file";
+print PRESUFFILE2 << "EOF";
+# test of comments
+# test of comments
+qsub -N ssu-align -o /dev/null -b y -j y -cwd -V "
+# test of comments
+"
+# test of comments
+# test of comments
 EOF
-close SFXFILE;
+close PRESUFFILE2;
 
+open(PRESUFFILE3, ">$dir.presuf3") || die "FAIL: couldn't open $dir.presuf3 for writing prefix/suffix file";
+print PRESUFFILE3 << "EOF";
+# test of prefix only and only 1 line
+myprefix
+EOF
+close PRESUFFILE3;
+
+open(PRESUFFILE4, ">$dir.presuf4") || die "FAIL: couldn't open $dir.presuf4 for writing prefix/suffix file";
+print PRESUFFILE4 << "EOF";
+# test of prefix only and extra blank lines
+myprefix
+
+
+EOF
+close PRESUFFILE4;
+
+open(PRESUFFILE5, ">$dir.presuf5") || die "FAIL: couldn't open $dir.presuf5 for writing prefix/suffix file";
+print PRESUFFILE5 << "EOF";
+# test of suffix only and only 2 lines
+
+mysuffix
+EOF
+close PRESUFFILE5;
+
+open(PRESUFFILE6, ">$dir.presuf6") || die "FAIL: couldn't open $dir.presuf6 for writing prefix/suffix file";
+print PRESUFFILE6 << "EOF";
+# test of suffix only and extra blank lines
+
+mysuffix
+
+# test
+
+
+EOF
+close PRESUFFILE6;
 
 ###############################################################################
 # This test script is more complicated than the ssu-build.itest.pl, 
@@ -111,6 +153,7 @@ $niter = 3;
 @iter_strA = ("ssu-align only",
 	      "ssu-prep; ssu-align (auto-merge)",
 	      "ssu-prep; ssu-align --no-merge; ssu-merge");
+my $presuf_file = "";
 
 ###################################################
 # First, the 3 iterations of all ssu-align options:
@@ -125,7 +168,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     if ($? != 0) { die "FAIL: ssu-align -h failed unexpectedly"; }
     run_merge($ssumerge, $dir, "-h", $testctr);
     if ($? != 0) { die "FAIL: ssu-merge -h failed unexpectedly"; }
-    run_prep($ssuprep, $fafile, $dir, "4", "-h", $testctr);
+    run_prep($ssuprep, $fafile, $dir, "4", $presuf_file, "-h", $testctr);
     if ($? != 0) { die "FAIL: ssu-prep -h failed unexpectedly"; }
 }
 $testctr++;
@@ -134,13 +177,13 @@ $testctr++;
 if(($testnum eq "") || ($testnum == $testctr)) {
     $align_opts = "-f";
     $merge_opts = "";
-    $prep_opts  = "";
+    $prep_opts  = "-y";
     $prep_nprocs = "4";
     for($i = 0; $i < $niter; $i++) { 
 	run_an_align_prep_merge_iteration($align_opts, $merge_opts, $prep_opts, 
 					  $do_ssu_mergeA[$i], $do_ssu_prepA[$i],
 					  $ssualign, $ssumerge, $ssuprep, 
-					  $fafile, $dir, $prep_nprocs, $testctr);
+					  $fafile, $dir, $prep_nprocs, $presuf_file, $testctr);
 	check_for_files($dir, $dir, $testctr, \@name_A, ".hitlist");
 	check_for_files($dir, $dir, $testctr, \@name_A, ".fa");
 	check_for_files($dir, $dir, $testctr, \@name_A, ".stk");
@@ -158,13 +201,13 @@ $testctr++;
 if(($testnum eq "") || ($testnum == $testctr)) {
     $align_opts = "-f -b 100";
     $merge_opts = "";
-    $prep_opts  = "";
+    $prep_opts  = "-y";
     $prep_nprocs = "4";
     for($i = 0; $i < $niter; $i++) { 
 	run_an_align_prep_merge_iteration($align_opts, $merge_opts, $prep_opts, 
 					  $do_ssu_mergeA[$i], $do_ssu_prepA[$i],
 					  $ssualign, $ssumerge, $ssuprep, 
-					  $fafile, $dir, $prep_nprocs, $testctr);
+					  $fafile, $dir, $prep_nprocs, $presuf_file, $testctr);
 	check_for_files($dir, $dir, $testctr, \@euk_only_A, ".hitlist");
 	check_for_files($dir, $dir, $testctr, \@euk_only_A, ".fa");
 	check_for_files($dir, $dir, $testctr, \@euk_only_A, ".stk");
@@ -183,13 +226,13 @@ $testctr++;
 if(($testnum eq "") || ($testnum == $testctr)) {
     $align_opts = "-f -l 100";
     $merge_opts = "";
-    $prep_opts  = "";
+    $prep_opts  = "-y";
     $prep_nprocs = "4";
     for($i = 0; $i < $niter; $i++) { 
 	run_an_align_prep_merge_iteration($align_opts, $merge_opts, $prep_opts, 
 					  $do_ssu_mergeA[$i], $do_ssu_prepA[$i],
 					  $ssualign, $ssumerge, $ssuprep, 
-					  $fafile, $dir, $prep_nprocs, $testctr);
+					  $fafile, $dir, $prep_nprocs, $presuf_file, $testctr);
 	check_for_files($dir, $dir, $testctr, \@bac_only_A, ".hitlist");
 	check_for_files($dir, $dir, $testctr, \@bac_only_A, ".fa");
 	check_for_files($dir, $dir, $testctr, \@bac_only_A, ".stk");
@@ -208,13 +251,13 @@ $testctr++;
 if(($testnum eq "") || ($testnum == $testctr)) {
     $align_opts = "-f -i";
     $merge_opts = "";
-    $prep_opts  = "";
+    $prep_opts  = "-y";
     $prep_nprocs = "2";
     for($i = 0; $i < $niter; $i++) { 
 	run_an_align_prep_merge_iteration($align_opts, $merge_opts, $prep_opts, 
 					  $do_ssu_mergeA[$i], $do_ssu_prepA[$i],
 					  $ssualign, $ssumerge, $ssuprep, 
-					  $fafile, $dir, $prep_nprocs, $testctr);
+					  $fafile, $dir, $prep_nprocs, $presuf_file, $testctr);
 	check_for_files($dir, $dir, $testctr, \@name_A, ".hitlist");
 	check_for_files($dir, $dir, $testctr, \@name_A, ".fa");
 	check_for_files($dir, $dir, $testctr, \@name_A, ".stk");
@@ -234,13 +277,13 @@ $testctr++;
 if(($testnum eq "") || ($testnum == $testctr)) {
     $align_opts = "-f -n bacteria";
     $merge_opts = "";
-    $prep_opts  = "";
+    $prep_opts  = "-y";
     $prep_nprocs = "3";
     for($i = 0; $i < $niter; $i++) { 
 	run_an_align_prep_merge_iteration($align_opts, $merge_opts, $prep_opts, 
 					  $do_ssu_mergeA[$i], $do_ssu_prepA[$i],
 					  $ssualign, $ssumerge, $ssuprep, 
-					  $fafile, $dir, $prep_nprocs, $testctr);
+					  $fafile, $dir, $prep_nprocs, $presuf_file, $testctr);
 	check_for_files($dir, $dir, $testctr, \@bac_only_A, ".hitlist");
 	check_for_files($dir, $dir, $testctr, \@bac_only_A, ".fa");
 	check_for_files($dir, $dir, $testctr, \@bac_only_A, ".stk");
@@ -259,13 +302,13 @@ $testctr++;
 if(($testnum eq "") || ($testnum == $testctr)) {
     $align_opts = "-f --dna";
     $merge_opts = "";
-    $prep_opts  = "";
+    $prep_opts  = "-y";
     $prep_nprocs = "3";
     for($i = 0; $i < $niter; $i++) { 
 	run_an_align_prep_merge_iteration($align_opts, $merge_opts, $prep_opts, 
 					  $do_ssu_mergeA[$i], $do_ssu_prepA[$i],
 					  $ssualign, $ssumerge, $ssuprep, 
-					  $fafile, $dir, $prep_nprocs, $testctr);
+					  $fafile, $dir, $prep_nprocs, $presuf_file, $testctr);
 	check_for_files($dir, $dir, $testctr, \@name_A, ".hitlist");
 	check_for_files($dir, $dir, $testctr, \@name_A, ".fa");
 	check_for_files($dir, $dir, $testctr, \@name_A, ".stk");
@@ -285,13 +328,13 @@ $testctr++;
 if(($testnum eq "") || ($testnum == $testctr)) {
     $align_opts = "-f --keep-int";
     $merge_opts = "";
-    $prep_opts  = "";
+    $prep_opts  = "-y";
     $prep_nprocs = "3";
     for($i = 0; $i < $niter; $i++) { 
 	run_an_align_prep_merge_iteration($align_opts, $merge_opts, $prep_opts, 
 					  $do_ssu_mergeA[$i], $do_ssu_prepA[$i],
 					  $ssualign, $ssumerge, $ssuprep, 
-					  $fafile, $dir, $prep_nprocs, $testctr);
+					  $fafile, $dir, $prep_nprocs, $presuf_file, $testctr);
 	check_for_files($dir, $dir, $testctr, \@name_A, ".hitlist");
 	check_for_files($dir, $dir, $testctr, \@name_A, ".fa");
 	check_for_files($dir, $dir, $testctr, \@name_A, ".stk");
@@ -311,13 +354,13 @@ $testctr++;
 if(($testnum eq "") || ($testnum == $testctr)) {
     $align_opts = "-f --rfonly";
     $merge_opts = "";
-    $prep_opts  = "";
+    $prep_opts  = "-y";
     $prep_nprocs = "3";
     for($i = 0; $i < $niter; $i++) { 
 	run_an_align_prep_merge_iteration($align_opts, $merge_opts, $prep_opts, 
 					  $do_ssu_mergeA[$i], $do_ssu_prepA[$i],
 					  $ssualign, $ssumerge, $ssuprep, 
-					  $fafile, $dir, $prep_nprocs, $testctr);
+					  $fafile, $dir, $prep_nprocs, $presuf_file, $testctr);
 	check_for_files($dir, $dir, $testctr, \@name_A, ".hitlist");
 	check_for_files($dir, $dir, $testctr, \@name_A, ".fa");
 	check_for_files($dir, $dir, $testctr, \@name_A, ".stk");
@@ -337,13 +380,13 @@ $testctr++;
 if(($testnum eq "") || ($testnum == $testctr)) {
     $align_opts = "-f --no-align";
     $merge_opts = "";
-    $prep_opts  = "";
+    $prep_opts  = "-y";
     $prep_nprocs = "3";
     for($i = 0; $i < $niter; $i++) { 
 	run_an_align_prep_merge_iteration($align_opts, $merge_opts, $prep_opts, 
 					  $do_ssu_mergeA[$i], $do_ssu_prepA[$i],
 					  $ssualign, $ssumerge, $ssuprep, 
-					  $fafile, $dir, $prep_nprocs, $testctr);
+					  $fafile, $dir, $prep_nprocs, $presuf_file, $testctr);
 	check_for_files($dir, $dir, $testctr, \@name_A, ".hitlist");
 	check_for_files($dir, $dir, $testctr, \@name_A, ".fa");
 	if(-e ("$dir/$dir.archaea.stk"))     { die "ERROR, problem with aligning (set $testctr, iteration: $iter_strA[$i])\n"; }
@@ -361,13 +404,13 @@ $testctr++;
 if(($testnum eq "") || ($testnum == $testctr)) {
     $align_opts = "-f --no-search -n eukarya";
     $merge_opts = "";
-    $prep_opts  = "";
+    $prep_opts  = "-y";
     $prep_nprocs = "4";
     for($i = 0; $i < $niter; $i++) { 
 	run_an_align_prep_merge_iteration($align_opts, $merge_opts, $prep_opts, 
 					  $do_ssu_mergeA[$i], $do_ssu_prepA[$i],
 					  $ssualign, $ssumerge, $ssuprep, 
-					  $fafile, $dir, $prep_nprocs, $testctr);
+					  $fafile, $dir, $prep_nprocs, $presuf_file, $testctr);
 	check_for_files($dir, $dir, $testctr, \@euk_only_A, ".stk");
 	check_for_files($dir, $dir, $testctr, \@euk_only_A, ".ifile");
 	check_for_files($dir, $dir, $testctr, \@euk_only_A, ".cmalign");
@@ -386,13 +429,13 @@ $testctr++;
 if(($testnum eq "") || ($testnum == $testctr)) {
     $align_opts = "-f --toponly";
     $merge_opts = "";
-    $prep_opts  = "";
+    $prep_opts  = "-y";
     $prep_nprocs = "4";
     for($i = 0; $i < $niter; $i++) { 
 	run_an_align_prep_merge_iteration($align_opts, $merge_opts, $prep_opts, 
 					  $do_ssu_mergeA[$i], $do_ssu_prepA[$i],
 					  $ssualign, $ssumerge, $ssuprep, 
-					  $fafile, $dir, $prep_nprocs, $testctr);
+					  $fafile, $dir, $prep_nprocs, $presuf_file, $testctr);
 	check_for_files($dir, $dir, $testctr, \@name_A, ".hitlist");
 	check_for_files($dir, $dir, $testctr, \@name_A, ".fa");
 	check_for_files($dir, $dir, $testctr, \@name_A, ".stk");
@@ -412,13 +455,13 @@ $testctr++;
 if(($testnum eq "") || ($testnum == $testctr)) {
     $align_opts = "-f --forward";
     $merge_opts = "";
-    $prep_opts  = "";
+    $prep_opts  = "-y";
     $prep_nprocs = "4";
     for($i = 0; $i < $niter; $i++) { 
 	run_an_align_prep_merge_iteration($align_opts, $merge_opts, $prep_opts, 
 					  $do_ssu_mergeA[$i], $do_ssu_prepA[$i],
 					  $ssualign, $ssumerge, $ssuprep, 
-					  $fafile, $dir, $prep_nprocs, $testctr);
+					  $fafile, $dir, $prep_nprocs, $presuf_file, $testctr);
 	check_for_files($dir, $dir, $testctr, \@name_A, ".hitlist");
 	check_for_files($dir, $dir, $testctr, \@name_A, ".fa");
 	check_for_files($dir, $dir, $testctr, \@name_A, ".stk");
@@ -439,13 +482,13 @@ $testctr++;
 if(($testnum eq "") || ($testnum == $testctr)) {
     $align_opts = "-f --global";
     $merge_opts = "";
-    $prep_opts  = "";
+    $prep_opts  = "-y";
     $prep_nprocs = "2";
     for($i = 0; $i < $niter; $i++) { 
 	run_an_align_prep_merge_iteration($align_opts, $merge_opts, $prep_opts, 
 					  $do_ssu_mergeA[$i], $do_ssu_prepA[$i],
 					  $ssualign, $ssumerge, $ssuprep, 
-					  $fafile_full, $dir, $prep_nprocs, $testctr);
+					  $fafile_full, $dir, $prep_nprocs, $presuf_file, $testctr);
 	check_for_files($dir, $dir, $testctr, \@arc_only_A, ".hitlist");
 	check_for_files($dir, $dir, $testctr, \@arc_only_A, ".fa");
 	check_for_files($dir, $dir, $testctr, \@arc_only_A, ".stk");
@@ -465,13 +508,13 @@ $testctr++;
 if(($testnum eq "") || ($testnum == $testctr)) {
     $align_opts = "-f --no-trunc";
     $merge_opts = "";
-    $prep_opts  = "";
+    $prep_opts  = "-y";
     $prep_nprocs = "3";
     for($i = 0; $i < $niter; $i++) { 
 	run_an_align_prep_merge_iteration($align_opts, $merge_opts, $prep_opts, 
 					  $do_ssu_mergeA[$i], $do_ssu_prepA[$i],
 					  $ssualign, $ssumerge, $ssuprep, 
-					  $fafile_full, $dir, $prep_nprocs, $testctr);
+					  $fafile_full, $dir, $prep_nprocs, $presuf_file, $testctr);
 	check_for_files($dir, $dir, $testctr, \@name_A, ".hitlist");
 	check_for_files($dir, $dir, $testctr, \@name_A, ".fa");
 	check_for_files($dir, $dir, $testctr, \@name_A, ".stk");
@@ -489,13 +532,13 @@ $testctr++;
 if(($testnum eq "") || ($testnum == $testctr)) {
     $align_opts = "-f --aln-one archaea";
     $merge_opts = "";
-    $prep_opts  = "";
+    $prep_opts  = "-y";
     $prep_nprocs = "3";
     for($i = 0; $i < $niter; $i++) { 
 	run_an_align_prep_merge_iteration($align_opts, $merge_opts, $prep_opts, 
 					  $do_ssu_mergeA[$i], $do_ssu_prepA[$i],
 					  $ssualign, $ssumerge, $ssuprep, 
-					  $fafile, $dir, $prep_nprocs, $testctr);
+					  $fafile, $dir, $prep_nprocs, $presuf_file, $testctr);
 	check_for_files($dir, $dir, $testctr, \@name_A, ".hitlist");
 	check_for_files($dir, $dir, $testctr, \@name_A, ".fa");
 	check_for_files($dir, $dir, $testctr, \@arc_only_A, ".stk");
@@ -516,13 +559,13 @@ $testctr++;
 if(($testnum eq "") || ($testnum == $testctr)) {
     $align_opts = "-f --no-prob";
     $merge_opts = "";
-    $prep_opts  = "";
+    $prep_opts  = "-y";
     $prep_nprocs = "2";
     for($i = 0; $i < $niter; $i++) { 
 	run_an_align_prep_merge_iteration($align_opts, $merge_opts, $prep_opts, 
 					  $do_ssu_mergeA[$i], $do_ssu_prepA[$i],
 					  $ssualign, $ssumerge, $ssuprep, 
-					  $fafile, $dir, $prep_nprocs, $testctr);
+					  $fafile, $dir, $prep_nprocs, $presuf_file, $testctr);
 	check_for_files($dir, $dir, $testctr, \@name_A, ".hitlist");
 	check_for_files($dir, $dir, $testctr, \@name_A, ".fa");
 	check_for_files($dir, $dir, $testctr, \@name_A, ".stk");
@@ -542,13 +585,13 @@ $testctr++;
 if(($testnum eq "") || ($testnum == $testctr)) {
     $align_opts = "-f --mxsize 256";
     $merge_opts = "";
-    $prep_opts  = "";
+    $prep_opts  = "-y";
     $prep_nprocs = "2";
     for($i = 0; $i < $niter; $i++) { 
 	run_an_align_prep_merge_iteration($align_opts, $merge_opts, $prep_opts, 
 					  $do_ssu_mergeA[$i], $do_ssu_prepA[$i],
 					  $ssualign, $ssumerge, $ssuprep, 
-					  $fafile, $dir, $prep_nprocs, $testctr);
+					  $fafile, $dir, $prep_nprocs, $presuf_file, $testctr);
 	check_for_files($dir, $dir, $testctr, \@name_A, ".hitlist");
 	check_for_files($dir, $dir, $testctr, \@name_A, ".fa");
 	check_for_files($dir, $dir, $testctr, \@name_A, ".stk");
@@ -581,13 +624,13 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     # now, run ssu-align with new $trna_cmfile
     $align_opts = "-f -m $trna_cmfile";
     $merge_opts = "";
-    $prep_opts  = "";
+    $prep_opts  = "-y";
     $prep_nprocs = "3";
     for($i = 0; $i < $niter; $i++) { 
 	run_an_align_prep_merge_iteration($align_opts, $merge_opts, $prep_opts, 
 					  $do_ssu_mergeA[$i], $do_ssu_prepA[$i],
 					  $ssualign, $ssumerge, $ssuprep, 
-					  $trna_fafile, $dir, $prep_nprocs, $testctr);
+					  $trna_fafile, $dir, $prep_nprocs, $presuf_file, $testctr);
 	check_for_files($dir, $dir, $testctr, \@trna_only_A, ".hitlist");
 	check_for_files($dir, $dir, $testctr, \@trna_only_A, ".fa");
 	check_for_files($dir, $dir, $testctr, \@trna_only_A, ".stk");
@@ -617,7 +660,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     run_an_align_prep_merge_iteration($align_opts, $merge_opts, $prep_opts, 
 				      $do_ssu_mergeA[$i], $do_ssu_prepA[$i],
 				      $ssualign, $ssumerge, $ssuprep, 
-				      $fafile, $dir, $prep_nprocs, $testctr);
+				      $fafile, $dir, $prep_nprocs, $presuf_file, $testctr);
     check_for_files($dir, $dir, $testctr, \@name_A, ".hitlist");
     check_for_files($dir, $dir, $testctr, \@name_A, ".fa");
     check_for_files($dir, $dir, $testctr, \@name_A, ".stk");
@@ -637,13 +680,13 @@ $testctr++;
 if(($testnum eq "") || ($testnum == $testctr)) {
     $align_opts = "-f"; 
     $merge_opts = "";
-    $prep_opts  = "-q";
+    $prep_opts  = "-y -q";
     $prep_nprocs = "2";
     for($i = 1; $i < $niter; $i++) { # do 2 of 3 iterations: ssu-prep, auto-merge; ssu-prep, manual merge;
 	run_an_align_prep_merge_iteration($align_opts, $merge_opts, $prep_opts, 
 					  $do_ssu_mergeA[$i], $do_ssu_prepA[$i],
 					  $ssualign, $ssumerge, $ssuprep, 
-					  $fafile, $dir, $prep_nprocs, $testctr);
+					  $fafile, $dir, $prep_nprocs, $presuf_file, $testctr);
 	check_for_files($dir, $dir, $testctr, \@name_A, ".hitlist");
 	check_for_files($dir, $dir, $testctr, \@name_A, ".fa");
 	check_for_files($dir, $dir, $testctr, \@name_A, ".stk");
@@ -663,13 +706,13 @@ $testctr++;
 if(($testnum eq "") || ($testnum == $testctr)) {
     $align_opts = "-f"; 
     $merge_opts = "";
-    $prep_opts  = "-e";
+    $prep_opts  = "-y -e";
     $prep_nprocs = "2";
     for($i = 1; $i < $niter; $i++) { # do 2 of 3 iterations: ssu-prep, auto-merge; ssu-prep, manual merge;
 	run_an_align_prep_merge_iteration($align_opts, $merge_opts, $prep_opts, 
 					  $do_ssu_mergeA[$i], $do_ssu_prepA[$i],
 					  $ssualign, $ssumerge, $ssuprep, 
-					  $fafile, $dir, $prep_nprocs, $testctr);
+					  $fafile, $dir, $prep_nprocs, $presuf_file, $testctr);
 	check_for_files($dir, $dir, $testctr, \@name_A, ".hitlist");
 	check_for_files($dir, $dir, $testctr, \@name_A, ".fa");
 	check_for_files($dir, $dir, $testctr, \@name_A, ".stk");
@@ -690,12 +733,12 @@ $testctr++;
 if(($testnum eq "") || ($testnum == $testctr)) {
     $align_opts = "-f"; 
     $merge_opts = "";
-    $prep_opts  = "--no-bash";
+    $prep_opts  = "-y --no-bash";
     $prep_nprocs = "4";
     for($i = 1; $i < $niter; $i++) { # do 2 of 3 iterations: ssu-prep, auto-merge; ssu-prep, manual merge;
 	run_an_align_prep_merge_iteration($align_opts, $merge_opts, $prep_opts, 
 					  $do_ssu_mergeA[$i], $do_ssu_prepA[$i],					  $ssualign, $ssumerge, $ssuprep, 
-					  $fafile, $dir, $prep_nprocs, $testctr);
+					  $fafile, $dir, $prep_nprocs, $presuf_file, $testctr);
 	check_for_files($dir, $dir, $testctr, \@name_A, ".hitlist");
 	check_for_files($dir, $dir, $testctr, \@name_A, ".fa");
 	check_for_files($dir, $dir, $testctr, \@name_A, ".stk");
@@ -715,7 +758,7 @@ $testctr++;
 if(($testnum eq "") || ($testnum == $testctr)) {
     $align_opts = "-f"; 
     $merge_opts = "";
-    $prep_opts  = "--keep-merge";
+    $prep_opts  = "-y --keep-merge";
     $prep_nprocs = "2";
     # NOTE: --keep-merge is incompatible with --no-merge, so we can't do iteration 3,
     # instead we only do iteration 2 ($i = 1 below)
@@ -723,7 +766,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     run_an_align_prep_merge_iteration($align_opts, $merge_opts, $prep_opts, 
 				      $do_ssu_mergeA[$i], $do_ssu_prepA[$i],
 				      $ssualign, $ssumerge, $ssuprep, 
-				      $fafile, $dir, $prep_nprocs, $testctr);
+				      $fafile, $dir, $prep_nprocs, $presuf_file, $testctr);
     check_for_files($dir, $dir, $testctr, \@name_A, ".hitlist");
     check_for_files($dir, $dir, $testctr, \@name_A, ".fa");
     check_for_files($dir, $dir, $testctr, \@name_A, ".stk");
@@ -754,42 +797,53 @@ if(($testnum eq "") || ($testnum == $testctr)) {
 }
 $testctr++;
 
-# Test ssu-prep options that specify the prefix and suffix for the commands, don't
-# actually run the commands though, just check that the $dir.ssu-align.sh files
-# put the proper suffix and prefix before the ssu-align job commands.
-# test ssu-prep -p
-if(($testnum eq "") || ($testnum == $testctr)) {
-    $prefix = "myprefix";
-    $prep_opts  = "-f -p $prefix";
-    $nprocs = "3";
-    run_prep($ssuprep, $fafile, $dir, $nprocs, $prep_opts, $testctr);
-    $output = `cat $dir.ssu-align.sh`;
-    if($output !~ /\s+$prefix\s+ssu\-align/) { die "ERROR, problem with prep'ing (set $testctr)\n"; }
-    if($output =~ /WARNING\:\s+None\s+of/)      { die "ERROR, problem with prep'ing (set $testctr)\n"; }
-}
-$testctr++;
+# Test ssu-prep in default mode (without -y) which requires one additional command line
+# variable from everything we've tested thus far - the prefix/suffix file.
+# We don't actually run the commands though, just check that the $dir.ssu-align.sh files
+# put the proper prefix/suffix before/after the ssu-align job commands.
+# 
+# These are so fast that they're all considered a single test.
 
-# test ssu-prep -s
+$fix = "myprefix";
+$prefix = "myprefix";
 if(($testnum eq "") || ($testnum == $testctr)) {
-    $suffix = "\\&";
-    $prep_opts  = "-f -s $suffix";
+    $prep_opts  = "-f";
     $nprocs = "3";
-    run_prep($ssuprep, $fafile, $dir, $nprocs, $prep_opts, $testctr);
+    $presuf_file = $dir . ".presuf1";
+    run_prep($ssuprep, $fafile, $dir, $nprocs, $presuf_file, $prep_opts, $testctr);
     $output = `cat $dir.ssu-align.sh`;
-    if($output !~ /\&\s*$/) { die "ERROR, problem with prep'ing (set $testctr)\n"; }
-    if($output =~ /WARNING\:\s+None\sof/) { die "ERROR, problem with prep'ing (set $testctr)\n"; }
-}
-$testctr++;
+    if($output !~ /qsub \-N\s+ssu-align.+\".+\"/) { die "ERROR, problem with prep'ing (set $testctr)\n"; }
+    if($output =~ /WARNING\:\s+\-y/)      { die "ERROR, problem with prep'ing (set $testctr)\n"; }
 
-# test ssu-prep --fp and --fs simultaneously
-if(($testnum eq "") || ($testnum == $testctr)) {
-    $suffix = "\\&";
-    $prep_opts  = "-f --fp $dir.pfx --fs $dir.sfx";
-    $nprocs = "3";
-    run_prep($ssuprep, $fafile, $dir, $nprocs, $prep_opts, $testctr);
+    $presuf_file = $dir . ".presuf2";
+    run_prep($ssuprep, $fafile, $dir, $nprocs, $presuf_file, $prep_opts, $testctr);
     $output = `cat $dir.ssu-align.sh`;
-    if($output !~ /\s+qsub \-N\s+ssu-align.+\".+\"/) { die "ERROR, problem with prep'ing (set $testctr)\n"; }
-    if($output =~ /WARNING\:\s+None\sof/) { die "ERROR, problem with prep'ing (set $testctr)\n"; }
+    if($output !~ /qsub \-N\s+ssu-align.+\".+\"/) { die "ERROR, problem with prep'ing (set $testctr)\n"; }
+    if($output =~ /WARNING\:\s+\-y/)      { die "ERROR, problem with prep'ing (set $testctr)\n"; }
+
+    $presuf_file = $dir . ".presuf3";
+    run_prep($ssuprep, $fafile, $dir, $nprocs, $presuf_file, $prep_opts, $testctr);
+    $output = `cat $dir.ssu-align.sh`;
+    if($output !~ /myprefix\s+ssu-align.+\.3\n/) { die "ERROR, problem with prep'ing (set $testctr)\n"; }
+    if($output =~ /WARNING\:\s+\-y/)             { die "ERROR, problem with prep'ing (set $testctr)\n"; }
+
+    $presuf_file = $dir . ".presuf4";
+    run_prep($ssuprep, $fafile, $dir, $nprocs, $presuf_file, $prep_opts, $testctr);
+    $output = `cat $dir.ssu-align.sh`;
+    if($output !~ /myprefix\s+ssu-align.+\.3\n/) { die "ERROR, problem with prep'ing (set $testctr)\n"; }
+    if($output =~ /WARNING\:\s+\-y/)             { die "ERROR, problem with prep'ing (set $testctr)\n"; }
+
+    $presuf_file = $dir . ".presuf5";
+    run_prep($ssuprep, $fafile, $dir, $nprocs, $presuf_file, $prep_opts, $testctr);
+    $output = `cat $dir.ssu-align.sh`;
+    if($output !~ /\n\s*ssu\-align.+\.3\s+mysuffix\n/) { die "ERROR, problem with prep'ing (set $testctr)\n"; }
+    if($output =~ /WARNING\:\s+\-y/)             { die "ERROR, problem with prep'ing (set $testctr)\n"; }
+
+    $presuf_file = $dir . ".presuf6";
+    run_prep($ssuprep, $fafile, $dir, $nprocs, $presuf_file, $prep_opts, $testctr);
+    $output = `cat $dir.ssu-align.sh`;
+    if($output !~ /\n\s*ssu\-align.+\.3\s+mysuffix\n/) { die "ERROR, problem with prep'ing (set $testctr)\n"; }
+    if($output =~ /WARNING\:\s+\-y/)             { die "ERROR, problem with prep'ing (set $testctr)\n"; }
 }
 $testctr++;
 
@@ -801,7 +855,7 @@ $testctr++;
 if(($testnum eq "") || ($testnum == $testctr)) {
     $align_opts = ""; 
     $merge_opts = "--rfonly";
-    $prep_opts  = "-f";
+    $prep_opts  = "-y -f";
     $prep_nprocs = "3";
     # NOTE: we test only iteration 3, the:
     #   ssu-prep --no-merge $fafile foo; sh foo.ssu-align.sh; ssu-merge foo;
@@ -809,7 +863,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     run_an_align_prep_merge_iteration($align_opts, $merge_opts, $prep_opts, 
 				      $do_ssu_mergeA[$i], $do_ssu_prepA[$i], 
 				      $ssualign, $ssumerge, $ssuprep, 
-				      $fafile, $dir, $prep_nprocs, $testctr);
+				      $fafile, $dir, $prep_nprocs, $presuf_file, $testctr);
     check_for_files($dir, $dir, $testctr, \@name_A, ".hitlist");
     check_for_files($dir, $dir, $testctr, \@name_A, ".fa");
     check_for_files($dir, $dir, $testctr, \@name_A, ".stk");
@@ -828,7 +882,7 @@ $testctr++;
 if(($testnum eq "") || ($testnum == $testctr)) {
     $align_opts = ""; 
     $merge_opts = "--keep";
-    $prep_opts  = "-f";
+    $prep_opts  = "-y -f";
     $prep_nprocs = "2";
     # NOTE: we test only iteration 3, the:
     #   ssu-prep --no-merge $fafile foo; sh foo.ssu-align.sh; ssu-merge foo;
@@ -836,7 +890,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     run_an_align_prep_merge_iteration($align_opts, $merge_opts, $prep_opts, 
 				      $do_ssu_mergeA[$i], $do_ssu_prepA[$i], 
 				      $ssualign, $ssumerge, $ssuprep, 
-				      $fafile, $dir, $prep_nprocs, $testctr);
+				      $fafile, $dir, $prep_nprocs, $presuf_file, $testctr);
     check_for_files($dir, $dir, $testctr, \@name_A, ".hitlist");
     check_for_files($dir, $dir, $testctr, \@name_A, ".fa");
     check_for_files($dir, $dir, $testctr, \@name_A, ".stk");
@@ -895,9 +949,9 @@ close EUKLIST;
 
 if(($testnum eq "") || ($testnum == $testctr)) {
 
-    $prep_opts  = "-f --no-merge";
+    $prep_opts  = "-y -f --no-merge";
     $prep_nprocs = "7";
-    run_prep($ssuprep, $fafile_15, $dir, $prep_nprocs, $prep_opts, $testctr);
+    run_prep($ssuprep, $fafile_15, $dir, $prep_nprocs, $presuf_file, $prep_opts, $testctr);
     run_align_post_prep($dir, $testctr);
 
     # types of alignments in each dir, following the prep, align steps:
@@ -959,12 +1013,13 @@ unlink $dir . ".arclist";
 unlink $dir . ".baclist";
 unlink $dir . ".euklist";
 
-unlink $dir . ".pfx";
-unlink $dir . ".sfx";
-if(-e "$dir.ssu-align.sh") { printf("$dir.ssu-align.sh exists"); }
+unlink $dir . ".presuf1";
+unlink $dir . ".presuf2";
+unlink $dir . ".presuf3";
+unlink $dir . ".presuf4";
+unlink $dir . ".presuf5";
+unlink $dir . ".presuf6";
 
-# run ssu-prep one final time, to clear out $dir, so it'll be easier to remove:
-system("$ssuprep -f $fafile $dir 2 > /dev/null");
 if(-d $dir) { 
     foreach $file (glob("$dir/*")) { 
 	unlink $file;
@@ -978,12 +1033,12 @@ exit 0;
 
 sub run_an_align_prep_merge_iteration
 {
-    if(scalar(@_) != 12) { die "TEST SCRIPT ERROR: run_an_align_prep_merge_iteration " . scalar(@_) . " != 10 arguments."; }
-    my ($align_opts, $merge_opts, $prep_opts, $do_merge, $do_prep, $ssualign, $ssumerge, $ssuprep, $fafile, $dir, $nprocs, $testctr) = @_;
+    if(scalar(@_) != 13) { die "TEST SCRIPT ERROR: run_an_align_prep_merge_iteration " . scalar(@_) . " != 10 arguments."; }
+    my ($align_opts, $merge_opts, $prep_opts, $do_merge, $do_prep, $ssualign, $ssumerge, $ssuprep, $fafile, $dir, $nprocs, $presuf_file, $testctr) = @_;
     if($do_prep) { 
 	$prep_opts .= " " . $align_opts;
 	if($do_merge) { $prep_opts .= " --no-merge"; }
-	run_prep($ssuprep, $fafile, $dir, $nprocs, $prep_opts, $testctr);
+	run_prep($ssuprep, $fafile, $dir, $nprocs, $presuf_file, $prep_opts, $testctr);
 	run_align_post_prep($dir, $testctr);
     }
     else { # no prep, only use ssu-align
