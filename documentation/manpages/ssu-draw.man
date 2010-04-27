@@ -343,6 +343,41 @@ Omit the header from all structure diagrams.
 Omit the footer from all structure diagrams.
 
 
+.SH SEE ALSO 
+
+See 
+.B ssu-align-package(1)
+for a master man page with a list of all the individual man pages
+for programs in the SSU-ALIGN package.
+
+.PP
+For complete documentation, see the user guide that came with your
+SSU-ALIGN distribution (Userguide.pdf); or see the SSU-ALIGN web page
+(@SSUALIGN_URL@).
+
+.SH COPYRIGHT
+
+.nf
+@HMMER_COPYRIGHT@
+@HMMER_LICENSE@
+.fi
+
+For additional information on copyright and licensing, see the file
+called COPYRIGHT in your SSU-ALIGN source distribution, or see the SSU-ALIGN
+web page 
+(@SSUALIGN_URL@).
+
+
+.SH AUTHOR
+
+.nf
+Eddy/Rivas Laboratory
+Janelia Farm Research Campus
+19700 Helix Drive
+Ashburn VA 20147 USA
+http://eddylab.org
+.fi
+
 
 
 

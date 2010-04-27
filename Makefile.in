@@ -207,17 +207,11 @@ dist:
 	(cd ..;	tar cvf ${BASENAME}-${RELEASE}.tar ${BASENAME}-${RELEASE})
 	(cd ..; $(COMPRESS) ${BASENAME}-$(RELEASE).tar)
 
-# "make check" runs the SSU-ALIGN integrated test scripts with sqc.
-# These take a while. 
-# To run faster, reduce the level (level 1 runs a few tests, level 4
-# runs a lot). 
+# "make check" runs the SSU-ALIGN test scripts using a simple perl script.
+# These take a while (about 10 minutes).
 #
 check:
-	(cd testuite;
-	 echo ;
-	 echo Running Easel test suite...;
-	 echo ;
-	 easel/devkit/sqc 1 testsuite.sqc .. ../src/;)
+	(cd testsuite; testsuite.pl;)
 
 # "make install" installs the programs in BINDIR and the CM and postscript templates in LIBDIR
 #
