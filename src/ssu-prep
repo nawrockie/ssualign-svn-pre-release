@@ -150,12 +150,12 @@ my $opt_return = GetOptions
      'n=s'        => \$opt_H{"-n"},
      'no-align'   => \$opt_H{"--no-align"},
      'no-search'  => \$opt_H{"--no-search"},
-     'no-trunc'   => \$opt_H{"--no-trunc"},
      'toponly'    => \$opt_H{"--toponly"},
      'forward'    => \$opt_H{"--forward"},
      'global'     => \$opt_H{"--global"},
      'keep-int'   => \$opt_H{"--keep-int"},
      'aln-one=s'  => \$opt_H{"--aln-one"},
+     'no-trunc'   => \$opt_H{"--no-trunc"},
      'filter=f'   => \$opt_H{"--filter"},
      'no-prob'    => \$opt_H{"--no-prob"},
      'mxsize=s'   => \$opt_H{"--mxsize"});

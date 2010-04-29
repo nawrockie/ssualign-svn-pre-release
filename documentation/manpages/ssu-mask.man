@@ -469,8 +469,8 @@ SSU-ALIGN distribution (Userguide.pdf); or see the SSU-ALIGN web page
 .SH COPYRIGHT
 
 .nf
-@HMMER_COPYRIGHT@
-@HMMER_LICENSE@
+@SSUALIGN_COPYRIGHT@
+@SSUALIGN_LICENSE@
 .fi
 
 For additional information on copyright and licensing, see the file
@@ -482,6 +482,7 @@ web page
 .SH AUTHOR
 
 .nf
+Eric Nawrocki
 Eddy/Rivas Laboratory
 Janelia Farm Research Campus
 19700 Helix Drive

@@ -1,4 +1,4 @@
-.TH "ssu-prep" 1 "@RELEASEDATE@" "@PACKAGE@ @RELEASE@" "@PACKAGE@ Manual"
+o.TH "ssu-prep" 1 "@RELEASEDATE@" "@PACKAGE@ @RELEASE@" "@PACKAGE@ Manual"
 
 .SH NAME
 .TP 
@@ -58,6 +58,11 @@ multi-core machine or on a compute cluster, so the final result
 is obtained up to 
 .I n 
 times faster.
+The merging is performed by an internal call to the 
+.B ssu-merge
+script. See the 
+.B ssu-merge 
+manual page for more information. 
 
 All of the 
 .B ssu-align 
@@ -228,16 +233,14 @@ See the CUSTOMIZING PARALLELIZATION section above for more details.
 
 .TP
 .B -f
-Allow the output directory 
+Allow output directory 
 .I output-dir
 to be deleted and
-overwritten. Normally, if
+overwritten. Without this option, if the
 .I output-dir
-already exists, 
+directory already exists, 
 .B ssu-prep
-exits with an error unless the
-.I -f
-option is set.
+exits with an error.
 
 .TP
 .B -q
@@ -282,7 +285,7 @@ output files at a later time.
 .SH SEE ALSO 
 
 See 
-.B ssu-align-package(1)
+.B ssu(1)
 for a master man page with a list of all the individual man pages
 for programs in the SSU-ALIGN package.
 
@@ -294,8 +297,8 @@ SSU-ALIGN distribution (Userguide.pdf); or see the SSU-ALIGN web page
 .SH COPYRIGHT
 
 .nf
-@HMMER_COPYRIGHT@
-@HMMER_LICENSE@
+@SSUALIGN_COPYRIGHT@
+@SSUALIGN_LICENSE@
 .fi
 
 For additional information on copyright and licensing, see the file
@@ -307,6 +310,7 @@ web page
 .SH AUTHOR
 
 .nf
+Eric Nawrocki
 Eddy/Rivas Laboratory
 Janelia Farm Research Campus
 19700 Helix Drive

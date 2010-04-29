@@ -4,7 +4,7 @@
 # Eric Nawrocki
 # EPN, Tue Oct 27 14:07:30 2009
 #
-# Usage: ssu-merge [options] <directory created by ssu-prep>
+# Usage: ssu-merge [options] <output directory created by ssu-prep>
 #             
 # Synopsis:
 # Merges alignments created by multiple jobs of ssu-align following 

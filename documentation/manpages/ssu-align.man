@@ -7,71 +7,67 @@ ssu-align - align small subunit ribosomal RNA (16s/18s SSU rRNA) sequences
 .SH SYNOPSIS
 .B ssu-align
 .I [options]
-.I cm-file
-.I sequence-file
-.I output-root
-.I params-file
+.I seqfile
+.I output-dir
 
 .SH DESCRIPTION
 
+.PP
 .B ssu-align
-searches for and aligns SSU rRNA sequences in 
-.I sequence-file
-to the covariance model(s) (CM) in
-.I cm-file,
-and outputs multiple sequence alignment(s).
+identifies archaeal, bacterial and eukaryotic SSU rRNA sequences in 
+the target sequence file 
+.I seqfile
+and aligns them using CMs to create domain-specific SSU multiple sequence
+alignments. 
 
 .PP
 The
-.I sequence-file 
-must be in FASTA format.
+.I seqfile 
+must be in FASTA format. The sequences within the file should each contain 0 or 1
+SSU or partial SSU sequences. Only the top-scoring SSU sequence
+within each sequence will be aligned, so if
+.I seqfile 
+contains long sequences like a bacterial genome or eukaryotic
+chromosomes, only one SSU sequence per target sequence will be identified
+and aligned. The SSU sequence can be on either strand of a sequence (be
+part of either the actual sequence in the file, or its reverse complement).
 
 .PP
 CMs are probabilistic profile models of RNA consensus sequence and
-secondary structure.  CM files can include one or more models.  The
-default CM file for
+secondary structure. CM files can include one or more models.  The
+default CM file, 
+.B ssu-align-0p1.cm,
+will be used by 
 .B ssu-align
-(ssu3-0p1.cm) contains three CMs: an archaeal SSU model, a bacterial
-SSU model and a eukaryotic SSU model. These models were built from
-structural alignments from Robin Gutell's Comparative RNA Website
-database (CRW) (Cannone et al., BMC Bionformatics. 2002; 3:2.).
-Other SSU CM files can be produced using 
-.B infernal's
-.B cmbuild 
-program from a structurally annotated SSU RNA sequence alignment, and
-used in place of, or appended to the default ssu3-0p1.cm file by
-simple file concatenation.
+unelss the
+.BI -m " <s>" 
+option is set to specify that CM file
+.I <s>
+be used instead.
+The default CM file contains three CMs: an archaeal 16S SSU model, a
+bacterial 16S SSU model and a eukaryotic 18S SSU model. These models were
+built from structural alignments from Robin Gutell's Comparative RNA Website
+database (CRW) (Cannone et al., BMC Bionformatics. 2002; 3:2.) as
+described in the SSU-ALIGN user guide. Other CM files can be created using 
+.B ssu-build.
 
 .PP
-Each target sequence in 
-.I sequence-file 
-is assumed to contain 0 or 1 SSU sequences or subsequences on either
-strand (either the actual sequence in the file, or its reverse
-complement) that will match best (score highest) to one of the models
-in 
-.I cm-file.
-Given an input sequence file, 
 .B ssu-align 
 proceeds through two stages to create alignments.  
-
-.PP
-In the first stage,
-the best-matching model and the begin and end positions of the SSU
-(sub)sequence are defined for each target sequence. This is achieved by
-searching each target with
-.I N
+In the first stage, the best-matching model and the begin and end
+positions of the SSU (sub)sequence are defined for each target
+sequence. This is achieved by searching each target with
+.I n
 HMMs, one for each of the 
-.I N
-models in 
-.I cm-file,
+.I n
+models in the CM file
 to find the highest scoring SSU hit,
 the subsequence defined by a begin and end position that has the
 highest bit score to each HMM.  In this stage, only primary sequence
 conservation contributes to the score. The model that finds the
-highest scoring hit for each target sequence is that sequence's
-.I "best-matching" 
+highest scoring hit for each target sequence is that sequence's 'best-matching' 
 model.  If the best-matching model's hit has a score
-greater than a minimum bit score (by default 100 bits, but changeable to
+greater than a minimum bit score (by default 50 bits, but changeable to
 .I <x> 
 with 
 .BI -b " <x>"
@@ -84,58 +80,47 @@ the target subsequence survives to stage 2.
 
 .PP
 In stage 2, each surviving target subsequence defined by the begin and
-end positions of the highest scoring hit is extracted (that is, some
-suspected nonhomologous sequence at the begin and ends may be trimmed
+end positions of the highest scoring hit is extracted (that is, 
+suspected non-SSU nucleotides at the begin and ends may be trimmed
 off) and aligned to its best-matching model. At this stage, both
 primary sequence and well-nested secondary structure conservation of
-the SSU model are taken into account during alignment. The final
-output of an
-.B ssu-align 
-run is 
-.I M 
-multiple sequence alignments, one for each
-of the 
-.I M
-models that was the best match for at least 1 target sequence. 
+the SSU model are taken into account during alignment. 
 
 .PP 
-As
 .B ssu-align
-proceeds through its two stages, it prints information about what it
-is doing and about the output files it is creating to the screen. The
-format of these output files is described in the User's Guide.
-Each time 
-.B ssu-align 
-is executed, it creates a new directory called
-.I output-root
-in the current working directory where it places its output files.
+is a PERL script that executes C programs from the 
+INFERNAL package (bundled within the SSU-ALIGN package), such as 
+.B cmalign
+and 
+.B cmsearch,
+as well as C executable 'miniapps' from the EASEL sequence analysis library
+package, such as 
+.B esl-sfetch.
 
-.PP 
-The 
-.B -n 
+.PP
+.B ssu-align
+creates a directory called
+.I output-dir
+into which it places all of its output files. Several different types
+of output files are created including alignments and unaligned hits
+for each model that is the best-matching model for at least one
+sequence. As each file is created, its name and a very brief
+description is printed as part of 
+.B ssu-align's 
+standard output. The file types are described in more detail in the
+user guide.
+All output file names begin with 
+.I output-dir
+followed by a '.'. 
+The file <output-dir>.ssu-align.sum includes the standard output of
+the program. The file <output-dir>.ssu-align.log includes all of the 
+commands (with options) executed by 
+.B ssu-align,
+such as 
+.B cmsearch 
 and
-.B -c
-options modify the behavior of
-.B ssu-align 
-so that it runs in a special
-.I "prep"
-mode, which can be useful if the
-.I sequence-file
-is especially large.
-In prep mode, 
-.B ssu-align 
-splits up 
-.I sequence-file
-into many smaller files and creates
-scripts to run 
-.B ssu-align
-on each of them in parallel (possibly on a compute cluster) and merge all of
-the resulting alignments back into master alignments. These master
-alignments will be identical to the alignments that would have been
-created if a single, large
-.B ssu-align
-run was performed for the complete sequence file. An example of
-running prep mode is included in the User's Guide Tutorial section.
+.B cmalign 
+commands.
 
 .SH OPTIONS
 
@@ -145,17 +130,22 @@ Print brief help; includes version number and summary of
 all options.
 
 .TP
-.BI -F
+.B -f
 Allow output directory 
-.I output-root
+.I output-dir
 to be deleted and
-overwritten. Normally, if the
-.I output-root 
+overwritten. Without this option, if the
+.I output-dir
 directory already exists, 
 .B ssu-align 
-exits with an error unless the
-.I -F
-option is set.
+exits with an error.
+
+.TP
+.BI -m " <f>"
+Use CM file
+.I <f>
+instead of the default three model (archaea, bacteria, eukarya) 
+SSU-ALIGN 0.1 CM file. 
 
 .TP
 .BI -b " <x>"
@@ -164,168 +154,203 @@ Set the minimum bit score threshold for stage 1 survival of an HMM hit as
 Only hits that meet or exceed this threshold will be aligned in stage 2.
 By default, 
 .I <x>
-is 100 bits. 
+is 50 bits. 
 
 .TP
 .BI -l " <n>"
 Set the minimum length threshold for stage 1 survival of
 an HMM hit as
 .I <x>.
-Only hits that meet or exceed this threshold will be aligned in stage 2.
+Only hits that meet or exceed this threshold will be aligned in stage
+2 so this is the minimum sequence length allowed in any of the output alignments.
 By default, 
 .I <n>
-is 1.
+is 1. Note that each hit still must exceed the minimum bit score
+threshold. 
 
-.TP
-.BI -n " <n>"
-Run in special 
-.I "prep"
-mode. Split 
-.I sequence-file
-into multiple files with
-.I <n>
-sequences each, and create scripts to run 
-.B ssu-align 
-on each of the smaller sequence files and merge the resulting
-alignments into master alignments when they are all finished running. 
-These master alignments will be identical to the alignments that would
-have been created if a single
+.TP 
+.B -i
+Output alignments as interleaved Stockholm format in which each
+sequence is split up across several lines, as opposed to so-called
+Pfam Stockholm format in which each sequence occurs on exactly one
+line. By default, 
 .B ssu-align
-run was performed for the complete sequence file.
+output alignments are Pfam Stockholm format. Importantly, if 
+.B -i 
+is set for 
+.B ssu-align,
+subsequent calls of 
+.B ssu-mask
+and/or
+.B ssu-draw 
+on the same 
+.I output-dir
+must also include
+.B -i.
 
 .TP
-.BI -c " <n>"
-Run in special 
-.I "prep"
-mode. Split 
-.I sequence-file
-into 
-.I <n> 
-files, each with the same number of sequences.
-Also, create scripts to run 
-.B ssu-align 
-on each of the smaller sequence files and merge the resulting
-alignments into master alignments when they are all finished running. 
-These master alignments will be identical to the alignments that would
-have been created if a single
-.B ssu-align
-run was performed for the complete sequence file.
+.BI -n " <s>"
+Only search with and align to a single CM named
+.I <s>
+from the CM file. Unless 
+.B -m
+is used, the default CM file will be used and so valid strings for 
+.I <s>
+are only 'archaea', 'bacteria' and 'eukarya'.
+A related option is
+.B --aln-one
+(see below).
+
+.TP 
+.B --dna
+Output alignments and sequence files as DNA, not as RNA. By default,
+the output alignments will be RNA, even if the input sequences in
+.I seqfile
+were DNA.
 
 .TP
-.B -s 
+.B --rfonly
+Discard insert columns and only include consensus columns in the
+output alignments. The alignments will be a fixed,
+predicted width (the number of consensus positions for each model),
+but will not include all target nucleotides. Note that insert columns
+are automatically removed by the 
+.B ssu-mask 
+program which is recommended prior to inputting alignments into
+phylogenetic inference programs and using 
+.B --rfonly
+can greatly reduce the size of the alignments,
+especially for very deep alignments (hundreds of thousands of
+sequences). 
+
+.TP
+.B --no-align 
 Only perform the search stage (stage 1). Determine
 the best-matching model, define the likely begin
 and end positions for each SSU (sub)sequence, and extract those
-subsequence from 
-.I sequence-file. 
+subsequences from 
+.I seqfile. 
 Do not align each extracted sequence to its best matching model.
 
 .TP
-.B -a 
-Skip the stage 1 search and only perform the alignment stage (stage 2).
-Presume that each full length target sequence in
-.I sequence-file
+.B --no-search 
+Skip the stage 1 search and only perform the alignment stage.
+This option should only be used if it is known that each full length
+target sequence in
+.I seqfile
 is a SSU sequence or subsequence that matches
-to the CM in 
-.I cm-file.
-This is only allowed if
-.I cm-file
-contains exactly 1 CM.
+to the CM in the CM file.
+This is only allowed if the CM file
+contains exactly 1 CM or if the
+.BI -n " <s>"
+option is used to specify a single CM to use from a multi-CM file.
 
 .TP
-.B -u 
-Do not truncate each target sequence to its predicted begin and end
-SSU positions from stage 1. Instead, in stage 2, align each 
-full length sequence from
-.I sequence-file
-to its best matching model from stage 1.
-
+.B --toponly
+Only search the top strand of each sequence in stage 1. This option
+should only be used if the user is confident no sequences in 
+.I seqfile
+contain SSU sequences on the opposite strand.
+ 
 .TP
-.BI -i " <x>"
-After creating alignments in stage 2, filter the alignment based on
-sequence identity so that no two sequences in the filtered alignment
-will share more than
-.I <x>
-fractional identity. If this option is used in prep mode
-(when 
+.B --forward
+In the stage 1 search, use the HMM Forward algorithm instead of the
+HMM Viterbi algorithm. Forward is about three times slower than
+Viterbi, but might be more sensitive in some situations. 
+ 
+.TP
+.B --global
+Require hits in the stage 1 search to globally match the model,
+i.e. be full length. By default, hits can locally match the model,
+which allows partial SSU sequences to be found and aligned. 
+ 
+.TP
+.B --keep-int
+Keep some files that are normally removed by the program, including
+the 
+.B cmsearch
+output from stage 1 and the input to the 
+.B esl-sfetch
+program which is used to extract search hits prior to alignment.
+ 
+.TP
+.B --no-trunc
+Following the search stage, do not truncate sequences to the begin and
+end positions of the best-matching HMM hits. Instead, align the full
+target sequences in stage 2.
+ 
+.TP
+.BI --aln-one " <s>"
+Only create alignments to the CM named
+.I <s>.
+All CMs will still be used in the search stage.
+If the default CM file is used (i.e. if 
+.B -m 
+is not set), 
+.I <s> 
+can be 'archaea', 'bacteria', or 'eukarya'.
+This option might be useful if the user wants to classify 
+archaeal, bacterial, and eukaryotic sequences but only produce
+bacterial alignments, for example. If the related
 .B -n
-or 
-.B -c 
-is also used), then each small alignment (those created for the
-split-up sequence file) 
-will be filtered prior to merging to create a master
-alignment. The master alignment will also be filtered.
-However, in this case the master alignments will not necessarily be identical to the
-alignments created with a single run of
-.B ssu-align.
-This is because the sequences that are removed by filtering is order
-dependent, so many filterings of the smaller intermediate alignments
-may remove different sequences than a single filtering of the large master
-alignment.
-
+option is used for the same case, the user may find the bacterial alignments 
+include archaeal and eukaryotic sequences, as well as bacterial ones.
+ 
 .TP
-.B -t
-In stage 1, do not search the reverse complement of each sequence,
-only search the top strand (the actual sequence as it appears in
-.I sequence-file).
-Use this option if it is known that none of the input
-sequences are reverse complements of SSU sequences. 
-
+.B --no-prob
+Do not include per-nucleotide posterior probabilities that estimate
+alignment confidence in the output alignments. These probabilities are
+included by default and are used by 
+.B ssu-mask
+to determine unreliably aligned regions and remove them.
+ 
 .TP
-.B -w
-In stage 1, use the HMM Forward algorithm instead of the HMM Viterbi
-algorithm for searching for hits. Forward is about two-fold slower,
-but may be more sensitive (i.e. result in more accurate definitions of
-start and end positions) in rare cases.
-
-.TP
-.B -g
-In stage 1, use a globally configured HMM for searching that will only
-find hits to full length SSU sequences.  By default, the
-HMM is configured in local mode which will find matches to SSU
-subsequences and full SSU sequences.
-
-.TP
-.B -d
-Do not append posterior probabilities (alignment confidence estimates)
-to the resulting alignments. By default, these probabilities are
-appended to the output alignments. These probabilities are useful for
-automatically masking out ambiguously aligned regions of the output
-alignments prior to phylogenetic inference as described in the User's
-Guide. This option will accelerate the alignment step by about 50%,
-and result in alignment files that take up about 67% less
-space. However, it should only be used if you know you do not want to
-mask or prune the alignments at a later stage.
-
-.TP
-.B -k
-Do not erase the 
-.I N
-local CM file copies (one for each of the 
-.I N
-CMs in 
-.I cm-file
-) from the 
-.I output-root
-directory after running
-.B ssu-align.
-By default, these CM files, which are temporarily copied to 
-.I output-root
-for convenience during execution of the program are erased
-after the program finishes running.
-
-.TP
-.BI -x " <x>"
-Change the maximum matrix size for the alignment stage to 
-.I <x> 
-Mb. By default 
-.I <x> 
-is 4096 Mb (4 Gb). This option should only used if
-.B ssu-align
-is crashing due to insufficient RAM. The program should tell you if
-this is the case with an informative error message, but may not in all
-cases. It is 
-.I not 
-necessary to decrease 
+.BI --mxsize " <x>"
+Set the maximum allowable dynamic programming matrix size used for
+alignment to 
 .I <x>
-if your computer has less than 4 Gb of RAM. 
+megabytes. By default this size is 4,096 Mb. 
+This should be large enough for the vast majority of alignments, 
+however if it is not, 
+.B ssu-align 
+will exit prematurely and report an error message that 
+the matrix exceeded it's maximum allowable size. In this case, the
+.B --mxsize 
+can be used to raise the limit.
+
+
+.SH SEE ALSO 
+
+See 
+.B ssu(1)
+for a master man page with a list of all the individual man pages
+for programs in the SSU-ALIGN package.
+
+.PP
+For complete documentation, see the user guide that came with your
+SSU-ALIGN distribution (Userguide.pdf); or see the SSU-ALIGN web page
+(@SSUALIGN_URL@).
+
+.SH COPYRIGHT
+
+.nf
+@SSUALIGN_COPYRIGHT@
+@SSUALIGN_LICENSE@
+.fi
+
+For additional information on copyright and licensing, see the file
+called COPYRIGHT in your SSU-ALIGN source distribution, or see the SSU-ALIGN
+web page 
+(@SSUALIGN_URL@).
+
+
+.SH AUTHOR
+
+.nf
+Eric Nawrocki
+Eddy/Rivas Laboratory
+Janelia Farm Research Campus
+19700 Helix Drive
+Ashburn VA 20147 USA
+http://eddylab.org
+.fi

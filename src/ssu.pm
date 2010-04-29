@@ -1835,7 +1835,7 @@ sub AppendSsuAlignOptionsUsage {
     $$options_usage_R .= "  -b <x> : set minimum bit score of a surviving subsequence as <x> [default: 50]\n";
     $$options_usage_R .= "  -l <n> : set minimum length    of a surviving subsequence as <n> [default: 1]\n";
     $$options_usage_R .= "  -i     : output alignments in interleaved Stockholm format (not 1 line/seq)\n";
-    $$options_usage_R .= "  -n <s> : only search for and align to single CM named <s> in CM file\n"; 
+    $$options_usage_R .= "  -n <s> : only search with and align to single CM named <s> in CM file\n"; 
     $$options_usage_R .= "           (default CM file includes 'archaea', 'bacteria', 'eukarya')\n";
     
     $$options_usage_R .= "\nmiscellaneous output options"; 
@@ -1868,8 +1868,8 @@ sub AppendSsuAlignOptionsUsage {
     $$options_usage_R .= "\nexpert options for tuning the alignment stage";
     if($caller_is_prep) { $$options_usage_R .= " in ssu-align jobs"; }
     $$options_usage_R .= ":\n"; 
-    $$options_usage_R .= "  --no-trunc    : do not truncate seqs to HMM predicted start/end, align full seqs\n";
     $$options_usage_R .= "  --aln-one <s> : only align best-matching sequences to the CM named <s> in CM file\n";
+    $$options_usage_R .= "  --no-trunc    : do not truncate seqs to HMM predicted start/end, align full seqs\n";
     #$$options_usage_R .= "  --filter <f>  : filter aln based on seq identity, allow no 2 seqs > <f> identical\n";
     $$options_usage_R .= "  --no-prob     : do not append posterior probabilities to alignments\n";
     $$options_usage_R .= "  --mxsize <f>  : increase mx size for cmalign to <f> Mb [default: 4096]\n";
