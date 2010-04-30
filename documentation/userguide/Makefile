@@ -7,9 +7,7 @@
 #   - need a copy of wulogo.gif for putting in HTML directory.
 ###########
 
-#MANPAGES   = cmalign cmbuild cmcalibrate cmemit cmscore cmsearch cmstat
-MANPAGES   = ssu-align
-#AIFIGURES  = stl9-63
+MANPAGES   = ssu ssu-align ssu-build ssu-draw ssu-mask ssu-merge ssu-prep 
 
 # pdf:
 #   Make the PDF copy of the user's guide, including converted
