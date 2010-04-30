@@ -6,14 +6,18 @@ ssu-build - build small subunit ribosomal RNA (16s/18s SSU rRNA) covariance mode
 
 .SH SYNOPSIS
 
-.TP
+.PP
 Build models using a user-created Stockholm alignment:
+
+.PP
 .B ssu-build
 .I [options]
 .I alignment-file
 
-.TP
+.PP
 Build models using default SSU-ALIGN seed alignment:
+
+.PP
 .B ssu-build -d 
 .I [options]
 .I seed-name
@@ -155,6 +159,8 @@ as part of all output file names from
 immediately before the suffix. For example, foo.<s>.cm would be
 created instead of foo.cm.
 
+.SH OPTIONS FOR BUILDING MODELS FROM A TRUNCATED VERSION OF THE ALIGNMENT:
+
 .TP
 .BI --trunc " <s>"
 Specify the range of alignment consensus columns to use for building
@@ -175,6 +181,8 @@ See the
 option for how to create alignments with consensus columns numbered to
 facilitate choosing start and end positions.
 
+.SH OPTIONS FOR REFORMATTING INPUT ALIGNMENTS
+
 .TP
 .BI --num
 Do not build a CM. Instead, create a new alignment that is identical
@@ -192,6 +200,8 @@ Output alignments in interleaved Stockholm format of a fixed width
 that may be more convenient for reading. Without this option,
 output alignments will contain one line per sequence, and thus may
 contain very long lines. 
+
+.SH OPTIONS FOR DEFINING CONSENSUS COLUMNS
 
 .TP
 .B --rf
@@ -231,6 +241,8 @@ options are enabled, with an
 .I <x>
 of 0.8. 
 
+.SH OPTIONS CONTROLLING OUTPUT OF STRUCTURE DIAGRAMS
+
 .TP
 .BI --ps2pdf " <s>"
 Specify that an executable named 
@@ -257,7 +269,7 @@ does not exist, a postscript file will be generated.
 Specify that postscript output is preferable to pdf. 
 No postscript to pdf conversion will be attempted.
 
-.SH EXPERT OPTIONS
+.SH EXPERT OPTIONS FOR MODEL CONSTRUCTION
 
 .TP
 .B --eent

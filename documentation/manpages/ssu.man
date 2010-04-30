@@ -2,12 +2,12 @@
 
 .SH NAME
 
-SSU-ALIGN - alignment, masking and visualization of SSU rRNA sequences
+SSU-ALIGN package - alignment, masking and visualization of SSU rRNA sequences
 
 .SH SYNOPSIS
 
-.B ssu-build
-  Align small subunit ribosomal RNA (16s/18s SSU rRNA) sequences
+.B ssu-align
+  Align small subunit ribosomal RNA (16S/18S SSU rRNA) sequences
 
 .B ssu-build
   Build SSU rRNA covariance models from multiple sequence alignment(s)
@@ -26,6 +26,7 @@ SSU-ALIGN - alignment, masking and visualization of SSU rRNA sequences
 
 .SH DESCRIPTION
 
+.PP
 SSU-ALIGN is a suite of several programs for creating, masking and
 visualizing small subunit ribosomal RNA (SSU rRNA) multiple sequence
 alignments. It uses profile probabilistic models called "profile
@@ -39,12 +40,14 @@ The alignments created by SSU-ALIGN explicitly take into account the
 conserved secondary structure of SSU as annotated by CRW. Alignments
 are created at a rate of roughly one sequence per second. 
 
+.PP
 The main program,
 .B ssu-align
 takes a FASTA-formatted sequence file containing SSU sequences,
 classifies them by domain of life (i.e. archaea, bacteria, or eukarya)
 and creates domain-specific alignments. 
 
+.PP
 The
 .B ssu-prep
 program can be used for splitting up large sequence files into many
@@ -57,6 +60,7 @@ to what would have been created by a single
 .B ssu-align
 job that processed the full original sequence file. 
 
+.PP
 .B ssu-merge
 merges the results of a set of parallel 
 .B ssu-align 
@@ -69,6 +73,7 @@ or more of the jobs fail. If this happens, only the failed jobs need
 be rerun, and then the full set can be merged by executing
 .B ssu-merge. 
 
+.PP
 .B ssu-mask 
 removes columns from (masks) alignments created by 
 .B ssu-align
@@ -82,6 +87,7 @@ of columns to allow comparison across multiple datasets.
 can also be used to convert alignments to aligned FASTA and to remove
 a subset of sequences from an alignment. 
 
+.PP
 The 
 .B ssu-draw
 program generates secondary structure diagrams of SSU in postscript or PDF
@@ -91,6 +97,7 @@ generated alignments. (PDF is possible only if a postscript to pdf
 converter like 'ps2pdf' is in your PATH). Diagrams of individual
 aligned sequences or alignment summary statistics can be generated. 
 
+.PP
 Finally, 
 .B ssu-build
 constructs new profile models (CMs) from input structurally
@@ -99,6 +106,7 @@ models. For example, models that represent only hypervariable region
 V4 can be constructed for aligning datasets from a PCR-based study
 that targetted the V4 region.
 
+.PP
 .B SSU-ALIGN
 is designed to be able to create and manipulate very large alignments
 (up to millions of sequences). The main limitation for such alignments
@@ -108,6 +116,7 @@ sequence/second/cpu). The memory requirements of
 are effectively independent of the number of sequences in the
 alignments.
 
+.PP
 Each of the six programs has its own man page.
 
 

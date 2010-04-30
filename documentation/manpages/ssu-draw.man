@@ -1,19 +1,22 @@
 .TH "ssu-draw" 1  "@RELEASEDATE@" "@PACKAGE@ @RELEASE@" "@PACKAGE@ Manual"
-
 .SH NAME
 .TP
 ssu-draw - draw secondary structure diagrams of SSU rRNA
 
 .SH SYNOPSIS
 
-.TP 
+.PP 
 Draw structure diagrams for all alignments created by ssu-align in directory <dir>:
+
+.PP
 .B ssu-draw
 .I [options]
 .I dir
 
-.TP 
+.PP 
 Draw structure diagrams for a single alignment file <aln>:
+
+.PP
 .B ssu-draw -a
 .I [options]
 .I aln

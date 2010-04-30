@@ -6,54 +6,63 @@ ssu-mask - mask (remove columns from) SSU rRNA multiple sequence alignments
 
 .SH SYNOPSIS
 
-.TP 
+.PP 
 Mask all alignments created by ssu-align in directory <dir>:
+.PP
 .B ssu-mask
 .I [options]
 .I dir
 
-.TP 
+.PP 
 Mask single alignment file <aln>:
+.PP
 .B ssu-mask -a
 .I [options]
 .I aln
 
-.TP 
+.PP 
 List sequences in alignments in <dir>:
+.PP
 .B ssu-mask --list
 .I [options]
 .I <dir>
 
-.TP 
+.PP 
 List sequences in alignment file <aln>:
+.PP
 .B ssu-mask -a --list
 .I [options]
 .I <dir>
 
-.TP 
+.PP 
 Convert Stockholm alignments in <dir> to aligned FASTA:
+.PP
 .B ssu-mask --stk2afa
 .I [options]
 .I <dir>
 
-.TP 
+.PP 
 Convert Stockholm alignment <aln> to aligned FASTA:
+.PP
 .B ssu-mask -a --stk2afa
 .I [options]
 .I <dir>
 
-.TP 
+.PP 
 Extract a subset of sequences from an alignment: 
-.B ssu-mask -a --seq-k <listfile>
+.PP
+.B ssu-mask -a --seq-k 
+.I <listfile>
 .I [options]
 .I <aln>
 
-.TP 
+.PP 
 Remove a subset of sequences from an alignment:
-.B ssu-mask -a --seq-r <listfile>
+.PP 
+.B ssu-mask -a --seq-r
+.I <listfile>
 .I [options]
 .I <aln>
-
 
 .SH DESCRIPTION
 

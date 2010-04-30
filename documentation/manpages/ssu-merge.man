@@ -6,14 +6,16 @@ ssu-merge - merge SSU rRNA alignments created by parallel ssu-align jobs
 
 .SH SYNOPSIS
 
-.TP
+.PP
 Merge results from parallel ssu-align jobs:
+.PP
 .B ssu-merge
 .I [options]
 .I output-dir-created-by-ssu-prep
 
-.TP
+.PP
 Merge a list of alignments, all created with the same CM:
+.PP
 .B ssu-merge --list
 .I [options]
 .I list-file
@@ -152,6 +154,8 @@ in which case it will be set by the internal merge performed by the
 resulting final
 .B ssu-align
 job. 
+
+.SH OPTIONS THAT REQUIRE --list
 
 .TP 
 .B -i

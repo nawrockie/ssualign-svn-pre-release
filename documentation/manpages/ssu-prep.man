@@ -1,4 +1,4 @@
-o.TH "ssu-prep" 1 "@RELEASEDATE@" "@PACKAGE@ @RELEASE@" "@PACKAGE@ Manual"
+.TH "ssu-prep" 1 "@RELEASEDATE@" "@PACKAGE@ @RELEASE@" "@PACKAGE@ Manual"
 
 .SH NAME
 .TP 
@@ -6,8 +6,9 @@ ssu-prep - prepare SSU rRNA sequences for parallel ssu-align jobs
 
 .SH SYNOPSIS
 
-.TP
+.PP
 Add a prefix and suffix to ssu-align job commands as defined in <prefix-suffix-file>:
+.PP
 .B ssu-prep
 .I [options]
 .I seqfile
@@ -15,16 +16,18 @@ Add a prefix and suffix to ssu-align job commands as defined in <prefix-suffix-f
 .I n
 .I prefix-suffix-file
 
-.TP
+.PP
 Run all jobs in parallel on one machine with <n> cores:
+.TP
 .B ssu-prep -x
 .I [options]
 .I seqfile
 .I output-dir
 .I n
 
-.TP
+.PP
 Omit prefixes and suffixes from ssu-align job commands, to be manually added later:
+.PP
 .B ssu-prep -y
 .I [options]
 .I seqfile
@@ -281,6 +284,7 @@ a shell script called
 will be created that can be used to remove all the smaller per-job
 output files at a later time.
 
+.SH SEE ssu-align's MAN PAGE FOR ADDITIONAL OPTIONS TO PASS TO ssu-align jobs
 
 .SH SEE ALSO 
 

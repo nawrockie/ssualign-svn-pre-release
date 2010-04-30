@@ -1,10 +1,11 @@
-.TH "ssu-align" 1 "@RELEASEDATE@" "@PACKAGE@ @RELEASE@" "@PACKAGE@ Manual"
+.TH "ssu-align" 1 "May 2010" "SSU-ALIGN 0.1" "SSU-ALIGN Manual"
 
 .SH NAME
-.TP 
+
 ssu-align - align small subunit ribosomal RNA (16s/18s SSU rRNA) sequences
 
 .SH SYNOPSIS
+
 .B ssu-align
 .I [options]
 .I seqfile
@@ -201,6 +202,8 @@ A related option is
 .B --aln-one
 (see below).
 
+.SH OPTIONS FOR CONTROLLING OUTPUT
+
 .TP 
 .B --dna
 Output alignments and sequence files as DNA, not as RNA. By default,
@@ -223,6 +226,8 @@ can greatly reduce the size of the alignments,
 especially for very deep alignments (hundreds of thousands of
 sequences). 
 
+.SH OPTIONS FOR SKIPPING THE SEARCH OR ALIGNMENT STAGES
+
 .TP
 .B --no-align 
 Only perform the search stage (stage 1). Determine
@@ -244,6 +249,8 @@ This is only allowed if the CM file
 contains exactly 1 CM or if the
 .BI -n " <s>"
 option is used to specify a single CM to use from a multi-CM file.
+
+.SH EXPERT OPTIONS FOR TUNING THE SEARCH STAGE:
 
 .TP
 .B --toponly
@@ -273,6 +280,8 @@ output from stage 1 and the input to the
 .B esl-sfetch
 program which is used to extract search hits prior to alignment.
  
+.SH EXPERT OPTIONS FOR TUNING THE ALIGNMENT STAGE:
+
 .TP
 .B --no-trunc
 Following the search stage, do not truncate sequences to the begin and
