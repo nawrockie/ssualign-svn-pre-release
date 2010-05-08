@@ -742,7 +742,7 @@ sub draw_alignment {
 						   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
     }
     if($opt_HR->{"--indi-all"}) { 
-	$draw_opts = "--indi";
+	$draw_opts = "-F --indi";
 	if($opt_HR->{"--no-prob"}) { $draw_opts .= " --no-iprob"; }
 	$draw_key = $key_out . ".indiall";
 	$do_tabfile = 1;
@@ -750,7 +750,7 @@ sub draw_alignment {
 						   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
     }
     if($opt_HR->{"--indi-list"}) { 
-	$draw_opts = "--indi --list " . $opt_HR->{"--indi-list"}; 
+	$draw_opts = "-F --indi --list " . $opt_HR->{"--indi-list"}; 
 	if($opt_HR->{"--no-prob"}) { $draw_opts .= " --no-iprob"; }
 	$draw_key = $key_out . ".indi";
 	$do_tabfile = 1;

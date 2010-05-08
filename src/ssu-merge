@@ -966,7 +966,7 @@ sub concatenate_a_list_of_files {
     # (this is signicantly faster than calling cat to append each file (seems to be about 5X faster))
     $command = "cat ";
     for($i = 0; $i < scalar(@{$files_to_concat_AR}); $i++) { 
-	$command .= $files_to_concat_AR->[0] . " ";
+	$command .= $files_to_concat_AR->[$i] . " ";
     }
     $command .= "> " . $concat_file;
     RunCommand("$command", $tfilectr++, 1, 1, $sum_file, $log_file, \$command_worked, "");

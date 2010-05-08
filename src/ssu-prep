@@ -715,7 +715,7 @@ sub partition_seqfile_and_write_shell_script {
     # machine on which it is executed. A non-expert user will probably not know
     # this, so we tell them with a comment in the .sh file here:
     if($opt_HR->{"-y"}) { 
-	$str = "#\n###############################################################################\n";
+	$str = "#\n################################################################################\n";
 	printf SH ($str);
 	PrintStringToFile($sum_file, 1, $str);
 	$str = "# WARNING: -y was set on the command line.\n";

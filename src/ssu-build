@@ -66,7 +66,7 @@ $options_usage .= "  --key-out <s> : add <s> to all output file names, before th
 $options_usage .= "\noption for building a model from a truncated version of the alignment:\n";
 $options_usage .= "  --trunc <s> : only include consensus columns from <x> to <y> (where <s> =\"<x>-<y>\")\n";
 
-$options_usage .= "\noptions for numbering alignment consensus columns (no model will be built):\n";
+$options_usage .= "\noptions for reformatting input alignments (no model will be built):\n";
 $options_usage .= "  --num : output alignment with consensus columns numbered\n";
 $options_usage .= "  -i    : output alignment in interleaved Stockholm (not 1 line/seq)\n";
 

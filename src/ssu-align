@@ -292,7 +292,7 @@ PrintStringToFile($sum_file, 0, "# SSU-ALIGN-SUCCESS\n");
 # Special case: if --merge <n> enabled, wait for all <n> jobs to finish and then merge them #
 #############################################################################################
 if($opt_H{"--merge"} ne "") { 
-    wait_then_merge(\%opt_H, $out_dir, $target_file, $enabled_options, $ssumerge, $merge_jobnum, $merge_root, $merge_out_dir, $sum_file, $log_file);
+    wait_then_merge(\%opt_H, $total_seconds, $out_dir, $target_file, $enabled_options, $ssumerge, $merge_jobnum, $merge_root, $merge_out_dir, $sum_file, $log_file);
 }
 
 exit(0); 
@@ -1077,6 +1077,7 @@ sub validate_merge_specifics {
 #
 # Arguments:
 # $opt_HR:            reference to options hash
+# $total_seconds:     number of seconds the search + alignment took
 # $out_dir:           output dir, second cmd line argument
 # $target_file:       target sequence file, first cmd line argument
 # $enabled_options:   string of all enabled options and their args
@@ -1091,9 +1092,9 @@ sub validate_merge_specifics {
 #             
 ####################################################################
 sub wait_then_merge { 
-    my $narg_expected = 10;
+    my $narg_expected = 11;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, wait_then_merge() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($opt_HR, $out_dir, $target_file, $enabled_options, $ssumerge, $merge_jobnum, $merge_root, $merge_out_dir, $sum_file, $log_file) = @_;
+    my ($opt_HR, $total_seconds, $out_dir, $target_file, $enabled_options, $ssumerge, $merge_jobnum, $merge_root, $merge_out_dir, $sum_file, $log_file) = @_;
 
     my @succeeded_A = ();
     my @finished_A = ();
@@ -1114,8 +1115,10 @@ sub wait_then_merge {
     PrintStringToFile($log_file, 0, ("# Alignments successfully created.\n#\n# Checking/waiting for other jobs to finish before merging...\n#\n"));
 
     wait_for_all_parallel_jobs_to_finish($out_dir_root, $merge_jobnum, $opt_HR->{"--merge"}, 
-					 #3600, # max number of seconds we'll wait for other jobs to finish before exiting.
-					 20, # max number of seconds we'll wait for other jobs to finish before exiting.
+					 $total_seconds, # max number of seconds we'll wait for other jobs to finish before exiting,
+               					         # this is the number of seconds it took to do the current ssu-align job,
+					                 # which means we assume all other jobs will not take more than twice as long
+					                 # as this one. 
 					 \$all_finished, \@finished_A, \$all_succeeded, \@succeeded_A, $sum_file, $log_file);
     if(! $all_succeeded) { 
 	# Not all jobs succeeded, print info about which ones failed/never finished, then exit.
