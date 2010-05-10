@@ -679,7 +679,7 @@ sub draw_alignment {
 
     # Default multi-page align call, or not if --no-aln enabled
     if(! ($opt_HR->{"--no-aln"})) { 
-	$draw_opts = "";
+	$draw_opts = "--no-cnt";
 	$draw_key = $key_out; #this will be "" unless --key-out was enabled
 	$do_tabfile = 1;
 	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 

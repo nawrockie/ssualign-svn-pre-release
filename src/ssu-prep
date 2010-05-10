@@ -571,8 +571,8 @@ sub partition_seqfile_and_write_shell_script {
     if(scalar(@{$nres_per_job_AR}) > 0) { $do_print_res = 1; } 
     if($do_print_res) { $ndig_res = NumberOfDigits(MaxArray($nres_per_job_AR)); }
     my $max_file_name_width = length($shell_script);
-    if($max_file_name_width < (length($seqfile) + $ndig_jobs)) { 
-	$max_file_name_width = length($seqfile) + $ndig_jobs;
+    if($max_file_name_width < (length(RemoveDirPath($seqfile)) + $ndig_jobs)) { 
+	$max_file_name_width = length(RemoveDirPath($seqfile)) + $ndig_jobs;
     }
     if($max_file_name_width < (length("output file name"))) { 
 	$max_file_name_width = length("output file name"); 
