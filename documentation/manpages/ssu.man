@@ -68,9 +68,10 @@ jobs created by
 .B ssu-prep.
 It is automatically called by the final 
 .B ssu-align 
-job of the set, and so should only be necessary in the event that one
-or more of the jobs fail. If this happens, only the failed jobs need
-be rerun, and then the full set can be merged by executing
+job of the set, and so should only be necessary to be called manually
+on the command-line in the event that one or more of the jobs fail. If
+this happens, only the failed jobs need be rerun, and then the full
+set can be merged by executing
 .B ssu-merge. 
 
 .PP

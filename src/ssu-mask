@@ -57,7 +57,7 @@ my $options_usage  = "where general options are:\n";
 $options_usage .= "  -h     : show brief help on version and usage\n";
 $options_usage .= "  -a     : the command-line argument is a stockholm alignment, not a directory\n";
 $options_usage .= "  -d     : use default ssu-align-0.1 masks\n";
-$options_usage .= "  -f <f> : use single mask in existing file <f> to mask single alignment\n";
+$options_usage .= "  -s <f> : use single mask in existing file <f> to mask single alignment\n";
 $options_usage .= "  -k <s> : use mask file named <modelname>.<s>.mask for masking\n";
 $options_usage .= "           (<modelname> might be 'archaea', 'bacteria' or 'eukarya')\n";
 $options_usage .= "  -m <f> : CM file <f> created the alignment(s) (with ssu-align -m <f>)\n";
@@ -104,7 +104,7 @@ my $opt;
 $opt_takes_arg_H{"-h"}          = 0;  push(@opt_order_A, "-h");           
 $opt_takes_arg_H{"-a"}          = 0;  push(@opt_order_A, "-a");           
 $opt_takes_arg_H{"-d"}          = 0;  push(@opt_order_A, "-d");    
-$opt_takes_arg_H{"-f"}          = 1;  push(@opt_order_A, "-f");    
+$opt_takes_arg_H{"-s"}          = 1;  push(@opt_order_A, "-s");    
 $opt_takes_arg_H{"-k"}          = 1;  push(@opt_order_A, "-k");     
 $opt_takes_arg_H{"-m"}          = 1;  push(@opt_order_A, "-m");           
 $opt_takes_arg_H{"-t"}          = 1;  push(@opt_order_A, "-t");           
@@ -137,7 +137,7 @@ my $opt_return = GetOptions
     ('h'           => \$opt_H{"-h"}, 
      'a'           => \$opt_H{"-a"},
      'd'           => \$opt_H{"-d"},
-     'f=s'         => \$opt_H{"-f"},
+     's=s'         => \$opt_H{"-s"},
      'k=s'         => \$opt_H{"-k"},
      'm=s'         => \$opt_H{"-m"},
      't=s'         => \$opt_H{"-t"},
@@ -197,18 +197,18 @@ if($opt_H{"--rfonly"})
     if($do_mask_mode) { printf STDERR ("\nERROR, --rfonly is incompatible with --pf, --pt, and --gapthresh.\n"); exit(1); }
     $do_mask_mode = 1; 
 }
-if(($opt_H{"-f"} ne "") && ($opt_H{"-d"})) { 
-    printf STDERR ("\nERROR, only one of -f, -k and -d will work.\n"); exit(1); 
+if(($opt_H{"-s"} ne "") && ($opt_H{"-d"})) { 
+    printf STDERR ("\nERROR, only one of -s, -k and -d will work.\n"); exit(1); 
 }
 if(($opt_H{"-k"} ne "") && ($opt_H{"-d"})) { 
-    printf STDERR ("\nERROR, only one of -f, -k and -d will work.\n"); exit(1); 
+    printf STDERR ("\nERROR, only one of -s, -k and -d will work.\n"); exit(1); 
 }
-if(($opt_H{"-k"} ne "") && ($opt_H{"-f"} ne "")) { 
-    printf STDERR ("\nERROR, only one of -f, -k and -d will work.\n"); exit(1); 
+if(($opt_H{"-k"} ne "") && ($opt_H{"-s"} ne "")) { 
+    printf STDERR ("\nERROR, only one of -s, -k and -d will work.\n"); exit(1); 
 }
-if(($opt_H{"-f"} ne "") || ($opt_H{"-d"}) || ($opt_H{"-k"} ne "")) {  
+if(($opt_H{"-s"} ne "") || ($opt_H{"-d"}) || ($opt_H{"-k"} ne "")) {  
     if($do_mask_mode)  { 
-	if($opt_H{"-f"} ne "") { printf STDERR ("\nERROR, -f is incompatible with --pf, --pt, --rfonly, and --gapthresh.\n"); exit(1); }
+	if($opt_H{"-s"} ne "") { printf STDERR ("\nERROR, -s is incompatible with --pf, --pt, --rfonly, and --gapthresh.\n"); exit(1); }
 	if($opt_H{"-d"})        { printf STDERR ("\nERROR, -d is incompatible with --pf, --pt, --rfonly, and --gapthresh.\n"); exit(1); }
 	if($opt_H{"-k"} ne "")  { printf STDERR ("\nERROR, -k is incompatible with --pf, --pt, --rfonly, and --gapthresh.\n"); exit(1); }
     }	   
@@ -222,7 +222,7 @@ if($opt_H{"--seq-k"} ne "")  { $do_remove_seqs_mode = 1; }
 
 if($do_remove_seqs_mode && $do_mask_mode) { 
     # NOTE: deleted --filter from next line when option was removed from -h list prior to 0.1 release
-    printf STDERR ("\nERROR, --pf, --pt, --gapthresh, --rfonly, -d, -k, -f are incompatible with --seq-k and --seq-r.\n"); exit(1); 
+    printf STDERR ("\nERROR, --pf, --pt, --gapthresh, --rfonly, -d, -k, -s are incompatible with --seq-k and --seq-r.\n"); exit(1); 
 }
 if($do_remove_seqs_mode && (! $opt_H{"-a"})) { 
     printf STDERR ("\nERROR, --seq-k and --seq-r require -a. They can only be used on a single alignment.\n"); exit(1); 
@@ -232,7 +232,7 @@ if($do_remove_seqs_mode && (! $opt_H{"-a"})) {
 if($opt_H{"--filter"} ne "") { $do_filter_mode = 1; }
 if($do_filter_mode && $do_mask_mode) { 
     # NOTE: deleted --filter from next line when option was removed from -h list prior to 0.1 release
-    printf STDERR ("\nERROR, --pf, --pt, --gapthresh, --rfonly, -d, -k and -f are incompatible with --filter.\nFilter first, then mask filtered alignments with a subsequent ssu-mask call\n"); exit(1); 
+    printf STDERR ("\nERROR, --pf, --pt, --gapthresh, --rfonly, -d, -k and -s are incompatible with --filter.\nFilter first, then mask filtered alignments with a subsequent ssu-mask call\n"); exit(1); 
 }
 if($do_filter_mode && $do_remove_seqs_mode) { 
     printf STDERR ("\nERROR, --seq-k and --seq-r are incompatible with --filter.\n"); exit(1); 
@@ -242,7 +242,7 @@ if($do_filter_mode && $do_remove_seqs_mode) {
 if($opt_H{"--list"})      { $do_list_mode = 1;}
 if($do_list_mode && $do_mask_mode) { 
     # NOTE: deleted --filter from next line when option was removed from -h list prior to 0.1 release
-    printf STDERR ("\nERROR, --pf, --pt, --gapthresh, --rfonly, -d, -k and -f are incompatible with --list.\n"); exit(1); 
+    printf STDERR ("\nERROR, --pf, --pt, --gapthresh, --rfonly, -d, -k and -s are incompatible with --list.\n"); exit(1); 
 }
 if($do_list_mode && $do_remove_seqs_mode) { 
     printf STDERR ("\nERROR, --seq-k and --seq-r are incompatible with --list.\n"); exit(1); 
@@ -256,7 +256,7 @@ if($opt_H{"--stk2afa"})  { $do_stk2afa_mode = 1; }
 
 if($do_stk2afa_mode && $do_mask_mode) { 
     # NOTE: deleted --filter from next line when option was removed from -h list prior to 0.1 release
-    printf STDERR ("\nERROR, --pf, --pt, --gapthresh, --rfonly, -d, -k and -f are incompatible with --stk2afa.\n"); exit(1); 
+    printf STDERR ("\nERROR, --pf, --pt, --gapthresh, --rfonly, -d, -k and -s are incompatible with --stk2afa.\n"); exit(1); 
 }
 if($do_stk2afa_mode && $do_remove_seqs_mode) { 
     printf STDERR ("\nERROR, --stk2afa is incompatible with --seq-k and --seq-r.\n"); exit(1); 
@@ -408,7 +408,7 @@ if($do_mask_mode)
 	$aln_root2print = SwapOrAppendFileSuffix($aln_file, \@stk_suffix_A, "", $opt_H{"-a"});
 
 	if($inmask_mode) { 
-            # either -f, -d, or -k was enabled and we validated the nec mask files exist in validate_and_setup_ssu_mask()
+            # either -s, -d, or -k was enabled and we validated the nec mask files exist in validate_and_setup_ssu_mask()
 	    $mask2use = $in_mask_list_A[$i];
 	    if(! -e ($mask2use)) { PrintErrorAndExit("ERROR, second pass, mask file $mask2use does not exist!.", $sum_file, $log_file, 1); }
 	    mask_alignment($alimask, \%opt_H, $ssdraw, $aln_file, \@stk_suffix_A, $mask2use, $do_draw,
@@ -416,7 +416,7 @@ if($do_mask_mode)
 	    if   ($do_draw && $ssdraw_worked)    { $ssdraw_worked_at_least_once = 1; }
 	    elsif($do_draw && (!$ssdraw_worked)) { $ssdraw_failed_at_least_once = 1; }
 	}
-	else {  # normal mode, neither -f, -d, nor -k enabled
+	else {  # normal mode, neither -s, -d, nor -k enabled
 	    mask_alignment($alimask, \%opt_H, $ssdraw, $aln_file, \@stk_suffix_A, "", $do_draw,
 			   $max_width, $template_file, \$masked_aln_file, \$mask_file, \$ssdraw_worked, \@files_to_unlink_A, $sum_file, $log_file);
 	    if   ($do_draw && $ssdraw_worked)    { $ssdraw_worked_at_least_once = 1; }
@@ -691,7 +691,7 @@ exit(0);
 # $alistat_ref:          RETURN; the esl-alistat command, only relevant if --filter enabled
 # $reformat_ref:         RETURN; the esl-reformat command, only relevant if --afa or --stk2afa enabled
 # $stk_list_arr_ref:     RETURN: ref to array of alignment files to operate on
-# $in_mask_list_arr_ref: RETURN: ref to array of mask files to use, only filled if -f, -d, or -k enabled
+# $in_mask_list_arr_ref: RETURN: ref to array of mask files to use, only filled if -s, -d, or -k enabled
 # $sum_file:             the summary file
 # $log_file:             the log file
 #
@@ -829,12 +829,12 @@ sub validate_and_setup_ssu_mask {
 	}
     }
 
-    # If -f <s> enabled, make sure the mask file <s> exists either locally (relative to the current working directory)
+    # If -s <s> enabled, make sure the mask file <s> exists either locally (relative to the current working directory)
     # or in SSUALIGNDIR
     my $mask_file;
-    if($opt_HR->{"-f"} ne "") { 
+    if($opt_HR->{"-s"} ne "") { 
 	if($naln != 1) { 
-	    $errmsg = "ERROR, -f only makes sense when masking a single alignment.\n\n";
+	    $errmsg = "ERROR, -s only makes sense when masking a single alignment.\n\n";
 	    PrintStringToFile($sum_file, 0, $errmsg);
 	    printf STDERR $errmsg;
 	    $errmsg = "The following alignments were to be masked:\n";
@@ -849,10 +849,10 @@ sub validate_and_setup_ssu_mask {
 	    PrintStringToFile($sum_file, 0, $errmsg);
 	    exit(1);
 	}
-	$mask_file = FindPossiblySharedFile($opt_HR->{"-f"}, $ssualigndir);
+	$mask_file = FindPossiblySharedFile($opt_HR->{"-s"}, $ssualigndir);
 	if($mask_file eq "") { # file doesn't exist
-	    $mask_file = RemoveDirPath($opt_HR->{"-f"});
-	    PrintErrorAndExit("ERROR, the mask file " . $opt_HR->{"-f"} . " does not exist relative to the current directory.\nAnd $mask_file does not exist in SSUALIGNDIR $ssualigndir.", $sum_file, $log_file, 1); 
+	    $mask_file = RemoveDirPath($opt_HR->{"-s"});
+	    PrintErrorAndExit("ERROR, the mask file " . $opt_HR->{"-s"} . " does not exist relative to the current directory.\nAnd $mask_file does not exist in SSUALIGNDIR $ssualigndir.", $sum_file, $log_file, 1); 
 	}
 	push(@{$in_mask_list_arr_ref}, $mask_file);
     }
@@ -1196,14 +1196,14 @@ sub filter_alignment {
     if($nali != 1) { PrintErrorAndExit("ERROR, unexpectedly found %d (not 1) alignments in $aln_file2filter.", $sum_file, $log_file, 1); }
     $nseq_input = $nseq_A[0];
 
-    # esl-weight -f --idf 0.75 10.stk
+    # esl-weight -s --idf 0.75 10.stk
     if($opt_HR->{"--filter"} < 0.) { PrintErrorAndExit(sprintf("ERROR, with --filter <f>, <f> must be between 0.0 and 1.0, you entered %.4f.\n", $opt_HR->{"--filter"}), $sum_file, $log_file, 1); }
     if($opt_HR->{"--filter"} > 1.) { PrintErrorAndExit(sprintf("ERROR, with --filter <f>, <f> must be between 0.0 and 1.0, you entered %.4f.\n", $opt_HR->{"--filter"}), $sum_file, $log_file, 1); }
     if($opt_HR->{"-i"}) { 
-	$command = "$weight -o $filtered_stk_file -f --idf " . $opt_HR->{"--filter"} . " $aln_file2filter";
+	$command = "$weight -o $filtered_stk_file -s --idf " . $opt_HR->{"--filter"} . " $aln_file2filter";
     }
     else {
-	$command = "$weight -f --idf " . $opt_HR->{"--filter"} . " $aln_file2filter | $reformat -o $filtered_stk_file --informat stockholm pfam -";
+	$command = "$weight -s --idf " . $opt_HR->{"--filter"} . " $aln_file2filter | $reformat -o $filtered_stk_file --informat stockholm pfam -";
     }
     RunCommand("$command", $tfilectr++, 1, 1, $sum_file, $log_file, \$command_worked, "");
     @nseq_A = ();

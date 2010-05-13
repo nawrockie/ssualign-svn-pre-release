@@ -112,13 +112,18 @@ Specify that the single command-line argument is a Stockholm alignment
 file, not a directory.
 
 .TP
+.B -f
+Force; override the limitation that structure diagram files 
+file, not a directory.
+
+.TP
 .B -d
 Display the precalculated, default @PACKAGE@-@PACKAGE_VERSION@ masks
 on the secondary structure diagrams. Positions excluded by the mask
 will appear as open circles. 
 
 .TP
-.BI -f " <f>"
+.BI -s " <f>"
 Display the precalculated mask in file 
 .I <f>.
 This option will only work on a single alignment, so either

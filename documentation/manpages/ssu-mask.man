@@ -169,7 +169,7 @@ Alternatively, pre-existing mask files can be used to remove columns from
 the alignments by using the 
 .B -d, -k,
 or 
-.B -f 
+.B -s 
 options. See the description of those options below for details.
 A mask file defines which columns to keep/remove.  The mask is a
 string that may only contain the characters '0' and '1'. A '0' at position x of the
@@ -239,7 +239,7 @@ and
 and are installed in ENV{$SSUALIGNDIR}.
 
 .TP
-.BI -f " <f>"
+.BI -s " <f>"
 Use the precalculated mask in file 
 .I <f>.
 This option will only work on a single alignment so either
