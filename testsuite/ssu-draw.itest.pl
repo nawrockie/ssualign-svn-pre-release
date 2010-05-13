@@ -109,6 +109,27 @@ if(($testnum eq "") || ($testnum == $testctr)) {
 }
 $testctr++;
 
+# Test --cnt 
+# NOTE: I do the same checks as I did for default (no options),
+# so I'm not checking that consensus nt are actually being drawn
+if(($testnum eq "") || ($testnum == $testctr)) {
+    run_draw                  ($ssudraw, $dir, "--cnt", $testctr);
+    check_for_files           ($dir, $dir, $testctr, \@name_A, ".drawtab");
+    check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
+    check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
+    check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".pdf", ".ps");
+    $output = `cat $dir/$dir.ssu-draw.sum`;
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.p\w+/)        { die "ERROR, problem with drawing"; }
+    $output = `cat $dir/$dir.bacteria.drawtab`;
+    if($output !~ /infocontent\s+1\s+2.\d+\s+2\s+6\s*infocontent/) { die "ERROR, problem with drawing"; }
+    if($output !~ /span\s+1\s+0.4\d+\s+4\s*span/)                  { die "ERROR, problem with drawing"; } 
+    remove_files              ($dir, "draw");
+    remove_files              ($dir, "\.ps");
+    remove_files              ($dir, "\.pdf");
+}
+$testctr++;
+
+
 # Test default (no options) and --no-mask with freshly created mask files in foo/ (masks should automatically be incorporated into the drawings)
 if(($testnum eq "") || ($testnum == $testctr)) {
     run_mask                  ($ssumask, $dir, "", $testctr);
@@ -926,6 +947,33 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     remove_files              (".", "eukarya.seqk");
 }
 $testctr++;    
+
+# Test --cons
+if(($testnum eq "") || ($testnum == $testctr)) {
+    # without -a
+    run_draw                  ($ssudraw, $dir, "--cons --no-aln", $testctr);
+    check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
+    check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
+    check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".cons.ps", ".cons.pdf");
+    $output = `cat $dir/$dir.ssu-draw.sum`;
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.cons.p\w+\s+1\s*/) { die "ERROR, problem with drawing"; }
+    # NOTE: no drawtab file is created, and the postscript is not checked (I could do that, but don't)
+    remove_files              ($dir, "draw");
+    remove_files              ($dir, "\.ps");
+    remove_files              ($dir, "\.pdf");
+
+    # with -a
+    run_draw                  ($ssudraw, $dir . "/" . $dir . ".bacteria.stk", "--cons --no-aln -a", $testctr);
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
+    check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
+    check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".cons.pdf", ".cons.ps");
+    $output = `cat $dir.bacteria.ssu-draw.sum`;
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.cons.p\w+\s+1\s*/) { die "ERROR, problem with drawing"; }
+    # NOTE: no drawtab file is created, and the postscript is not checked (I could do that, but don't)
+    remove_files              (".", "bacteria.rf");
+    remove_files              (".", "bacteria.ssu-draw");
+}
+$testctr++;
 
 # Test --rf
 if(($testnum eq "") || ($testnum == $testctr)) {

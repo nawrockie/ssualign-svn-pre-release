@@ -70,21 +70,23 @@ $options_usage .= "  --mask-key    : display masks from files named <dir>.<model
 $options_usage .= "                  (typically used after running 'ssu-mask --key-out <s>')\n";
 
 $options_usage .= "\noptions for 1-page alignment summary diagrams (by default, all are drawn):\n";
-$options_usage .= "  --prob    : draw average posterior probability per position   (save as *.prob.pdf)\n";
+$options_usage .= "  --info    : draw sequence information content per position    (save as *.info.pdf)\n";
+$options_usage .= "  --mutinfo : draw mutual information per position              (save as *.mutinfo.pdf)\n";
 $options_usage .= "  --ifreq   : draw frequency of insertions per position         (save as *.ifreq.pdf)\n";
 $options_usage .= "  --iavglen : draw average length of insertions per position    (save as *.iavglen.pdf)\n";
 $options_usage .= "  --dall    : draw frequency of deletions per position          (save as *.dall.pdf)\n";
 $options_usage .= "  --dint    : draw frequency of internal deletions per position (save as *.dint.pdf)\n";
+$options_usage .= "  --prob    : draw average posterior probability per position   (save as *.prob.pdf)\n";
 $options_usage .= "  --span    : draw fraction of seqs that span each position     (save as *.span.pdf)\n";
-$options_usage .= "  --info    : draw sequence information content per position    (save as *.info.pdf)\n";
-$options_usage .= "  --mutinfo : draw mutual information per position              (save as *.mutinfo.pdf)\n";
+$options_usage .= "  --cnt     : draw consensus nucleotides on alignment summary diagrams\n";
 $options_usage .= "  --no-aln  : do not create multi-page pdf with all alignment stats\n";
 
 $options_usage .= "\noptions for drawing structure diagrams for individual sequences:\n";
 $options_usage .= "  (WARNING: files can get very large: ~1 Mb/20 seqs (pdf); ~1 Mb/2 seqs (postscript)\n";
 $options_usage .= "  --indi-all      : draw sequence and probability diagrams for all aligned sequences\n";
 $options_usage .= "  --indi-list <f> : draw sequence and probability diagrams for sequences listed in <f>\n";
-$options_usage .= "  --rf            : draw reference (consensus) sequence/structure only (save as *.rf.pdf)\n";
+$options_usage .= "  --cons          : draw alignment consensus sequence       (save as *.cons.pdf)\n";
+$options_usage .= "  --rf            : draw model reference (#=GC RF) sequence (save as *.rf.pdf)\n";
 $options_usage .= "  --no-prob       : with --indi-list or --indi-all, omit probability diagrams\n";
 
 $options_usage .= "\noptions for omitting sections of the diagrams:\n";
@@ -123,10 +125,12 @@ $opt_takes_arg_H{"--dint"}      = 0;  push(@opt_order_A, "--dint");
 $opt_takes_arg_H{"--span"}      = 0;  push(@opt_order_A, "--span");       
 $opt_takes_arg_H{"--info"}      = 0;  push(@opt_order_A, "--info");       
 $opt_takes_arg_H{"--mutinfo"}   = 0;  push(@opt_order_A, "--mutinfo");     
+$opt_takes_arg_H{"--cnt"}       = 0;  push(@opt_order_A, "--cnt");
 $opt_takes_arg_H{"--no-aln"}    = 0;  push(@opt_order_A, "--no-aln");     
 $opt_takes_arg_H{"--indi-list"} = 1;  push(@opt_order_A, "--indi-list");       
 $opt_takes_arg_H{"--indi-all"}  = 0;  push(@opt_order_A, "--indi-all");       
 $opt_takes_arg_H{"--no-prob"}   = 0;  push(@opt_order_A, "--no-prob");    
+$opt_takes_arg_H{"--cons"}      = 0;  push(@opt_order_A, "--cons");       
 $opt_takes_arg_H{"--rf"}        = 0;  push(@opt_order_A, "--rf");       
 $opt_takes_arg_H{"--no-leg"}    = 0;  push(@opt_order_A, "--no-leg");     
 $opt_takes_arg_H{"--no-head"}   = 0;  push(@opt_order_A, "--no-head");    
@@ -162,11 +166,13 @@ my $opt_return = GetOptions
      'span'        => \$opt_H{"--span"},
      'info'        => \$opt_H{"--info"},
      'mutinfo'     => \$opt_H{"--mutinfo"},
+     'cnt'         => \$opt_H{"--cnt"},
      'no-aln'      => \$opt_H{"--no-aln"},
      'indi-list=s' => \$opt_H{"--indi-list"},
      'indi-all'    => \$opt_H{"--indi-all"},
      'no-prob'     => \$opt_H{"--no-prob"},
      'rf'          => \$opt_H{"--rf"},
+     'cons'        => \$opt_H{"--cons"},
      'no-leg'      => \$opt_H{"--no-leg"},
      'no-head'     => \$opt_H{"--no-head"},
      'no-foot'     => \$opt_H{"--no-foot"});
@@ -230,9 +236,9 @@ if($opt_H{"--ps-only"} && ($opt_H{"--ps2pdf"} ne "")) {
     printf STDERR ("\nERROR, --ps-only is incompatible with --ps2pdf\n"); exit(1); 
 }
 if(($opt_H{"--no-aln"}) && 
-   (! (($opt_H{"--prob"}) || ($opt_H{"--ifreq"}) || ($opt_H{"--iavglen"}) || ($opt_H{"--dall"}) || ($opt_H{"--dint"}) || ($opt_H{"--span"}) || ($opt_H{"--info"}) || ($opt_H{"--mutinfo"}) ||
-       ($opt_H{"--indi-list"} ne "") || ($opt_H{"--indi-all"}) || ($opt_H{"--rf"})))) { 
-    printf STDERR ("\nERROR, --no-aln only makes sense if used in combination with at least one of: --prob, --ifreq, --iavglen, --dall, --dint, --span, --info, --mutinfo, --indi-list, --indi-all, --rf.\n"); 
+   (! (($opt_H{"--prob"}) || ($opt_H{"--ifreq"}) || ($opt_H{"--iavglen"}) || ($opt_H{"--dall"}) || ($opt_H{"--dint"}) || ($opt_H{"--span"}) || ($opt_H{"--info"}) || ($opt_H{"--mutinfo"}) || 
+       ($opt_H{"--indi-list"} ne "") || ($opt_H{"--indi-all"}) || ($opt_H{"--rf"}) || ($opt_H{"--cons"})))) { 
+    printf STDERR ("\nERROR, --no-aln only makes sense if used in combination with at least one of: --prob, --ifreq, --iavglen, --dall, --dint, --span, --info, --mutinfo, --indi-list, --indi-all, --rf, --cons.\n"); 
     exit(1);
 }
 
@@ -300,7 +306,7 @@ my $extra_draw_chars = 0;
 if($opt_H{"--rf"}) { 
     $extra_draw_chars = 2+1; # +1 is for the '.'
 }
-if($opt_H{"--prob"} || $opt_H{"--dall"} || $opt_H{"--dint"} || $opt_H{"--span"} || $opt_H{"--info"} || ($opt_H{"--indi-list"} ne "")) { 
+if($opt_H{"--prob"} || $opt_H{"--dall"} || $opt_H{"--dint"} || $opt_H{"--span"} || $opt_H{"--cons"} || $opt_H{"--info"} || ($opt_H{"--indi-list"} ne "")) { 
     $extra_draw_chars = 4+1; # +1 is for the '.'
 }
 if($opt_H{"--ifreq"})                          { $extra_draw_chars = 5+1; } 
@@ -667,7 +673,7 @@ sub draw_alignment {
     my($ssdraw, $template_file, $aln_file, $stk_suffix_AR, $mask_file2use, $ifile2use, $max_width_aln, $max_width_draw, $max_width_tab, $key_out, $opt_HR, $sum_file) = @_;
 
     my $nfiles_created = 0;
-    my ($all_aln_opts, $mask_opts, $ifile_opts, $draw_opts, $draw_key, $do_tabfile, $omit_opts);
+    my ($all_aln_opts, $mask_opts, $ifile_opts, $draw_opts, $draw_key, $do_tabfile, $omit_opts, $cnt_opt);
     if($mask_file2use ne "")  { $mask_opts = " --mask $mask_file2use"; }
     else                      { $mask_opts = ""; }
     if($ifile2use ne "")      { $ifile_opts = " --ifile $ifile2use"; }
@@ -677,73 +683,76 @@ sub draw_alignment {
     if($opt_HR->{"--no-head"}) { $omit_opts .= " --no-head"; }
     if($opt_HR->{"--no-foot"}) { $omit_opts .= " --no-foot"; }
 
+    $cnt_opt = " --no-cnt";
+    if($opt_HR->{"--cnt"}) { $cnt_opt = ""; }
+
     # Default multi-page align call, or not if --no-aln enabled
     if(! ($opt_HR->{"--no-aln"})) { 
-	$draw_opts = "--no-cnt";
+	$draw_opts = "-d --dint --span";
 	$draw_key = $key_out; #this will be "" unless --key-out was enabled
 	$do_tabfile = 1;
-	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
+	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts . $cnt_opt), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
 						   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
     }
     if($opt_HR->{"--prob"}) { 
 	$draw_opts = "--prob"; 
 	$draw_key = $key_out . ".prob";
 	$do_tabfile = 1;
-	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
+	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts . $cnt_opt), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
 						   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
     }
     if($opt_HR->{"--ifreq"}) { 
 	$draw_opts = "--ifreq"; 
 	$draw_key = $key_out . ".ifreq";
 	$do_tabfile = 1;
-	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
+	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts . $cnt_opt), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
 						   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
     }
     if($opt_HR->{"--iavglen"}) { 
 	$draw_opts = "--iavglen"; 
 	$draw_key = $key_out . ".iavglen";
 	$do_tabfile = 1;
-	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
+	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts . $cnt_opt), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
 						   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
     }
     if($opt_HR->{"--dall"}) { 
 	$draw_opts = "--dall"; 
 	$draw_key = $key_out . ".dall";
 	$do_tabfile = 1;
-	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
+	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts . $cnt_opt), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
 						   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
     }
     if($opt_HR->{"--dint"}) { 
 	$draw_opts = "--dint"; 
 	$draw_key = $key_out . ".dint";
 	$do_tabfile = 1;
-	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
+	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts . $cnt_opt), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
 						   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
     }
     if($opt_HR->{"--span"}) { 
 	$draw_opts = "--span"; 
 	$draw_key = $key_out . ".span";
 	$do_tabfile = 1;
-	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
+	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts. $cnt_opt), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
 						   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
     }
     if($opt_HR->{"--info"}) { 
 	$draw_opts = "--info"; 
 	$draw_key = $key_out . ".info";
 	$do_tabfile = 1;
-	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
+	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts . $cnt_opt), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
 						   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
     }
     if($opt_HR->{"--mutinfo"}) { 
 	$draw_opts = "--mutinfo"; 
 	$draw_key = $key_out . ".mutinfo";
 	$do_tabfile = 1;
-	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
+	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts . $cnt_opt), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
 						   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
     }
     if($opt_HR->{"--indi-all"}) { 
 	$draw_opts = "-F --indi";
-	if($opt_HR->{"--no-prob"}) { $draw_opts .= " --no-iprob"; }
+	if($opt_HR->{"--no-prob"}) { $draw_opts .= " --no-pp"; }
 	$draw_key = $key_out . ".indiall";
 	$do_tabfile = 1;
 	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
@@ -751,7 +760,7 @@ sub draw_alignment {
     }
     if($opt_HR->{"--indi-list"}) { 
 	$draw_opts = "-F --indi --list " . $opt_HR->{"--indi-list"}; 
-	if($opt_HR->{"--no-prob"}) { $draw_opts .= " --no-iprob"; }
+	if($opt_HR->{"--no-prob"}) { $draw_opts .= " --no-pp"; }
 	$draw_key = $key_out . ".indi";
 	$do_tabfile = 1;
 	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
@@ -760,6 +769,13 @@ sub draw_alignment {
     if($opt_HR->{"--rf"}) { 
 	$draw_opts  = "--rf"; 
 	$draw_key   = $key_out . ".rf";
+	$do_tabfile = 0;
+	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
+						   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
+    }
+    if($opt_HR->{"--cons"}) { 
+	$draw_opts  = "--cons"; 
+	$draw_key   = $key_out . ".cons";
 	$do_tabfile = 0;
 	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
 						   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);

@@ -1,7 +1,23 @@
-\subsection{Visualizing alignments with \sft{esl-ssudraw}}
+\subsection{Visualizing alignments with \prog{ssu-draw}}
 
-SSU rRNA alignments are large and difficult to view in a meaningful
-way. The \prog{esl-ssudraw} program introduced for visualizing masks
+Because SSU rRNA is about 1500 nt, SSU alignments of even a few
+sequences are difficult to view in a meaningful way, and this is
+especially true if the alignments contain thousands of sequences.
+The \prog{ssu-draw} program can be used to generate secondary
+structure diagrams for displaying alignment statistics, such as
+location and frequency of insertions and deletions, as well as
+individual aligned sequences. \prog{ssu-draw} can only be used for
+alignments created using the three default models; it cannot
+be used for alignments to models created using \prog{ssu-build}.
+To draw alignment statistic diagrams of our \prog{myseqs} example
+dataset, do:
+
+\user{ssu-draw myseqs}
+
+
+
+
+The \prog{esl-ssudraw} program introduced for visualizing masks
 earlier in this tutorial can be also used to display statistics of
 a particular alignment on the consensus SSU secondary structure of the
 model used to create the alignment. As just shown in the previous example,

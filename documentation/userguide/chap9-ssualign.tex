@@ -37,7 +37,7 @@ SSU alignment programs (reviewed in chapter 7 of \cite{Nawrocki09b}):
   automatically generated.}
   
   CMs are probabilistic models that allow calculation of the posterior
-  probability that each sequence residue belongs in each column of the
+  probability that each sequence nucleotide belongs in each column of the
   output alignment given the model. Regions of low posterior
   probabilities are indicative of high alignment ambiguity and
   should be pruned away (masked out) prior to phylogenetic
@@ -117,7 +117,7 @@ target sequence.
 
 \sft{ssu-align} includes the {\tt esl-alimanip} program that can
 generate masks for the alignments it creates based on the posterior
-probabilities for each residue in the alignment. These masks can then
+probabilities for each nucleotide in the alignment. These masks can then
 be used to remove ambiguously aligned columns of the alignment prior
 to using phylogenetic inference tools. %A program for creating
 %secondary structure diagrams that display alignment summary statistics
@@ -129,7 +129,7 @@ explains how to use the program for creating and masking alignments.
 \subsection{Automated probabilistic alignment masking}
 
 The goal of masking is to identify and remove columns containing
-residues that are ambiguously aligned and therefore likely to contain
+nucleotides that are ambiguously aligned and therefore likely to contain
 errors prior to using the alignment for phylogenetic inference.  Two
 commonly used SSU masks were determined manually by David Lane and
 Phil Hugenholtz (Figures 7.5 and 7.6 of \cite{Nawrocki09b}) based on
@@ -182,13 +182,11 @@ sequences, is aligned confidently with high posterior probabilities.
 %ORIGINAL DATA is from Macbook: 
 %/Users/nawrockie/school/notebook/9_0309_ths/latex/ssu/ambiguity_example
 \begin{tabular}{ll}
-00904::Desulfovibrio\_desulfuricans-1 &                             GAUGUCGGGGA--GUAU---UCUUCGGUGUC \\
-\#=GR 00904::Desulfovibrio\_desulfuricans-1 POSTX. &                99999999999--5665---89999999999 \\
-\#=GR 00904::Desulfovibrio\_desulfuricans-1 POST.X &                99999999996--8009---79999999999 \\
+00904::Desulfovibrio\_desulfuricans-1 &                         GAUGUCGGGGA--GUAU---UCUUCGGUGUC \\
+\#=GR 00904::Desulfovibrio\_desulfuricans-1 PP &                ***********--6666---9********** \\
 & \\
-00904::Desulfovibrio\_desulfuricans-2              &                GAUGUCGGGGA---GUAU--UCUUCGGUGUC \\
-\#=GR 00904::Desulfovibrio\_desulfuricans-2 POSTX. &                99999999999---3333--89999999999 \\
-\#=GR 00904::Desulfovibrio\_desulfuricans-2 POST.X &                99999999996---6665--79999999999 \\
+00904::Desulfovibrio\_desulfuricans-2          &                GAUGUCGGGGA---GUAU--UCUUCGGUGUC \\
+\#=GR 00904::Desulfovibrio\_desulfuricans-2 PP &                ***********---4444--9********** \\
 & \\
 \#=GC SS\_cons                        &                             <<<<<<<<<<<<.......>>>>>>>>>>>> \\
 \#=GC RF                              &                             GGUGUuGGgggcAuUcaACgcccUCaGUGCC \\
@@ -199,24 +197,36 @@ sequences, is aligned confidently with high posterior probabilities.
 \includegraphics[width=5.7in]{Figures/ambiguity}
 
 \caption[Example of alignment ambiguity in a hairpin loop.]{
-  \textbf{Example of alignment ambiguity in a hairpin loop.}  Top: A
+  \textbf{Example of alignment ambiguity in a hairpin loop.}  Top: An
   alignment fragment of two different alignments of the
   \emph{Desulfovibrio desulfuricans} (sequence accession
   \texttt{M34113}) sequence from the \sft{ssu-align} bacterial seed
   alignment for the region between consensus columns $861$ and $881$.
   Each alignment is annotated with its posterior probability in the
-  \texttt{\#=GR POSTX.} and \texttt{\#=GR POST.X} rows.  For example,
-  the second \texttt{A} in the first aligned sequence has a posterior
-  probability of $0.60$ of being aligned in its current position. The
+  \texttt{\#=GR PP} rows.  Characters in PP rows have 12 possible
+  values: "0-9", "*", or ".". If ".", the position corresponds to a
+  gap in the sequence. A value of "0" indicates a posterior
+  probability of between 0.0 and 0.05, "1" indicates between 0.05 and
+  0.15, "2" indicates between 0.15 and 0.25 and so on up to "9" which
+  indicates between 0.85 and 0.95. A value of "*" indicates a
+  posterior probability of between 0.95 and 1.0. Higher posterior
+  probabilities correspond to greater confidence that the aligned
+  nucleotide belongs where it appears in the alignment.  For example,
+  the second \texttt{A} in the first aligned sequence has a PP value
+  of '6' indicating a posterior probability of between 0.55 and 0.65
+  of being aligned in its current position. The
   probability this \texttt{A} aligns in the next position over, as it
-  does in the second alignment, is $0.36$.  The \texttt{\#=GC
-    SS\_cons} and \texttt{\#=GC RF} rows correspond to the consensus
-  secondary structure and sequence respectively.  The alignments were
-  created using \texttt{cmalign} to align this sequence to the
-  bacterial CM with the \texttt{--sample} option.  Bottom: The
+  does in the second alignment, is between 0.35 and 0.45 as indicated
+  by the 4 in that position.  The \texttt{\#=GC
+  SS\_cons} and \texttt{\#=GC RF} rows correspond to the consensus
+  secondary structure and sequence respectively.  
+%The alignments were
+%  created using \texttt{cmalign} to align this sequence to the
+%  bacterial CM with the \texttt{--sample} option.  
+  Bottom: The
   secondary structures corresponding to the two possible alignments of
-  the \emph{D. desulfuricans} and the reference alignment.  Residues
-  in the actual alignment are black. Residues surrounding the
+  the \emph{D. desulfuricans} and the reference alignment.  Nucleotides
+  in the actual alignment are black. Nucleotides surrounding the
   alignment fragment are gray.}
 \end{center}
 \label{fig:ambiguity}
@@ -226,20 +236,20 @@ sequences, is aligned confidently with high posterior probabilities.
 
 Importantly, any CM alignment mask should automatically exclude 
 every insert column of the alignment. This is because profile
-probabilistic models like CMs do not actually align inserted residues
-(residues aligning to insert states) between different sequences, but
+probabilistic models like CMs do not actually align inserted nucleotides
+(nucleotides aligning to insert states) between different sequences, but
 rather simply insert them between the appropriate consensus columns in
-the alignment. This means that sequence residues appearing in the same
+the alignment. This means that sequence nucleotides appearing in the same
 insert alignment columns are not aligned with respect to each
 other and consequently should be removed prior to phylogenetic
-analysis which assumes aligned residues are homologous.
-%An example of inserted residues that are obviously not correctly
+analysis which assumes aligned nucleotides are homologous.
+%An example of inserted nucleotides that are obviously not correctly
 %aligned is shown in Figure~\ref{fig:inserts}.
 
 \subsubsection{Benchmarking probabilistic masking}
 
 I decided on a simple method for defining masks that requires that
-a given fraction $x$ of the residues in an aligned consensus
+a given fraction $x$ of the nucleotides in an aligned consensus
 (non-insert) column have a posterior probability above a minimum
 threshold $y$ to be included (not pruned away) by the mask. I tested
 %both of these approaches on
@@ -261,13 +271,13 @@ The effect of masking using several different combinations of $x$ and
 $y$ values on the alignment accuracy and coverage of CM alignment on
 the Kolbe09 benchmark is summarized in
 Table~\ref{tbl:kolbe09-pp}. Coverage is defined as the fraction of
-residues in the test alignment that are included by the mask. Accuracy
-is the fraction of residues included by the mask which are correctly
+nucleotides in the test alignment that are included by the mask. Accuracy
+is the fraction of nucleotides included by the mask which are correctly
 aligned (as defined in Chapter 8 of \cite{Nawrocki09b} and \cite{KolbeEddy09}. 
 The results indicate a trade-off between 
 coverage and accuracy: coverage decreases but accuracy increases
 as $x$ and $y$ increase, because the mask becomes more stringent,
-requiring a larger fraction of more confidently aligned residues in
+requiring a larger fraction of more confidently aligned nucleotides in
 included columns. There is no clear best-performing combination of $x$
 and $y$. \sft{ssu-align} uses $0.95$ for both $x$ and $y$ as the
 default, a strategy which attains $99.74\%$ accuracy and $85.37\%$
@@ -323,11 +333,11 @@ coverage on the benchmark.
   program with the {\tt --cyk} flag, which performs HMM banded CYK
   alignment with $\tau=10^{-7}$. Masks were defined as follows: any
   consensus alignment column in which more than $x$ fraction of the
-  aligned residues have a posterior probability of at least $y$ is
+  aligned nucleotides have a posterior probability of at least $y$ is
   included by the mask. All other columns are excluded (not
-  counted). ``cov'' (coverage) is the fraction of residues in the test
+  counted). ``cov'' (coverage) is the fraction of nucleotides in the test
   alignment that are included by the mask. ``acc'' (accuracy) is the
-  fraction of residues included by the mask which are correctly
+  fraction of nucleotides included by the mask which are correctly
   aligned. The values cooresponding to the \sft{ssu-align} default
   banding strategy $x=0.95$ and $y=0.95$ are in bold-faced type.  The
   Kolbe09 benchmark and its definition of alignment correctness are
@@ -405,7 +415,7 @@ always adjacent to a region with at least a few deletions.
   sequences.} Statistics correspond to a CM alignment of the bacterial
   seed sequences using the \sft{ssu-align} bacterial CM. Consensus positions
   excluded from the mask (denoted as circles) are those for which 
-  more than 5\% of the residues have a posterior probability below
+  more than 5\% of the nucleotides have a posterior probability below
   $0.95$, as explained in the text. This diagram was generated by the
   {\tt esl-ssudraw} program included in \sft{ssu-align}.}
 \label{fig:bacdelmask}
@@ -599,10 +609,10 @@ base-pairs in different structures, one between alignment columns
 example of two conflicting base-pairs is shown in
 Figure~\ref{fig:conflict}.  Conflicting base-pairs are problematic
 because a consensus base-pair between columns $i$ and $j$ in a CM seed
-alignment is assumed to exist (or be deleted) between the residues in
+alignment is assumed to exist (or be deleted) between the nucleotides in
 $i$ and $j$ in \emph{all} sequences of the alignment. Columns involved
 in conflicting base-pairs violate this assumption by specifying that a
-residues in a single column is involved in different base-pairs in
+nucleotides in a single column is involved in different base-pairs in
 different sequences.
 
 \begin{figure}[h]
@@ -776,8 +786,8 @@ frequency of insertions          & Figure~\ref{fig:arcins} & Figure~\ref{fig:bac
   consensus sequence of the archaeal SSU model.} 
   This is the single sequence that the model 
   most closely represents, and is the highest scoring possible
-  sequence to the model. Uppercase residues indicate highly conserved positions,
-  and lowercase residues indicate less well-conserved positions.
+  sequence to the model. Uppercase nucleotides indicate highly conserved positions,
+  and lowercase nucleotides indicate less well-conserved positions.
   This diagram was generated by the {\tt
   esl-ssudraw} program included in \sft{ssu-align}.}
 \label{fig:arcrf}
@@ -858,8 +868,8 @@ frequency of insertions          & Figure~\ref{fig:arcins} & Figure~\ref{fig:bac
   consensus sequence of the bacterial SSU model.} 
   This is the single sequence that the model 
   most closely represents, and is the highest scoring possible
-  sequence to the model. Uppercase residues indicate highly conserved positions,
-  and lowercase residues indicate less well-conserved positions.
+  sequence to the model. Uppercase nucleotides indicate highly conserved positions,
+  and lowercase nucleotides indicate less well-conserved positions.
   This diagram was generated by the {\tt
   esl-ssudraw} program included in \sft{ssu-align}.}
 \label{fig:bacrf}
@@ -943,8 +953,8 @@ frequency of insertions          & Figure~\ref{fig:arcins} & Figure~\ref{fig:bac
   consensus sequence of the eukaryotic SSU model.} 
   This is the single sequence that the model 
   most closely represents, and is the highest scoring possible
-  sequence to the model. Uppercase residues indicate highly conserved positions,
-  and lowercase residues indicate less well-conserved positions.
+  sequence to the model. Uppercase nucleotides indicate highly conserved positions,
+  and lowercase nucleotides indicate less well-conserved positions.
   This diagram was generated by the {\tt
   esl-ssudraw} program included in \sft{ssu-align}.}
 \label{fig:eukrf}

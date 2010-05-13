@@ -85,11 +85,15 @@ and
 options, described below, can be used to modify this default behavior.
 
 By default, a single pdf or postscript that contains nine pages will
-be drawn for each alignment. The nine pages display the consensus
-(RF) sequence, information content, mutual information, insert
+be drawn for each alignment. The nine pages are alignment summary
+diagrams and display the alignment consensus
+sequence, information content, mutual information, insert
 frequency, average insert length, deletion frequency, internal
 deletion frequency, average posterior probability and fraction of
-sequences that span each position, respectively.
+sequences that span each position, respectively. The consensus
+sequence can be displayed on these alignment summary diagrams if the 
+.B --cnt
+option is used.
 
 Additionally, the alignment statistics that are displayed in the
 structure diagrams are printed in tabular format to output text
@@ -318,9 +322,17 @@ must exist in the alignment.
 
 .TP 
 .B --rf
-Draw a single page diagram displaying the reference (consensus)
+Draw a single page diagram displaying the model's reference 
 sequence/structure to a file. The sequence displayed will be the
 exact sequence from the #=GC RF annotation of the alignment file. 
+
+.TP 
+.B --cons
+Draw a single page diagram displaying the alignment consensus 
+sequence to a file. The consensus sequence is defined as the most
+frequent nucleotide at each position. Nucleotides that occur in at
+least 75% of the sequences that do not have a gap at the position will
+be uppercase; others will be lowercase.
 
 .TP 
 .B --no-prob
