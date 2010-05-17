@@ -276,13 +276,13 @@ if(($testnum eq "") || ($testnum == $testctr)) {
 }
 $testctr++;
 
-# Test -f with -a (on $dir.bacteria.stk in cwd/ freshly created foo.bacteria.mask in $dir/)
+# Test -s with -a (on $dir.bacteria.stk in cwd/ freshly created foo.bacteria.mask in $dir/)
 if(($testnum eq "") || ($testnum == $testctr)) {
     run_mask                  ($ssumask, $dir, "", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@name_A, ".mask");
     system("cp " . $dir . "/" . $dir . ".bacteria.stk $dir.bacteria.stk");
     $in_mask_file = $dir . "/" . $dir . ".bacteria.mask";
-    run_draw                  ($ssudraw, $dir . ".bacteria.stk", "-a -f $in_mask_file", $testctr);
+    run_draw                  ($ssudraw, $dir . ".bacteria.stk", "-a -s $in_mask_file", $testctr);
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".drawtab");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
@@ -299,7 +299,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     remove_files              (".", "$dir.bacteria.stk");
     remove_files              ($dir, "mask");
 
-    # test the negative, using no -f should cause ssu-draw to *not* use a mask
+    # test the negative, using no -s should cause ssu-draw to *not* use a mask
     system("cp " . $dir . "/" . $dir . ".bacteria.stk $dir.bacteria.stk");
     run_draw                  ($ssudraw, $dir . ".bacteria.stk", "-a", $testctr);
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".drawtab");
@@ -900,53 +900,6 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     remove_files              ($dir, "\.pdf");
 }
 $testctr++;
-
-# Test --indi-list
-if(($testnum eq "") || ($testnum == $testctr)) {
-    # first run ssu-mask --list to get a list
-    run_mask                  ($ssumask, $dir . "/" . $dir . ".eukarya.stk", "--list -a", $testctr);
-    check_for_files           (".", $dir, $testctr, \@euk_only_A, ".list");
-    $list_file = $dir . ".eukarya.list";
-    $seqk_file = $dir . ".eukarya.seqk";
-    open(LIST, $list_file) || die "TEST SCRIPT ERROR, unable to open file $list_file for reading.";
-    $seq1 = <LIST>; chomp $seq1;
-    $seq2 = <LIST>; chomp $seq2;
-    $seq3 = <LIST>; chomp $seq3;
-    $seq4 = <LIST>; chomp $seq4;
-    $seq5 = <LIST>; chomp $seq5;
-    close(LIST);
-    open(SEQK, ">" . $seqk_file) || die "TEST SCRIPT ERROR, unable to open file $seqk_file for writing.";
-    printf SEQK ("$seq1\n");
-    printf SEQK ("$seq5\n");
-    printf SEQK ("$seq4\n");
-    close(SEQK);
-    
-    # now run ssu-draw --indi-list -a (it requires -a)
-    run_draw                  ($ssudraw, $dir . "/" . $dir . ".eukarya.stk", "--indi-list $seqk_file --no-aln -a", $testctr);
-    check_for_files           (".", $dir, $testctr, \@euk_only_A, ".ssu-draw.sum");
-    check_for_files           (".", $dir, $testctr, \@euk_only_A, ".ssu-draw.log");
-    check_for_one_of_two_files(".", $dir, $testctr, \@euk_only_A, ".indi.pdf", ".indi.ps");
-    $output = `cat $dir.eukarya.ssu-draw.sum`;
-    if($output !~ /$dir.eukarya.stk\s+$dir.eukarya.indi.p\w+\s+6\s*/) { die "ERROR, problem with drawing"; }
-    # NOTE: no drawtab file is created, and the postscript is not checked (I could do that, but don't)
-    remove_files              (".", "eukarya.indi");
-    remove_files              (".", "eukarya.ssu-draw");
-    
-    # now run ssu-draw --indi-list -a --no-prob 
-    run_draw                  ($ssudraw, $dir . "/" . $dir . ".eukarya.stk", "--indi-list $seqk_file --no-aln -a --no-prob", $testctr);
-    check_for_files           (".", $dir, $testctr, \@euk_only_A, ".ssu-draw.sum");
-    check_for_files           (".", $dir, $testctr, \@euk_only_A, ".ssu-draw.log");
-    check_for_one_of_two_files(".", $dir, $testctr, \@euk_only_A, ".indi.pdf", ".indi.ps");
-    $output = `cat $dir.eukarya.ssu-draw.sum`;
-    if($output !~ /$dir.eukarya.stk\s+$dir.eukarya.indi.p\w+\s+3\s*/) { die "ERROR, problem with drawing"; }
-    # NOTE: no drawtab file is created, and the postscript is not checked (I could do that, but don't)
-    remove_files              (".", "eukarya.indi");
-    remove_files              (".", "eukarya.ssu-draw");
-    remove_files              (".", "eukarya.ssu-mask");
-    remove_files              (".", "eukarya.list");
-    remove_files              (".", "eukarya.seqk");
-}
-$testctr++;    
 
 # Test --cons
 if(($testnum eq "") || ($testnum == $testctr)) {

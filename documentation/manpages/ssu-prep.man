@@ -1,7 +1,6 @@
 .TH "ssu-prep" 1 "@RELEASEDATE@" "@PACKAGE@ @RELEASE@" "@PACKAGE@ Manual"
 
 .SH NAME
-.TP 
 ssu-prep - prepare SSU rRNA sequences for parallel ssu-align jobs
 
 .SH SYNOPSIS
@@ -39,8 +38,8 @@ Omit prefixes and suffixes from ssu-align job commands, to be manually added lat
 .PP
 .B ssu-prep 
 reads the unaligned FASTA-formatted 
-.I seqfile
-and splits it up into 
+.I seqfile,
+splits it up into 
 .I n 
 smaller sequence files and creates a shell
 script that will execute 

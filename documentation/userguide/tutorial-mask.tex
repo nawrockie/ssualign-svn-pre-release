@@ -1,7 +1,7 @@
-\subsection{Masking (removing columns from) alignments with \prog{ssu-mask}}
+\subsection{Masking (removing columns from) alignments with ssu-mask}
 
 If your goal is to use a phylogenetic inference program to build trees
-from alignments created by \sft{ssu-align}, you may want to mask
+from alignments created by \prog{ssu-align}, you may want to mask
 out columns of the alignment that may include misaligned nucleotides
 first, and then only run the inference on the remaining columns where
 you're confident the alignment is correct. 
@@ -50,29 +50,28 @@ screen about what it is doing and the files it is creating:
   myseqs.eukarya.mask.stk   output   aln   1634      -      -
 \end{sreoutput}
 
-The 'file name' column includes file names, either input or output
-files, as listed in the 'in/out' field, with type specified by the
-'type' column: 'aln' for alignment, 'mask' for mask file, and 'pdf' or
-'ps' for structure diagram file. The 'cols' column gives the number of
-columns for the file. The 'incl.' and 'excl.' columns list the number
-of consensus columns of the alignment that are included (not removed)
-and excluded (removed), respectively, by the mask. For example, the
-\prog{myseqs.archaea.stk} input alignment was initially 1511 total
-columns, 1508 of which were consensus columns and 3 were insert
-columns; the 3 insert columns and 59 of the 1508 consensus columns
+The \prog{file name} column includes file names, either input or
+output files, as listed in the \prog{in/out} field, with type
+specified by the \prog{type} column: \prog{aln} for alignment,
+\prog{mask} for mask file, and \prog{pdf} or \prog{ps} for structure
+diagram file. The \prog{cols} column gives the number of columns for the
+file. The \prog{incl.} and \prog{excl.} columns list the number of consensus
+columns of the alignment that are included (not removed) and excluded
+(removed), respectively, by the mask. For example, the
+\prog{myseqs.archaea.stk} input alignment was initially $1511$ total
+columns, $1508$ of which were consensus columns and $3$ were insert
+columns; the $3$ insert columns and $59$ of the $1508$ consensus columns
 were deemed unreliable and removed by the mask based on the PP values
-in those columns, the remaining 1449 were saved as a new alignment to
+in those columns, the remaining $1449$ were saved as a new alignment to
 \prog{myseqs.archaea.mask.stk}.
 
 Importantly, all insert columns are always removed by \prog{ssu-mask}
-regardless of the PP values in those columns. This is because profile
-probabilistic models like CMs do not actually align inserted nucleotides
-(nucleotides aligning to insert states) between different sequences, but
-rather simply insert them between the appropriate consensus columns in
-the alignment. This means that sequence nucleotides appearing in the same
-insert alignment columns are not aligned with respect to each
-other and consequently should be removed prior to phylogenetic
-analysis which assumes aligned nucleotides are homologous.
+regardless of the PP values in those columns. This is because the
+nucleotides in these columns are not actually aligned between
+different sequences, but rather simply inserted between the
+appropriate consensus columns in the alignment. These columns should
+therefore be removed prior to phylogenetic analysis which assumes
+all nucleotides in the same column are homologous.
 
 In addition to alignments, the command above has generated two more files
 for each of the domains: 
@@ -89,7 +88,7 @@ A \prog{0} at position \prog{n} indicates that consensus position \prog{n}
 was excluded when the mask was applied, and a \prog{1} at position
 \prog{n} indicates that consensus position \prog{n} was kept and
 included in \prog{myseqs.archaea.mask.stk}. In this mask file there are
-$1449$ \prog{1}s and $59$ \prog{0s}.
+$1449$ \prog{1s} and $59$ \prog{0s}.
 
 The structure diagram file includes a secondary structure diagram that
 highlights which positions on the consensus structure are excluded by
@@ -163,10 +162,10 @@ use your own precalculated masks. See the \prog{ssu-mask}
 manual page for more information. 
 
 \subsubsection{converting Stockholm alignments to FASTA format}
-With the ambiguously aligned regions of the alignment removed, you may
+Once the ambiguously aligned regions of the alignment are removed you may
 want to use the alignments as input to a phylogenetic inference
-program, but not many of those programs can accept Stockholm formatted
-alignments. You can convert the Stockholm alignments to aligned FASTA
+program. However, not many of those programs accept Stockholm formatted
+alignments as input. You can convert the Stockholm alignments to aligned FASTA
 using the \prog{ssu-mask} program by specifying the \prog{--stk2afa}
 option on the command line:
 

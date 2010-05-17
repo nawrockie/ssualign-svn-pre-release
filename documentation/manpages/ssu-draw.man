@@ -1,6 +1,6 @@
 .TH "ssu-draw" 1  "@RELEASEDATE@" "@PACKAGE@ @RELEASE@" "@PACKAGE@ Manual"
+
 .SH NAME
-.TP
 ssu-draw - draw secondary structure diagrams of SSU rRNA
 
 .SH SYNOPSIS
@@ -34,11 +34,8 @@ format to output text files for easy parsing.
 .B ssu-draw
 can also draw secondary structure diagrams of individual
 sequences in the alignment with the 
-.B --indi-all
-and
-.B --indi-list
-options.
-
+.B --indi
+option.
 
 Alignment masks,
 which define a subset of consensus positions to exclude from an alignment
@@ -302,28 +299,33 @@ Structure diagrams for individual sequences can be drawn, one sequence
 per page. For each sequence, an additional page displaying the
 posterior probability for the sequence will be drawn. To draw all
 sequences in the alignment, use the 
-.B --indi-all
-option. To draw only the subset listed in a file, use the 
-.B --indi-list.
+.B --indi
+option. 
 The resulting pdf or postscript files will be large for large
 alignments. For pdfs, the file size will be about 1
 Mb for every 20 sequences. For postscript file, the size will be about
 1 Mb for every 2 sequences. 
 
-.TP 
-.B --indi-all
-Draw sequence and posterior probability diagrams for all sequences 
-in each alignment.
+If you only want to draw individual diagrams for a subset of the
+sequences in the alignment, use
+.B ssu-mask
+with the 
+.B --seq-r 
+or 
+.B --seq-k
+options to create an alignment of the subset of sequences you want to
+draw, and then run
+.B ssu-draw
+on that alignment with the
+.B -a
+option. See the 
+.B ssu-mask 
+manual page for more information.
 
 .TP 
-.BI --indi-list " <f>"
-Draw sequence and posterior probability diagrams for only those sequences 
-listed in file
-.I <f>
-which must be formatted as a list of sequence names, each on a
-separate line. All sequences listed in 
-.I <f>
-must exist in the alignment.
+.B --indi
+Draw sequence and posterior probability diagrams for all sequences 
+in each alignment.
 
 .TP 
 .B --rf
@@ -342,9 +344,7 @@ be uppercase; others will be lowercase.
 .TP 
 .B --no-prob
 With 
-.B --indi-list
-or
-.B --indi-all,
+.B --indi,
 do not draw posterior probability diagrams, only draw individual
 sequence diagrams.
 

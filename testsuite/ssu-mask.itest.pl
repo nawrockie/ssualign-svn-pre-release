@@ -163,14 +163,14 @@ if(($testnum eq "") || ($testnum == $testctr)) {
 }
 $testctr++;
 
-# Test -f (only works in combination with -a)
+# Test -s (only works in combination with -a)
 if(($testnum eq "") || ($testnum == $testctr)) {
     # first make the required input mask with the maskkey 
     foreach $name (@arc_only_A) {
 	$maskfile        = $datadir . "/" . $name . "." . $mask_key_in . ".mask";
 	$maskfile_wo_dir = $name . "." . $mask_key_in . ".mask";
     }
-    run_mask                  ($ssumask, $dir . "/" . $dir . ".archaea.stk", "-f $maskfile -a", $testctr);
+    run_mask                  ($ssumask, $dir . "/" . $dir . ".archaea.stk", "-s $maskfile -a", $testctr);
     check_for_files           (".", $dir, $testctr, \@arc_only_A, ".mask.stk");
     check_for_one_of_two_files(".", $dir, $testctr, \@arc_only_A, ".mask.pdf", "mask.ps");
     $output = `cat $dir.archaea.ssu-mask.sum`;

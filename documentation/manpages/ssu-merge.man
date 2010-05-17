@@ -1,7 +1,6 @@
 .TH "ssu-merge" 1 "@RELEASEDATE@" "@PACKAGE@ @RELEASE@" "@PACKAGE@ Manual"
 
 .SH NAME
-.TP 
 ssu-merge - merge SSU rRNA alignments created by parallel ssu-align jobs
 
 .SH SYNOPSIS

@@ -52,7 +52,7 @@ my $options_usage  = "where general options are:\n";
 #                  12345678901234567890123456789012345678901234567890123456789012345678901234567890
 $options_usage .= "  -h     : show brief help on version and usage\n";
 $options_usage .= "  -a     : the command-line argument is a stockholm alignment, not a directory\n";
-$options_usage .= "  -f     : force; w/--indi* draw all seqs, even if predicted output >100 Mb\n";
+$options_usage .= "  -f     : force; w/--indi, draw all seqs, even if predicted output >100 Mb\n";
 $options_usage .= "  -d     : display default ssu-align-0.1 masks on drawings\n";
 $options_usage .= "  -s <f> : display single mask in file <f> for single alignment (requires -a)\n";
 $options_usage .= "  -k <s> : display masks from files named <modelname>.<s>.mask on drawings\n";
@@ -84,11 +84,10 @@ $options_usage .= "  --no-aln  : do not create multi-page pdf with all alignment
 
 $options_usage .= "\noptions for drawing structure diagrams for individual sequences:\n";
 $options_usage .= "  (WARNING: files can get very large: ~1 Mb/20 seqs (pdf); ~1 Mb/2 seqs (postscript)\n";
-$options_usage .= "  --indi-all      : draw sequence and probability diagrams for all aligned sequences\n";
-$options_usage .= "  --indi-list <f> : draw sequence and probability diagrams for sequences listed in <f>\n";
-$options_usage .= "  --cons          : draw alignment consensus sequence       (save as *.cons.pdf)\n";
-$options_usage .= "  --rf            : draw model reference (#=GC RF) sequence (save as *.rf.pdf)\n";
-$options_usage .= "  --no-prob       : with --indi-list or --indi-all, omit probability diagrams\n";
+$options_usage .= "  --indi    : draw sequence and probability diagrams for all aligned sequences\n";
+$options_usage .= "  --cons    : draw alignment consensus sequence       (save as *.cons.pdf)\n";
+$options_usage .= "  --rf      : draw model reference (#=GC RF) sequence (save as *.rf.pdf)\n";
+$options_usage .= "  --no-prob : with --indi, omit probability diagrams\n";
 
 $options_usage .= "\noptions for omitting sections of the diagrams:\n";
 $options_usage .= "  --no-leg  : do not draw legends\n";
@@ -129,8 +128,7 @@ $opt_takes_arg_H{"--info"}      = 0;  push(@opt_order_A, "--info");
 $opt_takes_arg_H{"--mutinfo"}   = 0;  push(@opt_order_A, "--mutinfo");     
 $opt_takes_arg_H{"--cnt"}       = 0;  push(@opt_order_A, "--cnt");
 $opt_takes_arg_H{"--no-aln"}    = 0;  push(@opt_order_A, "--no-aln");     
-$opt_takes_arg_H{"--indi-list"} = 1;  push(@opt_order_A, "--indi-list");       
-$opt_takes_arg_H{"--indi-all"}  = 0;  push(@opt_order_A, "--indi-all");       
+$opt_takes_arg_H{"--indi"}      = 0;  push(@opt_order_A, "--indi");       
 $opt_takes_arg_H{"--no-prob"}   = 0;  push(@opt_order_A, "--no-prob");    
 $opt_takes_arg_H{"--cons"}      = 0;  push(@opt_order_A, "--cons");       
 $opt_takes_arg_H{"--rf"}        = 0;  push(@opt_order_A, "--rf");       
@@ -171,8 +169,7 @@ my $opt_return = GetOptions
      'mutinfo'     => \$opt_H{"--mutinfo"},
      'cnt'         => \$opt_H{"--cnt"},
      'no-aln'      => \$opt_H{"--no-aln"},
-     'indi-list=s' => \$opt_H{"--indi-list"},
-     'indi-all'    => \$opt_H{"--indi-all"},
+     'indi'        => \$opt_H{"--indi"},
      'no-prob'     => \$opt_H{"--no-prob"},
      'rf'          => \$opt_H{"--rf"},
      'cons'        => \$opt_H{"--cons"},
@@ -226,22 +223,16 @@ if($opt_H{"--no-mask"} && ($opt_H{"--mask-key"} ne "")) {
 if(($opt_H{"--ifile"} ne "") && ($opt_H{"-a"} == 0)) { 
     printf STDERR ("\nERROR, --ifile requires the -a option.\n"); exit(1);
 }    
-if(($opt_H{"--no-prob"}) && ($opt_H{"--indi-list"} eq "") && (! $opt_H{"--indi-all"})) {
-    printf STDERR ("\nERROR, --no-prob only makes sense in combination with --indi-list or --indi-all.\n"); exit(1);
-}    
-if(($opt_H{"--indi-list"} ne "") && ($opt_H{"--indi-all"})) {
-    printf STDERR ("\nERROR, --indi-list is incompatible with --indi-all.\n"); exit(1);
-}    
-if(($opt_H{"--indi-list"} ne "") && (! $opt_H{"-a"})) { 
-    printf STDERR ("\nERROR, --indi-list requires -a, it only works on a single alignment file.\n"); exit(1);
+if(($opt_H{"--no-prob"}) && ($opt_H{"--indi"})) { 
+    printf STDERR ("\nERROR, --no-prob only makes sense in combination with --indi.\n"); exit(1);
 }    
 if($opt_H{"--ps-only"} && ($opt_H{"--ps2pdf"} ne "")) { 
     printf STDERR ("\nERROR, --ps-only is incompatible with --ps2pdf\n"); exit(1); 
 }
 if(($opt_H{"--no-aln"}) && 
    (! (($opt_H{"--prob"}) || ($opt_H{"--ifreq"}) || ($opt_H{"--iavglen"}) || ($opt_H{"--dall"}) || ($opt_H{"--dint"}) || ($opt_H{"--span"}) || ($opt_H{"--info"}) || ($opt_H{"--mutinfo"}) || 
-       ($opt_H{"--indi-list"} ne "") || ($opt_H{"--indi-all"}) || ($opt_H{"--rf"}) || ($opt_H{"--cons"})))) { 
-    printf STDERR ("\nERROR, --no-aln only makes sense if used in combination with at least one of: --prob, --ifreq, --iavglen, --dall, --dint, --span, --info, --mutinfo, --indi-list, --indi-all, --rf, --cons.\n"); 
+       ($opt_H{"--indi"}) || ($opt_H{"--rf"}) || ($opt_H{"--cons"})))) { 
+    printf STDERR ("\nERROR, --no-aln only makes sense if used in combination with at least one of: --prob, --ifreq, --iavglen, --dall, --dint, --span, --info, --mutinfo, --indi, --rf, --cons.\n"); 
     exit(1);
 }
 
@@ -309,12 +300,11 @@ my $extra_draw_chars = 0;
 if($opt_H{"--rf"}) { 
     $extra_draw_chars = 2+1; # +1 is for the '.'
 }
-if($opt_H{"--prob"} || $opt_H{"--dall"} || $opt_H{"--dint"} || $opt_H{"--span"} || $opt_H{"--cons"} || $opt_H{"--info"} || ($opt_H{"--indi-list"} ne "")) { 
+if($opt_H{"--prob"} || $opt_H{"--dall"} || $opt_H{"--dint"} || $opt_H{"--span"} || $opt_H{"--cons"} || $opt_H{"--info"} || ($opt_H{"--indi"} ne "")) { 
     $extra_draw_chars = 4+1; # +1 is for the '.'
 }
 if($opt_H{"--ifreq"})                          { $extra_draw_chars = 5+1; } 
 if($opt_H{"--mutinfo"} || $opt_H{"--iavglen"}) { $extra_draw_chars = 7+1; }
-if($opt_H{"--indi-all"})                       { $extra_draw_chars = 7+1; }
 
 for($i = 0; $i < $naln; $i++) { 
     $aln_file         = $stk_list_A[$i];
@@ -753,17 +743,8 @@ sub draw_alignment {
 	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $mask_opts . $ifile_opts . $omit_opts . $cnt_opt), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
 						   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
     }
-    if($opt_HR->{"--indi-all"}) { 
+    if($opt_HR->{"--indi"}) { 
 	$draw_opts = "--indi";
-	if($opt_HR->{"-f"}) { $draw_opts .= " -f"; }
-	if($opt_HR->{"--no-prob"}) { $draw_opts .= " --no-pp"; }
-	$draw_key = $key_out . ".indiall";
-	$do_tabfile = 1;
-	$nfiles_created += run_ssdraw_for_ssu_draw($ssdraw, ($draw_opts . $ifile_opts . $omit_opts), $do_tabfile, $aln_file, $stk_suffix_AR, $template_file, 
-						   $draw_key, $max_width_aln, $max_width_draw, $max_width_tab, $opt_HR, $sum_file, $log_file);
-    }
-    if($opt_HR->{"--indi-list"}) { 
-	$draw_opts = "--indi --list " . $opt_HR->{"--indi-list"}; 
 	if($opt_HR->{"-f"}) { $draw_opts .= " -f"; }
 	if($opt_HR->{"--no-prob"}) { $draw_opts .= " --no-pp"; }
 	$draw_key = $key_out . ".indi";
@@ -850,7 +831,7 @@ sub run_ssdraw_for_ssu_draw {
     }
 
     my $small_opt = "";
-    if((! $opt_HR->{"-i"}) && (! $opt_HR->{"--indi-all"})) { $small_opt = "--small "; }
+    if((! $opt_HR->{"-i"}) && (! $opt_HR->{"--indi"})) { $small_opt = "--small "; }
 
     my $tab_opt = "";
     if($do_tabfile) { $tab_opt = "--tabfile $tabfile "; }

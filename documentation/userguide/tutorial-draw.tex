@@ -1,7 +1,7 @@
 \subsection{Visualizing alignments with \prog{ssu-draw}}
 
-Because SSU rRNA is about 1500 nt, SSU alignments of even a few
-sequences are difficult to view in a meaningful way, and this is
+Because SSU rRNA is about 1500 nt long, SSU alignments of even a few
+sequences are difficult to view in a meaningful way. This is
 especially true if the alignments contain thousands of sequences.
 The \prog{ssu-draw} program can be used to generate secondary
 structure diagrams for displaying alignment statistics, such as
@@ -33,11 +33,10 @@ be postscript files (see the \prog{ssu-draw} manual page for more
 information). 
 
 Take a look at the nine page \prog{myseqs.archaea.pdf} or
-\prog{myseqs.archaea.ps} file \footnote{For Mac users: postscript
-  viewers on the Mac OS are somewhat nonstandard, but Mac OS X's
-  Preview application should be able to view either type of file.}
-Page 2 of this file is included in this
-guide as Figure~\ref{myseqs-archaea-info}. 
+\prog{myseqs.archaea.ps} file \footnote{For Mac users: the standard
+  Mac Preview application should be able to view either type of
+  file.}.  Page 2 of this file is included in this guide as
+Figure~\ref{fig:myseqs-archaea-info}.
 
 Each page shows the same secondary structure template, it is 1508
 consensus positions for archaea and includes 471 basepairs as
@@ -48,34 +47,34 @@ defined by the most common nucleotide present in the alignment
 \prog{myseq.archaea.stk} at each consensus position. Page 2 shows the
 information content per consensus position in a heatmap-like color
 scheme; blue positions are highly conserved, red positions are higly
-variable. Page 3 shows the mutual information from basepaired nucleotides
-as a heatmap. Page 4 and 5 show the frequency and average length of
-insertions that occur after each consensus position. An inserted nucleotide
-is one that does not align to a consensus position. Importantly, these
-nucleotides are not aligned by \prog{ssu-align} but rather simply
-inserted between the two appropriate consensus columns. Pages 6 
-shows the frequency of all deletions (gaps) in the alignment. Page 7
-shows the frequecy of 'internal' deletions, these are deletions that
-occur after the first nucleotide and before the final nucleotide in
-their corresponding sequence. Page 8 shows the average posterior
-probability (confidence estimate) per consensus position. Finally,
-page 9 shows the fraction of sequences that span each position,
-i.e. that have a nongap nucleotide occuring at or before the
-position and a nongap nucleotide occuring at or after the
-position. 
+variable. Page 3 shows the mutual information from basepaired
+nucleotides as a heatmap. Page 4 and 5 show the frequency and average
+length of insertions, respectively, that occur after each consensus
+position. An inserted nucleotide is one that does not align to a
+consensus position. Importantly, these nucleotides are not aligned by
+\prog{ssu-align} but rather simply inserted between the two
+appropriate consensus columns. Pages 6 shows the frequency of all
+deletions (gaps) in the alignment. Page 7 shows the frequecy of
+'internal' deletions, these are deletions that occur after the first
+nucleotide and before the final nucleotide in their corresponding
+sequence. Page 8 shows the average posterior probability (confidence
+estimate) per consensus position. Finally, page 9 shows the fraction
+of sequences that span each position, i.e. that have a nongap
+nucleotide occuring at or before the position and a nongap nucleotide
+occuring at or after the position.
 
 You may have noticed that while the majority of positions are drawn as
 square cells, some of the positions are open circles. These are the
 positions that are excluded by the mask we created earlier using the
-command \prog{ssu-mask myseqs} (not the command with
-\prog{-d}). As it has done in this case, \prog{ssu-draw} will
-automatically use masks to show excluded positions on the diagrams if
-\prog{ssu-mask} has already been used on this directory. To use the
-default masks discussed in the masking section of this tutorial, use 
-the \prog{-d} option (\prog{ssu-mask -d myseqs}), but note that this
-will overwrite the files we've just created above unless you also use
-the \prog{--key-out} option (e.g. \prog{ssu-mask --key-out df -d
-  myseqs}) as shown previously in the masking section.
+command \prog{ssu-mask myseqs}. As it has done here, 
+\prog{ssu-draw} will automatically use masks to show excluded
+positions on the diagrams if \prog{ssu-mask} has already been executed
+for the directory. To use the default masks discussed in the masking
+section of this tutorial, use the \prog{-d} option (\prog{ssu-mask -d
+  myseqs}), but note that this will overwrite the files we've just
+created above unless you also use the \prog{--key-out} option
+(e.g. \prog{ssu-mask --key-out df -d myseqs}) as shown previously in
+the masking section.
 
 By default, alignment summary diagrams are drawn as solid
 color cells per position, but the consensus sequence can be overlaid
@@ -83,16 +82,16 @@ on the colored cells using the \prog{--cnt} option to \prog{ssu-draw}.
 
 The \prog{.drawtab} suffixed files include tabular delimited data
 corresponding to the statistics shown in the structure diagrams. In
-these files, lines that start with \prog{\#} are comment lines, are
-not tabular, and are meant to explain each tab-delimited field. The
+these files, lines that start with \prog{\#} are comment lines
+which are not tabular, but rather explain each tab-delimited field. The
 comments also explain how the statistics, such as information content
 and mutual information, are calculated.
 
 \begin{figure}
   \begin{center}
 \includegraphics[width=6.5in]{Figures/myseqs-archaea-info}
-        \caption[Information content per consensus position of the
-          archaeal alignment created in the tutorial].
+\textbf{Information content per consensus position of the
+          archaeal alignment created in the tutorial.}
   \end{center}
 \label{fig:myseqs-archaea-info}
 \end{figure}
@@ -109,8 +108,8 @@ As before, this command will create the nine-page alignment summary
 diagram files, but it will also create \prog{indiall.pdf} suffixed
 files which display each sequence in the alignment. 
 
-Take a look at {myseqs.archaea.indiall.pdf} or
-{myseqs.archaea.indiall.ps}. This file has 10 pages, two per
+Take a look at \prog{myseqs.archaea.indiall.pdf} or
+\prog{myseqs.archaea.indiall.ps}. This file has 10 pages, two per
 sequence. Pages 7 and 8 which display a Thermococcus sequence are
 included as Figures~\ref{fig:myseqs-archaea-indi-1} and
 \ref{fig:myseqs-archaea-indi-2}.

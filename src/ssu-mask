@@ -531,12 +531,13 @@ if($do_remove_seqs_mode)
     if(! $opt_H{"-a"}) { PrintErrorAndExit("ERROR, --seq-r and --seq-k require the -a option.", $sum_file, $log_file, 1); }
     
     my $outfmt_opt = ($opt_H{"-i"}) ? "" : "--outformat pfam";
+    my $small_opt  = ($opt_H{"-i"}) ? "" : "--small";
     if($opt_H{"--seq-r"} ne "") { 
 	my $seqr_aln = $aln_root2print . $key_out . ".seqr.stk";
 	if(!(-e $opt_H{"--seq-r"})) { 
 	    PrintErrorAndExit("ERROR, the --seq-r file " . $opt_H{"--seq-r"} . " does not exist.", $sum_file, $log_file, 1); 
 	}
-	$command = "$alimanip $outfmt_opt -o $seqr_aln --seq-r " . $opt_H{"--seq-r"} . " $aln_file";
+	$command = "$alimanip $small_opt $outfmt_opt -o $seqr_aln --seq-r " . $opt_H{"--seq-r"} . " $aln_file";
 	RunCommand("$command", $tfilectr++, 1, 1, $sum_file, $log_file, \$command_worked, "");
 	
 	#determine number of sequences in the alignment
@@ -551,7 +552,7 @@ if($do_remove_seqs_mode)
 	if(!(-e $opt_H{"--seq-k"})) { 
 	    PrintErrorAndExit("ERROR, the --seq-k file " . $opt_H{"--seq-k"} . " does not exist.", $sum_file, $log_file, 1); 
 	}
-	$command = "$alimanip $outfmt_opt -o $seqk_aln --seq-k " . $opt_H{"--seq-k"} . " $aln_file";
+	$command = "$alimanip $small_opt $outfmt_opt -o $seqk_aln --seq-k " . $opt_H{"--seq-k"} . " $aln_file";
 	RunCommand("$command", $tfilectr++, 1, 1, $sum_file, $log_file, \$command_worked, "");
 
 	#determine number of sequences in alignment (just number of sequences in the --seq-k list file) 

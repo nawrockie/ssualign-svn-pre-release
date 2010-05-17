@@ -1,7 +1,6 @@
 .TH "ssu-mask" 1 "@RELEASEDATE@" "@PACKAGE@ @RELEASE@" "@PACKAGE@ Manual"
 
 .SH NAME
-.TP 
 ssu-mask - mask (remove columns from) SSU rRNA multiple sequence alignments
 
 .SH SYNOPSIS

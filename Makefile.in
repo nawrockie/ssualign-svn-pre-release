@@ -211,7 +211,7 @@ dist:
 # These take a while (about 10 minutes).
 #
 check:
-	(cd testsuite; testsuite.pl;)
+	(cd testsuite; perl testsuite.pl;)
 
 # "make install" installs the programs in BINDIR and the CM and postscript templates in LIBDIR
 #

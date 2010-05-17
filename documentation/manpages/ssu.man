@@ -1,8 +1,7 @@
 .TH "SSU-ALIGN" 1 "@RELEASEDATE@" "@PACKAGE@ @RELEASE@" "@PACKAGE@ Manual"
 
 .SH NAME
-
-SSU-ALIGN package - alignment, masking and visualization of SSU rRNA sequences
+SSU-ALIGN package: alignment, masking and visualization of SSU rRNA sequences
 
 .SH SYNOPSIS
 

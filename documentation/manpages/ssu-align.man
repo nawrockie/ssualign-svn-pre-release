@@ -1,7 +1,6 @@
 .TH "ssu-align" 1 "May 2010" "SSU-ALIGN 0.1" "SSU-ALIGN Manual"
 
 .SH NAME
-
 ssu-align - align small subunit ribosomal RNA (16s/18s SSU rRNA) sequences
 
 .SH SYNOPSIS
