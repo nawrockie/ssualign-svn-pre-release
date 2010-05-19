@@ -10,13 +10,13 @@ determination from the \db{comparative rna website} (\db{crw})
 
 \subsection{Overview}
 The \software{ssu-align} package contains six different
-programs: \textbf{ssu-align}\footnote{Confusingly, SSU-ALIGN is the name of the
+programs: \textbf{ssu-align}\footnote{SSU-ALIGN is the name of the
   software package as well as the name of one of the programs within
   the package. In this guide, when written in lowercase bold-faced
   type (\textbf{ssu-align}) it refers to the executable program, and
   when written in all capital letters (\sft{SSU-ALIGN}) it refers to
-  the package.}, 
-, \textbf{ssu-build}, \textbf{ssu-draw}, 
+  the package.},
+\textbf{ssu-build}, \textbf{ssu-draw}, 
 \textbf{ssu-mask}, \textbf{ssu-merge}, and \textbf{ssu-prep}. 
 
 You can use \textbf{ssu-align} to create multiple alignments of SSU
@@ -29,16 +29,55 @@ the V4 hypervariable region), can be created using the
 \textbf{ssu-build} program.
 
 Given an input dataset of unaligned SSU sequences, \textbf{ssu-align}
-proceeds through two stages to generate
-alignments. In stage 1, each of the sequences is aligned to each of
-the three models based on primary sequence conservation to obtain a
-score for each sequence to each model.  The model that gives the
-highest scoring alignment to each sequence is the \emph{best-matching
-  model} for that sequence.  In stage 2, each sequence is aligned to
-its best-matching model using both primary sequence and secondary
-structure conservation information. The end result is a separate
-multiple alignment for each model that was the best-matching model for
-at least one sequence in the input dataset.
+proceeds through two stages to generate alignments as depicted in
+figure~\ref{fig:strategy}.  
+%In stage 1, each of the sequences is aligned to each of
+%the three models based on primary sequence conservation to obtain a
+%score for each sequence to each model.  The model that gives the
+%highest scoring alignment to each sequence is the \emph{best-matching
+%  model} for that sequence.  In stage 2, each sequence is aligned to
+%its best-matching model using both primary sequence and secondary
+%structure conservation information. The end result is a separate
+%multiple alignment for each model that was the best-matching model for
+%at least one sequence in the input dataset.
+In the first stage, each target sequence is scored with each of the
+models based only on sequence conservation. This is done with a
+profile HMM derived from each CM, which is significantly faster than
+using the CM\@.  The model whose profile HMM gives the highest score to
+each sequence is defined as the \emph{best-matching} model for that
+sequence. If this highest score is not above a predefined threshold,
+the sequence is discarded and not evaluated further. The boundaries of
+the best-matching HMM alignment are used to truncate each target
+sequence if the alignment does not span the entire target length.  In
+stage 2, each surviving, and possibly truncated, sequence is aligned
+to its best-matching model, this time using the CM which scores
+both sequence and conserved structure. Up to $N$ alignments are
+created, one for each model that was the best-match to at least one
+target sequence.
+
+\begin{figure}
+  \begin{center}
+\includegraphics[width=6.5in]{Figures/ssualign-schematic}
+  \end{center}
+\caption{\textbf{Schematic of the \prog{ssu-align} alignment
+    pipeline.} Unaligned target sequences are input to the
+  program. In stage 1, each sequence is independently aligned
+  using only primary sequence scoring to each of $N$ HMMs (by
+  default, $N$ is 3), one built from each model in the input
+  CM file. The model whose HMM alignment has the maximum bit
+  score is the ``best-matching'' model for that sequence, in
+  this example ``eukarya'' is the best-matching model. In
+  stage 2, the unaligned (sub)sequence from the best-matching
+  model's HMM alignment (potentially with some sequence
+  trimmed off the ends) is aligned to the best-matching
+  model's CM which scores both sequence and conserved
+  secondary structure. The CM aligned target sequence is added
+  to that model's output alignment. After all target sequences
+  are processed, the program has output up to $N$ new
+  structural alignments, one for each model that was the
+  best-matching model for at least 1 target sequence.}
+\label{fig:strategy}
+\end{figure}
 
 The \textbf{ssu-mask} program can then be used to removing unreliable
 alignment columns. This step is important prior to using the
@@ -79,20 +118,30 @@ the program, is included at the end of this guide.
 \subsection{What is included in this package}
 
 \sft{ssu-align} includes the \sft{infernal} software package, which is
-written in C and is installed along with \sft{ssu-align} by following the directions in
-the Installation section of this guide. The six \sft{ssu-align}
-programs are \sft{perl} scripts. 
-Also included are the three default (archaea, bacteria,
-and eukarya) SSU models and the \emph{seed} alignments they were built
-from. These alignments were based on SSU structures and alignments
-from the Comparative RNA Website (CRW) \cite{CannoneGutell02}. A
-broader discussion of these models and alignments and the specific
-procedure used to create them from the CRW data is explained in
-section~\ref{section:chap9}.
+written in C and is installed along with \sft{ssu-align} by following
+the directions in the Installation section of this guide. The six
+\sft{ssu-align} programs: \prog{ssu-align}, \prog{ssu-build},
+\prog{ssu-draw}, \prog{ssu-mask}, \prog{ssu-merge} and \prog{ssu-prep}
+are \sft{perl} scripts.  Also included are the three default (archaea,
+bacteria, and eukarya) SSU models and the \emph{seed} alignments they
+were built from. These alignments were based on SSU structures and
+alignments from the Comparative RNA Website (CRW)
+\cite{CannoneGutell02}. A broader discussion of these models and
+alignments and the specific procedure used to create them from the CRW
+data is explained in section~\ref{section:chap9}.
 
 Installation of the \sft{perl} (Practical Extraction and Report Language,
 Larry Wall) interpreter package version 5.0 or later is required to
 run the \software{ssu-align} \sft{perl} scripts.
+
+\subsection{What this package requires on your system}
+
+\sft{ssu-align} was developed and tested on Mac OS/X and Linux
+(Redhat), but it should work on most UNIX platforms. It requires
+\software{perl} version 5.0 or later. No other programs or libraries
+are required. If the program \prog{ps2pdf} is installed on
+your system and in your PATH, \prog{ssu-draw} and \prog{ssu-mask} will
+use it to convert postscript diagrams to PDF, but it is not required. 
 
 \subsection{What this package does not do}
 
@@ -111,7 +160,7 @@ SSU rRNA alignment; chapter 9 is included in this guide as
 section~\ref{section:chap9}, but the other chapters may include some
 relevant background information as well. 
 Other useful references on CMs include
-\cite{Eddy94,Eddy02b,NawrockiEddy07,Nawrocki09,KolbeEddy09}. In
+\cite{Eddy94,Durbin98,Eddy02b,NawrockiEddy07,Nawrocki09,KolbeEddy09}. In
 addition, the \database{rfam} database 
 (\htmladdnormallink{http://rfam.sanger.ac.uk/}{http://rfam.sanger.ac.uk/})
 uses \software{infernal} to search for and align
