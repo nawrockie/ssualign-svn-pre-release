@@ -209,7 +209,7 @@ columns: consensus columns, that correspond to a consensus position of
 the model, and insert columns, which include nucleotides
 inserted between consensus positions of the model. These columns can
 be distinguished based on the \prog{\#=GC RF} line in the alignment
-files. Continuing with the small RNA example, figure~\ref{fig:aln-ex}
+files. Continuing with the small RNA example, figure~\ref{fig:toyex}
 shows an alignment of 10 target sequences to the CM built from the
 alignment in~\ref{fig:insert-ex}. Notice that the \prog{\#=GC RF} line
 contains 12 nucleotides, one for each of the consensus columns in the model.
@@ -217,7 +217,7 @@ These are the highest scoring nucleotides at each position. Uppercase
 letters in this line were highly conserved in the seed alignment,
 lowercase letters were less well conserved.
 
-Figure~\ref{fig:aln-ex} demonstrates two important caveats of
+Figure~\ref{fig:toyex} demonstrates two important caveats of
 profile-based alignment by \sft{ssu-align}. 
 
 \begin{enumerate}
@@ -258,7 +258,14 @@ must deliberately introduce errors in the alignment in some cases
 
 \end{enumerate}
 
-HERE HERE HERE
+\begin{figure}
+\begin{center}
+\includegraphics[height=7in]{Figures/sa-toy-example}
+\caption{Building and aligning sequences to an example CM.}
+\end{center}
+\label{fig:toyex}
+\end{figure}
+
 
 \subsection{Automated probabilistic alignment masking}
 
@@ -385,79 +392,3 @@ structural RNAs using more than 1000 different CMs, so its
 publications may be of interest as well
 \cite{Griffiths-Jones03,Griffiths-Jones05,Gardner09}.
 
-
-\begin{comment}
-\begin{figure}
-\tiny
-\begin{center}
-\begin{tabular}{llllllllllllll}
-
-\multicolumn{2}{c}{Part of an example SSU-ALIGN alignment}   & & & & \multicolumn{2}{c}{A better alignment with inserted nucleotides}  & & & & & \\
-\multicolumn{2}{c}{with inserted nucleotides in lowercase unaligned}         & & & & \multicolumn{2}{c}{aligned; NOT computed by SSU-ALIGN} & & & & & \\
-& & & & &  & & & & & & \\
-\texttt{sequence1}   & \texttt{AGAGUUUGAUCCUGGCUUAG} & & & & \texttt{sequence1}  & \texttt{AGAGUUUGAU...CCUGGCUUAG}  & & & & \texttt{sequence1}  & \texttt{AGAGUUUGAU....CCUGGCUUAG}\\ 
-\texttt{sequence2}   & \texttt{AGAG-UUGAUCCUGGCUUAG} & & & & \texttt{sequence2}  & \texttt{AGAG-UUGAU...CCUGGCUUAG}  & & & & \texttt{sequence2}  & \texttt{AGAG-UUGAU....CCUGGCUUAG}\\ 
-\texttt{sequence3}   & \texttt{AGAG-UUGAUCCUGG-UUAG} & & & & \texttt{sequence3}  & \texttt{AGAG-UUGAU...CCUGG-UUAG}  & & & & \texttt{sequence3}  & \texttt{AGAG-UUGAU....CCUGG-UUAG}\\ 
-\texttt{sequence4}   & \texttt{AGAGUAUGAUCCUGGCUGAG} & & & & \texttt{sequence4}  & \texttt{AGAGUAUGAU...CCUGGCUGAG}  & & & & \texttt{sequence4}  & \texttt{AGAGUAUGAU....CCUGGCUGAG} \\
-\texttt{sequence5}   & \texttt{AGAGUUUGAUCCUGGCUUAG} & & & & \texttt{sequence5}  & \texttt{AGAGUUUGAU...CCUGGCUUAG}  & & & & \texttt{sequence5}  & \texttt{AGAGUUUGAU....CCUGGCUUAG} \\
-\texttt{sequence6}   & \texttt{AGAG-UUGAUCCUGGCUUAG} & & & & \texttt{sequence6}  & \texttt{AGAG-UUGAU...CCUGGCUUAG}  & & & & \texttt{sequence6}  & \texttt{AGAG-UUGAU....CCUGGCUUAG} \\
-\texttt{sequence7}   & \texttt{AGUGUAUGAUCCUGGCUGAG} & & & & \texttt{sequence7}  & \texttt{AGUGUAUGAU...CCUGGCUGAG}  & & & & \texttt{sequence7}  & \texttt{AGUGUAUGAU....CCUGGCUGAG} \\
-\texttt{\#=GC RF}    & \texttt{xxxxxxxxxxxxxxxxxxxx} & & & & \texttt{sequence8}  & \texttt{AGAGUUUGAUuagCCUGGCUCAG}  & & & & \texttt{sequence8}  & \texttt{AGAGUUUGAUu.agCCUGGCUCAG} \\
-                     &                               & & & & \texttt{\#=GC RF}   & \texttt{xxxxxxxxxx...xxxxxxxxxx}  & & & & \texttt{sequence9}  & \texttt{AGUGUUUGAUagcaCCUGGCUCAG} \\ 
-                     &                               & & & &                     &                                   & & & & \texttt{\#=GC RF}   & \texttt{xxxxxxxxxx....xxxxxxxxxx} \\
-                     &                               & & & &    
-\end{tabular}
-\caption{Part of a toy example alignment from \textsc{ssu-align}
-  (left) and a better alignment of the same sequences that was not
-  computed by \textsc{ssu-align} (right). The difference is how
-  inserted nucleotides are treated. Inserted nucleotides are the lowercase
-  nucleotides in the middle columns that have a gap (\prog{.}) in the
-  \prog{\#=GC RF} columns. Consensus columns are indicated by an
-  \prog{x} in the \prog{\#=GC RF} columns. Note that in the
-  \textsc{ssu-align} alignment to the left, all inserted nucleotides in
-  the three bottom sequences are simply flush-right between the two
-  adjacent consensus columns. In the ``better'' alignment on the
-  right, which was manually created by modifying the \textsc{ssu-align} 
-  alignment on the left, the inserted nucleotides are aligned with
-  respect to each other in the bottom three sequences.}
-
-\end{center}
-\end{figure}
-
-\begin{figure}
-\footnotesize
-\begin{center}
-\begin{tabular}{llllllll}
-
-\multicolumn{2}{c}{Part of an example SSU-ALIGN alignment}   & & & & \multicolumn{2}{c}{A better alignment with inserted nucleotides} \\
-\multicolumn{2}{c}{with inserted nucleotides in lowercase unaligned}         & & & & \multicolumn{2}{c}{aligned; NOT computed by SSU-ALIGN} \\
- & & & & & & \\
-\texttt{sequence1}   & \texttt{AGAGUUUGAU......CCUGGCUUAG} & & & & \texttt{sequence1}  & \texttt{AGAGUUUGAU......CCUGGCUUAG} \\
-\texttt{sequence2}   & \texttt{AGAG-UUGAU......CCUGGCUUAG} & & & & \texttt{sequence2}  & \texttt{AGAG-UUGAU......CCUGGCUUAG} \\
-\texttt{sequence3}   & \texttt{AGAG-UUGAU......CCUGG-UUAG} & & & & \texttt{sequence3}  & \texttt{AGAG-UUGAU......CCUGG-UUAG} \\
-\texttt{sequence4}   & \texttt{AGAGUAUGAU......CCUGGCUGAG} & & & & \texttt{sequence4}  & \texttt{AGAGUAUGAU......CCUGGCUGAG} \\
-\texttt{sequence5}   & \texttt{AGAGUUUGAU......CCUGGCUUAG} & & & & \texttt{sequence5}  & \texttt{AGAGUUUGAU......CCUGGCUUAG} \\
-\texttt{sequence6}   & \texttt{AGAG-UUGAU......CCUGGCUUAG} & & & & \texttt{sequence6}  & \texttt{AGAG-UUGAU......CCUGGCUUAG} \\
-\texttt{sequence7}   & \texttt{AGUGUAUGAU......CCUGGCUGAG} & & & & \texttt{sequence7}  & \texttt{AGUGUAUGAU......CCUGGCUGAG} \\
-\texttt{sequence8}   & \texttt{AGAGUUUGAUu...agCCUGGCUCAG} & & & & \texttt{sequence8}  & \texttt{AGAGUUUGAUuag...CCUGGCUCAG} \\ 
-\texttt{sequence9}   & \texttt{AGUGUUUGAUag..caCCUGGCUCAG} & & & & \texttt{sequence9}  & \texttt{AGUGUUUGAU.agca.CCUGGCUCAG} \\ 
-\texttt{sequence10}  & \texttt{AGUGUUUGAUuagcauCCUGGCUCAG} & & & & \texttt{sequence10} & \texttt{AGUGUUUGAUuagcauCCUGGCUCAG} \\ 
-\texttt{\#=GC RF}    & \texttt{xxxxxxxxxx......xxxxxxxxxx} & & & & \texttt{\#=GC RF}   & \texttt{xxxxxxxxxx......xxxxxxxxxx} \\ 
-\end{tabular}
-\caption{Part of a toy example alignment from \textsc{ssu-align}
-  (left) and a better alignment of the same sequences that was not
-  computed by \textsc{ssu-align} (right). The difference is how
-  inserted nucleotides are treated. Inserted nucleotides are the lowercase
-  nucleotides in the middle columns that have a gap (\prog{.}) in the
-  \prog{\#=GC RF} columns. Consensus columns are indicated by an
-  \prog{x} in the \prog{\#=GC RF} columns. Note that in the
-  \textsc{ssu-align} alignment to the left, all inserted nucleotides in
-  the three bottom sequences are split in half and the left half is
-  flush-left and the right half is flush right between the two
-  adjacent consensus columns. In the ``better'' alignment on the
-  right, which was manually created by modifying the \textsc{ssu-align} 
-  alignment on the left, the inserted nucleotides are aligned with
-  respect to each other in the bottom three sequences.}
-\end{center}
-\end{figure}
-\end{comment}
