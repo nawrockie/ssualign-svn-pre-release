@@ -31,7 +31,7 @@ List sequences in alignment file <aln>:
 .PP
 .B ssu-mask -a --list
 .I [options]
-.I <dir>
+.I <aln>
 
 .PP 
 Convert Stockholm alignments in <dir> to aligned FASTA:
@@ -45,7 +45,7 @@ Convert Stockholm alignment <aln> to aligned FASTA:
 .PP
 .B ssu-mask -a --stk2afa
 .I [options]
-.I <dir>
+.I <aln>
 
 .PP 
 Extract a subset of sequences from an alignment: 

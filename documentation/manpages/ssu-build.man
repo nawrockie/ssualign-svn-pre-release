@@ -172,7 +172,7 @@ where <start> is the first consensus position to include and <end> is
 the final one, separated by a single '-' character.
 This option can be useful for creating a model that matches
 a specific region of the SSU molecule. For example, running
-.B ssu-build -d --trunc " 525-765 archaea"
+.B ssu-build -d --trunc 525-765 archaea
 will build a CM that matches the so-called hypervariable V4 region of
 the archaeal SSU molecule.
 See the 

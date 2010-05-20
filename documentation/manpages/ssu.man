@@ -79,7 +79,8 @@ removes columns from (masks) alignments created by
 .B ssu-align
 that are likely to contain alignment errors. The set of columns to
 remove is determined based on per-nucleotide confidence estimates
-contained within the alignments as calculated by 
+(posterior probabilities, annotated in 'PP' lines) contained within
+the alignments as calculated by
 .B ssu-align. 
 Alternatively, preset masks can be applied to remove a consistent set
 of columns to allow comparison across multiple datasets.
@@ -107,14 +108,12 @@ V4 can be constructed for aligning datasets from a PCR-based study
 that targetted the V4 region.
 
 .PP
-.B SSU-ALIGN
-is designed to be able to create and manipulate very large alignments
-(up to millions of sequences). The main limitation for such alignments
-is the time required to create them (about 1
+SSU-ALIGN is designed to be able to create and manipulate very large
+alignments (up to millions of sequences). The main limitation for large
+alignments is the time required to create them (about 1
 sequence/second/cpu). The memory requirements of 
-.B SSU-ALIGN 
-are effectively independent of the number of sequences in the
-alignments.
+SSU-ALIGN are effectively independent of the number of sequences in
+the alignments.
 
 .PP
 Each of the six programs has its own man page.
