@@ -1,7 +1,7 @@
 .TH "ssu-build" 1 "@RELEASEDATE@" "@PACKAGE@ @RELEASE@" "@PACKAGE@ Manual"
 
 .SH NAME
-ssu-build - build small subunit ribosomal RNA (16s/18s SSU rRNA) covariance models
+ssu-build - build SSU rRNA covariance models
 
 .SH SYNOPSIS
 

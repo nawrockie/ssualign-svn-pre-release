@@ -92,7 +92,6 @@ sub GetGlobals {
     $globals_HR->{"DF_ALIMASK_PFRACT"}       = 0.95;                                   # original value: 0.95
     $globals_HR->{"DF_ALIMASK_PTHRESH"}      = 0.95;                                   # original value: 0.95
     $globals_HR->{"DF_MERGE_INIT_WAIT_SECS"} = 3;                                      # original value: 3
-    $globals_HR->{"DF_MERGE_MAX_WAIT_SECS"}  = 3600;                                   # original value: 3600
 
     # executable programs
     $globals_HR->{"cmalign"}      = "ssu-cmalign";                              # original value: "ssu-cmalign"
@@ -135,6 +134,8 @@ sub PrintGlobalsToFile {
 
     my @sorted_keys = sort (keys(%{$globals_HR}));
     my $key;
+    PrintStringToFile($out_file, 0, "\n");
+    PrintStringToFile($out_file, 0, "Printing global hask key as read from ssu.pm:\n");
     PrintStringToFile($out_file, 0, "\n");
     foreach $key (@sorted_keys) { 
 	PrintStringToFile($out_file, 0, sprintf("Global hash key: %-20s value: %s\n", $key, $globals_HR->{$key}));
