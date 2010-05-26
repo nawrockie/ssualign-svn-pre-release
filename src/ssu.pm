@@ -77,6 +77,7 @@ sub GetGlobals {
 
     # default values, files and parameters
     $globals_HR->{"VERSION"}                 = "0.1";                                  # original value: "0.1"
+    $globals_HR->{"VERSION_PSTR"}            = "0p1";                                  # original value: "0p1"
     $globals_HR->{"DF_CM_FILE"}              = $ssualigndir . "/ssu-align-0p1.cm";     # original value: $ssualigndir . "/ssu-align-0p1.cm"
     $globals_HR->{"DF_TEMPLATE_FILE"}        = $ssualigndir . "/ssu-align-0p1.ps";     # original value: $ssualigndir . "/ssu-align-0p1.ps"
     $globals_HR->{"DF_MASK_FILE"}            = $ssualigndir . "/ssu-align-0p1.mask";   # original value: $ssualigndir . "/ssu-align-0p1.mask"

@@ -389,7 +389,7 @@ sub validate_and_setup_ssu_build {
 	# otherwise we'll just append '.cm' to the full name of the alignment file
     }
     else { #-d enabled, $aln_file is actually the name of a default ssu-align-0.1 model (or should be), try to find it
-	$aln_file = $ssualigndir . "\/" . $aln_file_or_model_name . "-0p1.stk";
+	$aln_file = $ssualigndir . "\/" . $aln_file_or_model_name . "-" . $globals_H{"VERSION_PSTR"} . ".stk";
 	if(!(-e $aln_file)) { printf STDERR ("\nERROR, -d enabled, specifying use of default ssu-align-0.1 alignment file:\n$aln_file,\nbut it does not exist.\nValid options command-line argument with -d are \"archaea\", \"bacteria\", or \"eukarya\".\n"); exit(1); }
 	$root = $aln_file_or_model_name . "-0p1-sb";
     }

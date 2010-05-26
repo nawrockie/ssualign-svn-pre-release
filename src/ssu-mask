@@ -323,9 +323,12 @@ PrintGlobalsToFile(\%globals_H, $log_file);
 # Validate that everything is go #
 ##################################
 my @stk_list_A = ();
+my @ssdraw_stk_list_A = (); # the list of seed alignments we'll use as input to esl-ssdraw when drawing masks, 
+                            # these are small, so drawing will be fast. If "", a non-default model was used,
+                            # so we use the same alignment we're masking as input
 my @in_mask_list_A = ();
 my ($cm_file, $template_file, $alimanip, $alimask, $ssdraw, $weight, $alistat, $reformat);
-validate_and_setup_ssu_mask($ssualigndir, $dir, $root, \%opt_H, \$cm_file, \$template_file, \$alimask, \$alimanip, \$ssdraw, \$weight, \$alistat, \$reformat, \@stk_list_A, \@in_mask_list_A, $sum_file, $log_file);
+validate_and_setup_ssu_mask($ssualigndir, $dir, $root, \%opt_H, \$cm_file, \$template_file, \$alimask, \$alimanip, \$ssdraw, \$weight, \$alistat, \$reformat, \@stk_list_A, \@ssdraw_stk_list_A, \@in_mask_list_A, $sum_file, $log_file);
 my $naln = scalar(@stk_list_A);
 my $aln_file;
 
@@ -394,7 +397,7 @@ if($do_mask_mode)
     PrintStringToFile($sum_file, 1, sprintf("# %-*s  %6s  %4s  %5s  %5s  %5s\n", $max_width, $dashes, "------", "----", "-----", "-----", "-----"));
     
     # Mask each alignment
-    my ($mask2use, $do_draw, $masked_aln_file, $mask_file);
+    my ($mask2use, $do_draw, $masked_aln_file, $mask_file, $ssdraw_aln_file);
     my $ssdraw_worked = 0;
     my $inmask_mode = 0;
     if(scalar(@in_mask_list_A) > 0) { $inmask_mode = 1; }
@@ -403,21 +406,22 @@ if($do_mask_mode)
     else                                                                      { $do_draw          = 0; }
 
     for($i = 0; $i < $naln; $i++) { 
-	$aln_file = $stk_list_A[$i];
-	$aln_root       = SwapOrAppendFileSuffix($aln_file, \@stk_suffix_A, "", 1);
-	$aln_root2print = SwapOrAppendFileSuffix($aln_file, \@stk_suffix_A, "", $opt_H{"-a"});
+	$aln_file        = $stk_list_A[$i];
+	$ssdraw_aln_file = $ssdraw_stk_list_A[$i];
+	$aln_root        = SwapOrAppendFileSuffix($aln_file, \@stk_suffix_A, "", 1);
+	$aln_root2print  = SwapOrAppendFileSuffix($aln_file, \@stk_suffix_A, "", $opt_H{"-a"});
 
 	if($inmask_mode) { 
             # either -s, -d, or -k was enabled and we validated the nec mask files exist in validate_and_setup_ssu_mask()
 	    $mask2use = $in_mask_list_A[$i];
 	    if(! -e ($mask2use)) { PrintErrorAndExit("ERROR, second pass, mask file $mask2use does not exist!.", $sum_file, $log_file, 1); }
-	    mask_alignment($alimask, \%opt_H, $ssdraw, $aln_file, \@stk_suffix_A, $mask2use, $do_draw,
+	    mask_alignment($alimask, \%opt_H, $ssdraw, $aln_file, $ssdraw_aln_file, \@stk_suffix_A, $mask2use, $do_draw,
 			   $max_width, $template_file, \$masked_aln_file, \$mask_file, \$ssdraw_worked, \@files_to_unlink_A, $sum_file, $log_file);
 	    if   ($do_draw && $ssdraw_worked)    { $ssdraw_worked_at_least_once = 1; }
 	    elsif($do_draw && (!$ssdraw_worked)) { $ssdraw_failed_at_least_once = 1; }
 	}
 	else {  # normal mode, neither -s, -d, nor -k enabled
-	    mask_alignment($alimask, \%opt_H, $ssdraw, $aln_file, \@stk_suffix_A, "", $do_draw,
+	    mask_alignment($alimask, \%opt_H, $ssdraw, $aln_file, $ssdraw_aln_file, \@stk_suffix_A, "", $do_draw,
 			   $max_width, $template_file, \$masked_aln_file, \$mask_file, \$ssdraw_worked, \@files_to_unlink_A, $sum_file, $log_file);
 	    if   ($do_draw && $ssdraw_worked)    { $ssdraw_worked_at_least_once = 1; }
 	    elsif($do_draw && (!$ssdraw_worked)) { $ssdraw_failed_at_least_once = 1; }
@@ -692,6 +696,7 @@ exit(0);
 # $alistat_ref:          RETURN; the esl-alistat command, only relevant if --filter enabled
 # $reformat_ref:         RETURN; the esl-reformat command, only relevant if --afa or --stk2afa enabled
 # $stk_list_arr_ref:     RETURN: ref to array of alignment files to operate on
+# $ssdraw_stk_list_arr_ref: RETURN: ref to array of alignment files we'll use in esl-ssdraw, if "", use aln in stk_list_arr_ref
 # $in_mask_list_arr_ref: RETURN: ref to array of mask files to use, only filled if -s, -d, or -k enabled
 # $sum_file:             the summary file
 # $log_file:             the log file
@@ -704,9 +709,9 @@ exit(0);
 #
 ####################################################################
 sub validate_and_setup_ssu_mask { 
-    my $narg_expected = 16;
+    my $narg_expected = 17;
     if(scalar(@_) != $narg_expected) { printf STDERR ("\nERROR, validate_and_setup_ssu_mask() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my($ssualigndir, $dir, $root, $opt_HR, $cm_file_ref, $template_file_ref, $alimask_ref, $alimanip_ref, $ssdraw_ref, $weight_ref, $alistat_ref, $reformat_ref, $stk_list_arr_ref, $in_mask_list_arr_ref, $sum_file, $log_file) = @_;
+    my($ssualigndir, $dir, $root, $opt_HR, $cm_file_ref, $template_file_ref, $alimask_ref, $alimanip_ref, $ssdraw_ref, $weight_ref, $alistat_ref, $reformat_ref, $stk_list_arr_ref, $ssdraw_stk_list_arr_ref, $in_mask_list_arr_ref, $sum_file, $log_file) = @_;
 
     #Validate that we can read the CM file
     my $cm_file = "";
@@ -725,7 +730,7 @@ sub validate_and_setup_ssu_mask {
 	if(!(-e $template_file)) { PrintErrorAndExit("ERROR, template postscript file $template_file, specified with -t does not exist.", $sum_file, $log_file, 1); }
     }
     elsif($opt_HR->{"-m"} eq "") { # -t not enabled and -m not enabled, we assume default template file should exist for the default CM file
-	$template_file = $ssualigndir . "/ssu-align-0p1.ps";
+	$template_file = $ssualigndir . "/ssu-align-" . $globals_H{"VERSION_PSTR"} . ".ps";
 	if(!(-e $template_file)) { PrintErrorAndExit("ERROR, the default template file $template_file does not exist and you did not specify a non-default CM file with -m.\nIf you used a non-default CM file, use -m.\nIf you want to use a non-default structure template file use -t.", $sum_file, $log_file, 1); }
     }
     else { #-m enabled, -t not enabled: with this combo if the default template file exists we'll try to do ssu-align with it,
@@ -780,6 +785,7 @@ sub validate_and_setup_ssu_mask {
 	    PrintErrorAndExit("ERROR, the alignment file $aln_name does not exist.", $sum_file, $log_file, 1); 
 	}
 	push(@{$stk_list_arr_ref}, $aln_name);
+	push(@{$ssdraw_stk_list_arr_ref}, ""); # we don't have a simpler version of this alignment for masking
 	$naln = 1; 
     }
     else { 
@@ -806,10 +812,14 @@ sub validate_and_setup_ssu_mask {
 	    $aln_name = $dir . "/" . $root . "." . $name . ".stk";
 	    if(-e $aln_name) { 
 		push(@{$stk_list_arr_ref}, $aln_name);
+                # push seed alignment on, esl-ssdraw will read this instead of a potentially much larger alignment when drawing masks, saving time
+		push(@{$ssdraw_stk_list_arr_ref}, $ssualigndir . "/" . $name . "-" . $globals_H{"VERSION_PSTR"} . ".stk"); 
 		$naln++; 
 	    }
 	    elsif(-e ($aln_name . ".gz")) {
 		push(@{$stk_list_arr_ref}, ($aln_name . ".gz"));
+                # push seed alignment on, esl-ssdraw will read this instead of a potentially much larger alignment when drawing masks, saving time
+		push(@{$ssdraw_stk_list_arr_ref}, $ssualigndir . "/" . $name . "-" . $globals_H{"VERSION_PSTR"} . ".stk"); 
 		$naln++; 
 	    }
 	}
@@ -894,7 +904,7 @@ sub validate_and_setup_ssu_mask {
 	    }
 	    else { # -d, it must be in SSUALIGNDIR, and we first must remove $root from the beginning of it and add the suffix '-0p1.mask'
 		$mask_file =~ s/^$root\.//;
-		$mask_file .= "-0p1.mask";
+		$mask_file .= "-" . $globals_H{"VERSION_PSTR"} . ".mask";
 		$actual_mask_file = $ssualigndir . "/" . $mask_file;
 		if(! (-e $actual_mask_file)) { 
 		    PrintErrorAndExit("ERROR, unable to locate default mask file $mask_file for masking alignment $aln_name in\nthe SSUALIGNDIR $ssualigndir.", $sum_file, $log_file, 1);
@@ -973,6 +983,8 @@ sub summarize_mask {
 #   $opt_HR:              reference to the hash of command-line options
 #   $ssdraw:              path and name of esl-ssdraw/ssu-esl-ssdraw executable
 #   $aln_file:            name of alignment file to mask, with path
+#   $ssdraw_aln_file:     name of alignment file to use when drawing mask, 
+#                         if "" or doesn't exist, use $aln_file
 #   $stk_suffix_AR:       reference to array of legal stockholm suffixes
 #   $mask_file2use:       name of file to use as mask with esl-alimask
 #   $do_draw:             '1' if we should try to draw the mask with esl-ssdraw
@@ -989,9 +1001,9 @@ sub summarize_mask {
 # 
 ####################################################################
 sub mask_alignment { 
-    my $narg_expected = 15;
+    my $narg_expected = 16;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, mask_alignment() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($alimask, $opt_HR, $ssdraw, $aln_file, $stk_suffix_AR, $mask_file2use, $do_draw, $max_width, 
+    my ($alimask, $opt_HR, $ssdraw, $aln_file, $ssdraw_aln_file, $stk_suffix_AR, $mask_file2use, $do_draw, $max_width, 
 	$template_file, $masked_stk_file_R, $mask_file_R, $ssdraw_worked_R, $files_to_unlink_AR, $sum_file, $log_file) = @_;
 
     my($masked_stk_file, $fmask_file, $pmask_file, $gmask_file, $masked_stk_file2print, $fmask_file2print, $pmask_file2print, $gmask_file2print, $masked_afa_file, $masked_afa_file2print, $aln_file2mask2print);
@@ -1095,22 +1107,26 @@ sub mask_alignment {
     if(! $opt_HR->{"-i"}) { $small_opt = "--small"; }
     else                  { $small_opt = ""; }
     if($do_draw) { 
+	# if $ssdraw_aln_file is valid (it isn't "", and it exists) use that as input to esl-ssdraw to save time.
+	# the $ssdraw_aln_file is a default seed alignment and is small, potentially much smaller than the alignment
+	# we're masking
+	if(($ssdraw_aln_file eq "") || (! (-e $ssdraw_aln_file))) { $ssdraw_aln_file = $aln_file; }
 	# Draw the masks, if we can, if we can't that's okay just alert the caller by setting $ssdraw_worked = 0
 	if($do_pmask && $do_gmask) { 
 	    $do_column_breakdown = 1;
-	    $ssdraw_worked = run_ssdraw_for_ssu_mask($ssdraw, $template_file, "--mask-col --mask $pmask_file $small_opt", $aln_file, $stk_suffix_AR,
+	    $ssdraw_worked = run_ssdraw_for_ssu_mask($ssdraw, $template_file, "--mask-col --mask $pmask_file $small_opt", $ssdraw_aln_file, $stk_suffix_AR,
 						     $key_out, "pmask", $max_width, $opt_HR, $rflen-$pnkept, $pnkept, $do_column_breakdown, $files_to_unlink_AR, $sum_file, $log_file);
 	    if($ssdraw_worked) { 
-		$ssdraw_worked = run_ssdraw_for_ssu_mask($ssdraw, $template_file, "--mask-col --mask $gmask_file $small_opt", $aln_file, $stk_suffix_AR,
+		$ssdraw_worked = run_ssdraw_for_ssu_mask($ssdraw, $template_file, "--mask-col --mask $gmask_file $small_opt", $ssdraw_aln_file, $stk_suffix_AR,
 					$key_out, "gmask", $max_width, $opt_HR, $rflen-$gnkept, $gnkept, $do_column_breakdown, $files_to_unlink_AR, $sum_file, $log_file);
 		if(! $ssdraw_worked) { $ssdraw_worked_every_time = 0; }
 
-		$ssdraw_worked = run_ssdraw_for_ssu_mask($ssdraw, $template_file, "--mask-col --mask $fmask_file $small_opt", $aln_file, $stk_suffix_AR,
+		$ssdraw_worked = run_ssdraw_for_ssu_mask($ssdraw, $template_file, "--mask-col --mask $fmask_file $small_opt", $ssdraw_aln_file, $stk_suffix_AR,
 					$key_out, "mask", $max_width, $opt_HR, $rflen-$fnkept, $fnkept, $do_column_breakdown, $files_to_unlink_AR, $sum_file, $log_file);
 		if(! $ssdraw_worked) { $ssdraw_worked_every_time = 0; }
 
 		$do_column_breakdown = 0;
-		$ssdraw_worked = run_ssdraw_for_ssu_mask($ssdraw, $template_file, "--mask-diff $pmask_file --mask $gmask_file $small_opt", $aln_file, \@stk_suffix_A, 
+		$ssdraw_worked = run_ssdraw_for_ssu_mask($ssdraw, $template_file, "--mask-diff $pmask_file --mask $gmask_file $small_opt", $ssdraw_aln_file, \@stk_suffix_A, 
 					$key_out, "maskdiff", $max_width, \%opt_H, $rflen-$fnkept, $fnkept, $do_column_breakdown, \@files_to_unlink_A, $sum_file, $log_file);
 		if(! $ssdraw_worked) { $ssdraw_worked_every_time = 0; }
 	    }
@@ -1120,7 +1136,7 @@ sub mask_alignment {
 	}
 	else { # we only have 1 mask file, regardless of which of $do_pmask, $do_gmask, or $do_rfismask is TRUE 
 	    $do_column_breakdown = 1;
-	    $ssdraw_worked = run_ssdraw_for_ssu_mask($ssdraw, $template_file, "--mask-col --mask $fmask_file $small_opt", $aln_file, $stk_suffix_AR,
+	    $ssdraw_worked = run_ssdraw_for_ssu_mask($ssdraw, $template_file, "--mask-col --mask $fmask_file $small_opt", $ssdraw_aln_file, $stk_suffix_AR,
 						     $key_out, "mask", $max_width, $opt_HR, $rflen-$fnkept, $fnkept, $do_column_breakdown, $files_to_unlink_AR, $sum_file, $log_file);
 	    if(! $ssdraw_worked) { $ssdraw_worked_every_time = 0; }
 	}
