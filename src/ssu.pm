@@ -252,6 +252,7 @@ sub PrintConclusion {
     }
     if($total_time ne "") { # don't print this if ssu-align is caller
 	PrintTiming("# CPU time: ", $total_time, $time_hires_installed, 1, $sum_file); 
+	PrintStringToFile($sum_file, 1, sprintf("#            hh:mm:ss\n"));
 	PrintStringToFile($sum_file, 1, sprintf("# \n"));
 	PrintStringToFile($sum_file, 0, "# SSU-ALIGN-SUCCESS\n");
     }
