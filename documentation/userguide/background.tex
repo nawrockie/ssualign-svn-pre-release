@@ -20,14 +20,15 @@ more nearest-neighbor template sequences that are most similar to the
 target using a similarity metric such as sequence identity. An
 alignment of the target sequence to its template(s) is then
 computed, and this alignment is used to place the target within the
-context of the full reference alignment (figure~\ref{fig:nnprof}.
+context of the full reference alignment (figure~\ref{fig:nnprof}).
 
-In contrast \software{ssu-align} uses a profile-based alignment
+In contrast, \software{ssu-align} uses a profile-based alignment
 strategy: each target sequence is aligned independently to a
 statistical model called a profile
-(figure~\ref{fig:nnprof}). \software{ssu-align} uses profiles called
-covariance models (CMs) for alignment
-%, which model both the conserved sequence and secondary structure of SSU
+(figure~\ref{fig:nnprof}). The profiles \software{ssu-align} uses for
+alignment are called covariance models (CMs)
+%, which model both the
+%conserved sequence and secondary structure of SSU
 \footnote{\textsc{ssu-align} actually uses two types of profiles,
   CMs and profile HMMs, which model only conserved primary
   sequence. Profile HMMs are used to determine which domain each
@@ -49,10 +50,12 @@ below. For more information on CMs see
   \label{fig:nnprof}
 \end{figure}
 
+\subsubsection{Covariance models: profiles of RNA sequence and secondary structure}
+
 A CM is a consensus model of the conserved sequence and secondary
 structure of an RNA family that is built from a multiple sequence
-alignment. This alignment is sometimes called the \emph{seed} or
-\emph{training} alignment of the model. The seed alignment should
+alignment. This alignment is called the \emph{seed}
+alignment of the model. The seed alignment should
 include a representative set of sequences from the family being
 modeled and must include consensus structure annotation indicating
 which positions in the alignment are basepaired to each other.  Given
@@ -100,7 +103,7 @@ family in figure~\ref{fig:toyex}. This RNA forms the simple stem-loop
 structure shown in part A of the figure. The seed alignment is in
 Stockholm format. The \prog{\#=GC SS\_cons} line maps the secondary
 structure onto the alignment. Basepairs in this line are indicated by
-matching \prog{<} with \prog{>}, just like matching parantheses in a mathematical
+matching \prog{<} with \prog{>}, just like matching parentheses in a mathematical
 formula. When a CM is built from this seed alignment, each of the
 columns that include fewer than 80\% gaps will become consensus
 positions of the model. There are 11 such positions in the seed
@@ -110,45 +113,42 @@ these are marked with a \prog{.} in the {\#=GC SS\_cons} line, and
 positions in the structure will become consensus basepairs, and other
 positions will be single-stranded consensus positions. 
 
-Each single-stranded consensus position of the model will
-include scores for aligning to each of the four possible nucleotides:
+Each single-stranded consensus position of the model will include
+scores for aligning to each of the four possible nucleotides:
 \prog{A}, \prog{C}, \prog{G}, and \prog{U}, based on their frequency
-in the corresponding position of the alignment. For example, column 5,
-which is 100\% \prog{A} in the seed alignment would assign high scores
-to \prog{A} and low scores to the other three nucleotides. In contrast,
-column 7, which includes two of each of the four nucleotides would
-assign equal, marginal scores to all four nucleotides.
-Importantly, basepaired positions will
-assign scores to two nucleotides at once and so will include scores
-for each of the 16 possible pairs of nucleotides. For example, the
-pair between positions 1 and 11 100\% \prog{GC} in the seed alignment
-and so \prog{GC} pairs in the target would receive high scores, while
-the other 15 possible pairs would receive low scores. In contrast, the
+in the corresponding position of the alignment. For example, column 5
+includes an \prog{A} in all 8 sequences in the seed alignment and so
+would assign high scores to \prog{A} and low scores to the other three
+nucleotides. In contrast, column 7, which includes two cases of each
+of the four nucleotides would assign equal, marginal scores to all
+four nucleotides.  Importantly, basepaired positions will assign
+scores to two nucleotides at once and so will include scores for each
+of the 16 possible pairs of nucleotides. For example, the pair between
+positions 1 and 11 is 100\% \prog{GC} in the seed alignment and so
+\prog{GC} pairs in the target would receive high scores, while the
+other 15 possible pairs would receive low scores. In contrast, the
 pair between positions 3 and 8 includes two of each of the four
 possible Watson-Crick basepairs: \prog{AU}, \prog{UA}, \prog{CG}, and
 \prog{GC}, and so these four basepairs would receive high scores,
 while the other 12 possible pairs would receive lower
 scores. Additionally, position-specific scores for inserting
-nucleotides are derived from the alignment. Positions 5 and 9 are the only two
-after which any insertions occur in the alignment, and so the score
-for inserts after those positions would be be higher than for the other
-positions. Similarly, the only deletions, i.e. gaps in consensus
-positions, 4 and 6, with one occuring in 6, and three in
-4. Consequently, the deletion score for
-position 6 would be highest, with deletes in 4 receiving lower scores,
-and all other positions receiving still lower scores
-\footnote{This discussion
-  purposefully omits precise mathematical formulas for how scores are
-  parameterized for brevity. For
-  more detail on how the position-specific scores are calculated, see 
-  \prog{Durbin98, Nawrocki09}.}. 
+nucleotides are derived from the alignment. Positions 5 and 9 are the
+only two after which any insertions occur in the alignment, and so the
+score for inserts after those positions would be be higher than for
+the other positions. Similarly, the only deletions, i.e. gaps in
+consensus positions, occur at positions 4 and 6, with one occuring in
+6, and three in 4. Consequently, the deletion score for position 6
+would be highest, with deletes in 4 receiving lower scores, and all
+other positions receiving still lower scores. This discussion is
+oversimplified for brevity. For formulas and more details on how 
+the position-specific scores are calculated, see \cite{Durbin98,Nawrocki09}.
 
 In contrast, nearest-neighbor based methods often do not use
 position-specific scores. For example, if a single template sequence
 is used,  aligning an \prog{A} in the target to any \prog{A} in the
 template sequence will be given the same score. This is because, given
 one template sequence, there is no way for the method to distinguish
-the relative level of conservation in different positions.
+the relative level of conservation at different positions.
 
 Pairwise alignment with position-independent scores is accurate when
 the template is nearly identical to the target, but becomes more

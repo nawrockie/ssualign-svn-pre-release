@@ -29,7 +29,7 @@ manpages:
 	@echo "%% This chapter automatically generated. Do not edit." > manpages.tex
 	@echo "\section{Manual pages}" >> manpages.tex
 	for file in $(MANPAGES); do\
-	   rman -f LaTeX2e ../manpages/$$file.man | ../../easel/devkit/rmanprocess.pl >> manpages.tex;\
+	   rman -f LaTeX2e ../manpages/$$file.man | ../../infernal/easel/devkit/rmanprocess.pl >> manpages.tex;\
 	done
 
 # ai2pdf: 
