@@ -56,41 +56,41 @@ For all datasets with more than $10,000$ sequences \prog{ssu-prep} was
 used to parallelize alignment. These datasets were split up into $100$
 separate jobs and run in parallel on a cluster. This is indicated by
 the ``number of procs'' column in tables~\ref{tbl:ttimes} and
-~\ref{tbl:ptimes}. No such column exists in ~\ref{tbl:sizes} because
+~\ref{tbl:ptimes}. No such column exists in table ~\ref{tbl:sizes} because
 parallelization does not affect the sizes of the final output files.
 
 As an example of a non-parallel run, the actual commands used to process the
 \sft{greengenes} core set dataset were as follows. The FASTA file
-included the unaligned core set sequences is named \prog{ggcs.fa}. The
+included the unaligned core set sequences is named \prog{ggcs-unaln.fa}. The
 following three commands would align, mask and draw the core
 set, respectively. All output files will be created in a directory called
-\prog{foo}. Importantly, the three commands  must be run in succession
+\prog{ggcs}. Importantly, the three commands  must be run in succession
 (masking cannot begin until alignment is complete). 
 
-\user{ssu-align ggcs.fa foo}
+\user{ssu-align ggcs-unaln.fa ggcs}
 
-\user{ssu-mask foo}
+\user{ssu-mask ggcs}
 
-\user{ssu-draw foo}
+\user{ssu-draw ggcs}
 
 As an example of a parallel run, the actual commands used to process the
 \sft{greengenes} full dataset were as follows. The FASTA file
-included the unaligned core set sequences is named \prog{gg.fa}. The
+included the unaligned core set sequences is named \prog{gg-unaln.fa}. The
 following four commands would partition, align, mask and draw the full
 dataset, respectively. All output files will be created in a directory
-called \prog{fooey}. Importantly, the four commands must be run in succession
+called \prog{gg}. Importantly, the four commands must be run in succession
 (masking cannot begin until alignment is complete). 
 
-\user{ssu-prep gg.fa fooey 100 janelia-cluster-presuf.txt}
+\user{ssu-prep gg-unaln.fa gg 100 janelia-cluster-presuf.txt}
 
-\user{sh fooey.ssu-align.sh}
+\user{sh gg.ssu-align.sh}
 
-\user{ssu-mask fooey}
+\user{ssu-mask gg}
 
-\user{ssu-draw fooey}
+\user{ssu-draw gg}
 
 The \prog{ssu-prep} command above creates the
-\prog{fooey.ssu-align.sh} script that will submit 100 \prog{ssu-align}
+\prog{gg.ssu-align.sh} script that will submit 100 \prog{ssu-align}
 jobs to the cluster here at Janelia. The Janelia-specific prefixes and
 suffixes for the commands are in the file
 \prog{janelia-cluster-presuf.txt} which is in the \prog{tutorial/}
@@ -102,25 +102,38 @@ The statistics in tables~\ref{tbl:sizes}, \ref{tbl:ttimes} and
 
 \begin{itemize}
 
-\item Deep alignments have lots of insert columns which dramatically
-  inflate the size of the alignment files (table~\ref{tbl:sizes}). All
-  insert columns will be removed automatically by \prog{ssu-mask} (see
-  section~\ref{sec:background} for more discussion of insert versus
-  consensus columns). Note that insert columns will not be included in
-  output alignments of \prog{ssu-align} when the \prog{--rfonly}
-  option is used.
+\item Deep alignments are mostly composed of insert columns which
+  dramatically inflate the size of the alignment files
+  (table~\ref{tbl:sizes}). All insert columns will be removed
+  automatically by \prog{ssu-mask} (see section~\ref{sec:background}
+  for more discussion of insert versus consensus columns). Note that
+  insert columns will not be included in output alignments of
+  \prog{ssu-align} when the \prog{--rfonly} option is used.
 
-\item Alignment is by far the slowest step in the pipeline
-  (table~\ref{tbl:ttimes}). Prep'ing, masking, drawing and merging are
-  all much faster than alignment, but only the \prog{ssu-align} step
-  can be parallelized. 
+%\item Alignment is by far the slowest step in the pipeline
+%  (table~\ref{tbl:ttimes}). Prep'ing, masking, drawing and merging are
+%  all much faster than alignment, but only the \prog{ssu-align} step
+%  can be parallelized. 
 
 \item Full-length SSU sequences are aligned at about 1
-  sequence/second. Shorter ($\sim$240 nt) V4 subsequences are aligned at about 10
-  sequences per second with the default, full-length models and about
-  100 sequences per second with V4-specific models (table~\ref{ptimes}).
+  sequence/second (table~\ref{ptimes}).
+
+\item Shorter ($\sim$240 nt) V4 subsequences are aligned at about 10
+  sequences per second with the default, full-length models (table~\ref{ptimes}).
+
+\item Aligning short sequences with truncated models is significantly
+  faster than with full models. V4 subsequences are aligned at about
+  100 sequences per second with V4-specific models
+  (table~\ref{ptimes}).
 
 
+\item Aligning 1 million typical SSU sequences requires about 300
+  CPU hours. This can be parallelized on a cluster of 100 processors
+  in about 3.5 hours. Note that for about 25 of the final 30
+  minutes only one processor is still running, this is the processor
+  that is performing the merge of the 100 per-job alignments. 
+
+\end{itemize}
 %The column headings are:
 %
 %\begin{sreitems}{}

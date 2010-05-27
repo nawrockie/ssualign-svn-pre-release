@@ -83,9 +83,24 @@ RDP             & default  & archaea  &   55249 &  830.9 & 12724 & 11216 &  1508
 %synthetic-v4    & v4       & bacteria    &  500000 &  239.7 &  1283 &  1042 &   241 &   238 &   1306.003 &    261.001 \\
 \end{tabular}
 \end{center}
-\label{tbl:sizes}
 \caption{\textbf{Statistics and resulting output file sizes for
-    various SSU datasets.}}
+    various SSU datasets.} For each non-synthetic dataset, the number
+  of and average length of sequences for each domain is
+  reported. Sequences are classified by domain by \prog{ssu-align}.
+  For each dataset and domain an alignment is created. The four
+  columns in the middle block report the total number of columns, the
+  number of insert and consensus columns (consensus column counts are
+  constant per domain across all datasets), and the number of
+  consensus columns remaining (included) after masking with
+  \prog{ssu-mask}.  The second-rightmost column reports the size in 
+  megabytes (Mb) of each full alignment file that is output by
+  \prog{ssu-align}. These alignments include insert and consensus
+  columns for all sequences. The rightmost column reports the size in
+  Mb of the masked alignment output from \prog{ssu-mask}.  These
+  alignments include a subset of the consensus columns and zero insert
+  columns. See section~\ref{sec:background} for more information on
+  consensus versus insert columns.}
+\label{tbl:sizes}
 \end{table}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{table}[hb]
@@ -122,9 +137,20 @@ synthetic-v4    & v4       &   10000 &  239.6 &         - &   0:05:31 &   0:00:0
 synthetic-v4    & v4       &  100000 &  239.6 &   0:00:08 &   1:03:58 &   0:00:15 &         - &   0:00:14 & 100 &   0:00:55 \\% &   0:00:38 \\
 synthetic-v4    & v4       & 1000000 &  239.6 &   0:00:23 &   9:42:32 &   0:02:60 &         - &   0:01:57 & 100 &   0:07:60 \\% &   0:05:50 \\ 
 \end{tabular}
-\label{tbl:ttimes}
-\caption{\textbf{Statistics and running times for various SSU datasets.}}
+\caption{\textbf{Statistics and running times for various SSU
+    datasets.} For each dataset, the number of and average length of all
+  sequences is reported. The running time for running each program:
+  \prog{ssu-prep}, \prog{ssu-align}, \prog{ssu-mask}, \prog{ssu-draw},
+and \prog{ssu-merge} is reported. For datasets with more than 10,000
+sequences, \prog{ssu-prep} was used to create 100 parallel
+\prog{ssu-align} jobs. For these datasets: ``running time, \prog{ssu-align}''
+reports the summed time for all 100 jobs; ``wall time'' reports the
+actual wall time required for the 100 jobs to finish and be merged
+together. All running times can be interpreted as ``hh:mm:ss'' format;
+hh=hour, mm=minutes, ss=seconds. All programs were run as single
+execution threads on 3.0 GHz Intel Xeon processors.}
 \end{center}
+\label{tbl:ttimes}
 \end{table}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -138,7 +164,7 @@ synthetic-v4    & v4       & 1000000 &  239.6 &   0:00:23 &   9:42:32 &   0:02:6
 dataset         & models   &sequences& length & total     & per seq      & per seq      & per seq     \\ \hline
 & & & & & & & \\
 Ggenes-core     & default  &    4938 & 1437.0 &   1:47:48 &   0:00:00.64 &   0:00:00.67 &   0:00:01.31 \\
-Ggenes-full     & default  &  508194 & 1399.7 & 183:04:18 &   0:00:00.63 &   0:00:00.01 &   0:00:01.30 \\
+Ggenes-full     & default  &  508194 & 1399.7 & 183:04:18 &   0:00:00.63 &   0:00:00.67 &   0:00:01.30 \\
 Silva-Ref       & default  &  460783 & 1437.1 & 175:07:23 &   0:00:00.66 &   0:00:00.71 &   0:00:01.37 \\
 Silva-Parc      & default  & 1246462 & 1017.0 & 315:20:54 &   0:00:00.46 &   0:00:00.45 &   0:00:00.91 \\
 RDP             & default  & 1237963 &  968.7 & 293:15:32 &   0:00:00.43 &   0:00:00.42 &   0:00:00.85 \\
@@ -162,6 +188,17 @@ synthetic-v4    & default  & 1000000 &  239.2 &  45:14:17 &   0:00:00.09 &   0:0
 synthetic-v4    & v4       & 1000000 &  239.6 &   9:42:32 &   0:00:00.01 &   0:00:00.02 &   0:00:00.03 \\ 
 \end{tabular}
 \end{center}
+\caption{\textbf{Statistics and \prog{ssu-align} per-sequence running
+    times for various SSU datasets.} For each dataset, the number of and average length of all
+  sequences is reported. The running time of \prog{ssu-align}
+  is reported in the ``total'' column. \prog{ssu-align} proceeds
+  through two stages, the search stage first determines the domain of
+  each sequence and the alignment stage structurally aligns each
+  sequence to a domain specific model. The ``per seq'' columns report
+  the average time per sequence for the search stage, alignment stage,
+  and both together. 
+  All running times can be interpreted as ``hh:mm:ss'' format;
+  hh=hour, mm=minutes, ss=seconds. All programs were run as single
+  execution threads on 3.0 GHz Intel Xeon processors.}
 \label{tbl:ptimes}
-\caption{\textbf{Statistics and \prog{ssu-align} per-sequence running times for various SSU datasets.}}
 \end{table}
