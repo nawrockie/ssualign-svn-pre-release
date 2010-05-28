@@ -18,8 +18,7 @@ Most of these methods use a \emph{nearest-neighbor}
 (NN) based alignment strategy: given a new target sequence to align,
 each sequence in a reference alignment is evaluated to find one or
 more nearest-neighbor template sequences that are most similar to the
-target using a similarity metric such as sequence identity. An
-alignment of the target sequence to its template(s) is then
+target. An alignment of the target sequence to its template(s) is then
 computed, and this alignment is used to place the target within the
 context of the full reference alignment (figure~\ref{fig:nnprof}).
 
@@ -42,7 +41,7 @@ for using \textsc{ssu-align} and understanding its output is included
 below. For more information on CMs see
 \cite{Eddy94,Durbin98,Eddy02b,NawrockiEddy07,Nawrocki09,Nawrocki09b,KolbeEddy09}.
 
-\begin{figure}
+\begin{figure}[hb]
   \begin{center}
 \includegraphics[width=6in]{Figures/nnprof}
   \end{center}
@@ -68,16 +67,16 @@ and the model contribute to the alignment score.
 Figure~\ref{fig:toyex} depicts the building of a CM for a small,
 made-up RNA family and the alignment of sequences using that CM.
 
-The default archaeal, bacterial, and eukaryotic CMs used by
-\sft{ssu-align} have 1508, 1582, and 1881 consensus positions,
-respectively. Any column for which fewer than 80\% of the sequences in
-the seed alignment had gaps was defined as a consensus position when
-the default models were constructed\footnote{The 80\% value differs
-  from the 50\% default used by the \prog{cmbuild} program of
-  \sft{infernal} and the \sft{Rfam} database when building CMs.}.
-The derivation of the three seed alignments and the specific method
-used to build the models is discussed in detail in
-section~\ref{sec:models} of this guide.
+%The default archaeal, bacterial, and eukaryotic CMs used by
+%\sft{ssu-align} have 1508, 1582, and 1881 consensus positions,
+%respectively. Any column for which fewer than 80\% of the sequences in
+%the seed alignment had gaps was defined as a consensus position when
+%the default models were constructed\footnote{The 80\% value differs
+% from the 50\% default used by the \prog{cmbuild} program of
+%  \sft{infernal} and the \sft{Rfam} database when building CMs.}.
+%The derivation of the three seed alignments and the specific method
+%used to build the models is discussed in detail in
+%section~\ref{sec:models} of this guide.
 
 %Profiles like CMs use position-specific scores learned from the seed
 %alignment for aligning each possible nucleotide in a target sequence
@@ -95,6 +94,30 @@ section~\ref{sec:models} of this guide.
 %%added to accomodate that insert in the other sequences in the
 %%alignment.
 
+\begin{figure}
+\begin{center}
+\includegraphics[width=6.5in]{Figures/sa-toy-example}
+\end{center}
+\caption{\textbf{Building and aligning sequences to an example CM.}
+  (A) The made-up seed alignment of 8 homologs of a small stem-loop RNA
+family is sent through the black-box construction procedure to create
+a CM that models the family. The \prog{\#=GC SS\_cons} line annotates
+the consensus structure as shown. Columns that are \prog{.} characters
+in this line that have more than 80\% gaps and so are defined as insert
+columns. All other columns become consensus positions of the
+model. (B) Four unaligned target sequences
+are aligned to the CM to generate a new structure annotated
+alignment that includes all 11 consensus columns and 3 insert
+columns. (C) Six unaligned target sequences, including the same 4 from
+(B), are aligned to the CM to generate a new alignment that includes
+all 11 consensus columns and 5 insert columns. Nucleotides in insert
+columns are not aligned between different sequences, but are simply
+split and flushed left and right. The bottom alignment has the
+inserted nucleotides aligned more reasonably, but would not be created
+by \sft{ssu-align}.}
+\label{fig:toyex}
+\end{figure}
+
 \subsubsection{Profiles use position-specific scores}
 
 The scores used when aligning sequences to a CM are position-specific
@@ -109,7 +132,7 @@ formula. When a CM is built from this seed alignment, each of the
 columns that include fewer than 80\% gaps will become consensus
 positions of the model. There are 11 such positions in the seed
 alignment, which are numbered. Other columns are considered insert columns;
-these are marked with a \prog{.} in the {\#=GC SS\_cons} line, and
+these are marked with a \prog{.} in the \prog{\#=GC SS\_cons} line, and
 \prog{.} or lowercase nucleotides in the sequences. Basepaired
 positions in the structure will become consensus basepairs, and other
 positions will be single-stranded consensus positions. 
@@ -119,10 +142,12 @@ scores for aligning to each of the four possible nucleotides:
 \prog{A}, \prog{C}, \prog{G}, and \prog{U}, based on their frequency
 in the corresponding position of the alignment. For example, column 5
 includes an \prog{A} in all 8 sequences in the seed alignment and so
-would assign high scores to \prog{A} and low scores to the other three
-nucleotides. In contrast, column 7, which includes two cases of each
-of the four nucleotides would assign equal, marginal scores to all
-four nucleotides.  Importantly, basepaired positions will assign
+would assign high scores to \prog{A} and low scores to the \prog{C},
+\prog{G}, and \prog{U}. In contrast, column 7, which includes 2 cases of each
+of the 4 nucleotides would assign equal, marginal scores to all
+4.  
+
+Importantly, basepaired positions will assign
 scores to two nucleotides at once and so will include scores for each
 of the 16 possible pairs of nucleotides. For example, the pair between
 positions 1 and 11 is 100\% \prog{GC} in the seed alignment and so
@@ -132,28 +157,30 @@ pair between positions 3 and 8 includes two of each of the four
 possible Watson-Crick basepairs: \prog{AU}, \prog{UA}, \prog{CG}, and
 \prog{GC}, and so these four basepairs would receive high scores,
 while the other 12 possible pairs would receive lower
-scores. Additionally, position-specific scores for inserting
-nucleotides are derived from the alignment. Positions 5 and 9 are the
-only two after which any insertions occur in the alignment, and so the
-score for inserts after those positions would be be higher than for
-the other positions. Similarly, the only deletions, i.e. gaps in
-consensus positions, occur at positions 4 and 6, with one occuring in
-6, and three in 4. Consequently, the deletion score for position 6
-would be highest, with deletes in 4 receiving lower scores, and all
-other positions receiving still lower scores. This discussion is
-oversimplified for brevity. For formulas and more details on how 
-the position-specific scores are calculated, see \cite{Durbin98,Nawrocki09}.
+scores. 
+
+Additionally, position-specific scores for inserting nucleotides are
+derived from the alignment. The only insertions in the seed alignment
+occur after positions 5 and 9, and so the score for inserts after
+those positions would be higher than for the other
+positions. Similarly, the only deletions, i.e. gaps in consensus
+positions, occur at positions 4 and 6, with one occuring in 6, and
+three in 4. Consequently, the deletion score for position 6 would be
+the highest, 4 would be second highest, and all other
+positions would receive lower scores. 
+(I should point out that this discussion of CM parameterization is
+oversimplified for brevity. For formulas and more details, see
+\cite{Eddy94,Durbin98,Nawrocki09}.)
 
 In contrast, nearest-neighbor based methods often do not use
 position-specific scores. For example, if a single template sequence
 is used,  aligning an \prog{A} in the target to any \prog{A} in the
-template sequence will be given the same score. This is because, given
+template sequence will receive an identical score. This is because, given
 one template sequence, there is no way for the method to distinguish
 the relative level of conservation at different positions.
-
-Pairwise alignment with position-independent scores is accurate when
-the template is nearly identical to the target, but becomes more
-difficult as that identity decreases. As a result, most
+This type of pairwise alignment with position-independent scores is
+accurate when the template is nearly identical to the target, but
+becomes more difficult as that identity decreases. As a result, most
 nearest-neighbor based methods use very large reference alignments
 (thousands of sequences) to increase the probability that a nearly
 identical template exists for any potential target. Ensuring the
@@ -181,37 +208,47 @@ sequences (part C) to the CM. Notice that for both alignments, the
 consensus columns in the model. These are the highest scoring
 nucleotides at each position. Uppercase letters in this line were
 highly conserved in the seed alignment, lowercase letters were less
-well conserved. Positions that are gaps in the {\#=GC RF} line
+well conserved. Positions that are gaps in the \prog{\#=GC RF} line
 contain inserted nucleotides that don't align to any of the consensus
 positions. 
-\sft{SSU-ALIGN} alignments created with the same CM will
+\sft{ssu-align} alignments created with the same CM will
 always include the same number of consensus columns, but the number of
 insert columns will vary depending on the input sequences.
 
-There are two important caveats regarding how CMs and \sft{SSU-ALIGN}
+There are two important caveats regarding how CMs and \sft{ssu-align}
 treat inserts:
 
 \begin{enumerate}
 \item 
 Nucleotides in insert columns are simply inserted, not aligned.
 
-You might have noticed that the nucleotides in the insert columns x
-and x are obviously misaligned with respect to each other. This is
-because \sft{ssu-align} does not align inserts. Instead, inserted
-nucleotides are split in half, the left half is placed flush-left next
-to nearest consensus column on the left (\prog{xx} in sequence x), and
-the right half is placed flush-right next to the nearest consensus
-column to the right (\prog{x} in sequence y). This is an important
-limitation of profile-based alignment. A nearest-neighbor based
-method might be able to correctly align nucleotides that would be
-inserts for a profile. However, inserted positions
-should be rare. Remember that consensus positions were defined as any
-position that had a nucleotide in at least 20\% of the seed
-sequences, so if the seed was representative the most common inserts
-should only appear in about 20\% of sequences. And if the alignment will
-eventually be used for phylogenetic inference, inserted columns should
-be removed first anyway, and so are unimportant. This is discussed
-further below in the section on masking alignments.
+You might have noticed that in part (C) of figure~\ref{fig:toyex}, the
+nucleotides in the insert columns after consensus position 5 obviously
+misaligned with respect to each other. This is because \sft{ssu-align}
+does not align inserted nucleotides between different
+sequences. Instead, inserted nucleotides are simply split in half, the
+left half is placed flush-left next to nearest consensus column on the
+left (\prog{au} in \prog{Thermatoga}), and the right half is placed
+flush-right next to the nearest consensus column to the right
+(\prog{ga} in \prog{Thermatoga}). 
+
+This is an important limitation of
+profile-based alignment (at least as implemented in \sft{infernal} and
+\sft{ssu-align}). In contrast, a nearest-neighbor based method might
+be able to correctly align nucleotides that would be inserts for a
+profile. However, inserted positions should be rare. Remember that
+consensus positions were defined as any position that had a nucleotide
+in at least 20\% of the seed sequences, so if the seed was
+representative the most common inserts should only appear in about
+20\% of sequences. And if the alignment will eventually be used for
+phylogenetic inference, inserted columns in \sft{ssu-align} alignments
+should be removed first anyway, and so are unimportant. 
+It could be argued that the corresponding columns in NN-based
+alignments could be kept for phylogenetic inference, but inserts tend
+to occur at highly variable regions that are inherently difficult to
+correctly align, and so including them might confound phylogenetic
+inference that rely on correct alignments. This is
+discussed further below in the section on masking alignments.
 
 \item 
 Deeper alignments tend to have more insert columns. 
@@ -220,23 +257,32 @@ Because the likelihood of a large insertion in at least one sequence
 increases as more sequences are added, alignments of large numbers of
 sequences (deep alignments) tend to have a lot of insert columns. In
 fact, the number of insert columns can routinely be greater than the
-number of consensus columns. This contrasts markedly with the popular
-nearest-neighbor based aligners \sft{nast} and \sft{sina}, which
-generate alignments of a fixed with (7,682 columns for \sft{nast} and
-50,000 for \sft{sina}). However to guarantee a fixed width, \sft{nast}
-must deliberately introduce errors in the alignment in some cases
-\cite{DeSantis06}. 
+number of consensus columns.  Table~\ref{tbl:ttimes} in
+section~\ref{sec:stats} provides examples of the dominance of insert
+columns in very deep alignments containing more than 100,000
+sequences.
+
+\end{enumerate} 
+
+\sft{ssu-align}'s variability in \emph{insert} column number contrasts
+markedly with the popular nearest-neighbor based aligners \sft{nast}
+and \sft{sina}, which generate alignments of a fixed with (7,682
+columns for \sft{nast} and 50,000 for \sft{sina}). However to
+guarantee a fixed width, \sft{nast} must deliberately introduce errors
+in the alignment in some cases \cite{DeSantis06}. 
+
+\sft{ssu-align} generates alignments with a fixed number of consensus
+columns. The philosophy is that the consensus columns are the
+most important ones (e.g. for phylogenetic inference) and inserts are less
+important. But by not restricting the number of inserts after each
+consensus position, \sft{ssu-align} doesn't need to introduce
+misalignments like \sft{nast}. 
+
+HERE HERE HERE 
+%with the trade-off being\ that the
+%(hopefully) rare inserted nucleotides are not aligned.
 
 \end{enumerate}
-
-\begin{figure}
-\begin{center}
-\includegraphics[height=7in]{Figures/sa-toy-example}
-\caption{Building and aligning sequences to an example CM.}
-\end{center}
-\label{fig:toyex}
-\end{figure}
-
 
 \subsection{Alignment posterior probabilities are confidence estimates}
 \label{sec:background-pp}

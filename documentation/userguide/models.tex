@@ -247,7 +247,7 @@ models are summarized in Table~\ref{tbl:finalseeds}.
 % crw2seed table
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % original data is from 9_0507_ssu_crw2sscons_stk/00LOG on 06.29.09
-\begin{table}
+\begin{table}[h]
 \begin{center}
   \small
   \begin{tabular}{llrrrrr|cccc}
@@ -299,7 +299,7 @@ models are summarized in Table~\ref{tbl:finalseeds}.
 \end{center}
 \end{table}
 
-\begin{table}
+\begin{table}[h]
 % stats from esl-alistat and cmbuild-1.0 on ssu5-0p1.stk
 \begin{center}
 \begin{tabular}{lrrrrrr} \hline
@@ -321,8 +321,10 @@ eukarya  & 89       & 1881      & 2652      & 448       & 1800      & 79\%     \
 \end{center}
 \end{table}
 
+\newpage 
+
 The final seed alignments are included in \sft{SSU-ALIGN} package in
-the \prog{seeds/} subdirectory as: \prog{archaea-0p1.stk},
+the \prog{seeds/} subdirectory as: \\ \prog{archaea-0p1.stk},
 \prog{bacteria-0p1.stk}, and \prog{eukarya-0p1.stk}. Corresponding
 unaligned FASTA files are also included, with a \prog{.fa} suffix
 replacing \prog{.stk}. 
@@ -347,18 +349,19 @@ as indicated below. These structure diagrams can be created using
 statistic                        & archaea & bacteria & eukarya \\ \hline
 consensus sequence               & Figure~\ref{fig:arcrf}  & Figure~\ref{fig:bacrf} & Figure~\ref{fig:eukrf} \\ 
 information content              & Figure~\ref{fig:arcinfo} & Figure~\ref{fig:bacinfo} & Figure~\ref{fig:eukinfo} \\ 
-extra information from structure & Figure~\ref{fig:arcsinfo} & Figure~\ref{fig:bacsinfo} & Figure~\ref{fig:euksinfo} \\ 
+mutual information               & Figure~\ref{fig:arcsinfo} & Figure~\ref{fig:bacsinfo} & Figure~\ref{fig:euksinfo} \\ 
 frequency of deletions           & Figure~\ref{fig:arcdel} & Figure~\ref{fig:bacdel} & Figure~\ref{fig:eukdel} \\ 
 frequency of insertions          & Figure~\ref{fig:arcifreq} & Figure~\ref{fig:bacifreq} & Figure~\ref{fig:eukifreq} \\ 
 average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig:baciavglen} & Figure~\ref{fig:eukiavglen} \\ 
 \end{tabular}
 \end{center}
 
-\newpage
+\subsection{Secondary structure diagrams summarizing the three models}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %archaea
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \begin{figure}[hb]
 \begin{center}
 \includegraphics[width=5.7in]{Figures/archaea-0p1-rf}
@@ -375,6 +378,8 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
 \label{fig:arcrf}
 \end{figure}
 
+\newpage 
+
 \begin{figure}
 \begin{center}
 \includegraphics[width=5.7in]{Figures/archaea-0p1-info}
@@ -389,6 +394,8 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
   ssu-draw} program included in \sft{ssu-align}.}
 \label{fig:arcinfo}
 \end{figure}
+
+\newpage 
 
 \begin{figure}
 \begin{center}
@@ -405,6 +412,7 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
 \label{fig:arcsinfo}
 \end{figure}
 
+\newpage 
 
 \begin{figure}
 \begin{center}
@@ -421,6 +429,7 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
 \label{fig:arcdel}
 \end{figure}
 
+\newpage 
 
 \begin{figure}
 \begin{center}
@@ -436,6 +445,8 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
   ssu-draw} program included in \sft{ssu-align}.}
 \label{fig:arcifreq}
 \end{figure}
+
+\newpage 
 
 \begin{figure}
 \begin{center}
@@ -456,6 +467,8 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %bacteria
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage 
+
 \begin{figure}
 \begin{center}
 \includegraphics[width=5.7in]{Figures/bacteria-0p1-rf}
@@ -472,6 +485,8 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
 \label{fig:bacrf}
 \end{figure}
 
+\newpage 
+
 \begin{figure}
 \begin{center}
 \includegraphics[width=5.7in]{Figures/bacteria-0p1-info}
@@ -487,6 +502,7 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
 \label{fig:bacinfo}
 \end{figure}
 
+\newpage 
 
 \begin{figure}
 \begin{center}
@@ -503,6 +519,7 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
 \label{fig:bacsinfo}
 \end{figure}
 
+\newpage 
 
 \begin{figure}
 \begin{center}
@@ -519,6 +536,7 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
 \label{fig:bacdel}
 \end{figure}
 
+\newpage 
 
 \begin{figure}
 \begin{center}
@@ -535,6 +553,7 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
 \label{fig:bacifreq}
 \end{figure}
 
+\newpage 
 
 \begin{figure}
 \begin{center}
@@ -555,6 +574,7 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %eukarya
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage 
 \begin{figure}
 \begin{center}
 \includegraphics[width=5.7in]{Figures/eukarya-0p1-rf}
@@ -571,6 +591,8 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
 \label{fig:eukrf}
 \end{figure}
 
+\newpage 
+
 \begin{figure}
 \begin{center}
 \includegraphics[width=5.7in]{Figures/eukarya-0p1-info}
@@ -586,6 +608,7 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
 \label{fig:eukinfo}
 \end{figure}
 
+\newpage 
 
 \begin{figure}
 \begin{center}
@@ -602,6 +625,7 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
 \label{fig:euksinfo}
 \end{figure}
 
+\newpage 
 
 \begin{figure}
 \begin{center}
@@ -618,6 +642,8 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
 \label{fig:eukdel}
 \end{figure}
 
+\newpage 
+
 \begin{figure}
 \begin{center}
 \includegraphics[width=5.7in]{Figures/eukarya-0p1-ifreq}
@@ -632,6 +658,8 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
   ssu-draw} program included in \sft{ssu-align}.}
 \label{fig:eukifreq}
 \end{figure}
+
+\newpage 
 
 \begin{figure}
 \begin{center}
