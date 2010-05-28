@@ -256,44 +256,32 @@ Deeper alignments tend to have more insert columns.
 Because the likelihood of a large insertion in at least one sequence
 increases as more sequences are added, alignments of large numbers of
 sequences (deep alignments) tend to have a lot of insert columns. In
-fact, the number of insert columns can routinely be greater than the
-number of consensus columns.  Table~\ref{tbl:ttimes} in
+fact, the number of insert columns can be much greater than the number
+of consensus columns. Table~\ref{tbl:ttimes} in
 section~\ref{sec:stats} provides examples of the dominance of insert
 columns in very deep alignments containing more than 100,000
-sequences.
 
+This contrasts markedly with the popular nearest-neighbor based
+aligners \sft{nast} and \sft{sina}, which generate alignments of a
+fixed with (7,682 columns for \sft{nast} and 50,000 for
+\sft{sina}). However, to guarantee a fixed width, \sft{nast} must
+deliberately introduce errors in the alignment in some cases
+\cite{DeSantis06}. One reason for doing this is consistency across
+datasets: column $x$ from dataset A is directly comparable to column
+$x$ from datasets B and C. Importantly, \sft{ssu-align} alignments
+have a fixed number of \emph{consensus} columns, which facilitates this
+type of cross-dataset comparison for consensus positions.
 \end{enumerate} 
-
-\sft{ssu-align}'s variability in \emph{insert} column number contrasts
-markedly with the popular nearest-neighbor based aligners \sft{nast}
-and \sft{sina}, which generate alignments of a fixed with (7,682
-columns for \sft{nast} and 50,000 for \sft{sina}). However to
-guarantee a fixed width, \sft{nast} must deliberately introduce errors
-in the alignment in some cases \cite{DeSantis06}. 
-
-\sft{ssu-align} generates alignments with a fixed number of consensus
-columns. The philosophy is that the consensus columns are the
-most important ones (e.g. for phylogenetic inference) and inserts are less
-important. But by not restricting the number of inserts after each
-consensus position, \sft{ssu-align} doesn't need to introduce
-misalignments like \sft{nast}. 
-
-HERE HERE HERE 
-%with the trade-off being\ that the
-%(hopefully) rare inserted nucleotides are not aligned.
-
-\end{enumerate}
 
 \subsection{Alignment posterior probabilities are confidence estimates}
 \label{sec:background-pp}
 
-Because CMs are probabilistic models, when aligning a sequence to a CM
-the posterior probability that each nucleotide aligns to each position
-of the model can be calculated. 
-These are \emph{confidence estimates} that each
+During CM alignment of a sequence, the posterior probability that 
+each nucleotide aligns to each position of the model is calculated. 
+These probabilities are \emph{confidence estimates} that each
 nucleotide is correctly aligned, given the parameters of the CM. The
 estimates are useful for identifying and removing columns of the
-alignment that are most likely to contain errors, a procedure called
+alignment that are most likely to contain errors. This procedure is called
 alignment \emph{masking}. Masking is especially important prior to
 using the alignment as input to a phylogenetic inference program
 because those programs typically assume that all nucleotides in a
