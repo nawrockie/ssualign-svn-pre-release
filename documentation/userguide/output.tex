@@ -5,7 +5,7 @@ This section describes the content of the different output file
 formats created by the various programs in the \textsc{ssu-align}
 package. For demonstration, the descriptions below refer to the
 specific files created during the tutorial in
-section~\ref{sec:tutorial} in the directory \prog{myseqs}. 
+section~\ref{sec:tutorial}, in the directory \prog{myseqs/}. 
 Specifically, we'll go over the files created by the following four
 commands from the tutorial:
 
@@ -15,12 +15,10 @@ commands from the tutorial:
 
 \user{ssu-draw myseqs}
 
-\user{ssu-build -d --trunc 525-765 -n arc-v4 -o v4.cm archaea}
-
 \subsection{ssu-align output files}
 
-As shown in the tutorial, the \prog{ssu-align} command above prints
-the following information to the screen:
+As shown in the tutorial, when executed with the command above, \prog{ssu-align} 
+prints information about the output files it creates to the screen:
 
 \begin{sreoutput}
 # Stage 1: Determining SSU start/end positions and best-matching models...
@@ -51,9 +49,7 @@ the following information to the screen:
   myseqs.scores            list of CM/HMM scores for each sequence
 \end{sreoutput}
 
-In this section I'll walk through the format of these output files,
-which are created in \prog{myseqs/}, a subdirectory of the directory
-where the \prog{ssu-align} command was executed.
+I'll walk through the format of these output files:
 
 \subsubsection{.tab suffixed files}
 
@@ -66,7 +62,8 @@ scores of each of these alignments. Let's look at the header of the
 \prog{seed-15.tab} file created here:
 
 \begin{sreoutput}
-# command:    ssu-cmsearch --hmm-cW 1.5 --no-null3 --noalign -T -1 --tab myseqs/myseqs.tab --viterbi /usr/local/share/ssu-align-0.1/ssu-align-0p1.cm seed-15.fa
+# command:    ssu-cmsearch --hmm-cW 1.5 --no-null3 --noalign -T -1 --tab myseqs/myseqs.tab --viterbi 
+/usr/local/share/ssu-align-0.1/ssu-align-0p1.cm seed-15.fa
 # date:       Tue May 18 05:48:34 2010
 # num seqs:   15
 # dbsize(Mb): 0.040518
@@ -82,11 +79,11 @@ scores of each of these alignments. Let's look at the header of the
 The first four lines list the \prog{cmsearch} command executed from
 within \prog{ssu-align}, the date it was executed, the number of
 sequences in the sequence file being searched, and the number of
-millions of residues (Mb) searched in that sequence file (double the
+millions of nucleotides (Mb) searched in that sequence file (double the
 actual size of the sequences because both strands are searched).
 
 Next, the pre-search information describing how the search will be
-conducted is printed for the first model in the CM file: archaea. 
+conducted is printed for the first model in the CM file: \prog{archaea}. 
 The \prog{rnd}, \prog{mod}, \prog{alg} and \prog{cfg} columns report
 that the first and only round of searching will be conducted with a
 profile \prog{hmm} using the \prog{vit}erbi algorithm for scoring
@@ -144,13 +141,13 @@ Here's a brief description of each column:
 
 \item[\emprog{target name}] the name of the target sequence.
 
-\item[\emprog{start (target coord)}] first sequence residue in the alignment
+\item[\emprog{start (target coord)}] first sequence nucleotide in the alignment
 
-\item[\emprog{end (target coord)}] final sequence residue in the alignment
+\item[\emprog{end (target coord)}] final sequence nucleotide in the alignment
 \end{wideitem}
 
 Note that under \prog{target coord} some of the sequences' \prog{start} position is
-greather than their \prog{stop} positions. This occurs if the program
+greater than their \prog{stop} positions. This occurs if the program
 has determined the sequence in the target sequence file is a reverse
 complemented SSU sequence. 
 
@@ -164,7 +161,7 @@ will always be the final position of the model.
 \begin{wideitem}
 
 \item[\emprog{bit sc}] the bit score of the HMM alignment of
-  target sequence residues \prog{begin} to \prog{end}.
+  target sequence nucleotides \prog{begin} to \prog{end}.
 
 \item[\emprog{E-value}] this will always read \prog{-}. It would
   include an E-value of the bit score if the model had been calibrated
@@ -174,7 +171,7 @@ will always be the final position of the model.
   much smaller RNAs, such as transfer RNA. See the \textsc{infernal} 
   user's guide \cite{Nawrocki09} for more information.
 
-\item[\emprog{GC\%}] the percent of the nucleotidess in the aligned
+\item[\emprog{GC\%}] the percent of the nucleotides in the aligned
   sequence that are either \prog{G} or \prog{C}. This is largely
   irrelevant for SSU rRNA, but is sometimes useful when using
   \prog{cmsearch} with smaller models.
@@ -186,7 +183,7 @@ The \prog{.hitlist} files are simple files created for each model
 that list the sequences that were best-matches to that model, and as a
 result were aligned to that model in stage 2. If a model has zero
 sequences for which it is the best-matching model, this file will not
-be created. The file contains no new information that is not in the
+be created for that model. The file contains no new information that is not in the
 \prog{.tab} file and is only created as a convenience, because it is
 cumbersome to determine which model gave the highest score to a
 particular sequence in the \prog{.tab} file.  For model \emph{x}, the
@@ -220,9 +217,10 @@ this score.
 This is a FASTA-formatted sequence file containing the sequences
 listed in the corresponding \prog{hitlist} file. For example, the
 file \prog{myseqs/myseqs.archaea.fa} contains the five sequences
-listed in \prog{myseqs/myseqs.archaea.hitlist}. These sequences were
+listed in \\
+\prog{myseqs/myseqs.archaea.hitlist}. These sequences were
 copied from the original sequence file \prog{seed-15.fa} that
-was used as input to \prog{ssu-align}. Only the residues from
+was used as input to \prog{ssu-align}. Only the nucleotides from
 positions \prog{start} to \prog{stop} as listed in the
 \prog{hitlist} file were copied, so sometimes the sequences in the
 \prog{.fa} file will be subsequences of those from the original
@@ -239,14 +237,15 @@ created for each model that was the best-matching model to at least
 one sequence in \prog{ssu-align}'s search stage. Take a look at the
 beginning of the file \prog{myseqs.archaea.cmalign}:
 
-\begin{sreoutput}
-# command: ssu-cmalign --cm-name archaea --mxsize 4096 --no-null3 --sub --ifile myseqs/myseqs.archaea.ifile -o myseqs/myseqs.archaea.stk /usr/local/share/ssu-align-0.1/ssu-align-0p1.cm myseqs/myseqs.archaea.fa
+\begin{sreoutputwide}
+# command: ssu-cmalign --cm-name archaea --mxsize 4096 --no-null3 --sub --ifile myseqs/myseqs.archaea.ifile 
+-o myseqs/myseqs.archaea.stk /usr/local/share/ssu-align-0.1/ssu-align-0p1.cm myseqs/myseqs.archaea.fa
 # date:    Tue May 18 05:48:47 2010
 #
 # cm name                    algorithm  config  sub  bands     tau
 # -------------------------  ---------  ------  ---  -----  ------
 # archaea                      opt acc  global  yes    hmm   1e-07
-\end{sreoutput}
+\end{sreoutputwide}
 
 This section includes the command used to execute \prog{cmalign}, the
 date of execution, and information on the alignment parameters used by
@@ -258,7 +257,7 @@ case \prog{opt acc} stands for \emph{optimal accuracy} \cite{Holmes98}
 (also known as maximum expected accuracy). This algorithm is similar
 to the CYK algorithm described in \cite{Nawrocki09b}, but returns the
 alignment that maximizes the sum of posterior probability labels on
-aligned residues instead of the maximally scoring alignment. In
+aligned nucleotides instead of the maximally scoring alignment. In
 practice, for SSU the CYK and optimally accurate alignment are very often
 identical, and if not, they are nearly identical.  The next two
 columns, \prog{config} and \prog{sub}, read \prog{global} and
@@ -280,7 +279,7 @@ probability mass is allowed outside each band.
 The next section includes per-sequence information on the alignment
 that was created:
 
-\begin{sreoutputtiny}
+\begin{sreoutputwide}
 #                                                                  bit scores                            
 #                                                               ------------------                       
 #   seq idx  seq name                                      len     total    struct  avg prob      elapsed
@@ -290,7 +289,7 @@ that was created:
           3  00004::Nanoarchaeum_equitans::AJ318041        865   1294.71    170.40     0.999  00:00:00.46
           4  00121::Thermococcus_celer::M21529            1486   2430.39    249.92     0.998  00:00:01.02
           5  00115::Pyrococcus_furiosus::U20163|g643670    922   1496.81    138.96     0.997  00:00:00.51
-\end{sreoutputtiny}
+\end{sreoutputwide}
 
 We'll go through each of these columns:
 
@@ -299,8 +298,8 @@ We'll go through each of these columns:
 
 \item[\emprog{seq name}] the name of the sequence.
 
-\item[\emprog{len}] length of the sequence; the full sequence is
-  aligned, no trimming of ends is permitted, as it was in the search
+\item[\emprog{len}] length of the sequence; the full sequence hit from 
+  the search stage is aligned, no trimming of ends is permitted, as it was in the search
   stage with \prog{cmsearch}.
 
 \item[\emprog{total}] the bit score of the CM alignment. For more
@@ -308,11 +307,11 @@ We'll go through each of these columns:
 
 \item[\emprog{struct}] the secondary structure score component of the
   \prog{total} bit score. These are the added bits that are due solely
-  to the modelling of the consensus secondary structure of the
+  to the modeling of the consensus secondary structure of the
   molecule by the CM\@. 
   
 \item[\emprog{avg prob}] the average posterior labeling, or confidence
-  estimate, of the aligned residues. The higher this value is the less
+  estimate, of the aligned nucleotides. The higher this value is the less
   ambiguous and more well-defined the alignment is. The highest this
   can possibly be is \prog{1.000}, which means very nearly 100\% of
   the probability mass of the alignment to the model is contained in
@@ -388,7 +387,7 @@ The next 6 columns all describe the \emph{best-matching} model for the
 sequence. This is the model that assigned the highest primary
 sequence-based local profile HMM alignment score to the sequence.  If
 no model aligned the sequence with a score higher than the minimum
-threshold of $50$ bits then the sequence was skipped and not aligned,
+threshold of 50 bits then the sequence was skipped and not aligned,
 and all these columns will read \prog{-}. There are no such sequences
 in the \prog{seed-15.fa} file, but if there were, an additional
 \prog{.nomatch} file would have been created, as described
@@ -400,10 +399,10 @@ the \prog{ssu-align} anual page at the end of this guide).
 \begin{wideitem}
 \item[\emprog{model name}] name of best-matching model.
 
-\item[\emprog{beg}] first sequence residue index in the maximal
+\item[\emprog{beg}] first nucleotide in the maximal
   scoring local HMM alignment to the best-matching model.
 
-\item[\emprog{end}] final sequence residue index in the maximal
+\item[\emprog{end}] final nucleotide in the maximal
   scoring local HMM alignment to the best-matching model.
 
 \item[\emprog{CM sc}] the CM bit score for the best-matching model
@@ -424,7 +423,7 @@ User's Guide \cite{Nawrocki09}.
 The next 2 columns describe the \prog{second-best model}. This is the
 model that assigned the second-highest primary sequence-based local 
 profile HMM alignment score to the sequence. If only one models score
-exceeded the minimum of $50$ bits then these columns will each read
+exceeded the minimum of 50 bits then these columns will each read
 ``\prog{-}''.
 
 \begin{wideitem}
@@ -456,7 +455,7 @@ sequence file that do not match to any model, one sequence name per
 line. For a sequence to match to a model it must score above the
 minimum profile HMM bit score threshold to at least one model. By
 default, this threshold is 50 bits, but it can be changed to
-\prog{<x>} bits with the \prog{-t <x>} option to \prog{ssu-align}. All
+\prog{<x>} bits with the \prog{-b <x>} option to \prog{ssu-align}. All
 15 sequences in the tutorial file \prog{seed-15.fa} score above this
 threshold to at least one model, so no \prog{.nomatch} file is
 created. 
@@ -470,6 +469,16 @@ reference to remind the user how \prog{ssu-align} was run
 \textsc{ssu-align} package generate specifically named \prog{.sum}
 suffixed files. For example, \prog{ssu-mask} generates a file ending
 with the suffix \prog{.ssu-mask.sum}.
+
+As a special case, when \prog{ssu-prep} is used to create parallel
+jobs of \prog{ssu-align}, a \prog{ssu-prep.sum} file is created. Then,
+when the \prog{ssu-prep}-generated shell script that executes the
+parallel alignment jobs is run, a \prog{ssu-align.sum} file will be created.
+This \prog{ssu-align.sum} file will contain the 
+\prog{ssu-align.sum} files from all parallel alignment jobs
+concatenated together, followed by a section describing the merge
+performed automatically by the final job and alignment
+statistics summarizing all parallel jobs.
 
 \prog{ssu-align.sum} files include more information than the other
 program's \prog{.sum} files. Specifically, they include two sections
@@ -546,7 +555,7 @@ this table is described below:
   stage per second.
 
 \item[\emprog{seq/sec/model}] the number of sequences processed by this
-  stage per second per model. This is the value in the \prog{seq/sec/}
+  stage per second per model. This is the value in the \prog{seq/sec}
   column divided by the number of models used to search for or align
   the sequences. Remember that in the \prog{search} stage, all 3
   models are used by default, whereas only 1 model is used in the
@@ -566,6 +575,15 @@ commands run by \prog{ssu-align}. As with \prog{.sum} suffixed files,
 program specific \prog{.log} suffixed files are created by each of the
 six \textsc{ssu-align} programs. For example, \prog{ssu-mask}
 generates a log file ending with the suffix \prog{.ssu-mask.log}.
+
+
+As a special case, when \prog{ssu-prep} is used to create parallel
+jobs of \prog{ssu-align}, a \prog{ssu-prep.log} file is created. Then,
+when the \prog{ssu-prep}-generated shell script that executes the
+parallel alignment jobs is run, a \prog{ssu-align.log} file will be created.
+This \prog{ssu-align.log} file will contain the 
+\prog{ssu-align.log} files from all parallel alignment jobs
+concatenated together.
 
 The \prog{.log} files list all of the commands that were executed by
 the program along with their STDERR and sometimes their STDOUT output
@@ -594,21 +612,23 @@ specific domain model/alignment file and include only \prog{0} and
 of the model/alignment. For example, the
 \prog{myseqs.archaea.mask} file contains 1508 characters, one per
 consensus column of the default \textsc{ssu-align} archaeal model
-described in section~\ref{sec:models}. A \prog{0} at position \prog{x}
-indicates that consensus position \prog{x} is excluded from the mask
+described in section~\ref{sec:models}. A \prog{0} at position \emph{x}
+indicates that consensus position \emph{x} is excluded from the mask
 and will be removed from the alignment when the mask is applied. A
-\prog{1} at position \prog{x} indicates that it is included by the
+\prog{1} at position \emph{x} indicates that it is included by the
 mask and will be kept when the mask is applied. A consensus position
 of an alignment is one where the \prog{\#=GC RF} annotation is a
-nongap (see section~\ref{sec:basics} for more detail).
+nongap (see section~\ref{sec:background} for more detail).
 
 \subsubsection{.mask.pdf and .mask.ps suffixed files}
 These are structure diagram files that display a mask on the consensus
 secondary structure of a domain. Pink positions are excluded by the
-mask. Black positions are kept by the mask. Either \prog{.pdf} or
+mask. Black positions are included by the mask. Either \prog{.pdf} or
 postscript \prog{.ps} files will be created, but not both. If you have
 the program \prog{ps2pdf} in your path, \prog{.pdf} files will be
-created, otherwise postscript will be.
+created, otherwise postscript will be. One difference between
+these filetypes is their sizes, the PDF files created by
+\prog{ssu-mask} are only about 10\% the size of the postscript files.
 
 \subsubsection{.mask.stk suffixed files}
 The \prog{.mask.stk} files are Stockholm-formatted alignment files
@@ -617,7 +637,7 @@ that include a subset of the columns of the alignments created by
 removed. Additionally, all insert columns have been removed. An insert
 column is one which is a gap in the reference (\prog{\#=GC RF})
 annotation of the alignment. For more information on inserts, see
-section~\ref{sec:basics}.
+section~\ref{sec:background}.
 
 \subsubsection{.list suffixed files}
 \prog{.list} suffixed files are only generated if \prog{ssu-mask} is
@@ -629,12 +649,12 @@ sequence in the alignment, one per line.
 \prog{.afa} suffixed files are FASTA-formatted alignment files that
 are created by \prog{ssu-mask} only if the \prog{--stk2afa} option is
 used. These files differ from unaligned FASTA files in that each
-sequence may contain >= 0 gaps, and all sequences are guaranteed to be
-the same length. In \prog{.afa} files created by \prog{ssu-mask},
-there can be two types of gap characters exist. A \prog{-} character
+sequence may contain gaps, and all sequences are guaranteed to be
+the same length. \prog{.afa} files created by \prog{ssu-mask}
+contain two types of gap characters. A \prog{-} character
 is a gap in a consensus column of an alignment. A \prog{.} character
 is a gap in an insert column of an alignment. See
-section~\ref{sec:basics} for more information on the distinction
+section~\ref{sec:background} for more information on the distinction
 between consensus and insert columns. Note that \prog{.afa} alignment
 files do not include structure information that is included in
 Stockholm alignment files.
@@ -658,22 +678,15 @@ corresponding \prog{.drawtab} file is generated, as described below.
 Either \prog{.pdf} or postscript \prog{.ps} files will
 be created, but not both. If you have the program \prog{ps2pdf} in
 your path, \prog{.pdf} files will be created, otherwise postscript
-will be.
+will be. One difference between
+these filetypes is their sizes, the PDF files created by
+\prog{ssu-draw} are only about 10\% the size of the postscript files.
 
 \subsubsection{.drawtab suffixed files}
 \prog{.drawtab} suffixed files are tab-delimited text files meant to
 be easily parseable that contain the information displayed in a
 corresponding \prog{.pdf} or \prog{.ps} structure diagram file. 
 In these files, lines beginning with \prog{\#} are comment
-lines. Comments in each file explain the meaning of each of the
-tab-delimited fields in the non-comment lines. 
-
-
-
-
-
-
-
-
-
+lines. Comments at the beginning of \prog{.drawtab} files explain the
+meaning of each of the tab-delimited fields in the non-comment lines. 
 

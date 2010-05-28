@@ -1,13 +1,12 @@
-\section[SSU-ALIGN's SSU rRNA sequence and structure
-  models]{SSU-ALIGN's SSU rRNA sequence and structure
-  models.\footnote{This is a slightly modified version 
-  of a section from chapter 9 of my Ph.D. thesis \cite{Nawrocki09b}
+\section[SSU-ALIGN's SSU rRNA sequence and structure models]{SSU-ALIGN's SSU rRNA sequence and structure
+  models\footnote{This is a slightly modified version 
+  of a section from chapter 9 of my Ph.D. thesis \cite{Nawrocki09b}.
   The full thesis is available from
   (\htmladdnormallink{http://selab.janelia.org/publications.html}{http://selab.janelia.org/publications.html})}}
 \label{sec:models}
 
 CMs model both the conserved sequence and secondary structure of an
-RNA family. Constructing CMs requires as input a multiple sequence
+RNA family. CM construction requires as input a multiple sequence
 alignment with well-nested consensus secondary structure
 annotation. An important question in the design of the \sft{ssu-align}
 program was where to obtain these alignments from. I decided to use
@@ -20,12 +19,12 @@ The structure models used by \db{crw} are based on nearly thirty years of
 comparative analysis. The first secondary structures of SSU were
 created in the early 1980s, by Carl Woese, Harry Noller, Robin Gutell
 and others using comparative sequence analysis to identify covarying
-positions indicative of structural relationships such as base-pairs
+positions indicative of structural relationships such as basepairs
 \cite{Woese80,Noller81,Woese83}. Since then, Gutell and his
 colleagues have continued to refine those models. Their comparative
 approach was validated in 2000, when the crystal structure of the
 small subunit of \emph{Thermus thermophilus} was solved
-\cite{Wimberly00} and 97\% of the predicted base-pairs in the then
+\cite{Wimberly00} and 97\% of the predicted basepairs in the then
 current bacterial secondary structure model were confirmed
 \cite{Gutell02}.
 
@@ -41,7 +40,7 @@ structural data is publicly available in the \db{crw} database
   Website} 
 
 \db{CRW} includes separate SSU alignments for archaea, bacteria,
-chloroplasts, eukarya (nuclear), and mitochondria. I concentrated only
+chloroplasts, eukarya, and mitochondria. I concentrated only
 on the archaeal, bacterial, and eukaryotic alignments for the initial
 version of \sft{ssu-align}.  Unfortunately, the \db{crw} alignments
 are not structurally annotated, so they cannot be used directly to
@@ -86,7 +85,7 @@ the family and generally does not benefit from redundancy
 \cite{Durbin98}.) Secondly, after predicting an individual structure,
 the \db{crw} curators use the structure to revise the larger alignments,
 which suggests that these particular sequences are the most reliably
-aligned because they received the most expert attention.
+aligned because they have received the most expert attention.
 
 \subsection{Defining consensus structures from individual structures}
 
@@ -117,7 +116,7 @@ alignments from the \db{crw} data is shown in Figure~\ref{fig:crw2seed}.
           ones). Each conversion step is explained
           in more detail in the text. 
           Figure~\ref{fig:conflict}
-          demonstrates an example of conflicting base-pairs. 
+          demonstrates an example of conflicting basepairs. 
           Table~\ref{tbl:crw2seed} includes alignment
           statistics and number of sequences surviving each step for
           each of the three seed alignments derived from \db{crw}.}
@@ -150,34 +149,38 @@ eukarya      &          1937 &        259 & 148      \\%& 0.57\\
 
 This defines three sets of aligned sequences in which each sequence 
 has its own predicted structure. CMs can only model well-nested
-base-pairing interactions, so all pseudoknotted base-pairs
+basepairing interactions, so all pseudoknotted basepairs
 were removed from the individual structures. A well-nested structure
-is a set of base-pairs for which no two pairs between positions $i$:$j$
+is a set of basepairs for which no two pairs between positions $i$:$j$
 and $k$:$l$ exist such that $i<k<j<l$. I used the program
 \sft{Knotted2Nested.py} by \cite{Smit08} to remove
 pseudoknots using the \texttt{-m OSP} option which maximizes the number
-of base-pairs in the resulting nested structure.
+of basepairs in the resulting nested structure.
 % more on if there are > 1 structure with identical # pairs?  see
 % http://www.ibi.vu.nl/programs/k2nwww/static/method.html
 
-From this set, any sequences with more than $5$ ambiguous
-bases were removed because ambiguous bases in a seed alignment inject
-noise into the parameters of a CM (equation 1.4 of \cite{Nawrocki09b}). Additionally,
-sequences less than 80\%, or more than 120\% the median length of the
-alignment were removed. 
+From this set, any sequences with more than 5 ambiguous bases were
+removed because ambiguous bases in a seed alignment inject noise into
+the parameters of a CM (equation 1.4 of
+\cite{Nawrocki09b}). Additionally, sequences less than 80\%, or more
+than 120\% the median length of the alignment were removed\footnote{33
+  eukaryotic sequences were less than 80\% the median length
+  (table~\ref{tbl:crw2seed}). I plan to build an additional eukaryotic
+  model of these shorter sequences for a future release of
+  \sft{ssu-align}.}.
 
-At this stage, base-pairing \emph{conflicts} between the aligned
+At this stage, basepairing \emph{conflicts} between the aligned
 individual structures were identified. A conflict exists between two
-base-pairs in different structures, one between alignment columns
-\emph{i} and \emph{j} and the other between columns \emph{j} and
-\emph{k}, if $i = k$ and $j \neq l$, or $j = l$ and $i \neq k$.  An
-example of two conflicting base-pairs is shown in
-Figure~\ref{fig:conflict}.  Conflicting base-pairs are problematic
-because a consensus base-pair between columns $i$ and $j$ in a CM seed
+basepairs in different structures, one between alignment columns
+\emph{i} and \emph{j} and the other between columns \emph{k} and
+\emph{l}, if $i = k$ and $j \neq l$, or $j = l$ and $i \neq k$.  An
+example of two conflicting basepairs is shown in
+Figure~\ref{fig:conflict}.  Conflicting basepairs are problematic
+because a consensus basepair between columns $i$ and $j$ in a CM seed
 alignment is assumed to exist (or be deleted) between the nucleotides in
 $i$ and $j$ in \emph{all} sequences of the alignment. Columns involved
-in conflicting base-pairs violate this assumption by specifying that a
-nucleotides in a single column is involved in different base-pairs in
+in conflicting basepairs violate this assumption by specifying that a
+nucleotides in a single column is involved in different basepairs in
 different sequences.
 
 \begin{figure}[h]
@@ -197,14 +200,14 @@ different sequences.
                                           &           ........k.....l.......  \\
 \end{tabular}
 \rmfamily
-        \caption[Example of conflicting base-pairs between two aligned
+        \caption[Example of conflicting basepairs between two aligned
           individual SSU structure predictions from CRW.]{
-        \textbf{Example of conflicting base-pairs between two aligned
+        \textbf{Example of conflicting basepairs between two aligned
           individual SSU structure predictions from CRW.}  The
-        individual base-pair between aligned columns $i$ and $j$ in
+        individual basepair between aligned columns $i$ and $j$ in
         \emph{Xylella fastidiosa} (sequence accession \texttt{M34115})
         conflicts with the \emph{Thermomicrobium roseum} (accession
-        \texttt{AE003861}) base-pair between columns $k$ and $l$ as
+        \texttt{AE003861}) basepair between columns $k$ and $l$ as
         defined in the text (because $i \neq k$ and $j = l$).}
 \end{center}
 \label{fig:conflict}
@@ -212,14 +215,14 @@ different sequences.
 
 
 Next, I removed conflicts using an iterative alignment refinement
-procedure that eliminates sequences with more than $15$ conflicts after
+procedure that eliminates sequences with more than 15 conflicts after
 each iteration. The alignments at each stage are determined using a
 CM\@. The initial consensus structure used to build the CM for the first
 iteration was defined as the set of consensus base pairs between
 alignment positions $i$ and $j$ that exist as paired in more than
 \emph{x} fraction of the individual structures. The value for \emph{x}
 was determined as the minimum value for which there were no
-conflicting base-pairs in the consensus set.
+conflicting basepairs in the consensus set.
 
 This provided me with an initial alignment that I then iteratively
 refined using \sft{infernal}. Each iteration consists of a build
@@ -228,14 +231,14 @@ built from the current alignment (in iteration 1 this is a subset of
 the \db{crw} alignment). Then all of the seed sequences are aligned to the
 CM to generate a new alignment. The individual structures are mapped
 onto the new alignment and a new consensus structure is derived as
-described above.  Any sequence with more than $15$ base-pair conflicts
+described above.  Any sequence with more than 15 basepair conflicts
 between its individual structure and the new consensus structure are
 removed from the seed.  This procedure continues until 0 sequences are
 removed in the final step. The alignment generated during the final
 iteration became the seed alignment I used for \sft{ssu-align}.
 
 Table~\ref{tbl:crw2seed} lists the number of sequences removed at each
-stage of the procedure and statistics on base-pair conflicts. 
+stage of the procedure and statistics on basepair conflicts. 
 The three final seed alignments used to create the \sft{ssu-align} 
 models are summarized in Table~\ref{tbl:finalseeds}.
 
@@ -302,7 +305,7 @@ models are summarized in Table~\ref{tbl:finalseeds}.
 \begin{tabular}{lrrrrrr} \hline
         &           &           &           &           & average   & average  \\
 model   & number of & consensus & alignment & number of & sequence  & pairwise \\
-name    & sequences & length    & length    & base-pairs & length    & identity \\ \hline
+name    & sequences & length    & length    & basepairs & length    & identity \\ \hline
 archaea & 23        & 1508      & 1563      & 471       & 1485      & 81\%     \\
 bacteria& 93        & 1582      & 1689      & 480       & 1527      & 80\%     \\
 %chloroplast& 18     & 1514      & 1693      & 449       & 1492      & 85\%     \\
@@ -318,10 +321,24 @@ eukarya  & 89       & 1881      & 2652      & 448       & 1800      & 79\%     \
 \end{center}
 \end{table}
 
+The final seed alignments are included in \sft{SSU-ALIGN} package in
+the \prog{seeds/} subdirectory as: \prog{archaea-0p1.stk},
+\prog{bacteria-0p1.stk}, and \prog{eukarya-0p1.stk}. Corresponding
+unaligned FASTA files are also included, with a \prog{.fa} suffix
+replacing \prog{.stk}. 
+
 With the exception of the next page, the remainder of this section
 includes 18 secondary structure diagrams displaying various statistics
 per consensus column of the three seed alignments, with figure numbers
-as indicated below:
+as indicated below. These structure diagrams can be created using
+\prog{ssu-draw} with the following commands from the toplevel
+\sft{ssu-align} directory:
+
+\user{ssu-draw -a seeds/archaea-0p1.stk}
+
+\user{ssu-draw -a seeds/bacteria-0p1.stk}
+
+\user{ssu-draw -a seeds/eukarya-0p1.stk}
 
 \vspace{0.2in}
 
@@ -337,15 +354,12 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
 \end{tabular}
 \end{center}
 
-\vspace{0.2in}
 \newpage
-
-\subsection{Secondary structure diagrams summarizing the three models}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %archaea
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{figure}
+\begin{figure}[hb]
 \begin{center}
 \includegraphics[width=5.7in]{Figures/archaea-0p1-rf}
 \end{center}
@@ -357,7 +371,7 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
   sequence to the model. Uppercase nucleotides indicate highly conserved positions,
   and lowercase nucleotides indicate less well-conserved positions.
   This diagram was generated by the {\tt
-  esl-ssudraw} program included in \sft{ssu-align}.}
+  ssu-draw} program included in \sft{ssu-align}.}
 \label{fig:arcrf}
 \end{figure}
 
@@ -372,7 +386,7 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
   alignment.} Statistics correspond to the \sft{ssu-align} seed
   alignment derived from the \db{crw} database \cite{CannoneGutell02}
   as described in the text. This diagram was generated by the {\tt
-  esl-ssudraw} program included in \sft{ssu-align}.}
+  ssu-draw} program included in \sft{ssu-align}.}
 \label{fig:arcinfo}
 \end{figure}
 
@@ -387,7 +401,7 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
   alignment.} Statistics correspond to the \sft{ssu-align} seed
   alignment derived from the \db{crw} database \cite{CannoneGutell02}
   as described in the text. This diagram was generated by the {\tt
-  esl-ssudraw} program included in \sft{ssu-align}.}
+  ssu-draw} program included in \sft{ssu-align}.}
 \label{fig:arcsinfo}
 \end{figure}
 
@@ -403,7 +417,7 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
   alignment.} Statistics correspond to the \sft{ssu-align} seed
   alignment derived from the \db{crw} database \cite{CannoneGutell02}
   as described in the text. This diagram was generated by the {\tt
-  esl-ssudraw} program included in \sft{ssu-align}.}
+  ssu-draw} program included in \sft{ssu-align}.}
 \label{fig:arcdel}
 \end{figure}
 
@@ -419,7 +433,7 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
   alignment.} Statistics correspond to the \sft{ssu-align} seed
   alignment derived from the \db{crw} database \cite{CannoneGutell02}
   as described in the text. This diagram was generated by the {\tt
-  esl-ssudraw} program included in \sft{ssu-align}.}
+  ssu-draw} program included in \sft{ssu-align}.}
 \label{fig:arcifreq}
 \end{figure}
 
@@ -434,8 +448,8 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
   alignment.} Statistics correspond to the \sft{ssu-align} seed
   alignment derived from the \db{crw} database \cite{CannoneGutell02}
   as described in the text. This diagram was generated by the {\tt
-  esl-ssudraw} program included in \sft{ssu-align}.}
-\label{fig:baciavglen}
+  ssu-draw} program included in \sft{ssu-align}.}
+\label{fig:arciavglen}
 \end{figure}
 
 
@@ -454,7 +468,7 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
   sequence to the model. Uppercase nucleotides indicate highly conserved positions,
   and lowercase nucleotides indicate less well-conserved positions.
   This diagram was generated by the {\tt
-  esl-ssudraw} program included in \sft{ssu-align}.}
+  ssu-draw} program included in \sft{ssu-align}.}
 \label{fig:bacrf}
 \end{figure}
 
@@ -469,7 +483,7 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
   alignment.} Statistics correspond to the \sft{ssu-align} seed
   alignment derived from the \db{crw} database \cite{CannoneGutell02}
   as described in the text. This diagram was generated by the {\tt
-  esl-ssudraw} program included in \sft{ssu-align}.}
+  ssu-draw} program included in \sft{ssu-align}.}
 \label{fig:bacinfo}
 \end{figure}
 
@@ -485,7 +499,7 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
   alignment.} Statistics correspond to the \sft{ssu-align} seed
   alignment derived from the \db{crw} database \cite{CannoneGutell02}
   as described in the text. This diagram was generated by the {\tt
-  esl-ssudraw} program included in \sft{ssu-align}.}
+  ssu-draw} program included in \sft{ssu-align}.}
 \label{fig:bacsinfo}
 \end{figure}
 
@@ -501,7 +515,7 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
   alignment.} Statistics correspond to the \sft{ssu-align} seed
   alignment derived from the \db{crw} database \cite{CannoneGutell02}
   as described in the text. This diagram was generated by the {\tt
-  esl-ssudraw} program included in \sft{ssu-align}.}
+  ssu-draw} program included in \sft{ssu-align}.}
 \label{fig:bacdel}
 \end{figure}
 
@@ -517,7 +531,7 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
   alignment.} Statistics correspond to the \sft{ssu-align} seed
   alignment derived from the \db{crw} database \cite{CannoneGutell02}
   as described in the text. This diagram was generated by the {\tt
-  esl-ssudraw} program included in \sft{ssu-align}.}
+  ssu-draw} program included in \sft{ssu-align}.}
 \label{fig:bacifreq}
 \end{figure}
 
@@ -533,7 +547,7 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
   alignment.} Statistics correspond to the \sft{ssu-align} seed
   alignment derived from the \db{crw} database \cite{CannoneGutell02}
   as described in the text. This diagram was generated by the {\tt
-  esl-ssudraw} program included in \sft{ssu-align}.}
+  ssu-draw} program included in \sft{ssu-align}.}
 \label{fig:baciavglen}
 \end{figure}
 
@@ -553,7 +567,7 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
   sequence to the model. Uppercase nucleotides indicate highly conserved positions,
   and lowercase nucleotides indicate less well-conserved positions.
   This diagram was generated by the {\tt
-  esl-ssudraw} program included in \sft{ssu-align}.}
+  ssu-draw} program included in \sft{ssu-align}.}
 \label{fig:eukrf}
 \end{figure}
 
@@ -568,7 +582,7 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
   alignment.} Statistics correspond to the \sft{ssu-align} seed
   alignment derived from the \db{crw} database \cite{CannoneGutell02}
   as described in the text. This diagram was generated by the {\tt
-  esl-ssudraw} program included in \sft{ssu-align}.}
+  ssu-draw} program included in \sft{ssu-align}.}
 \label{fig:eukinfo}
 \end{figure}
 
@@ -584,7 +598,7 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
   alignment.} Statistics correspond to the \sft{ssu-align} seed
   alignment derived from the \db{crw} database \cite{CannoneGutell02}
   as described in the text. This diagram was generated by the {\tt
-  esl-ssudraw} program included in \sft{ssu-align}.}
+  ssu-draw} program included in \sft{ssu-align}.}
 \label{fig:euksinfo}
 \end{figure}
 
@@ -600,10 +614,9 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
   alignment.} Statistics correspond to the \sft{ssu-align} seed
   alignment derived from the \db{crw} database \cite{CannoneGutell02}
   as described in the text. This diagram was generated by the {\tt
-  esl-ssudraw} program included in \sft{ssu-align}.}
+  ssu-draw} program included in \sft{ssu-align}.}
 \label{fig:eukdel}
 \end{figure}
-
 
 \begin{figure}
 \begin{center}
@@ -616,7 +629,7 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
   alignment.} Statistics correspond to the \sft{ssu-align} seed
   alignment derived from the \db{crw} database \cite{CannoneGutell02}
   as described in the text. This diagram was generated by the {\tt
-  esl-ssudraw} program included in \sft{ssu-align}.}
+  ssu-draw} program included in \sft{ssu-align}.}
 \label{fig:eukifreq}
 \end{figure}
 
@@ -631,7 +644,7 @@ average insertion length         & Figure~\ref{fig:arciavglen} & Figure~\ref{fig
   alignment.} Statistics correspond to the \sft{ssu-align} seed
   alignment derived from the \db{crw} database \cite{CannoneGutell02}
   as described in the text. This diagram was generated by the {\tt
-  esl-ssudraw} program included in \sft{ssu-align}.}
-\label{fig:baciavglen}
+  ssu-draw} program included in \sft{ssu-align}.}
+\label{fig:eukiavglen}
 \end{figure}
 
