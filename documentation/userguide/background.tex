@@ -195,6 +195,7 @@ traditionally include less than one hundred sequences
 %than 100 sequences. 
 
 \subsection{Two types of alignment columns: consensus and inserts}
+\label{sec:background-columns}
 
 Alignments created by \sft{ssu-align} will contain two types of
 columns: consensus columns, that correspond to a consensus position of
@@ -276,42 +277,45 @@ type of cross-dataset comparison for consensus positions.
 \subsection{Alignment posterior probabilities are confidence estimates}
 \label{sec:background-pp}
 
-During CM alignment of a sequence, the posterior probability that 
-each nucleotide aligns to each position of the model is calculated. 
-These probabilities are \emph{confidence estimates} that each
-nucleotide is correctly aligned, given the parameters of the CM. The
-estimates are useful for identifying and removing columns of the
-alignment that are most likely to contain errors. This procedure is called
-alignment \emph{masking}. Masking is especially important prior to
-using the alignment as input to a phylogenetic inference program
-because those programs typically assume that all nucleotides in a
-given alignment column are homologous and are thus confounded by 
-alignment errors. \prog{ssu-align} output alignments include posterior
-probabilities that can be used to automatically construct and apply
-masks using the \prog{ssu-mask} program. The tutorial
-(section~\ref{sec:tutorial} includes an example of alignment masking. 
-
+When a sequence is aligned to a CM, the posterior probability that each
+nucleotide aligns to each position of the model is calculated.  The
+posterior probability values for the output alignment are annotated in
+the alignment file. These probabilities are \emph{confidence
+  estimates} that each nucleotide is correctly aligned, given the
+parameters of the CM. The estimates are useful for identifying and
+removing columns of the alignment that are most likely to contain
+errors. This procedure is called alignment \emph{masking}. Masking is
+especially important prior to using the alignment as input to a
+phylogenetic inference program because those programs typically assume
+that all nucleotides in a given alignment column are homologous and so
+are confounded by alignment errors. \prog{ssu-align} output alignments
+include posterior probabilities that can be used to automatically
+construct and apply masks using the \prog{ssu-mask} program. The
+tutorial (section~\ref{sec:tutorial-masking},
+page~\pageref{sec:tutorial-masking}) includes an example of alignment
+masking.
 
 \subsubsection{Inserted columns should always be excluded during masking}
 
-Importantly, any CM alignment mask should automatically exclude 
-every insert column of the alignment. This is because, as discussed
-earlier, CMs do not actually align inserted nucleotides between
-different sequences, but rather simply insert them between the
-appropriate consensus columns in the alignment
-(figure~\ref{fig:toyex}. This means that sequence nucleotides
-appearing in the same insert alignment columns are not aligned with
-respect to each other and consequently should be removed prior to
-phylogenetic analysis which assumes aligned nucleotides are
-homologous. 
+Importantly, any CM alignment mask should automatically exclude every
+insert column of the alignment. This is because, as discussed earlier,
+CMs do not actually align inserted nucleotides between different
+sequences, but rather simply insert them between the appropriate
+consensus columns in the alignment (figure~\ref{fig:toyex}, parts B
+and C). This means that sequence nucleotides appearing in the same
+insert alignment columns are not aligned with respect to each other
+and consequently should be removed prior to phylogenetic analysis
+which assumes aligned nucleotides are homologous.  \prog{ssu-mask}
+always automatically removes all insert columns from alignments.
 
 \subsubsection{Consensus columns with low alignment confidence should
   also be removed during masking}
 
-It is necessary but not sufficient to only remove all insert columns
+It is necessary but not sufficient to remove insert columns
 during masking. Additionally, some consensus columns may include
 a significant number of nucleotides aligned with low confidence
 estimates and these should be removed as well. 
+
 Low alignment confidence tends to occur at positions with low sequence
 conservation where insertions and deletions are common, 
 corresponding to regions of the molecule that exhibit high length
@@ -320,7 +324,8 @@ In such cases, the correct alignment is often ambiguous.
 Take for example the CM alignment
 of the {\tt GUAU} subsequence of the \emph{Desulfovibrio
 desulfuricans} SSU target sequence to a loop region depicted in
-Figure~\ref{fig:ambiguity}. The reference (consensus) sequence for the
+figure~\ref{fig:ambiguity}. The reference sequence (this is the
+majority-rule consensus sequence from the seed alignment) for the
 loop ({\tt AUUCAAC}) differs from {\tt GUAU} in both sequence and
 length. Consequently, the CM alignment for this loop is not well
 defined, and two alternative alignments are given posterior
@@ -335,26 +340,23 @@ posterior probabilities.
 %described in section~\ref{sec:masks}.
 
 \begin{figure}
-\ttfamily
 \footnotesize
 \begin{center}
 %ORIGINAL DATA is from Macbook: 
 %/Users/nawrockie/school/notebook/9_0309_ths/latex/ssu/ambiguity_example
 \begin{tabular}{ll}
-00904::Desulfovibrio\_desulfuricans-1 &                         GAUGUCGGGGA--GUAU---UCUUCGGUGUC \\
-\#=GR 00904::Desulfovibrio\_desulfuricans-1 PP &                ***********--6666---9********** \\
+\tt{00904::Desulfovibrio\_desulfuricans-1} &                         \tt{GAUGUCGGGGA--GUAU---UCUUCGGUGUC} \\
+\tt{\#=GR 00904::Desulfovibrio\_desulfuricans-1 PP}  &               \tt{***********--6666---9**********} \\
 & \\
-00904::Desulfovibrio\_desulfuricans-2          &                GAUGUCGGGGA---GUAU--UCUUCGGUGUC \\
-\#=GR 00904::Desulfovibrio\_desulfuricans-2 PP &                ***********---4444--9********** \\
+\tt{00904::Desulfovibrio\_desulfuricans-2}          &                \tt{GAUGUCGGGGA---GUAU--UCUUCGGUGUC} \\
+\tt{\#=GR 00904::Desulfovibrio\_desulfuricans-2 PP} &                \tt{***********---4444--9**********} \\
 & \\
-\#=GC SS\_cons                        &                             <<<<<<<<<<<<.......>>>>>>>>>>>> \\
-\#=GC RF                              &                             GGUGUuGGgggcAuUcaACgcccUCaGUGCC \\
+\tt{\#=GC SS\_cons}                        &                         \tt{<<<<<<<<<<<<.......>>>>>>>>>>>>} \\
+\tt{\#=GC RF}                              &                         \tt{GGUGUuGGgggcAuUcaACgcccUCaGUGCC} \\
 \end{tabular}
-\rmfamily
 
 \vspace{0.2in}
 \includegraphics[width=5.7in]{Figures/ambiguity}
-
 \caption[Example of alignment ambiguity in a hairpin loop.]{
   \textbf{Example of alignment ambiguity in a hairpin loop.}  Top: An
   alignment fragment of two different alignments of the
@@ -387,8 +389,8 @@ posterior probabilities.
   the \emph{D. desulfuricans} and the reference alignment.  Nucleotides
   in the actual alignment are black. Nucleotides surrounding the
   alignment fragment are gray.}
-\end{center}
 \label{fig:ambiguity}
+\end{center}
 \end{figure}
 
 \subsubsection{Automated probabilistic masking with \prog{ssu-mask}}
@@ -399,7 +401,7 @@ the sequences that are nongaps in \emph{x} have a posterior
 probability of less than 0.95 (i.e. any value in the \prog{PP}
 annotation that is not \prog{*}). Columns that are 100\% gaps are also
 removed. These thresholds were chosen based on good performance using
-a simple SSU benchmark. See chapter 9 of \cite{Nawrocki09} for
+a simple SSU alignment benchmark. See chapter 9 of \cite{Nawrocki09} for
 benchmark details. The thresholds can be changed with the \prog{--pf} and
 \prog{--pt} options to \prog{ssu-mask}. Additionally, columns that include
 greater than a given fraction of gaps can also be removed using the
@@ -411,17 +413,17 @@ alignment-specific so that alignments of different datasets can be
 directly compared. \sft{ssu-align} includes a default preset mask for
 each of the default archaeal, bacterial, and eukaryotic
 alignments. The determination of these is discussed in
-section~\ref{sec:masks}. 
+section~\ref{sec:masks}. They can be applied within the
+\prog{ssu-mask} program using the \prog{-d} option.
 
 \subsection{Other useful references}
 
 For more information on CM parameterization and alignment, see the
 \software{infernal} user's guide \cite{infernalguide}.  My
-Ph.D. thesis
-(\htmladdnormallink{http://selab.janelia.org/publications.html}{http://selab.janelia.org/publications.html})
+Ph.D. thesis (\htmladdnormallink{http://selab.janelia.org/publications.html}{http://selab.janelia.org/publications.html})
 includes more background on SSU databases, alignment methods, CM
 acceleration heuristics used by \sft{ssu-align}, and the masking
-benchmark mentioned earlier.  Other useful references on CMs include
+benchmark mentioned earlier. Other useful references on CMs include
 \cite{Eddy94,Eddy02b,NawrockiEddy07,Nawrocki09,KolbeEddy09}. Finally,
 publications related to the \sft{rfam} database
 (\htmladdnormallink{http://rfam.sanger.ac.uk/}{http://rfam.sanger.ac.uk/}),
