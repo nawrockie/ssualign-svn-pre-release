@@ -108,15 +108,9 @@ MASKLIBFILES = archaea-0p1.mask\
 all: core 
 
 core:
-	cd easel;        make CC="$(CC)" CFLAGS="$(CFLAGS)"; make ssu
+	cd infernal/easel;        make CC="$(CC)" CFLAGS="$(CFLAGS)"; make ssu
 	cd infernal/hmmer;        make hmmer_lib
-# OLD (when hmmernal2 h3 branch was being used by infernal)
-#	cd hmmer;        ./configure CC="$(CC)" CFLAGS="$(CFLAGS)"; make          
-	cd infernal/src; make CC="$(CC)" CFLAGS="$(CFLAGS)"; make ssu
-# we dont' need to cd src and make, because the src/ execs are perl scripts.
-#	cd src;          make CC="$(CC)" CFLAGS="$(CFLAGS)"; make module
-# eventually, once testsuite gets off the ground
-#	cd testsuite;    make CC="$(CC)" CFLAGS="$(CFLAGS)"
+	cd infernal/src;          make CC="$(CC)" CFLAGS="$(CFLAGS)"; make ssu
 
 # dist: build a new distribution directory in ssu-align-$RELEASE
 #
