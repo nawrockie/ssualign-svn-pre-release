@@ -2,9 +2,9 @@
   with ssu-prep}
 \label{sec:tutorial-prep}
 \prog{ssu-align} runs on a single processor and does not support MPI
-or multi-threading. However, simplistic parallelization is possible
-with the \prog{ssu-prep} program, if you have access to a compute
-cluster or multi-core computers.
+or multi-threading. However, if you have access to a compute
+cluster or multi-core computers, simplistic parallelization is possible
+with the \prog{ssu-prep} program.
 
 \prog{ssu-prep} will split up a large input sequence file into
 \emph{n} smaller files and create a shell script that will execute
@@ -14,11 +14,16 @@ merged together by the final job, ultimately yielding the same results
 as if a single 
 \prog{ssu-align}
 job was run for the original large input sequence file. 
+Parallelizing \prog{ssu-align} in this way can drastically reduce the
+actual time required for aligning large datasets. A job that would
+have required 100 hours on 1 processor can be done in a little more
+than 1 hour on 100 processors. See table~\ref{tbl:ttimes} in
+section~\ref{sec:stats} for example timing statistics. 
 
 In this section we'll walk through an example of how to do this for a
 small dataset.  The sequence file \prog{tutorial/seed-30.fa} includes
 30 randomly chosen sequences from the complete set of seed sequences
-from the 3 default models of \textsc{ssu-align}.
+from the three default models of \textsc{ssu-align}.
 
 \prog{ssu-prep} has three different usage modes as explained by the
 program if it is run without any command-line arguments:
@@ -52,7 +57,7 @@ With -y: do not specify <prefix/suffix file>; user will manually add the desired
 To see more help on available options, do ssu-prep -h
 \end{sreoutput}
 
-By default, if \prog{-x} nor \prog{-y} options are used, the program
+By default, if neither \prog{-x} nor \prog{-y} options are used, the program
 reads a \prog{<prefix/suffix file>}, a simple two line file that
 a prefix string and a suffix string to prepend and append respectively
 to the \prog{ssu-align} commands it generates. 
@@ -60,11 +65,9 @@ to the \prog{ssu-align} commands it generates.
 The strings in the \prog{<prefix/suffix file>} will likely be specific
 to your parallel computing environment. At Janelia, we use Sun Grid
 Engine's \prog{qsub} program for submitting jobs to a large compute
-cluster. The relevant \prog{prefix/suffix} file for our specific
-computing environment is included in
-\prog{tutorial/janelia-cluster-presuf.txt}. 
-
-Take a look at this file:
+cluster. The relevant prefix/suffix file for our specific
+computing environment is included in \\
+\prog{tutorial/janelia-cluster-presuf.txt}. Take a look at this file:
 
 \begin{sreoutput}
 qsub -N ssu-align -o /dev/null -b y -j y -cwd -V "
@@ -105,8 +108,8 @@ and discuss this output:
 \end{sreoutput}
 
 First, \prog{ssu-prep} reports that it has validated the formatting of
-the sequence file and partitioned it into 5 new files and placed them
-in the newly created \prog{my30} subdirectory. Each of these files has
+the sequence file, partitioned it into 5 new files and placed each file
+into the newly created \prog{my30/} subdirectory. Each of these files has
 6 of the original 30 sequences in it. Additionally,
 \prog{my30.ssu-align.sh}, a shell script that will execute 5 jobs, one
 per sequence file, was created in the current working directory. After
@@ -120,7 +123,7 @@ this, you'll see:
 \end{sreoutput}
 
 These are instructions for how to execute the shell script. Take a
-look at the shell script \prog{my30.ssu-align.sh}:
+look at the shell script \\ \prog{my30.ssu-align.sh}:
 
 \begin{sreoutput}
 #!/bin/bash
@@ -146,11 +149,14 @@ qsub -N ssu-align -o /dev/null -b y -j y -cwd -V " ssu-align --merge 5 my30/seed
 
 This is a bash shell script file\footnote{The \prog{--no-bash} option
   can be used to make a non-bash-specific script, see the
-  \prog{ssu-prep} manual page for more information.}
+  \prog{ssu-prep} manual page for more information.}.
 The \prog{\#}-prefixed lines are
 explanatory comments. The remainder of the file consists of a for loop
 that will submit the first four \prog{ssu-align} jobs to the cluster
-using \prog{qsub}. Note that the \prog{qsub} command line is composed
+using \prog{qsub}. The lines beginning with \prog{qsub} are the actual
+job submission commands. The lines beginning with \prog{echo} cause updates to
+be printed to STDOUT before each job is submitted. 
+Note that the \prog{qsub} command line is composed
 of the prefix string from the \prog{janelia-cluster-presuf.txt} file,
 followed by a \prog{ssu-align} command, followed by the suffix
 string. The end result is that the \prog{ssu-align} command is
@@ -180,8 +186,8 @@ the program allows
 Because your specific compute system is likely different from
 Janelia's, the \prog{my30.ssu-align.sh} script will probably not
 work. To make \prog{ssu-prep} generate shell scripts you can run on
-your system, replace the prefix and suffix strings in
-\prog{janelia-cluster-presuf.txt} with strings specific to your
+your system, create a file like \prog{janelia-cluster-presuf.txt} but
+with prefix and suffix strings specific to your
 system. 
 
 This simple prefix/suffix string method may not work for your
@@ -225,7 +231,7 @@ in the warning above, this will simply run the 5 jobs in succession
 instead of in parallel, but for our purposes here this is okay. To run
 the script, execute the command: 
 
-\prog{sh my30.ssu-align.sh \footnote{If this command fails, you're
+\user{sh my30.ssu-align.sh \footnote{If this command fails, you're
     probably not using the BASH shell. Rerun the \prog{ssu-prep}
     command above with the \prog{--no-bash} option and try again.}}
 
@@ -286,7 +292,7 @@ imagine you are using a quad-core machine. In this case, execute:
 
 (We had to also specify \prog{-f} so the program would overwrite our
 existing \prog{my30} directory.) Much of the output is the same as
-before. However, the \prog{my30.ssu-align.sh} file will be different,
+before. However, the \prog{my30.ssu-align.sh} file will be different;
 it is included below:
 
 \begin{sreoutput}

@@ -1,0 +1,168 @@
+\subsection{Using ssu-build to create a Firmicutes-specific SSU model}
+\label{sec:tutorial-build-firmicutes}
+
+The default archaeal, bacterial and eukaryotic models provided with
+\sft{ssu-align} are meant to be general models that represent the SSU
+sequence diversity in their respective domains. You might want to
+create more more specific models that cover a tighter or broader
+phylogenetic range, for example a particular bacterial phyla of
+interest, or a single model that covers all SSU sequences. The
+\prog{ssu-build} program allows users to create such models. 
+
+\prog{ssu-build} takes as input a multiple sequence alignment, called
+a \emph{seed} alignment, of SSU sequences and creates a CM file that
+includes a model that represents the diversity from the seed
+alignment. This CM file can be used individually to align sequences,
+or combined, through simple file concatenation, with other CM files
+and used to classify and create clade-specific SSU alignments.
+
+In this section, we'll create two bacterial SSU models, a
+\emph{Firmicutes} specific model, and a model that represents all
+other non-\emph{Firmicutes} bacteria. We'll then combine these two
+models with the default archaeal and eukaryotic models and use them to
+classify and align sequences from a sample dataset. 
+
+\subsubsection{Partitioning the default bacterial seed alignment}
+
+For this demonstration, we'll create our \emph{Firmicutes} and
+non-\emph{Firmicutes} bacterial model using the default bacterial seed
+alignment. The first step is to identify which of the sequences in the
+seed are \emph{Firmicutes}. To do this, I ran the FASTA file with the
+unaligned bacterial seed sequences in \prog{seeds/bacteria-0p1.fa}
+through the \sft{RDP-classifier} tool using default parameters
+\cite{Wang07}
+on the \sft{RDP} website:
+\htmladdnormallink{http://rdp.cme.msu.edu/classifier}{http://rdp.cme.msu.edu/classifier}\footnote{Version
+  2.2 of \sft{RDP-classifier} used with \sft{RDP} training set 6.}
+Seven of the 93 sequences are classified as \emph{Firmicutes} with an
+80\% bootstrap threshold. These seven sequences are:
+\begin{sreoutput}
+01088::Bacillus_halodurans.::AB013373
+01106::Bacillus_subtilis::K00637
+01382::Clostridium_perfringens::M69264
+01375::Clostridium_tetani::X74770|g509282
+01295::Lactococcus_lactis_subsp._lactis.::AE006456
+01252::Staphylococcus_aureus::L36472|g567883__bases_8528_to_10082_
+01305::Streptococcus_pyogenes::AE006473
+\end{sreoutput}
+
+We'll use these sequences to build a \emph{Firmicutes} specific model. 
+For demonstration purposes, we'll omit the \emph{Bacillus subtilis}
+sequence for reasons that will become clear shortly.
+%The other six are listed in the file \prog{firm-6.txt} in the
+%\prog{ssu-align-0.1/tutorial/} directory. All seven are listed in the
+%file \prog{firm-7.txt}. 
+The remaining 86 seed sequences are non-\emph{Firmicutes}, we'll build 
+a separate model from these. 
+
+To build the models, we first need to extract the relevant aligned sequences
+from the bacterial seed alignments using \prog{ssu-mask}. We'll use
+the list files \prog{firm-7.list} and \prog{firm-6.list} in
+\prog{ssu-align-0.1/tutorial} to do this. The \prog{firm-7.list} file
+includes the names of the seven \emph{Firmicutes} sequences, one per
+line, and \prog{firm-6.list} includes the same names but without the
+\emph{Bacillus subtilis} sequence. 
+
+To create the six sequence \emph{Firmicutes}-only alignment, go to the
+\prog{tutorial/} directory and execute:
+
+\user{ssu-mask -a --seq-k firm-6.list --key-out firm-6 ../seeds/bacteria-0p1.stk}
+
+The \prog{--seq-k} option tells \prog{ssu-mask} to keep only the
+six sequences listed in \prog{firm-6.list}
+The program will report that the new alignment file
+\prog{bacteria-0p1.firm-6.seqk.stk} has been created. 
+
+Now to create the 86 sequence non-\emph{Firmicutes} alignment do:
+
+\user{ssu-mask -a --seq-r firm-7.list --key-out nonfirm-86 ../seeds/bacteria-0p1.stk}
+
+The \prog{--seq-r} option tells \prog{ssu-mask} to remove only the
+seven sequences listed in \prog{firm-7.list}
+The program will report that the new alignment file
+\prog{bacteria-0p1.nonfirm-86.seqk.stk} has been created. 
+
+%Normally, at this stage an expert user would manually refine these
+%alignments, or expand them by adding more sequences. 
+
+Now, we can use \prog{ssu-build} to build models from the alignments
+we've just created. 
+
+To build the \emph{Firmicutes} model, do:
+
+\user{ssu-build -n firmicutes -o firmicutes.cm bacteria-0p1.firm-6.seqk.stk}
+
+This will create the file \prog{firmicutes.cm} which includes a CM
+named \emph{firmicutes}. 
+
+To build the non-\emph{Firmicutes} model, do:
+
+\user{ssu-build -n bacteria-nonfirm -o bacteria-nonfirm.cm
+  bacteria-0p1.nonfirm-86.seqr.stk}
+
+This will create the file \prog{bacteria-nonfirm.cm} which includes a CM
+named \emph{bacteria-nonfirm}. 
+
+We can use both of these models simultaneously to differentiate
+\emph{Firmicutes} SSU sequences from other bacterial SSU sequences by
+concatenating them together: 
+
+\user{cat firmicutes.cm bacteria-nonfirm.cm > my.cm}
+
+Since we'd also like to be able to differentiate archaeal and
+eukaryotic sequences, we can also append those default models:
+
+\user{cat ../seeds/archaea-0p1.cm ../seeds/eukarya-0p1.cm >> my.cm}
+
+Now the file \prog{my.cm} includes four CMs. Let's run
+\prog{ssu-align} using this model on the \prog{seed-15.fa} dataset
+we've been using throughout this tutorial:
+
+\user{ssu-align -f -m my.cm seed-15.fa myseqs3}
+
+\begin{sreoutput}
+# Stage 1: Determining SSU start/end positions and best-matching models...
+#
+# output file name                  description                                        
+# --------------------------------  ---------------------------------------------------
+  myseqs3.tab                       locations/scores of hits defined by HMM(s)
+  myseqs3.firmicutes.hitlist        list of sequences to align with firmicutes CM
+  myseqs3.firmicutes.fa                   1 sequence  to align with firmicutes CM
+  myseqs3.bacteria-nonfirm.hitlist  list of sequences to align with bacteria-nonfirm CM
+  myseqs3.bacteria-nonfirm.fa             4 sequences to align with bacteria-nonfirm CM
+  myseqs3.archaea.hitlist           list of sequences to align with archaea CM
+  myseqs3.archaea.fa                      5 sequences to align with archaea CM
+  myseqs3.eukarya.hitlist           list of sequences to align with eukarya CM
+  myseqs3.eukarya.fa                      5 sequences to align with eukarya CM
+\end{sreoutput}
+
+Earlier in this tutorial, we used the default models to classify and
+align these sequences and 5 sequences were assigned to each of the
+three domains. In this search, 1 of the 5 bacterial sequences has been
+classifed as a \emph{Firmicutes} sequence. The
+\prog{myseqs3.firmicutes.hitlist} file contains the name of the
+sequence:
+
+\begin{sreoutput}
+# target name                        start    stop     score
+# --------------------------------  ------  ------  --------
+  01106::Bacillus_subtilis::K00637       1    1552   2304.65
+\end{sreoutput}
+
+This is the \emph{Bacillus subtilis} sequence from the bacterial seed
+that we purposefully omitted from the \emph{Firmicutes}
+seed. \prog{ssu-align} has correctly identified it as a
+\emph{Firmicutes} sequence. If we had included this sequence in the
+seed, its correct identification would have easier for the program, so
+it was omitted to make the task more challenging.
+
+In this section we've crudely partitioned the bacterial seed alignment
+into two smaller seed alignments and built a separate model from each,
+without modifying either seed. A better, but more labor intensive,
+strategy would be to manually examine and modify the seeds before constructing a
+CM from them. Given the limited context of the sequences in the seed,
+it may be clear that certain alignment regions should be refined,
+basepairs should be added or removed. Also, more sequences
+can be added to make the model more robust, while six is probably too
+few, more than 100 is typically not necessary.
+
