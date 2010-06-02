@@ -7,6 +7,7 @@ ssu-mask - mask (remove columns from) SSU rRNA multiple sequence alignments
 
 .PP 
 Mask all alignments created by ssu-align in directory <dir>:
+
 .PP
 .B ssu-mask
 .I [options]
@@ -14,6 +15,7 @@ Mask all alignments created by ssu-align in directory <dir>:
 
 .PP 
 Mask single alignment file <aln>:
+
 .PP
 .B ssu-mask -a
 .I [options]
@@ -21,6 +23,7 @@ Mask single alignment file <aln>:
 
 .PP 
 List sequences in alignments in <dir>:
+
 .PP
 .B ssu-mask --list
 .I [options]
@@ -28,6 +31,7 @@ List sequences in alignments in <dir>:
 
 .PP 
 List sequences in alignment file <aln>:
+
 .PP
 .B ssu-mask -a --list
 .I [options]
@@ -35,6 +39,7 @@ List sequences in alignment file <aln>:
 
 .PP 
 Convert Stockholm alignments in <dir> to aligned FASTA:
+
 .PP
 .B ssu-mask --stk2afa
 .I [options]
@@ -42,6 +47,7 @@ Convert Stockholm alignments in <dir> to aligned FASTA:
 
 .PP 
 Convert Stockholm alignment <aln> to aligned FASTA:
+
 .PP
 .B ssu-mask -a --stk2afa
 .I [options]
@@ -49,6 +55,7 @@ Convert Stockholm alignment <aln> to aligned FASTA:
 
 .PP 
 Extract a subset of sequences from an alignment: 
+
 .PP
 .B ssu-mask -a --seq-k 
 .I <listfile>
@@ -57,6 +64,7 @@ Extract a subset of sequences from an alignment:
 
 .PP 
 Remove a subset of sequences from an alignment:
+
 .PP 
 .B ssu-mask -a --seq-r
 .I <listfile>
@@ -86,7 +94,7 @@ By default, the alignment masks are automatically computed by
 based on alignment confidence estimates in the alignment files
 (posterior probabilities) and applied to remove columns from the
 alignments, as described below. Alternatively, pre-computed masks can
-be used to enable comparison across multiple datasets. To use a
+be used to enable comparison across multiple datasets. To use 
 the default @PACKAGE@-@PACKAGE_VERSION@ mask, see the 
 .B -d 
 option.
@@ -145,7 +153,7 @@ with the
 option. And the 0.95 PP threshold can be changed to
 .I <y>
 with the 
-.BI --pt " <x>"
+.BI --pt " <y>"
 option.
 
 .PP 
@@ -202,16 +210,26 @@ section.
 .PP
 .B ssu-mask
 is a PERL script that uses the C programs
-.B ssu-esl-alimask, 
-.B ssu-esl-alistat, 
-.B ssu-esl-reformat, 
+.B esl-alimask, 
+.B esl-alistat, 
+.B esl-reformat, 
 and
-.B ssu-esl-alimanip
+.B esl-alimanip
 C programs 
 from the 
-.B EASEL
+EASEL
 package to mask alignments, list sequences, convert formats, and
-remove sequences, respectively.
+remove sequences, respectively. 
+The versions of these programs installed with 
+SSU-ALIGN
+are prefixed with 'ssu-'
+to distinguish them from any versions of the program distributed 
+with INFERNAL or HMMER on your system. For example, the version of
+.B esl-alimask
+called by 
+.B ssu-mask
+is actually called
+.B ssu-esl-alimask.
 
 .SH OPTIONS
 
@@ -235,7 +253,7 @@ Guide for details. The default masks are named
 .I bacteria-@PACKAGE-VERSION@.mask,
 and
 .I eukarya-@PACKAGE-VERSION@.mask
-and are installed in ENV{$SSUALIGNDIR}.
+and are installed in SSUALIGNDIR (environment variable).
 
 .TP
 .BI -s " <f>"
@@ -248,7 +266,7 @@ must be used, or
 must only contain a single alignment.
 The path and file specified by 
 .I <f>
-must exist either with respect to the current working directory or ENV{$SSUALIGNDIR}.
+must exist either with respect to the current working directory or SSUALIGNDIR.
 
 .TP
 .BI -k " <s>"
@@ -264,7 +282,7 @@ was used with the default CM file,
 .I <modelname> 
 will be 'archaea', 'bacteria' or 'eukarya'.
 The mask files must exist in either the current working directory, the
-directory that includes the alignments being masked, or $SSUALIGNDIR. 
+directory that includes the alignments being masked, or SSUALIGNDIR. 
 
 .TP
 .BI -m " <f>"
@@ -278,7 +296,7 @@ to create the alignment(s) being masked with a command like
 .B foo.fa foo.
 .I <f>
 must be a path that exists with respect to
-either the current working directory or $SSUALIGNDIR. 
+either the current working directory or SSUALIGNDIR. 
 
 .TP
 .BI -t " <f>"
@@ -289,7 +307,7 @@ If not used, the default @PACKAGE@-@PACKAGE-VERSION@ template file
 will be used. 
 .I <f>
 must be a path that exists with respect to
-either the current working directory or $SSUALIGNDIR. 
+either the current working directory or SSUALIGNDIR. 
 
 .TP
 .B -i
@@ -470,9 +488,8 @@ for a master man page with a list of all the individual man pages
 for programs in the SSU-ALIGN package.
 
 .PP
-For complete documentation, see the user guide that came with your
-SSU-ALIGN distribution (Userguide.pdf); or see the SSU-ALIGN web page
-(@SSUALIGN_URL@).
+For complete documentation, see the user's guide that came with your
+SSU-ALIGN distribution (Userguide.pdf).
 
 .SH COPYRIGHT
 
@@ -482,9 +499,7 @@ SSU-ALIGN distribution (Userguide.pdf); or see the SSU-ALIGN web page
 .fi
 
 For additional information on copyright and licensing, see the file
-called COPYRIGHT in your SSU-ALIGN source distribution, or see the SSU-ALIGN
-web page 
-(@SSUALIGN_URL@).
+called COPYRIGHT in your SSU-ALIGN source distribution.
 
 
 .SH AUTHOR

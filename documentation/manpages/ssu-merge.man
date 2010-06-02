@@ -40,6 +40,7 @@ into a single alignment, outputs it as
 .I output-alignment
 and exits.
 
+.PP
 When 
 .B --list
 is not used,
@@ -58,6 +59,7 @@ have successfully finished running. If both (a) and (b) are true,
 merges the output files from all of the jobs together, removing the
 individual job output files once it has successfully finished.
 
+.PP
 Users should rarely need to call
 .B ssu-merge
 directly. This is because it is called internally by the final 
@@ -73,16 +75,19 @@ or one of the jobs failed to finish successfully, it will be necessary
 for the user to directly execute 
 .B ssu-merge.
 
+.PP
 For example, given the original 
 .B ssu-prep 
 command:
 
 .B ssu-prep -x my.fa foo 8 
 
+.PP
 Followed by the execution of the resulting output shell script:
 
 .B sh foo.ssu-align.sh
 
+.PP
 The 8th and final job submitted by this shell script will
 wait for all jobs to finish and automatically merge the results of all
 the jobs by calling
@@ -92,6 +97,7 @@ successfully finishing, the final job will output an error
 message informing the user what jobs have failed and how to rerun
 them.
 
+.PP
 Once they have been rerun, the user will need to manually merge the
 output of all the jobs with the command:
 
@@ -154,7 +160,7 @@ resulting final
 .B ssu-align
 job. 
 
-.SH OPTIONS THAT REQUIRE --list
+.SH OPTIONS FOR LIST MODE
 
 .TP 
 .B -i
@@ -187,9 +193,8 @@ for a master man page with a list of all the individual man pages
 for programs in the SSU-ALIGN package.
 
 .PP
-For complete documentation, see the user guide that came with your
-SSU-ALIGN distribution (Userguide.pdf); or see the SSU-ALIGN web page
-(@SSUALIGN_URL@).
+For complete documentation, see the user's guide that came with your
+SSU-ALIGN distribution (Userguide.pdf).
 
 .SH COPYRIGHT
 
@@ -199,10 +204,7 @@ SSU-ALIGN distribution (Userguide.pdf); or see the SSU-ALIGN web page
 .fi
 
 For additional information on copyright and licensing, see the file
-called COPYRIGHT in your SSU-ALIGN source distribution, or see the SSU-ALIGN
-web page 
-(@SSUALIGN_URL@).
-
+called COPYRIGHT in your SSU-ALIGN source distribution.
 
 .SH AUTHOR
 

@@ -17,7 +17,7 @@ Add a prefix and suffix to ssu-align job commands as defined in <prefix-suffix-f
 
 .PP
 Run all jobs in parallel on one machine with <n> cores:
-.TP
+.PP
 .B ssu-prep -x
 .I [options]
 .I seqfile
@@ -57,7 +57,7 @@ is that it allows the
 .I n
 smaller jobs to be run simultaneously, in parallel, either on a
 multi-core machine or on a compute cluster, so the final result
-is obtained up to 
+is obtained up to (nearly)
 .I n 
 times faster.
 The merging is performed by an internal call to the 
@@ -66,6 +66,7 @@ script. See the
 .B ssu-merge 
 manual page for more information. 
 
+.PP
 All of the 
 .B ssu-align 
 options (see the  
@@ -83,7 +84,7 @@ The output shell script will be named
 and can be executed with the command
 .B sh <output-dir>.ssu-align.sh.
 
-
+.PP
 The smaller sequence files created by 
 .B ssu-prep
 will be named as 
@@ -102,6 +103,7 @@ smaller sequence files in numerical order, the original
 .B seqfile
 would be reproduced). 
 
+.PP
 .B ssu-prep
 will create an output directory called
 .I output-dir
@@ -133,6 +135,7 @@ run separately. Currently, the
 package does not support more respectable paralellization strategies
 such as MPI, nor does it use threads.
 
+.PP
 In order to allow jobs to run in parallel,
 .B ssu-prep
 allows the user to set a fixed prefix and suffix string to be
@@ -141,6 +144,7 @@ added before and after each
 job command. The three different usages listed in the SYNOPSIS above
 control how this prefix and suffix are defined.
 
+.PP
 In the first case, if neither the
 .B -x
 nor the
@@ -149,6 +153,7 @@ options are used, the prefix and suffix are defined in the
 .I <prefix-suffix-file>
 as discussed in FORMAT OF THE PREFIX-SUFFIX-FILE below.
 
+.PP
 Secondly, if 
 .B -x 
 is used the job commands will be run all at once on a single multi-core
@@ -156,6 +161,7 @@ machine, and so no prefix or suffix is necessary. (Actually, in this
 case the suffix used will be ' > /dev/null & ' for all but the final
 job, which makes the jobs silently and simultaneously run in the background.)
 
+.PP
 Finally, if the user specifies 
 .B -y,
 no prefix or suffix will be added to the 
@@ -172,7 +178,6 @@ For example, the
 commands might need to be preceded by a 'ssh <host>;' command, but
 where <host> is different for each command.
 
-
 .SH FORMAT OF THE PREFIX-SUFFIX-FILE
 
 The 
@@ -183,25 +188,48 @@ The first line will become a prefix for all
 commands and the second line will become a suffix.
 For example, if the first line is:
 
-.B qsub -N ssu-align -o /dev/null -b y -j y -cwd -V "
+.PP
+.B qsub -N ssu-align -o /dev/null -b y -j y -cwd -V '
 
+.PP
 And the second line is:
 
-.B "
+.PP
+.B '
 
+.PP
 Then a resulting ssu-align job command in the output shell script
 might be:
 
-.B qsub -N ssu-align -o /dev/null -b y -j y -cwd -V " ssu-align foo/foo.1/my.fa.1 foo/foo.1 "
+.PP
+.B qsub -N ssu-align -o /dev/null -b y -j y -cwd -V ' ssu-align foo/foo.1/my.fa.1 foo/foo.1 '
 
+.PP
 In contrast, if the 
 .B -y
 option is used, specifying no prefix or suffix, the same job command would
 appear as:
 
+.PP
 .B ssu-align foo/foo.1/my.fa.1 foo/foo.1
 
+.PP
 in the output shell script.
+
+.SH SPECIFYING OPTIONS FOR THE PARALLEL ALIGNMENT JOBS
+
+All 
+.B ssu-align
+options can be set on the 
+.B ssu-prep
+command line, and they will be added to the 
+.B ssu-align
+command-line of the resulting parallel jobs in the output shell
+script. See the
+.B ssu-align
+manual page for a list of available options. Additionally, 
+.B ssu-prep
+specific options are listed below.
 
 .SH OPTIONS
 
@@ -283,8 +311,6 @@ a shell script called
 will be created that can be used to remove all the smaller per-job
 output files at a later time.
 
-.SH SEE ssu-align's MAN PAGE FOR ADDITIONAL OPTIONS TO PASS TO ssu-align jobs
-
 .SH SEE ALSO 
 
 See 
@@ -292,10 +318,18 @@ See
 for a master man page with a list of all the individual man pages
 for programs in the SSU-ALIGN package.
 
+.B ssu-align(1)
+for the list of available 
+.B ssu-align
+options, which when specified to
+.B ssu-prep
+and will be propogated to the parallel 
+.B ssu-align
+jobs.
+
 .PP
-For complete documentation, see the user guide that came with your
-SSU-ALIGN distribution (Userguide.pdf); or see the SSU-ALIGN web page
-(@SSUALIGN_URL@).
+For complete documentation, see the user's guide that came with your
+SSU-ALIGN distribution (Userguide.pdf).
 
 .SH COPYRIGHT
 
@@ -305,10 +339,7 @@ SSU-ALIGN distribution (Userguide.pdf); or see the SSU-ALIGN web page
 .fi
 
 For additional information on copyright and licensing, see the file
-called COPYRIGHT in your SSU-ALIGN source distribution, or see the SSU-ALIGN
-web page 
-(@SSUALIGN_URL@).
-
+called COPYRIGHT in your SSU-ALIGN source distribution.
 
 .SH AUTHOR
 

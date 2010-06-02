@@ -1,7 +1,7 @@
 .TH "SSU-ALIGN" 1 "@RELEASEDATE@" "@PACKAGE@ @RELEASE@" "@PACKAGE@ Manual"
 
 .SH NAME
-SSU-ALIGN package: alignment, masking and visualization of SSU rRNA sequences
+SSU-ALIGN(package) - alignment, masking and visualization of SSU rRNA sequences
 
 .SH SYNOPSIS
 
@@ -31,47 +31,20 @@ visualizing small subunit ribosomal RNA (SSU rRNA) multiple sequence
 alignments. It uses profile probabilistic models called "profile
 hidden Markov models" (profile HMMs) and "covariance models" (CMs)
 that represent archaeal 16S SSU rRNA, bacterial 16S SSU rRNA and
-eukaryotic 18S SSU rRNA. Each of these profile models was built 
-from a reference alignment derived from Robin Gutell's
-Comparative RNA Website database (CRW) (Cannone et al., BMC
-Bionformatics. 2002; 3:2.) as described in the user guide. 
-The alignments created by SSU-ALIGN explicitly take into account the
-conserved secondary structure of SSU as annotated by CRW. Alignments
-are created at a rate of roughly one sequence per second. 
+eukaryotic 18S SSU rRNA. Each of these profile models was built from a
+reference alignment derived from Robin Gutell's Comparative RNA
+Website database (CRW) (Cannone et al., BMC Bionformatics. 2002; 3:2.)
+as described in the user's guide.  The alignments created by SSU-ALIGN
+explicitly take into account the conserved secondary structure of SSU
+as annotated by CRW. SSU-ALIGN output alignments are created at a rate
+of roughly one sequence per second for full length SSU sequences.
 
 .PP
 The main program,
 .B ssu-align
 takes a FASTA-formatted sequence file containing SSU sequences,
 classifies them by domain of life (i.e. archaea, bacteria, or eukarya)
-and creates domain-specific alignments. 
-
-.PP
-The
-.B ssu-prep
-program can be used for splitting up large sequence files into many
-smaller ones to be aligned separately in parallel on a cluster or
-multi-core machine. It outputs a shell
-script that will execute the set of parallel 
-.B ssu-align 
-jobs, and then automatically merge their results. The final alignments will be identical
-to what would have been created by a single 
-.B ssu-align
-job that processed the full original sequence file. 
-
-.PP
-.B ssu-merge
-merges the results of a set of parallel 
-.B ssu-align 
-jobs created by 
-.B ssu-prep.
-It is automatically called by the final 
-.B ssu-align 
-job of the set, and so should only be necessary to be called manually
-on the command-line in the event that one or more of the jobs fail. If
-this happens, only the failed jobs need be rerun, and then the full
-set can be merged by executing
-.B ssu-merge. 
+and creates structurally annotated domain-specific alignments. 
 
 .PP
 .B ssu-mask 
@@ -97,6 +70,33 @@ format from
 generated alignments. (PDF is possible only if a postscript to pdf
 converter like 'ps2pdf' is in your PATH). Diagrams of individual
 aligned sequences or alignment summary statistics can be generated. 
+
+.PP
+The
+.B ssu-prep
+program can be used for splitting up large sequence files into many
+smaller ones to be aligned separately in parallel on a cluster or
+multi-core machine. It outputs a shell
+script that will execute the set of parallel 
+.B ssu-align 
+jobs and then automatically merge their results. The final alignments will be identical
+to what would have been created by a single 
+.B ssu-align
+job that processed the full original sequence file. 
+
+.PP
+.B ssu-merge
+merges the results of a set of parallel 
+.B ssu-align 
+jobs created by 
+.B ssu-prep.
+It is automatically called by the final 
+.B ssu-align 
+job of the set, and so should only be necessary to be called manually
+on the command-line in the event that one or more of the jobs fail. If
+this happens, only the failed jobs need be rerun, and then the full
+set can be merged by executing
+.B ssu-merge. 
 
 .PP
 Finally, 

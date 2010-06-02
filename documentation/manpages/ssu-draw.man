@@ -23,7 +23,7 @@ Draw structure diagrams for a single alignment file <aln>:
 
 .SH DESCRIPTION
 
-.pp
+.PP
 .B ssu-draw
 reads alignments created by 
 .B ssu-align, 
@@ -37,6 +37,7 @@ sequences in the alignment with the
 .B --indi
 option.
 
+.PP
 Alignment masks,
 which define a subset of consensus positions to exclude from an alignment
 for purposes such as phylogenetic inference, can be displayed on the
@@ -50,6 +51,7 @@ will automatically display masks created by
 .B ssu-mask
 if they exist in the same directory as the alignments.
 
+.PP
 An important caveat of 
 .B ssu-draw
 is that only consensus positions of the SSU models
@@ -66,7 +68,7 @@ option to
 ) unless the motivated user creates their own template postscript
 file for the models being used. For more information on this, see the 
 .B ssu-esl-ssdraw
-manual page.
+manual page included in ssu-align-0.1/infernal/easel/miniapps/.
 
 .SH OUTPUT
 The secondary structure diagrams created by
@@ -81,6 +83,7 @@ and
 .B --ps-only 
 options, described below, can be used to modify this default behavior.
 
+.PP
 By default, a single pdf or postscript that contains nine pages will
 be drawn for each alignment. The nine pages are alignment summary
 diagrams and display the alignment consensus
@@ -130,7 +133,8 @@ must be used, or
 must only contain a single alignment.
 The path and file specified by 
 .I <f>
-must exist either with respect to the current working directory or ENV{$SSUALIGNDIR}.
+must exist either with respect to the current working directory or
+SSUALIGNDIR (environment variable)..
 
 .TP
 .BI -k " <s>"
@@ -147,7 +151,7 @@ was used with the default CM file,
 .I <modelname> 
 will be 'archaea', 'bacteria' or 'eukarya'.
 The mask files must exist in either the current working directory, the
-directory that includes the alignments being masked, or $SSUALIGNDIR. 
+directory that includes the alignments being masked, or SSUALIGNDIR. 
 
 .TP
 .BI -m " <f>"
@@ -161,7 +165,7 @@ to create the alignment(s) being masked with a command like
 .B foo.fa foo.
 .I <f>
 must be a path that exists with respect to
-either the current working directory or $SSUALIGNDIR. 
+either the current working directory or SSUALIGNDIR. 
 
 .TP
 .BI -t " <f>"
@@ -172,7 +176,7 @@ If not used, the default @PACKAGE@-@PACKAGE-VERSION@ template file
 will be used. 
 .I <f>
 must be a path that exists with respect to
-either the current working directory or $SSUALIGNDIR. 
+either the current working directory or SSUALIGNDIR. 
 
 .TP
 .B -i
@@ -371,9 +375,8 @@ for a master man page with a list of all the individual man pages
 for programs in the SSU-ALIGN package.
 
 .PP
-For complete documentation, see the user guide that came with your
-SSU-ALIGN distribution (Userguide.pdf); or see the SSU-ALIGN web page
-(@SSUALIGN_URL@).
+For complete documentation, see the user's guide that came with your
+SSU-ALIGN distribution (Userguide.pdf).
 
 .SH COPYRIGHT
 
@@ -383,10 +386,7 @@ SSU-ALIGN distribution (Userguide.pdf); or see the SSU-ALIGN web page
 .fi
 
 For additional information on copyright and licensing, see the file
-called COPYRIGHT in your SSU-ALIGN source distribution, or see the SSU-ALIGN
-web page 
-(@SSUALIGN_URL@).
-
+called COPYRIGHT in your SSU-ALIGN source distribution.
 
 .SH AUTHOR
 

@@ -25,12 +25,13 @@ The
 .I seqfile 
 must be in FASTA format. The sequences within the file should each contain 0 or 1
 SSU or partial SSU sequences. Only the top-scoring SSU sequence
-within each sequence will be aligned, so if
+within each sequence will be aligned, so the 
 .I seqfile 
-contains long sequences like a bacterial genome or eukaryotic
-chromosomes, only one SSU sequence per target sequence will be identified
-and aligned. The SSU sequence can be on either strand of a sequence (be
-part of either the actual sequence in the file, or its reverse complement).
+should not contain long sequences like a bacterial genome or
+eukaryotic chromosomes, because only one SSU sequence per target
+sequence will be identified and aligned. The SSU sequence can be on
+either strand of a sequence (be part of either the actual sequence in
+the file, or its reverse complement).
 
 .PP
 CMs are probabilistic profile models of RNA consensus sequence and
@@ -48,7 +49,7 @@ The default CM file contains three CMs: an archaeal 16S SSU model, a
 bacterial 16S SSU model and a eukaryotic 18S SSU model. These models were
 built from structural alignments from Robin Gutell's Comparative RNA Website
 database (CRW) (Cannone et al., BMC Bionformatics. 2002; 3:2.) as
-described in the SSU-ALIGN user guide. Other CM files can be created using 
+described in the SSU-ALIGN user's guide. Other CM files can be created using 
 .B ssu-build.
 
 .PP
@@ -61,7 +62,7 @@ sequence. This is achieved by searching each target with
 HMMs, one for each of the 
 .I n
 models in the CM file
-to find the highest scoring SSU hit,
+to find the highest scoring SSU hit:
 the subsequence defined by a begin and end position that has the
 highest bit score to each HMM.  In this stage, only primary sequence
 conservation contributes to the score. The model that finds the
@@ -71,7 +72,7 @@ greater than a minimum bit score (by default 50 bits, but changeable to
 .I <x> 
 with 
 .BI -b " <x>"
-) and a length greater than a minimum length (by default 1 residue, but changeable to 
+) and a length greater than a minimum length (by default 1 nucleotide, but changeable to 
 .I <n>
 with 
 .BI -l " <n>"
@@ -88,15 +89,22 @@ the SSU model are taken into account during alignment.
 
 .PP 
 .B ssu-align
-is a PERL script that executes C programs from the 
-INFERNAL package (bundled within the SSU-ALIGN package), such as 
+is a PERL script that executes C programs from the  INFERNAL 
+package (bundled within the SSU-ALIGN package), such as 
 .B cmalign
 and 
 .B cmsearch,
 as well as C executable 'miniapps' from the EASEL sequence analysis library
 package, such as 
 .B esl-sfetch.
-
+All necessary INFERNAL and EASEL programs are installed with the
+SSU-ALIGN package and are prefixed with 'ssu-' to differentiate them
+from programs from INFERNAL installations on your machine. For
+example, the executable program
+.B cmsearch
+is actually 
+.B ssu-cmsearch.
+	
 .PP
 .B ssu-align
 creates a directory called
@@ -171,11 +179,9 @@ threshold.
 .TP 
 .B -i
 Output alignments as interleaved Stockholm format in which each
-sequence is split up across several lines, as opposed to so-called
+sequence is split up across several lines, instead of the default
 Pfam Stockholm format in which each sequence occurs on exactly one
-line. By default, 
-.B ssu-align
-output alignments are Pfam Stockholm format. Importantly, if 
+line. Importantly, if 
 .B -i 
 is set for 
 .B ssu-align,
@@ -335,9 +341,8 @@ for a master man page with a list of all the individual man pages
 for programs in the SSU-ALIGN package.
 
 .PP
-For complete documentation, see the user guide that came with your
-SSU-ALIGN distribution (Userguide.pdf); or see the SSU-ALIGN web page
-(@SSUALIGN_URL@).
+For complete documentation, see the user's guide that came with your
+SSU-ALIGN distribution (Userguide.pdf).
 
 .SH COPYRIGHT
 
@@ -347,10 +352,7 @@ SSU-ALIGN distribution (Userguide.pdf); or see the SSU-ALIGN web page
 .fi
 
 For additional information on copyright and licensing, see the file
-called COPYRIGHT in your SSU-ALIGN source distribution, or see the SSU-ALIGN
-web page 
-(@SSUALIGN_URL@).
-
+called COPYRIGHT in your SSU-ALIGN source distribution.
 
 .SH AUTHOR
 
