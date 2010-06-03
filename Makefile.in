@@ -215,13 +215,14 @@ dist:
 	(cd ..;	tar cvf ${BASENAME}-${RELEASE}.tar ${BASENAME}-${RELEASE})
 	(cd ..; $(COMPRESS) ${BASENAME}-$(RELEASE).tar)
 
-# "make check" runs the SSU-ALIGN test scripts using a simple perl script,
-# and a special set of Infernal tests
-# The SSU-ALIGN tests take a while (about 10 minutes). 
-# Infernal tests are much faster.
+# "make check" runs Easel tests and a special set of Infernal tests using sqc,
+# and then a simple perl script that runs the SSU-ALIGN test scripts.
+# The SSU-ALIGN tests take a while (about 7 minutes). 
+# Easel and Infernal tests are much faster.
 #
 check:
-	(cd infernal/testsuite/; ../easel/devkit/sqc 4 ssu-exercises.sqc .. ../src)
+	(cd infernal/easel; make check)
+	(cd infernal/testsuite; ../easel/devkit/sqc 4 ssu-exercises.sqc .. ../src)
 	(cd testsuite; perl testsuite.pl;)
 
 # install: installs the programs in BINDIR, the CM, seeds, masks and postscript templates in DATADIR,
