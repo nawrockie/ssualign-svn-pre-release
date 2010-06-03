@@ -26,7 +26,7 @@ printf("========================================================================
 printf("Running SSU-ALIGN test suite ...\n", ($i+1), $cmdA[$i]);
 for($i = 0; $i < $ntest; $i++) { 
     printf("===============================================================================\n");
-    printf("Running test script %d with command\n\t%s\n\n", ($i+1), $cmdA[$i]);
+    printf("Running test script %d with command:\n\t%s\n\n", ($i+1), $cmdA[$i]);
     system("$cmdA[$i]");
     if($? == 0) { printf("\n\nSuccess!: all tests for %s passed.\n\n", $nameA[$i]);          }
     else        { printf("\n\nFailure!: at least one test for %s failed.\n\n", $nameA[$i]);  $nfailed++; }

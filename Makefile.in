@@ -228,54 +228,51 @@ check:
 install: actually-install ssu-align setpaths
 
 actually-install:
+# copy the SSU-ALIGN scripts
 	mkdir -p ${BINDIR}
 	for file in $(PROGS); do\
 		cp src/$$file $(BINDIR)/;\
 	done
+# copy the Infernal binaries
 	for file in $(INFPROGS); do\
 		cp infernal/src/$$file $(BINDIR)/;\
 	done
+# copy the Easel miniapp binaries
 	for file in $(ESLPROGS); do\
 		cp infernal/easel/miniapps/$$file $(BINDIR)/;\
 	done
+# copy the seed alignments, and CMs
 	mkdir -p ${datadir}/${BASENAME}-${RELEASE}
 	for file in $(SEEDLIBFILES); do\
 		cp seeds/$$file ${datadir}/${BASENAME}-${RELEASE}/;\
 	done
+# copy the postscript templates
 	for file in $(PSLIBFILES); do\
 		cp seeds/ss-diagrams/$$file ${datadir}/${BASENAME}-${RELEASE}/;\
 	done
+# copy the default masks
 	for file in $(MASKLIBFILES); do\
 		cp seeds/masks/$$file ${datadir}/${BASENAME}-${RELEASE}/;\
 	done
+# copy the PERL module
 	for file in $(PERLMODULEFILES); do\
 		cp src/$$file ${datadir}/${BASENAME}-${RELEASE}/;\
 	done
+# copy MAN pages
 	mkdir -p ${MANDIR}/man${MANSUFFIX}
 	for file in ssu $(PROGS); do\
 	   $(INSTMAN) documentation/manpages/$$file.man $(MANDIR)/man$(MANSUFFIX)/$$file.$(MANSUFFIX);\
 	done
 
-# copy MAN pages
 
 ssu-align:
-#	$(PERLDIR)/$(PERLBIN) checkversion.pl
-#	sed 's#/tmp#$(TEMPDIR)#g' tRNAscan-SE.src | \
-#	sed 's#bindir = ""#bindir =\"$(BINDIR)/"#g' | \
-#	sed 's#/usr/local/lib/tRNAscanSE#$(LIBDIR)#g' | \
-#	sed 's#version = ""#version = $(SE_RELEASE)#' | \
-#	sed 's#release_date = ""#release_date = $(RELEASEDATE)#' | \
-#	sed 's#/usr/bin/perl#$(PERLDIR)/$(PERLBIN)#' > tRNAscan-SE
-#	sed 's#/usr/bin/perl#$(PERLDIR)/$(PERLBIN)#' instman.pl > instman 
-#	sed 's#/usr/bin/perl#$(PERLDIR)/$(PERLBIN)#' sstofa.pl > sstofa 
-#	@chmod +x tRNAscan-SE
-#	@chmod +x instman
 	@echo ""
+	@echo ""
+	@echo "==============="
 	@echo "SSU-ALIGN built"
-	@echo ""
+	@echo "==============="
 
 setpaths:
-#	@echo 'setenv PATH "$$PATH"":""$(BINDIR)"' > setup.ssu-align.csh
 	@echo 'setenv PATH "$$PATH:$(BINDIR)"' > setup.ssu-align.csh
 	@echo 'export PATH="$$PATH:$(BINDIR)"' > setup.ssu-align.bash
 	@echo 'setenv MANPATH "$$MANPATH:$(MANDIR)"' >> setup.ssu-align.csh
@@ -289,17 +286,21 @@ setpaths:
 	@echo "This will update your environment for this session."
 	@echo ""
 	@echo "To update your environment upon every login, you should"
-	@echo "add the line:"
+	@echo "add the three lines:"
 	@echo ""
-	@echo "source $(PWD)/setup.ssu-align.bash"
+	@echo 'export PATH="$$PATH:$(BINDIR)"'
+	@echo 'export MANPATH="$$MANPATH:$(MANDIR)"'
+	@echo 'export SSUALIGNDIR="$(datadir)/$(BASENAME)-$(RELEASE)"'
 	@echo ""
-	@echo "to your \".bashrc\" file."
+	@echo "to the \".bashrc\" file in your home directory."
 	@echo ""
 	@echo "or"
 	@echo ""
-	@echo "source $(PWD)/setup.ssu-align.csh"
+	@echo 'setenv PATH "$$PATH:$(BINDIR)"'
+	@echo 'setenv MANPATH "$$MANPATH:$(MANDIR)"'
+	@echo 'setenv SSUALIGNDIR "$(datadir)/$(BASENAME)-$(RELEASE)"'
 	@echo ""
-	@echo "to your \".cshrc\" file."
+	@echo "to the \".cshrc\" file in your home directory."
 	@echo ""
 	@echo "To determine which shell you use, type:"
 	@echo ""
@@ -317,12 +318,17 @@ setpaths:
 #              and binaries.
 clean:
 	-rm -f *.o *~ Makefile.bak core TAGS gmon.out
-	(cd infernal/testsuite;               make clean)
 	(if cd documentation/userguide; then make clean; fi)
-	(cd src;                     make clean)
 	(cd infernal/src;            make clean)
-	(cd easel;                   make clean)
-	(cd infernal/hmmer;          make clean)
+	if test -e infernal/src/imp_sse/Makefile;     then (cd infernal/src/impl_sse;    make clean); fi	
+	if test -e infernal/rigfilters/Makefile;      then (cd infernal/rigfilters;      make clean); fi	
+	(cd infernal/easel;          make clean)
+	(cd infernal/hmmer/src/;     make clean)
+	if test -e infernal/hmmer/easel/Makefile;     then (cd infernal/hmmer/easel/;    make clean); fi	
+	if test -e infernal/hmmer/profmark/Makefile;  then (cd infernal/hmmer/profmark;  make clean); fi
+	if test -e infernal/hmmer/testsuite/Makefile; then (cd infernal/hmmer/testsuite; make clean); fi
+	if test -e infernal/hmmer/documentation/userguide/Makefile; then (cd infernal/hmmer/documentation/userguide; make clean); fi
+
 
 # "make distclean" leaves a pristine source distribution.
 #
@@ -330,11 +336,15 @@ distclean:
 	-rm -f  config.cache config.log config.status
 	-rm -rf autom4te.cache
 	-rm -f *.o *~ Makefile.bak core TAGS gmon.out
-#	(cd testsuite;               make distclean)
 	(if cd documentation/userguide; then make distclean; fi)
-	(cd src;                     make distclean)
-	(cd easel;                   make distclean)
-	(cd infernal/hmmer;          make distclean)
 	(cd infernal/src;            make distclean)
+	if test -e infernal/src/imp_sse/Makefile;     then (cd infernal/src/impl_sse;    make distclean); fi	
+	if test -e infernal/rigfilters/Makefile;      then (cd infernal/rigfilters;      make distclean); fi	
+	(cd infernal/easel;          make distclean)
+	(cd infernal/hmmer/src/;     make distclean)
+	if test -e infernal/hmmer/easel/Makefile;     then (cd infernal/hmmer/easel/;    make distclean); fi	
+	if test -e infernal/hmmer/profmark/Makefile;  then (cd infernal/hmmer/profmark;  make distclean); fi
+	if test -e infernal/hmmer/testsuite/Makefile; then (cd infernal/hmmer/testsuite; make distclean); fi
+	if test -e infernal/hmmer/documentation/userguide/Makefile; then (cd infernal/hmmer/documentation/userguide; make distclean); fi
 	-rm Makefile
 

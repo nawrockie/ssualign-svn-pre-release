@@ -673,7 +673,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     $output = `cat $dir.bacteria.ssu-draw.sum`;
     if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.dall.p\w+\s+1\s*/) { die "ERROR, problem with drawing"; }
     $output = `cat $dir.bacteria.dall.drawtab`;
-    if($output !~ /deleteall\s+99\s+0.6\d+\s+4\s*deleteall/)     { die "ERROR, problem with drawing"; }
+    if($output !~ /deleteall\s+99\s+0.6\d+\s+6\s*deleteall/)     { die "ERROR, problem with drawing"; }
     remove_files              (".", "bacteria.dall");
     remove_files              (".", "bacteria.ssu-draw");
 }

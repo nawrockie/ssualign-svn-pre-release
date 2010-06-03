@@ -1105,6 +1105,8 @@ sub wait_then_merge {
     my ($nfailed, $nunfinished, $i, $dir);
     my $merge_log = $merge_out_dir . "/" . $merge_root . ".ssu-merge.log";
     my $out_dir_root = $out_dir;
+    my $seconds_to_wait = $total_seconds;
+    if($seconds_to_wait < 20) { $seconds_to_wait = 20; }
     if($out_dir_root !~ s/\.$merge_jobnum$//) { 
 	PrintErrorAndExit("ERROR, second pass, this job's output dir does not end in \"\.$merge_jobnum\", but it should...", $sum_file, $log_file, 1)
     }	
@@ -1116,10 +1118,10 @@ sub wait_then_merge {
     PrintStringToFile($log_file, 0, ("# Alignments successfully created.\n#\n# Checking/waiting for other jobs to finish before merging...\n#\n"));
 
     wait_for_all_parallel_jobs_to_finish($out_dir_root, $merge_jobnum, $opt_HR->{"--merge"}, 
-					 $total_seconds, # max number of seconds we'll wait for other jobs to finish before exiting,
-               					         # this is the number of seconds it took to do the current ssu-align job,
-					                 # which means we assume all other jobs will not take more than twice as long
-					                 # as this one. 
+					 $seconds_to_wait, # max number of seconds we'll wait for other jobs to finish before exiting,
+               					           # this is the number of seconds it took to do the current ssu-align job,
+					                   # or 20 seconds, whichever is higher, which means we assume all other 
+					                   # jobs will not take more than twice as long as this one. 
 					 \$all_finished, \@finished_A, \$all_succeeded, \@succeeded_A, $sum_file, $log_file);
     if(! $all_succeeded) { 
 	# Not all jobs succeeded, print info about which ones failed/never finished, then exit.
