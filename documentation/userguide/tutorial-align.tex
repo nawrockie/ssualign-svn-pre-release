@@ -3,7 +3,7 @@
 We'll use a small dataset to demonstrate how the package works.
 The file \prog{seed-15.fa} contains five archaeal sequences, five
 bacterial sequences and five eukaryotic sequences from the
-\sft{ssu-align} v0.1 seed alignments. These seed alignments
+SSU-ALIGN v0.1 seed alignments. These seed alignments
 were derived from alignments from the \db{CRW} database
 \cite{CannoneGutell02} as described in section~\ref{sec:models}.
 
@@ -71,7 +71,7 @@ in the newly created \prog{myseqs/} subdirectory of the current directory.
 The content and format of these files are described
 in detail in section~\ref{sec:output}, but I'll briefly describe them 
 here. The first file \prog{myseqs.tab} is output from
-\sft{infernal}'s \prog{cmsearch} program. The other six files are
+INFERNAL's \prog{cmsearch} program. The other six files are
 model-specific: two files for each model that was the best-matching
 model for at least one sequence in the input target sequence file
 \prog{seed-15.fa}. The \prog{.hitlist} suffixed files contain a list
@@ -113,7 +113,7 @@ seconds. When it finishes you'll see:
 \end{sreoutput}
 
 The newly created alignments are the \prog{.stk} suffixed files. These
-were created by \sft{infernal}'s \prog{cmalign} program. The
+were created by INFERNAL's \prog{cmalign} program. The
 \prog{.cmalign} and \prog{.ifile} suffixed files were also output by
 \prog{cmalign}. As in stage 1, these files were created in the
 \prog{myseqs/} subdirectory of the current directory. We'll go over
@@ -127,14 +127,14 @@ The alignment files are the most important important type of output
 file. Take a look at the archaeal alignment we just created in
 \prog{myseqs/myseqs.archaea.stk}. The alignment includes consensus
 secondary structure annotation and is in \emph{Stockholm format}.
-Stockholm format, the native alignment format used by the \sft{hmmer}
-and \sft{infernal} packages and by the \db{pfam} and \db{rfam}
+Stockholm format, the native alignment format used by the HMMER
+and INFERNAL packages and by the \db{pfam} and \db{rfam}
 databases. The key features of the alignment file are:
 
 \begin{itemize}
 
 %\item The alignment is in an interleaved format, like other
-%  common alignment file formats such as \sft{clustalw}.
+%  common alignment file formats such as CLUSTALW.
 %  Lines consist of a name, followed by an aligned sequence;
 %  the alignment is split into blocks separated by blank lines.
 

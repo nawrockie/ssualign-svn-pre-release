@@ -2,7 +2,7 @@
 \label{sec:tutorial-build-firmicutes}
 
 The default archaeal, bacterial and eukaryotic models provided with
-\sft{ssu-align} are meant to be general models that represent the SSU
+SSU-ALIGN are meant to be general models that represent the SSU
 sequence diversity in their respective domains. You might want to
 create more specific models that cover a tighter or broader
 phylogenetic range, for example a particular bacterial phyla of
@@ -24,7 +24,7 @@ sequences to models that are outside the range of diversity in the
 seed will also lead to errors. However, in this section, for
 demonstration purposes, we'll build quick and dirty models from two
 partitions of the default bacterial seed alignment included with
-\sft{ssu-align}. 
+SSU-ALIGN. 
 
 We'll create two bacterial SSU models, a
 \emph{Firmicutes} specific model, and a model that represents all
@@ -38,10 +38,10 @@ used previously in this tutorial.
 The first step is to identify which of the sequences in the default
 bacteria seed are \emph{Firmicutes}. To do this, I ran the FASTA file
 with the unaligned bacterial seed sequences in
-\prog{seeds/bacteria-0p1.fa} through the \sft{RDP-classifier} tool
-using default parameters \cite{Wang07} on the \sft{RDP} website: \\
+\prog{seeds/bacteria-0p1.fa} through the RDP-CLASSIFIER tool
+using default parameters \cite{Wang07} on the RDP website: \\
 \htmladdnormallink{http://rdp.cme.msu.edu/classifier}{http://rdp.cme.msu.edu/classifier}\footnote{Version
-  2.2 of \sft{RDP-classifier} was used with \sft{RDP} training set 6.}
+  2.2 of RDP-CLASSIFIER was used with RDP training set 6.}
 Seven of the 93 sequences are classified as \emph{Firmicutes} with an
 80\% bootstrap threshold. These seven sequences are:
 \begin{sreoutput}

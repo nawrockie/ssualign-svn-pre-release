@@ -2,18 +2,18 @@
 \label{sec:background}
 
 %This section provides some background information on how
-%\sft{ssu-align} aligns SSU sequences and how it identifies and removes
+%SSU-ALIGN aligns SSU sequences and how it identifies and removes
 %columns from (masks) those alignments that are most likely to contain
 %errors in preparation for phylogenetic analysis.  
 
 \subsection{Profile versus nearest neighbor alignment strategies}
 
 There are several existing software packages dedicated to
-SSU alignment, including, but not limited to, \software{NAST}
-\cite{DeSantis06} (used by the \software{greengenes} database
-\cite{DeSantis06a}), \software{PyNast} \cite{Caporaso10},
-\software{SINA} (used by the \software{silva} database
-\cite{Pruesse07}), and \software{mothur} \cite{Schloss09}.
+SSU alignment, including, but not limited to, NAST
+\cite{DeSantis06} (used by the GREENGENES database
+\cite{DeSantis06a}), PYNAST \cite{Caporaso10},
+SINA (used by the SILVA database
+\cite{Pruesse07}), and MOTHUR \cite{Schloss09}.
 Most of these methods use a \emph{nearest-neighbor}
 (NN) based alignment strategy: given a new target sequence to align,
 each sequence in a reference alignment is evaluated to find one or
@@ -22,14 +22,14 @@ target. An alignment of the target sequence to its template(s) is then
 computed, and this alignment is used to place the target within the
 context of the full reference alignment (figure~\ref{fig:nnprof}).
 
-In contrast, \software{ssu-align} uses a profile-based alignment
+In contrast, SSU-ALIGN uses a profile-based alignment
 strategy: each target sequence is aligned independently to a
 statistical model called a profile
-(figure~\ref{fig:nnprof}). The profiles \software{ssu-align} uses for
+(figure~\ref{fig:nnprof}). The profiles SSU-ALIGN uses for
 alignment are called covariance models (CMs)
 %, which model both the
 %conserved sequence and secondary structure of SSU
-\footnote{\textsc{ssu-align} actually uses two types of profiles,
+\footnote{SSU-ALIGN actually uses two types of profiles,
   CMs and profile HMMs, which model only conserved primary
   sequence. Profile HMMs are used to determine which domain each
   sequence belongs to, and then the corresponding domain-specific CM
@@ -37,7 +37,7 @@ alignment are called covariance models (CMs)
   figure~\ref{fig:schematic}.}.
 A comprehensive explanation of CMs is outside the scope of this
 guide. Instead, a brief discussion of some of their relevant features
-for using \textsc{ssu-align} and understanding its output is included
+for using SSU-ALIGN and understanding its output is included
 below. For more information on CMs see
 \cite{Eddy94,Durbin98,Eddy02b,NawrockiEddy07,Nawrocki09,Nawrocki09b,KolbeEddy09}.
 
@@ -68,12 +68,12 @@ Figure~\ref{fig:toyex} depicts the building of a CM for a small,
 made-up RNA family and the alignment of sequences using that CM.
 
 %The default archaeal, bacterial, and eukaryotic CMs used by
-%\sft{ssu-align} have 1508, 1582, and 1881 consensus positions,
+%SSU-ALIGN have 1508, 1582, and 1881 consensus positions,
 %respectively. Any column for which fewer than 80\% of the sequences in
 %the seed alignment had gaps was defined as a consensus position when
 %the default models were constructed\footnote{The 80\% value differs
 % from the 50\% default used by the \prog{cmbuild} program of
-%  \sft{infernal} and the \sft{Rfam} database when building CMs.}.
+%  INFERNAL and the RFAM database when building CMs.}.
 %The derivation of the three seed alignments and the specific method
 %used to build the models is discussed in detail in
 %section~\ref{sec:models} of this guide.
@@ -114,7 +114,7 @@ all 11 consensus columns and 5 insert columns. Nucleotides in insert
 columns are not aligned between different sequences, but are simply
 split and flushed left and right. The bottom alignment has the
 inserted nucleotides aligned more reasonably, but would not be created
-by \sft{ssu-align}.}
+by SSU-ALIGN}.
 \label{fig:toyex}
 \end{figure}
 
@@ -190,14 +190,14 @@ Seed alignments for profile-based methods on the other
 traditionally include less than one hundred sequences
 \cite{Finn10,Gardner09}.
 %In fact, the
-%\sft{pfam} and \sft{rfam} databases collectively include over 12,000
+%PFAM and RFAM databases collectively include over 12,000
 %separate seed alignments, the vast majority of which contain fewer
 %than 100 sequences. 
 
 \subsection{Two types of alignment columns: consensus and inserts}
 \label{sec:background-columns}
 
-Alignments created by \sft{ssu-align} will contain two types of
+Alignments created by SSU-ALIGN will contain two types of
 columns: consensus columns, that correspond to a consensus position of
 the model, and insert columns, which include nucleotides inserted
 between consensus positions of the model. These columns can be
@@ -212,11 +212,11 @@ highly conserved in the seed alignment, lowercase letters were less
 well conserved. Positions that are gaps in the \prog{\#=GC RF} line
 contain inserted nucleotides that don't align to any of the consensus
 positions. 
-\sft{ssu-align} alignments created with the same CM will
+SSU-ALIGN alignments created with the same CM will
 always include the same number of consensus columns, but the number of
 insert columns will vary depending on the input sequences.
 
-There are two important caveats regarding how CMs and \sft{ssu-align}
+There are two important caveats regarding how CMs and SSU-ALIGN
 treat inserts:
 
 \begin{enumerate}
@@ -225,7 +225,7 @@ Nucleotides in insert columns are simply inserted, not aligned.
 
 You might have noticed that in part (C) of figure~\ref{fig:toyex}, the
 nucleotides in the insert columns after consensus position 5 obviously
-misaligned with respect to each other. This is because \sft{ssu-align}
+misaligned with respect to each other. This is because SSU-ALIGN
 does not align inserted nucleotides between different
 sequences. Instead, inserted nucleotides are simply split in half, the
 left half is placed flush-left next to nearest consensus column on the
@@ -234,15 +234,15 @@ flush-right next to the nearest consensus column to the right
 (\prog{ga} in \prog{Thermatoga}). 
 
 This is an important limitation of
-profile-based alignment (at least as implemented in \sft{infernal} and
-\sft{ssu-align}). In contrast, a nearest-neighbor based method might
+profile-based alignment (at least as implemented in INFERNAL and
+SSU-ALIGN). In contrast, a nearest-neighbor based method might
 be able to correctly align nucleotides that would be inserts for a
 profile. However, inserted positions should be rare. Remember that
 consensus positions were defined as any position that had a nucleotide
 in at least 20\% of the seed sequences, so if the seed was
 representative the most common inserts should only appear in about
 20\% of sequences. And if the alignment will eventually be used for
-phylogenetic inference, inserted columns in \sft{ssu-align} alignments
+phylogenetic inference, inserted columns in SSU-ALIGN alignments
 should be removed first anyway, and so are unimportant. 
 It could be argued that the corresponding columns in NN-based
 alignments could be kept for phylogenetic inference, but inserts tend
@@ -263,13 +263,13 @@ section~\ref{sec:stats} provides examples of the dominance of insert
 columns in very deep alignments containing more than 100,000
 
 This contrasts markedly with the popular nearest-neighbor based
-aligners \sft{nast} and \sft{sina}, which generate alignments of a
-fixed with (7,682 columns for \sft{nast} and 50,000 for
-\sft{sina}). However, to guarantee a fixed width, \sft{nast} must
+aligners NAST and SINA, which generate alignments of a
+fixed with (7,682 columns for NAST and 50,000 for
+SINA). However, to guarantee a fixed width, NAST must
 deliberately introduce errors in the alignment in some cases
 \cite{DeSantis06}. One reason for doing this is consistency across
 datasets: column $x$ from dataset A is directly comparable to column
-$x$ from datasets B and C. Importantly, \sft{ssu-align} alignments
+$x$ from datasets B and C. Importantly, SSU-ALIGN alignments
 have a fixed number of \emph{consensus} columns, which facilitates this
 type of cross-dataset comparison for consensus positions.
 \end{enumerate} 
@@ -361,7 +361,7 @@ posterior probabilities.
   \textbf{Example of alignment ambiguity in a hairpin loop.}  Top: An
   alignment fragment of two different alignments of the
   \emph{Desulfovibrio desulfuricans} (sequence accession
-  \texttt{M34113}) sequence from the \sft{ssu-align} bacterial seed
+  \texttt{M34113}) sequence from the SSU-ALIGN bacterial seed
   alignment for the region between consensus columns $861$ and $881$.
   Each alignment is annotated with its posterior probability in the
   \texttt{\#=GR PP} rows.  Characters in PP rows have 12 possible
@@ -410,7 +410,7 @@ end of this guide for more details.
 
 Alternatively, it can be useful to apply a preset mask that is not
 alignment-specific so that alignments of different datasets can be
-directly compared. \sft{ssu-align} includes a default preset mask for
+directly compared. SSU-ALIGN includes a default preset mask for
 each of the default archaeal, bacterial, and eukaryotic
 alignments. The determination of these is discussed in
 section~\ref{sec:masks}. They can be applied within the
@@ -419,15 +419,15 @@ section~\ref{sec:masks}. They can be applied within the
 \subsection{Other useful references}
 
 For more information on CM parameterization and alignment, see the
-\software{infernal} user's guide \cite{infernalguide}.  My
+INFERNAL user's guide \cite{infernalguide}.  My
 Ph.D. thesis (\htmladdnormallink{http://selab.janelia.org/publications.html}{http://selab.janelia.org/publications.html})
 includes more background on SSU databases, alignment methods, CM
-acceleration heuristics used by \sft{ssu-align}, and the masking
+acceleration heuristics used by SSU-ALIGN, and the masking
 benchmark mentioned earlier. Other useful references on CMs include
 \cite{Eddy94,Eddy02b,NawrockiEddy07,Nawrocki09,KolbeEddy09}. Finally,
-publications related to the \sft{rfam} database
+publications related to the RFAM database
 (\htmladdnormallink{http://rfam.sanger.ac.uk/}{http://rfam.sanger.ac.uk/}),
-which uses \software{infernal} to search for and align structural RNAs
+which uses INFERNAL to search for and align structural RNAs
 using more than 1000 different CMs, may be of interest
 \cite{Griffiths-Jones03,Griffiths-Jones05,Gardner09}.
 

@@ -2,7 +2,7 @@
 \label{sec:stats}
 
 This section contains timing and output file size statistics for
-aligning, masking and drawing SSU sequences with the \sft{SSU-ALIGN}
+aligning, masking and drawing SSU sequences with the SSU-ALIGN
 package to give you an idea of how much time and disk space you'll
 need for processing various sized datasets.  The statistics are
 displayed in tables~\ref{tbl:sizes}, \ref{tbl:ttimes}, and
@@ -17,27 +17,27 @@ below.
 
 Statistics are reported for real and synthetic datasets. The real
 datasets were obtained exclusively from existing SSU databases:
-\sft{greengenes} \cite{DeSantis06a}, \sft{silva}
-\cite{Pruesse07} and \sft{RDP} \cite{Cole09}. For \sft{greengenes},
+GREENGENES \cite{DeSantis06a}, SILVA
+\cite{Pruesse07} and RDP \cite{Cole09}. For GREENGENES,
 two separate datasets were processed: the ``core set'', which is the
 reference alignment used by that database (\emph{Ggenes-core}
 dataset), and all the SSU sequences in the database
 (\emph{Ggenes-full} dataset) after the March 23, 2010 update. Two
-datasets from \sft{silva}, \emph{Silva-Ref} and \emph{Silva-Parc}, were
+datasets from SILVA, \emph{Silva-Ref} and \emph{Silva-Parc}, were
 processed. dataset The Ref set is a subset of the Parc
 set that includes sequences that are generally longer and of higher
 quality than the other sequences in Parc. Both sets of sequences are
-from release 102 of the database. Finally, a single \sft{RDP} dataset
+from release 102 of the database. Finally, a single RDP dataset
 was analyzed: the full set of sequences in release 10, update 20. The
 \emph{Silva-Parc} and the \emph{RDP} datasets contain over 1 million
 sequences.
 
-The synthetic datasets were fabricated using the \sft{infernal}
+The synthetic datasets were fabricated using the INFERNAL
 package. Specifically, the \prog{cmemit} program was used with default
 settings and the \prog{-n <N>} option to generate \prog{<N>}
 sequences, where \prog{<N>} is reported in the \emph{number of seqs}
 columns of the tables. For the \emph{synthetic-full} datasets, the
-default three \sft{ssu-align} SSU CMs were used to generate the
+default three SSU-ALIGN SSU CMs were used to generate the
 sequences, each contributing one third of the total sequences. For the
 \emph{synthetic-v4} datasets, smaller, truncated versions of the default
 archaeal and bacterial models were used to generate the sequences,
@@ -69,7 +69,7 @@ alignment jobs plus the final merge.
 %parallelization does not affect the sizes of the final output files.
 
 As an example of a non-parallel run, the actual commands used to process the
-\sft{greengenes} core set dataset were as follows. The FASTA file
+GREENGENES core set dataset were as follows. The FASTA file
 included the unaligned core set sequences is named \prog{ggcs-unaln.fa}. The
 following three commands would align, mask and draw the core
 set, respectively. All output files will be created in a directory called
@@ -83,7 +83,7 @@ set, respectively. All output files will be created in a directory called
 \user{ssu-draw ggcs}
 
 As an example of a parallel run, the actual commands used to process the
-\sft{greengenes} full dataset were as follows. The FASTA file
+GREENGENES full dataset were as follows. The FASTA file
 included the unaligned core set sequences is named \prog{gg-unaln.fa}. The
 following four commands would partition, align, mask and draw the full
 dataset, respectively. All output files will be created in a directory
@@ -103,7 +103,7 @@ The \prog{ssu-prep} command above creates the
 jobs to the cluster here at Janelia. The Janelia-specific prefixes and
 suffixes for the commands are in the file
 \prog{janelia-cluster-presuf.txt} which is in the \prog{tutorial/}
-subdirectory of \sft{ssu-align}. See the tutorial
+subdirectory of SSU-ALIGN. See the tutorial
 section~\ref{sec:tutorial-prep}, 
 page~\pageref{sec:tutorial-prep} for more details on \prog{ssu-prep}.
 

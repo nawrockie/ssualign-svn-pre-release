@@ -2,21 +2,21 @@
 \label{sec:masks}
 
 This section describes how the default alignment masks used by
-\software{ssu-align} were determined. There are three default masks,
+SSU-ALIGN were determined. There are three default masks,
 one for each of the three default models: archaea, bacteria and
 eukarya.
 
 The masks were determined based on large datasets
 of SSU sequences. Specifically, subsets of all the SSU sequences in
-the  January 24, 2010 release of the \software{greengenes} database 
+the  January 24, 2010 release of the GREENGENES database 
 \cite{DeSantis06} and the \emph{Ref} set of SSU rRNA sequences from
-release 100 of the \software{silva} database
+release 100 of the SILVA database
 \cite{Pruesse07} were used. Table~\ref{tbl:ggsil} includes statistics
 on these alignments. 
 
 The first step towards determining the masks was to run
 \prog{ssu-align} with the \prog{--no-align} option on the combined
-\software{Silva} \emph{Ref} and \software{greengenes} unaligned
+SILVA \emph{Ref} and GREENGENES unaligned
 datasets, in FASTA format. If the combined dataset is in the file
 \prog{ggsil.fa}, this could be reproduced using the command:
 
@@ -27,10 +27,10 @@ From this, three new FASTA files are created in the new directory
 and \prog{ggsil.eukarya.fa}, 
 the predicted set of archaeal, bacterial and eukaryotic
 SSU sequences (possibly with some of the original
-\software{greengenes} or \software{silva} sequence trimmed away from
+GREENGENES or SILVA sequence trimmed away from
 the ends). 
 
-Next, I used Robert Edgar's fast \software{uclust} tool (version 1.0.50) to
+Next, I used Robert Edgar's fast UCLUST tool (version 1.0.50) to
 remove redundancy from each of these sets of sequences. Specifically, for
 archaea, I executed the following three \prog{uclust} commands:
 
@@ -100,8 +100,8 @@ bacteria & 739075     & 118742   & 1376     & 212 \\
 eukarya  & 47442      & 12475    & 1343     & 538 \\ 
 \end{tabular}
 \caption{Statistics on the alignments used to determine the default
-  \textsc{ssu-align} 0.1 alignment masks. The alignments were derived
-  from the \textsc{greengenes} \cite{DeSantis06} and \textsc{silva}
+  SSU-ALIGN 0.1 alignment masks. The alignments were derived
+  from the GREENGENES \cite{DeSantis06} and SILVA
   \cite{Pruesse07} databases as described in the text.}
 \label{tbl:ggsil}
 \end{center}
@@ -136,7 +136,7 @@ alignment ambiguity.
   black positions are included. Right: Open circles are excluded,
   filled squares are included. Positions are colored based on
   frequency of deletions (gaps) in the filtered alignment of archaea
-  from \textsc{greengenes} and \textsc{silva} \emph{Ref} (see text) as
+  from GREENGENES and SILVA \emph{Ref} (see text) as
   indicated in the legend.}
 \label{fig:mask-arc}
 \end{sidewaysfigure}
@@ -150,7 +150,7 @@ alignment ambiguity.
   black positions are included. Right: Open circles are excluded,
   filled squares are included. Positions are colored based on
   frequency of deletions (gaps) in the filtered alignment of bacteria
-  from \textsc{greengenes} and \textsc{silva} \emph{Ref} (see text) as
+  from GREENGENES and SILVA \emph{Ref} (see text) as
   indicated in the legend.}
 \label{fig:mask-bac}
 \end{sidewaysfigure}
@@ -164,7 +164,7 @@ alignment ambiguity.
   black positions are included. Right: Open circles are excluded,
   filled squares are included. Positions are colored based on
   frequency of deletions (gaps) in the filtered alignment of eukarya
-  from \textsc{greengenes} and \textsc{silva} \emph{Ref} (see text) as
+  from GREENGENES and SILVA \emph{Ref} (see text) as
   indicated in the legend.}
 \label{fig:mask-euk}
 \end{sidewaysfigure}

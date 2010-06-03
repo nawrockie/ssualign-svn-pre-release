@@ -4,7 +4,7 @@ Many SSU rRNA sequencing studies target a specific region of the SSU
 rRNA molecule using PCR primers at the boundaries of that region. For
 such studies it is recommended to build a new CM that only models the
 region of the molecule targeted by the study. There are two reasons
-for this. The first is speed: the running time of \textsc{ssu-align}
+for this. The first is speed: the running time of SSU-ALIGN
 decreases as the model size it's using decreases. The second reason is
 that aligning a SSU subsequence to a model of only the region that
 subsequence is derived from, relative to a model of the entire SSU
@@ -16,7 +16,7 @@ alignments.
 
 For this example imagine our study is only targeting bacterial SSU
 rRNA. We will use the bacterial SSU seed alignment that is included
-with \textsc{ssu-align} as a starting point for creating our new,
+with SSU-ALIGN as a starting point for creating our new,
 truncated CM. The first step is to determine what consensus positions
 in the bacterial seed alignment's consensus structure the targeted
 region corresponds to. The consensus sequence and structure of the
@@ -26,7 +26,7 @@ section~\ref{section:chap9}.
 %\begin{figure}
 %\includegraphics[height=8.5in]{Figures/bacteria-0p1-rf}
 %\caption{Consensus sequence and structure of the default bacterial
-%  model of \sft{SSU-align} 0.1}.
+%  model of SSU-ALIGN 0.1}.
 %\label{fig:bacseedrf}
 %\end{figure}
 
@@ -42,7 +42,7 @@ structure. On the structure diagrams in section, every
 hundredth residue is numbered, and every tenth residue is marked with
 a tick mark, which should help you find the relevant positions.  If
 you have a subsequence that exactly spans from one primer to another,
-you can align it to the appropriate \textsc{ssu-align} model, then
+you can align it to the appropriate SSU-ALIGN model, then
 number the consensus positions of that alignment with
 \prog{esl-alimanip --num-rf} and examine the numbered alignment to
 determine the primer positions.
@@ -69,7 +69,7 @@ includes the subset of the columns from \prog{bacteria-0p1.stk} that lie
 between consensus positions 35 and 397 inclusively.
 
 The next step is to build a new model from this new alignment with
-\textsc{infernal} 1.01's \prog{cmbuild} program. If this program is in
+INFERNAL 1.01's \prog{cmbuild} program. If this program is in
 your path, you can execute it with \prog{cmbuild}, otherwise you'll
 need to provide the full path. We will specify the name we want
 to give the model with the \prog{-n} flag:
@@ -89,7 +89,7 @@ to give the model with the \prog{-n} flag:
     than 0.8 could be used here, but 0.8 empirically seems to yield
     good performance for SSU alignment. The \prog{--enone} and
     \prog{--gapthresh 0.8} flags were used to build
-    \textsc{ssu-align}'s three default models in the \prog{seeds/}
+    SSU-ALIGN's three default models in the \prog{seeds/}
     subdirectory of the package.
 \end{srefaq}
 
@@ -106,7 +106,7 @@ the sequences you will analyze are expected to match the truncated
 model. In that case, the other models you combine the truncated model
 with should span the diversity of the other sequences you expect in
 your sequence dataset. (An example of using the multi-model file
-\prog{ssu-align-0.1/seeds/ssu3-0p1.cm} with \textsc{ssu-align} was
+\prog{ssu-align-0.1/seeds/ssu3-0p1.cm} with SSU-ALIGN was
 demonstrated at the beginning of this tutorial.)
 
 For demonstration, we'll imagine all the sequences in our sequence

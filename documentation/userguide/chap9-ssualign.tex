@@ -9,17 +9,17 @@
   (\htmladdnormallink{http://selab.janelia.org/publications.html}{http://selab.janelia.org/publications.html})}}
 \label{section:chap9}
 
-\sft{ssu-align} is a freely available, open source software program
+SSU-ALIGN is a freely available, open source software program
 for creating large-scale alignments of small subunit ribosomal RNA
 (SSU) using covariance models (CMs). The archaeal, bacterial,
 %chloroplast, 
 and eukaryotic (nuclear) 
 %and mitochondrial 
-SSU CMs in \sft{ssu-align} are built from structural seed alignments derived from
+SSU CMs in SSU-ALIGN are built from structural seed alignments derived from
 Robin Gutell's Comparative RNA Website (CRW) \cite{CannoneGutell02}.
 %Though only a prototype which I hope to develop and extend in the
 %future, 
-The following features distinguish \sft{ssu-align} from other
+The following features distinguish SSU-ALIGN from other
 SSU alignment programs (reviewed in chapter 7 of \cite{Nawrocki09b}):
 
 \begin{itemize}
@@ -41,7 +41,7 @@ SSU alignment programs (reviewed in chapter 7 of \cite{Nawrocki09b}):
   output alignment given the model. Regions of low posterior
   probabilities are indicative of high alignment ambiguity and
   should be pruned away (masked out) prior to phylogenetic
-  inference. \sft{ssu-align} can automatically detect and remove
+  inference. SSU-ALIGN can automatically detect and remove
   these columns for any alignment it generates.
 
 \item \textbf{Accurate alignments can be computed using seed
@@ -52,7 +52,7 @@ SSU alignment programs (reviewed in chapter 7 of \cite{Nawrocki09b}):
   methods that use seed (reference) alignments of thousands or tens of
   thousands of sequences. This reduces the level of manual curation
   necessary for creating useful seeds, making it easier to extend
-  \sft{SSU-align} by adding new seeds and corresponding CMs that cover
+  SSU-ALIGN by adding new seeds and corresponding CMs that cover
   specific phylogenetic ranges. For example, a
   \emph{Firmicute}-specific seed and model could be constructed to
   create large alignments for phylogenetic analysis of the \emph{Firmicute}
@@ -62,15 +62,15 @@ SSU alignment programs (reviewed in chapter 7 of \cite{Nawrocki09b}):
 
 \subsection{Aligning SSU sequences with SSU-align}
 
-\sft{ssu-align} takes target sequences and a CM file with $N >=
+SSU-ALIGN takes target sequences and a CM file with $N >=
 1$ SSU models as input and proceeds through two stages to generate
 structurally annotated alignments (Figure~\ref{fig:ssualign}).  The CM
 file
-%(which is created by the \sft{infernal} \texttt{cmbuild} program) 
+%(which is created by the INFERNAL \texttt{cmbuild} program) 
 may contain one or more SSU models. The default CM file supplied with
-%\sft{ssu-align} version 0.1 contains four SSU CMs: an archaeal model,
+%SSU-ALIGN version 0.1 contains four SSU CMs: an archaeal model,
 %a bacterial model, a eukaryotic model, and a mitochondrial model each
-\sft{ssu-align} version 0.1 contains three SSU CMs: an archaeal model,
+SSU-ALIGN version 0.1 contains three SSU CMs: an archaeal model,
 a bacterial model, and a eukaryotic model each
 built from structural alignments derived from \db{crw}
 \cite{CannoneGutell02}, as described later in this chapter. 
@@ -93,7 +93,7 @@ target sequence.
 \begin{figure}
   \begin{center}
 \includegraphics[width=6.5in]{Figures/ssualign-schematic}
-        \caption[Schematic of the \sft{ssu-align} alignment
+        \caption[Schematic of the SSU-ALIGN alignment
           pipeline]{\textbf{Schematic of the SSU-align
           alignment pipeline.} Unaligned target sequences are input to
         the program. In stage 1, each sequence is independently
@@ -115,14 +115,14 @@ target sequence.
 \label{fig:ssualign}
 \end{figure}
 
-\sft{ssu-align} includes the {\tt esl-alimanip} program that can
+SSU-ALIGN includes the {\tt esl-alimanip} program that can
 generate masks for the alignments it creates based on the posterior
 probabilities for each nucleotide in the alignment. These masks can then
 be used to remove ambiguously aligned columns of the alignment prior
 to using phylogenetic inference tools. %A program for creating
 %secondary structure diagrams that display alignment summary statistics
 %or individual sequences is also included.  
-A User's Guide is supplied with \sft{ssu-align} that
+A User's Guide is supplied with SSU-ALIGN that
 explains how to use the program for creating and masking alignments.
 % masking them and drawing secondary structure diagrams.
 
@@ -147,7 +147,7 @@ posterior probabilities calculated from the Forward and Backward
 algorithms in HMM alignments. Inside and Outside, the
 SCFG analogs of the Forward and Backward, can be used to calculate
 posterior probabilities for CM alignment \cite{Durbin98}. These
-algorithms were not implemented in \sft{infernal} prior to this work
+algorithms were not implemented in INFERNAL prior to this work
 because they are about two-fold slower than the (already slow) CYK
 algorithm and because the Myers-Miller linear memory trick that made
 CM SSU alignment practical (requiring 60 Mb instead of 20 Gb of RAM)
@@ -200,7 +200,7 @@ sequences, is aligned confidently with high posterior probabilities.
   \textbf{Example of alignment ambiguity in a hairpin loop.}  Top: An
   alignment fragment of two different alignments of the
   \emph{Desulfovibrio desulfuricans} (sequence accession
-  \texttt{M34113}) sequence from the \sft{ssu-align} bacterial seed
+  \texttt{M34113}) sequence from the SSU-ALIGN bacterial seed
   alignment for the region between consensus columns $861$ and $881$.
   Each alignment is annotated with its posterior probability in the
   \texttt{\#=GR PP} rows.  Characters in PP rows have 12 possible
@@ -279,7 +279,7 @@ coverage and accuracy: coverage decreases but accuracy increases
 as $x$ and $y$ increase, because the mask becomes more stringent,
 requiring a larger fraction of more confidently aligned nucleotides in
 included columns. There is no clear best-performing combination of $x$
-and $y$. \sft{ssu-align} uses $0.95$ for both $x$ and $y$ as the
+and $y$. SSU-ALIGN uses $0.95$ for both $x$ and $y$ as the
 default, a strategy which attains $99.74\%$ accuracy and $85.37\%$
 coverage on the benchmark. 
 
@@ -329,7 +329,7 @@ coverage on the benchmark.
   accuracy and coverage on the Kolbe09 SSU alignment benchmark]{
   \textbf{Effect of different masking strategies on CM alignment
   accuracy and coverage on the Kolbe09 SSU alignment benchmark.}
-  Alignments were performed using \sft{infernal} 1.01's {\tt cmalign}
+  Alignments were performed using INFERNAL 1.01's {\tt cmalign}
   program with the {\tt --cyk} flag, which performs HMM banded CYK
   alignment with $\tau=10^{-7}$. Masks were defined as follows: any
   consensus alignment column in which more than $x$ fraction of the
@@ -338,7 +338,7 @@ coverage on the benchmark.
   counted). ``cov'' (coverage) is the fraction of nucleotides in the test
   alignment that are included by the mask. ``acc'' (accuracy) is the
   fraction of nucleotides included by the mask which are correctly
-  aligned. The values cooresponding to the \sft{ssu-align} default
+  aligned. The values cooresponding to the SSU-ALIGN default
   banding strategy $x=0.95$ and $y=0.95$ are in bold-faced type.  The
   Kolbe09 benchmark and its definition of alignment correctness are
   described in more detail in Chapter 8 of \cite{Nawrocki09b} and in
@@ -351,22 +351,22 @@ coverage on the benchmark.
 A separate validation of the automated masking strategy, apart from
 benchmarking is via comparison to the manually created masks of David
 Lane and Phil Hugenholtz discussed in Chapter 7 of \cite{Nawrocki09b}. To
-enable the comparison, I used the \sft{ssu-align} bacterial CM to
+enable the comparison, I used the SSU-ALIGN bacterial CM to
 realign each of the bacterial seed sequences and masked the resulting
 alignment based on posterior probabilities using $x$ and $y$ values of
-$0.95$. The resulting mask overlaid on the \sft{ssu-align} bacterial
+$0.95$. The resulting mask overlaid on the SSU-ALIGN bacterial
 consensus secondary structure model is shown next to David Lane's mask
 on the \emph{E. coli} SSU structure in Figure~\ref{fig:infvlane}. In
 general, the same regions are excluded by both masks. The
-\sft{ssu-align} mask excludes significantly fewer positions than does
+SSU-ALIGN mask excludes significantly fewer positions than does
 the Lane mask.  This is to be expected and does not suggest the
-\sft{ssu-align} is in any way ``better'' than the Lane mask.  The
-\sft{ssu-align} mask was derived from an alignment consisting only of
+SSU-ALIGN is in any way ``better'' than the Lane mask.  The
+SSU-ALIGN mask was derived from an alignment consisting only of
 the seed sequences the model was parameterized from, which the model should
 be able to align with high confidence. The key point here is that the
-\sft{ssu-align} mask is different from the Lane mask because it is specific to the
+SSU-ALIGN mask is different from the Lane mask because it is specific to the
 alignment it was created for. The ability to automatically construct 
-alignment specific masks is an important feature of \sft{ssu-align} that
+alignment specific masks is an important feature of SSU-ALIGN that
 distinguishes it from other alignment tools. 
 
 \begin{sidewaysfigure}
@@ -374,20 +374,20 @@ distinguishes it from other alignment tools.
     \includegraphics[width=3.7in]{Figures/bacteria-0p1-maskcol}
     \includegraphics[width=3.7in]{Figures/lane-ecoli}
   \end{center}
-  \caption[Similarity of an \sft{ssu-align} automatically
+  \caption[Similarity of an SSU-ALIGN automatically
     constructed mask with David Lane's SSU alignment mask.]{
-    \textbf{Similarity of an \sft{ssu-align} automatically
+    \textbf{Similarity of an SSU-ALIGN automatically
       constructed mask (left) with David Lane's SSU alignment mask (right).
     \emph{Escherichia coli}}. Black columns are included by
   the mask for phylogenetic analyses. Blue (left) or red (right) columns are excluded
   by the mask for phylogenetic analyses. 
-  The \sft{ssu-align} mask was derived automatically based on a
+  The SSU-ALIGN mask was derived automatically based on a
     realignment of the bacterial seed sequences as explained in the
     text. The right diagram was derived from the overlay of the ``LMPH'' mask on the
   \db{greengenes} database's \emph{Core Set} alignment of the
   \emph{E. coli} sequence (\db{GenBank} accession J01695). Both diagrams
     were generated with the {\tt esl-ssudraw} program included 
-    with \sft{ssu-align}.}
+    with SSU-ALIGN}.
 \label{fig:infvlane}
 \end{sidewaysfigure}
 
@@ -413,30 +413,30 @@ always adjacent to a region with at least a few deletions.
   sequences]{\textbf{Secondary structure diagram displaying frequency of deletions
   of each consensus position in a masked bacterial alignment of the SSU seed
   sequences.} Statistics correspond to a CM alignment of the bacterial
-  seed sequences using the \sft{ssu-align} bacterial CM. Consensus positions
+  seed sequences using the SSU-ALIGN bacterial CM. Consensus positions
   excluded from the mask (denoted as circles) are those for which 
   more than 5\% of the nucleotides have a posterior probability below
   $0.95$, as explained in the text. This diagram was generated by the
-  {\tt esl-ssudraw} program included in \sft{ssu-align}.}
+  {\tt esl-ssudraw} program included in SSU-ALIGN}.
 \label{fig:bacdelmask}
 \end{figure}
 
 \subsection{Implementation}
 
-\sft{ssu-align} is itself a \sft{perl} script that orchestrates the
-use of the \sft{infernal} software package's \texttt{cmsearch} and
-\texttt{cmalign} programs \cite{infernal} and Sean Eddy's \sft{easel}
-sequence analysis library's \texttt{esl-sfetch} (\sft{easel} is
-included in \sft{infernal}).  The input CM file must have been created
-prior to running \sft{ssu-align}, by \sft{infernal}'s \texttt{cmbuild}
+SSU-ALIGN is itself a PERL script that orchestrates the
+use of the INFERNAL software package's \texttt{cmsearch} and
+\texttt{cmalign} programs \cite{infernal} and Sean Eddy's EASEL
+sequence analysis library's \texttt{esl-sfetch} (EASEL is
+included in INFERNAL).  The input CM file must have been created
+prior to running SSU-ALIGN, by INFERNAL's \texttt{cmbuild}
 program. An SSU CM file is provided with the program, but users can
 also build their own. Stage 1 HMM scoring is performed by
 \texttt{cmsearch}. Sequence truncation, when necessary, is performed
 by \texttt{esl-sfetch}. Stage 2 CM alignment of targets to their
 best-matching models is performed by \texttt{cmalign}. Alignment
-masking is performed by \sft{easel}'s \texttt{esl-alimanip} program. 
+masking is performed by EASEL's \texttt{esl-alimanip} program. 
 %Finally, structure diagrams are created by
-%\sft{easel}'s \texttt{esl-ssudraw} program.
+%EASEL's \texttt{esl-ssudraw} program.
 %I will now explain each step in more detail.
 
 \subsection{SSU-align's SSU rRNA sequence and structure models}
@@ -444,7 +444,7 @@ masking is performed by \sft{easel}'s \texttt{esl-alimanip} program.
 CMs model both the conserved sequence and secondary structure of an
 RNA family. Constructing CMs requires as input a multiple sequence
 alignment with well-nested consensus secondary structure
-annotation. An important question in the design of the \sft{ssu-align}
+annotation. An important question in the design of the SSU-ALIGN
 program was where to obtain these alignments from. I decided to use
 the \db{Comparative RNA Website} (\db{CRW}) \cite{CannoneGutell02} as
 the source because it has the largest amount of high quality
@@ -478,7 +478,7 @@ structural data is publicly available in the \db{crw} database
 \db{CRW} includes separate SSU alignments for archaea, bacteria,
 chloroplasts, eukarya (nuclear), and mitochondria. I concentrated only
 on the archaeal, bacterial, and eukaryotic alignments for the initial
-version of \sft{ssu-align}.  Unfortunately, the \db{crw} alignments
+version of SSU-ALIGN.  Unfortunately, the \db{crw} alignments
 are not structurally annotated, so they cannot be used directly to
 build CMs. However, \db{crw} curators have predicted structures for a
 subset of the sequences in each alignment.  To create structure
@@ -544,9 +544,9 @@ alignments from the \db{crw} data is shown in Figure~\ref{fig:crw2seed}.
 \includegraphics[height=6.9in]{Figures/crw2seed-schematic}
         \caption[The procedure for converting SSU alignments and
           individual structures from \db{crw} to seed alignments for
-          \sft{ssu-align}.]  {\textbf{The procedure for converting
+          SSU-ALIGN.]  {\textbf{The procedure for converting
             SSU alignments and individual structures from \db{crw} to seed
-            alignments for \sft{ssu-align}}. \db{crw} individual structures
+            alignments for SSU-ALIGN}. \db{crw} individual structures
           only exist for a small subset of the sequences from the \db{crw}
           alignments (the black sequences among the majority of gray
           ones). Each conversion step is explained
@@ -589,7 +589,7 @@ base-pairing interactions, so all pseudoknotted base-pairs
 were removed from the individual structures. A well-nested structure
 is a set of base-pairs for which no two pairs between positions $i$:$j$
 and $k$:$l$ exist such that $i<k<j<l$. I used the program
-\sft{Knotted2Nested.py} by \cite{Smit08} to remove
+KNOTTED2NESTED.PY by \cite{Smit08} to remove
 pseudoknots using the \texttt{-m OSP} option which maximizes the number
 of base-pairs in the resulting nested structure.
 % more on if there are > 1 structure with identical # pairs?  see
@@ -657,7 +657,7 @@ was determined as the minimum value for which there were no
 conflicting base-pairs in the consensus set.
 
 This provided me with an initial alignment that I then iteratively
-refined using \sft{infernal}. Each iteration consists of a build
+refined using INFERNAL. Each iteration consists of a build
 step, an alignment step, and a sequence removal step. First, a CM is
 built from the current alignment (in iteration 1 this is a subset of
 the \db{crw} alignment). Then all of the seed sequences are aligned to the
@@ -667,11 +667,11 @@ described above.  Any sequence with more than $15$ base-pair conflicts
 between its individual structure and the new consensus structure are
 removed from the seed.  This procedure continues until 0 sequences are
 removed in the final step. The alignment generated during the final
-iteration became the seed alignment I used for \sft{ssu-align}.
+iteration became the seed alignment I used for SSU-ALIGN.
 
 Table~\ref{tbl:crw2seed} lists the number of sequences removed at each
 stage of the procedure and statistics on base-pair conflicts. 
-The three final seed alignments used to create the \sft{ssu-align} 
+The three final seed alignments used to create the SSU-ALIGN 
 models are summarized in Table~\ref{tbl:finalseeds}.
 
 
@@ -725,7 +725,7 @@ models are summarized in Table~\ref{tbl:finalseeds}.
   less than 80\% the median length (``short'' column), or 
   with more than $5$ ambiguous bases (``ambig'' column) removed. 
   The remaining rows are for alignments following each round of the
-  iterative refinement process using \sft{infernal}. More details on
+  iterative refinement process using INFERNAL. More details on
   the \db{crw} conversion are in the text.}
 \label{tbl:crw2seed}
 \end{center}
@@ -747,7 +747,7 @@ eukarya  & 89       & 1881      & 2652      & 448       & 1800      & 79\%     \
 \caption[Statistics of the three seed alignments used by SSU-align.]
 {\textbf{Statistics of the three seed alignments used by
     SSU-align.} These are the three alignments resulting from the
-    \sft{crw} conversion depicted in Figure~\ref{fig:crw2seed} and
+    CRW conversion depicted in Figure~\ref{fig:crw2seed} and
     described in the text.}
 \label{tbl:finalseeds}
 \end{center}
@@ -789,7 +789,7 @@ frequency of insertions          & Figure~\ref{fig:arcins} & Figure~\ref{fig:bac
   sequence to the model. Uppercase nucleotides indicate highly conserved positions,
   and lowercase nucleotides indicate less well-conserved positions.
   This diagram was generated by the {\tt
-  esl-ssudraw} program included in \sft{ssu-align}.}
+  esl-ssudraw} program included in SSU-ALIGN}.
 \label{fig:arcrf}
 \end{figure}
 
@@ -801,10 +801,10 @@ frequency of insertions          & Figure~\ref{fig:arcins} & Figure~\ref{fig:bac
   information content per consensus position of the archaeal SSU seed
   alignment]{\textbf{Secondary structure diagram displaying primary
   sequence information content per consensus position of the archaeal SSU seed
-  alignment.} Statistics correspond to the \sft{ssu-align} seed
+  alignment.} Statistics correspond to the SSU-ALIGN seed
   alignment derived from the \db{crw} database \cite{CannoneGutell02}
   as described in the text. This diagram was generated by the {\tt
-  esl-ssudraw} program included in \sft{ssu-align}.}
+  esl-ssudraw} program included in SSU-ALIGN}.
 \label{fig:arcinfo}
 \end{figure}
 
@@ -816,10 +816,10 @@ frequency of insertions          & Figure~\ref{fig:arcins} & Figure~\ref{fig:bac
   from conserved structure per consensus position of the archaeal SSU seed
   alignment]{\textbf{Secondary structure diagram displaying extra
   information from conserved structure per consensus position of the archaeal SSU seed
-  alignment.} Statistics correspond to the \sft{ssu-align} seed
+  alignment.} Statistics correspond to the SSU-ALIGN seed
   alignment derived from the \db{crw} database \cite{CannoneGutell02}
   as described in the text. This diagram was generated by the {\tt
-  esl-ssudraw} program included in \sft{ssu-align}.}
+  esl-ssudraw} program included in SSU-ALIGN}.
 \label{fig:arcsinfo}
 \end{figure}
 
@@ -832,10 +832,10 @@ frequency of insertions          & Figure~\ref{fig:arcins} & Figure~\ref{fig:bac
   per consensus position of the archaeal SSU seed
   alignment]{\textbf{Secondary structure diagram displaying frequency 
   of deletions per consensus position of the archaeal SSU seed
-  alignment.} Statistics correspond to the \sft{ssu-align} seed
+  alignment.} Statistics correspond to the SSU-ALIGN seed
   alignment derived from the \db{crw} database \cite{CannoneGutell02}
   as described in the text. This diagram was generated by the {\tt
-  esl-ssudraw} program included in \sft{ssu-align}.}
+  esl-ssudraw} program included in SSU-ALIGN}.
 \label{fig:arcdel}
 \end{figure}
 
@@ -848,10 +848,10 @@ frequency of insertions          & Figure~\ref{fig:arcins} & Figure~\ref{fig:bac
   after each consensus position in the archaeal SSU seed
   alignment]{\textbf{Secondary structure diagram displaying frequency
   of insertions after each consensus position in the archaeal SSU seed
-  alignment.} Statistics correspond to the \sft{ssu-align} seed
+  alignment.} Statistics correspond to the SSU-ALIGN seed
   alignment derived from the \db{crw} database \cite{CannoneGutell02}
   as described in the text. This diagram was generated by the {\tt
-  esl-ssudraw} program included in \sft{ssu-align}.}
+  esl-ssudraw} program included in SSU-ALIGN}.
 \label{fig:arcins}
 \end{figure}
 
@@ -871,7 +871,7 @@ frequency of insertions          & Figure~\ref{fig:arcins} & Figure~\ref{fig:bac
   sequence to the model. Uppercase nucleotides indicate highly conserved positions,
   and lowercase nucleotides indicate less well-conserved positions.
   This diagram was generated by the {\tt
-  esl-ssudraw} program included in \sft{ssu-align}.}
+  esl-ssudraw} program included in SSU-ALIGN}.
 \label{fig:bacrf}
 \end{figure}
 
@@ -883,10 +883,10 @@ frequency of insertions          & Figure~\ref{fig:arcins} & Figure~\ref{fig:bac
   information content per consensus position of the bacterial SSU seed
   alignment]{\textbf{Secondary structure diagram displaying primary
   sequence information content per consensus position of the bacterial SSU seed
-  alignment.} Statistics correspond to the \sft{ssu-align} seed
+  alignment.} Statistics correspond to the SSU-ALIGN seed
   alignment derived from the \db{crw} database \cite{CannoneGutell02}
   as described in the text. This diagram was generated by the {\tt
-  esl-ssudraw} program included in \sft{ssu-align}.}
+  esl-ssudraw} program included in SSU-ALIGN}.
 \label{fig:bacinfo}
 \end{figure}
 
@@ -899,10 +899,10 @@ frequency of insertions          & Figure~\ref{fig:arcins} & Figure~\ref{fig:bac
   from conserved structure per consensus position of the bacterial SSU seed
   alignment]{\textbf{Secondary structure diagram displaying extra
   information from conserved structure per consensus position of the bacterial SSU seed
-  alignment.} Statistics correspond to the \sft{ssu-align} seed
+  alignment.} Statistics correspond to the SSU-ALIGN seed
   alignment derived from the \db{crw} database \cite{CannoneGutell02}
   as described in the text. This diagram was generated by the {\tt
-  esl-ssudraw} program included in \sft{ssu-align}.}
+  esl-ssudraw} program included in SSU-ALIGN}.
 \label{fig:bacsinfo}
 \end{figure}
 
@@ -915,10 +915,10 @@ frequency of insertions          & Figure~\ref{fig:arcins} & Figure~\ref{fig:bac
   per consensus position of the bacterial SSU seed
   alignment]{\textbf{Secondary structure diagram displaying frequency 
   of deletions per consensus position of the bacterial SSU seed
-  alignment.} Statistics correspond to the \sft{ssu-align} seed
+  alignment.} Statistics correspond to the SSU-ALIGN seed
   alignment derived from the \db{crw} database \cite{CannoneGutell02}
   as described in the text. This diagram was generated by the {\tt
-  esl-ssudraw} program included in \sft{ssu-align}.}
+  esl-ssudraw} program included in SSU-ALIGN}.
 \label{fig:bacdel}
 \end{figure}
 
@@ -931,10 +931,10 @@ frequency of insertions          & Figure~\ref{fig:arcins} & Figure~\ref{fig:bac
   after each consensus position in the bacterial SSU seed
   alignment]{\textbf{Secondary structure diagram displaying frequency
   of insertions after each consensus position in the bacterial SSU seed
-  alignment.} Statistics correspond to the \sft{ssu-align} seed
+  alignment.} Statistics correspond to the SSU-ALIGN seed
   alignment derived from the \db{crw} database \cite{CannoneGutell02}
   as described in the text. This diagram was generated by the {\tt
-  esl-ssudraw} program included in \sft{ssu-align}.}
+  esl-ssudraw} program included in SSU-ALIGN}.
 \label{fig:bacins}
 \end{figure}
 
@@ -956,7 +956,7 @@ frequency of insertions          & Figure~\ref{fig:arcins} & Figure~\ref{fig:bac
   sequence to the model. Uppercase nucleotides indicate highly conserved positions,
   and lowercase nucleotides indicate less well-conserved positions.
   This diagram was generated by the {\tt
-  esl-ssudraw} program included in \sft{ssu-align}.}
+  esl-ssudraw} program included in SSU-ALIGN}.
 \label{fig:eukrf}
 \end{figure}
 
@@ -968,10 +968,10 @@ frequency of insertions          & Figure~\ref{fig:arcins} & Figure~\ref{fig:bac
   information content per consensus position of the eukaryotic SSU seed
   alignment]{\textbf{Secondary structure diagram displaying primary
   sequence information content per consensus position of the eukaryotic SSU seed
-  alignment.} Statistics correspond to the \sft{ssu-align} seed
+  alignment.} Statistics correspond to the SSU-ALIGN seed
   alignment derived from the \db{crw} database \cite{CannoneGutell02}
   as described in the text. This diagram was generated by the {\tt
-  esl-ssudraw} program included in \sft{ssu-align}.}
+  esl-ssudraw} program included in SSU-ALIGN}.
 \label{fig:eukinfo}
 \end{figure}
 
@@ -984,10 +984,10 @@ frequency of insertions          & Figure~\ref{fig:arcins} & Figure~\ref{fig:bac
   from conserved structure per consensus position of the eukaryotic SSU seed
   alignment]{\textbf{Secondary structure diagram displaying extra
   information from conserved structure per consensus position of the eukaryotic SSU seed
-  alignment.} Statistics correspond to the \sft{ssu-align} seed
+  alignment.} Statistics correspond to the SSU-ALIGN seed
   alignment derived from the \db{crw} database \cite{CannoneGutell02}
   as described in the text. This diagram was generated by the {\tt
-  esl-ssudraw} program included in \sft{ssu-align}.}
+  esl-ssudraw} program included in SSU-ALIGN}.
 \label{fig:euksinfo}
 \end{figure}
 
@@ -1000,10 +1000,10 @@ frequency of insertions          & Figure~\ref{fig:arcins} & Figure~\ref{fig:bac
   per consensus position of the eukaryotic SSU seed
   alignment]{\textbf{Secondary structure diagram displaying frequency 
   of deletions per consensus position of the eukaryotic SSU seed
-  alignment.} Statistics correspond to the \sft{ssu-align} seed
+  alignment.} Statistics correspond to the SSU-ALIGN seed
   alignment derived from the \db{crw} database \cite{CannoneGutell02}
   as described in the text. This diagram was generated by the {\tt
-  esl-ssudraw} program included in \sft{ssu-align}.}
+  esl-ssudraw} program included in SSU-ALIGN}.
 \label{fig:eukdel}
 \end{figure}
 
@@ -1016,10 +1016,10 @@ frequency of insertions          & Figure~\ref{fig:arcins} & Figure~\ref{fig:bac
   after each consensus position in the eukaryotic SSU seed
   alignment]{\textbf{Secondary structure diagram displaying frequency
   of insertions after each consensus position in the eukaryotic SSU seed
-  alignment.} Statistics correspond to the \sft{ssu-align} seed
+  alignment.} Statistics correspond to the SSU-ALIGN seed
   alignment derived from the \db{crw} database \cite{CannoneGutell02}
   as described in the text. This diagram was generated by the {\tt
-  esl-ssudraw} program included in \sft{ssu-align}.}
+  esl-ssudraw} program included in SSU-ALIGN}.
 \label{fig:eukins}
 \end{figure}
 

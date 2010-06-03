@@ -46,7 +46,7 @@ directories:
 \user{make install}
 
 By default, programs are installed in \prog{/usr/local/bin}, man
-pages in \prog{/usr/local/man/man1}, and data files and a \sft{perl}
+pages in \prog{/usr/local/man/man1}, and data files and a PERL
 module required by the programs are placed in 
 \prog{/usr/local/share/ssu-align-0.1}. You might need special
 privileges to write to \prog{/usr/local}. (You may need to execute
@@ -134,36 +134,36 @@ should return the path to the your data directory
 (\prog{/usr/local/share/ssu-align-0.1} by default).
 
 That's it. You can keep reading if you want to know more about
-customizing a \sft{ssu-align} installation, or you can skip ahead to
+customizing a SSU-ALIGN installation, or you can skip ahead to
 section~\ref{sec:tutorial}, the tutorial.
 
 \subsection{More detailed installation notes}
 
-The six main programs in the \software{ssu-align} package:
+The six main programs in the SSU-ALIGN package:
 \prog{ssu-align}, \prog{ssu-build}, \prog{ssu-draw}, \prog{ssu-mask},\\
-\prog{ssu-merge} and \prog{ssu-prep} are \sft{perl} scripts. The
-package depends on, and includes, \sft{infernal} 
-which itself includes \sft{hmmer} and the \sft{easel} sequence analysis
+\prog{ssu-merge} and \prog{ssu-prep} are PERL scripts. The
+package depends on, and includes, INFERNAL 
+which itself includes HMMER and the EASEL sequence analysis
 library; all of which are distributed as ANSI C source code. 
 
-\sft{ssu-align} is designed to be built and used on UNIX platforms. It
+SSU-ALIGN is designed to be built and used on UNIX platforms. It
 is developed mainly on Intel GNU/Linux systems and Mac OS, and
 intermittently tested on a variety of other UNIX platforms. It is not
 currently tested on Microsoft Windows, but it should work there; it
 should be possible to build it on any platform with an ANSI C
 compiler. The software itself is vanilla POSIX-compliant ANSI C and
-\sft{perl}. You may need to work around the configuration scripts and
+PERL. You may need to work around the configuration scripts and
 Makefiles to get it built on a non-UNIX platform.
 
-The GNU configure script that comes with \software{ssu-align} has a
+The GNU configure script that comes with SSU-ALIGN has a
 number of options. You can see them all by doing:
 
 \user{./configure --help}
 
 Be warned that some of these options (such as \prog{--enable-mpi}) will
-\emph{not} affect \sft{ssu-align} performance. These options affect only how
-\sft{infernal} or \sft{hmmer} is built underneath \sft{ssu-align},
-but have no impact on the toplevel \sft{ssu-align} programs. 
+\emph{not} affect SSU-ALIGN performance. These options affect only how
+INFERNAL or HMMER is built underneath SSU-ALIGN,
+but have no impact on the toplevel SSU-ALIGN programs. 
 
 All customizations can and should be done at the \prog{./configure}
 command line, unless you're a guru delving into the details of the
@@ -173,7 +173,7 @@ source code.
 
 The most important options are those that let you set the installation
 directories for \prog{make install} to be appropriate to your system.
-What you need to know is that \software{ssu-align} installs three types
+What you need to know is that SSU-ALIGN installs three types
 of files: programs, man pages, and data files. It installs the programs in
 \prog{--bindir} (which defaults to \prog{/usr/local/bin}), the man pages in the
 \prog{man1} subdirectory of \prog{--mandir} (default
@@ -186,7 +186,7 @@ you would configure with:
 
 \noindent \prog{> ./configure --mandir=/usr/share/man --bindir=/usr/bioprogs/bin --datatdir=/usr/share}
 
-That's really all you need to know, since \software{ssu-align} installs
+That's really all you need to know, since SSU-ALIGN installs
 so few files. But just so you know; GNU configure is very flexible,
 and has shortcuts that accomodates several standard conventions for
 where programs get installed. One common strategy is to install all
@@ -213,7 +213,7 @@ as \prog{--prefix}. You could change this, for example, by:
 \end{comment}
 
 In summary, a complete list of the \prog{./configure} installation
-options that affect \software{ssu-align}:
+options that affect SSU-ALIGN:
 
 \begin{tabular}{lll}
 Option                       & Meaning                         & Default\\ \hline

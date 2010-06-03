@@ -2,7 +2,7 @@
 \label{sec:output}
 
 This section describes the content of the different output file
-formats created by the various programs in the \textsc{ssu-align}
+formats created by the various programs in the SSU-ALIGN
 package. For demonstration, the descriptions below refer to the
 specific files created during the tutorial in
 section~\ref{sec:tutorial}, in the directory \prog{myseqs/}. 
@@ -53,7 +53,7 @@ I'll walk through the format of these output files:
 
 \subsubsection{.tab suffixed files}
 
-The \prog{.tab} files are created by \textsc{infernal}'s
+The \prog{.tab} files are created by INFERNAL's
 \prog{cmsearch} program which is called internally by
 \prog{ssu-align}. \prog{cmsearch} builds profile HMMs for each model
 in the input CM file and scans each input sequence for high scoring
@@ -168,7 +168,7 @@ will always be the final position of the model.
   with \prog{cmcalibrate}. Currently, \prog{ssu-align} does not use
   calibrated models, mainly because they are most useful for
   identifying remotely homologous structural RNAs using models of
-  much smaller RNAs, such as transfer RNA. See the \textsc{infernal} 
+  much smaller RNAs, such as transfer RNA. See the INFERNAL 
   user's guide \cite{Nawrocki09} for more information.
 
 \item[\emprog{GC\%}] the percent of the nucleotides in the aligned
@@ -231,7 +231,7 @@ internally to generate its structurally annotated alignments.
 \subsubsection{.cmalign suffixed files}
 
 The \prog{.cmalign} files are the standard output created by the
-\textsc{infernal} program \prog{cmalign} which is called internally
+INFERNAL program \prog{cmalign} which is called internally
 during the alignment stage of \prog{ssu-align}. There is one such file
 created for each model that was the best-matching model to at least
 one sequence in \prog{ssu-align}'s search stage. Take a look at the
@@ -303,7 +303,7 @@ We'll go through each of these columns:
   stage with \prog{cmsearch}.
 
 \item[\emprog{total}] the bit score of the CM alignment. For more
-  information, see section 5 of the \sft{infernal} User's Guide \cite{Nawrocki09}.
+  information, see section 5 of the INFERNAL User's Guide \cite{Nawrocki09}.
 
 \item[\emprog{struct}] the secondary structure score component of the
   \prog{total} bit score. These are the added bits that are due solely
@@ -417,7 +417,7 @@ the \prog{ssu-align} anual page at the end of this guide).
   \prog{end}.
 \end{wideitem}
 
-For more information on bit scores, see section 5 of the \sft{infernal}
+For more information on bit scores, see section 5 of the INFERNAL
 User's Guide \cite{Nawrocki09}. 
 
 The next 2 columns describe the \prog{second-best model}. This is the
@@ -466,7 +466,7 @@ The \prog{.sum} files include the text reported to the screen
 (standard output) by \prog{ssu-align}. These files serve as a
 reference to remind the user how \prog{ssu-align} was run
 (parameters, input file names, etc.). All six programs in the
-\textsc{ssu-align} package generate specifically named \prog{.sum}
+SSU-ALIGN package generate specifically named \prog{.sum}
 suffixed files. For example, \prog{ssu-mask} generates a file ending
 with the suffix \prog{.ssu-mask.sum}.
 
@@ -573,7 +573,7 @@ this table is described below:
 The \prog{.log} files include information on all of the system
 commands run by \prog{ssu-align}. As with \prog{.sum} suffixed files,
 program specific \prog{.log} suffixed files are created by each of the
-six \textsc{ssu-align} programs. For example, \prog{ssu-mask}
+six SSU-ALIGN programs. For example, \prog{ssu-mask}
 generates a log file ending with the suffix \prog{.ssu-mask.log}.
 
 
@@ -589,7 +589,7 @@ The \prog{.log} files list all of the commands that were executed by
 the program along with their STDERR and sometimes their STDOUT output
 (for example, the \prog{cmsearch} and \prog{cmalign} commands), as
 well as the ``globals hash'', a set of variables defined in the
-\textsc{ssu-align} PERL module \prog{ssu.pm} which is installed in the
+SSU-ALIGN PERL module \prog{ssu.pm} which is installed in the
 \$SSUALIGNDIR. The \prog{.log} files should mainly be useful to expert 
 users or developers who are trying to figure out why a specific run of a
 program failed, or how to reproduce a specific step executed by the
@@ -611,7 +611,7 @@ specific domain model/alignment file and include only \prog{0} and
 \prog{1} characters. Each character corresponds to a consensus column
 of the model/alignment. For example, the
 \prog{myseqs.archaea.mask} file contains 1508 characters, one per
-consensus column of the default \textsc{ssu-align} archaeal model
+consensus column of the default SSU-ALIGN archaeal model
 described in section~\ref{sec:models}. A \prog{0} at position \emph{x}
 indicates that consensus position \emph{x} is excluded from the mask
 and will be removed from the alignment when the mask is applied. A
