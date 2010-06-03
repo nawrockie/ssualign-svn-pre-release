@@ -223,7 +223,7 @@ if($opt_H{"--no-mask"} && ($opt_H{"--mask-key"} ne "")) {
 if(($opt_H{"--ifile"} ne "") && ($opt_H{"-a"} == 0)) { 
     printf STDERR ("\nERROR, --ifile requires the -a option.\n"); exit(1);
 }    
-if(($opt_H{"--no-prob"}) && ($opt_H{"--indi"})) { 
+if(($opt_H{"--no-prob"}) && (! $opt_H{"--indi"})) { 
     printf STDERR ("\nERROR, --no-prob only makes sense in combination with --indi.\n"); exit(1);
 }    
 if($opt_H{"--ps-only"} && ($opt_H{"--ps2pdf"} ne "")) { 

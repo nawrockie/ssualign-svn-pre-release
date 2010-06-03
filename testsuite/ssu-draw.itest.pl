@@ -659,7 +659,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     $output = `cat $dir/$dir.ssu-draw.sum`;
     if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.dall.p\w+\s+1\s*/) { die "ERROR, problem with drawing"; }
     $output = `cat $dir/$dir.bacteria.dall.drawtab`;
-    if($output !~ /deleteall\s+99\s+0.6\d+\s+4\s*deleteall/)     { die "ERROR, problem with drawing"; }
+    if($output !~ /deleteall\s+99\s+0.6\d+\s+6\s*deleteall/)     { die "ERROR, problem with drawing"; }
     remove_files              ($dir, "draw");
     remove_files              ($dir, "\.ps");
     remove_files              ($dir, "\.pdf");
@@ -690,7 +690,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     $output = `cat $dir/$dir.ssu-draw.sum`;
     if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.dint.p\w+\s+1\s*/) { die "ERROR, problem with drawing"; }
     $output = `cat $dir/$dir.bacteria.dint.drawtab`;
-    if($output !~ /deleteint\s+99\s+0.2\d+\s+3\s+2\s*deleteint/) { die "ERROR, problem with drawing"; }
+    if($output !~ /deleteint\s+99\s+0.2\d+\s+3\s+4\s*deleteint/) { die "ERROR, problem with drawing"; }
     remove_files              ($dir, "draw");
     remove_files              ($dir, "\.ps");
     remove_files              ($dir, "\.pdf");
@@ -704,7 +704,7 @@ if(($testnum eq "") || ($testnum == $testctr)) {
     $output = `cat $dir.bacteria.ssu-draw.sum`;
     if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.dint.p\w+\s+1\s*/) { die "ERROR, problem with drawing"; }
     $output = `cat $dir.bacteria.dint.drawtab`;
-    if($output !~ /deleteint\s+99\s+0.2\d+\s+3\s+2\s*deleteint/) { die "ERROR, problem with drawing"; }
+    if($output !~ /deleteint\s+99\s+0.2\d+\s+3\s+4\s*deleteint/) { die "ERROR, problem with drawing"; }
     remove_files              (".", "bacteria.dint");
     remove_files              (".", "bacteria.ssu-draw");
 }
@@ -862,38 +862,38 @@ $testctr++;
 # Options for drawing structure diagrams for individual sequences:
 ##################################################################
 
-# Test --indi-all
+# Test --indi
 if(($testnum eq "") || ($testnum == $testctr)) {
     # without -a
-    run_draw                  ($ssudraw, $dir, "--indi-all --no-aln", $testctr);
+    run_draw                  ($ssudraw, $dir, "--indi --no-aln", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
-    check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".indiall.ps", ".indiall.pdf");
+    check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".indi.ps", ".indi.pdf");
     $output = `cat $dir/$dir.ssu-draw.sum`;
-    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.indiall.p\w+\s+10\s*/) { die "ERROR, problem with drawing"; }
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.indi.p\w+\s+10\s*/) { die "ERROR, problem with drawing"; }
     # NOTE: no drawtab file is created, and the postscript is not checked (I could do that, but don't)
     remove_files              ($dir, "draw");
     remove_files              ($dir, "\.ps");
     remove_files              ($dir, "\.pdf");
 
     # with -a
-    run_draw                  ($ssudraw, $dir . "/" . $dir . ".bacteria.stk", "--indi-all --no-aln -a", $testctr);
+    run_draw                  ($ssudraw, $dir . "/" . $dir . ".bacteria.stk", "--indi --no-aln -a", $testctr);
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.sum");
     check_for_files           (".", $dir, $testctr, \@bac_only_A, ".ssu-draw.log");
-    check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".indiall.pdf", ".indiall.ps");
+    check_for_one_of_two_files(".", $dir, $testctr, \@bac_only_A, ".indi.pdf", ".indi.ps");
     $output = `cat $dir.bacteria.ssu-draw.sum`;
-    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.indiall.p\w+\s+10\s*/) { die "ERROR, problem with drawing"; }
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.indi.p\w+\s+10\s*/) { die "ERROR, problem with drawing"; }
     # NOTE: no drawtab file is created, and the postscript is not checked (I could do that, but don't)
-    remove_files              (".", "bacteria.indiall");
+    remove_files              (".", "bacteria.indi");
     remove_files              (".", "bacteria.ssu-draw");
 
     # without -a, but with --no-prob
-    run_draw                  ($ssudraw, $dir, "--indi-all --no-aln --no-prob", $testctr);
+    run_draw                  ($ssudraw, $dir, "--indi --no-aln --no-prob", $testctr);
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".sum");
     check_for_files           ($dir, $dir, $testctr, \@ssudraw_only_A, ".log");
-    check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".indiall.ps", ".indiall.pdf");
+    check_for_one_of_two_files($dir, $dir, $testctr, \@name_A, ".indi.ps", ".indi.pdf");
     $output = `cat $dir/$dir.ssu-draw.sum`;
-    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.indiall.p\w+\s+5/) { die "ERROR, problem with drawing"; }
+    if($output !~ /$dir.bacteria.stk\s+$dir.bacteria.indi.p\w+\s+5/) { die "ERROR, problem with drawing"; }
     # NOTE: no drawtab file is created, and the postscript is not checked (I could do that, but don't)
     remove_files              ($dir, "draw");
     remove_files              ($dir, "\.ps");

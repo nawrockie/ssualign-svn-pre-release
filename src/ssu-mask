@@ -1115,19 +1115,19 @@ sub mask_alignment {
 	# Draw the masks, if we can, if we can't that's okay just alert the caller by setting $ssdraw_worked = 0
 	if($do_pmask && $do_gmask) { 
 	    $do_column_breakdown = 1;
-	    $ssdraw_worked = run_ssdraw_for_ssu_mask($ssdraw, $template_file, "--mask-col --mask $pmask_file $small_opt", $ssdraw_aln_file, $stk_suffix_AR,
+	    $ssdraw_worked = run_ssdraw_for_ssu_mask($ssdraw, $template_file, "--mask-col --mask $pmask_file $small_opt", $ssdraw_aln_file, $aln_file, $stk_suffix_AR,
 						     $key_out, "pmask", $max_width, $opt_HR, $rflen-$pnkept, $pnkept, $do_column_breakdown, $files_to_unlink_AR, $sum_file, $log_file);
 	    if($ssdraw_worked) { 
-		$ssdraw_worked = run_ssdraw_for_ssu_mask($ssdraw, $template_file, "--mask-col --mask $gmask_file $small_opt", $ssdraw_aln_file, $stk_suffix_AR,
+		$ssdraw_worked = run_ssdraw_for_ssu_mask($ssdraw, $template_file, "--mask-col --mask $gmask_file $small_opt", $ssdraw_aln_file, $aln_file, $stk_suffix_AR,
 					$key_out, "gmask", $max_width, $opt_HR, $rflen-$gnkept, $gnkept, $do_column_breakdown, $files_to_unlink_AR, $sum_file, $log_file);
 		if(! $ssdraw_worked) { $ssdraw_worked_every_time = 0; }
 
-		$ssdraw_worked = run_ssdraw_for_ssu_mask($ssdraw, $template_file, "--mask-col --mask $fmask_file $small_opt", $ssdraw_aln_file, $stk_suffix_AR,
+		$ssdraw_worked = run_ssdraw_for_ssu_mask($ssdraw, $template_file, "--mask-col --mask $fmask_file $small_opt", $ssdraw_aln_file, $aln_file, $stk_suffix_AR,
 					$key_out, "mask", $max_width, $opt_HR, $rflen-$fnkept, $fnkept, $do_column_breakdown, $files_to_unlink_AR, $sum_file, $log_file);
 		if(! $ssdraw_worked) { $ssdraw_worked_every_time = 0; }
 
 		$do_column_breakdown = 0;
-		$ssdraw_worked = run_ssdraw_for_ssu_mask($ssdraw, $template_file, "--mask-diff $pmask_file --mask $gmask_file $small_opt", $ssdraw_aln_file, \@stk_suffix_A, 
+		$ssdraw_worked = run_ssdraw_for_ssu_mask($ssdraw, $template_file, "--mask-diff $pmask_file --mask $gmask_file $small_opt", $ssdraw_aln_file, $aln_file, $stk_suffix_AR, 
 					$key_out, "maskdiff", $max_width, \%opt_H, $rflen-$fnkept, $fnkept, $do_column_breakdown, \@files_to_unlink_A, $sum_file, $log_file);
 		if(! $ssdraw_worked) { $ssdraw_worked_every_time = 0; }
 	    }
@@ -1137,7 +1137,7 @@ sub mask_alignment {
 	}
 	else { # we only have 1 mask file, regardless of which of $do_pmask, $do_gmask, or $do_rfismask is TRUE 
 	    $do_column_breakdown = 1;
-	    $ssdraw_worked = run_ssdraw_for_ssu_mask($ssdraw, $template_file, "--mask-col --mask $fmask_file $small_opt", $ssdraw_aln_file, $stk_suffix_AR,
+	    $ssdraw_worked = run_ssdraw_for_ssu_mask($ssdraw, $template_file, "--mask-col --mask $fmask_file $small_opt", $ssdraw_aln_file, $aln_file, $stk_suffix_AR,
 						     $key_out, "mask", $max_width, $opt_HR, $rflen-$fnkept, $fnkept, $do_column_breakdown, $files_to_unlink_AR, $sum_file, $log_file);
 	    if(! $ssdraw_worked) { $ssdraw_worked_every_time = 0; }
 	}
@@ -1255,6 +1255,7 @@ sub filter_alignment {
 #   $template_file:       name of template file to use
 #   $ssdraw_opts:         string defining options for esl-ssdraw call
 #   $aln_file:            alignment file to draw
+#   $aln_file4draw:       alignment name to use as basis for esl-ssdraw postscript output
 #   $stk_suffix_AR:       reference to array of legal stockholm suffixes
 #   $key_out:             optional extra key for output files
 #   $draw_key:            another optional extra key for output files
@@ -1272,23 +1273,23 @@ sub filter_alignment {
 # 
 ####################################################################
 sub run_ssdraw_for_ssu_mask { 
-    my $narg_expected = 15;
+    my $narg_expected = 16;
     if(scalar(@_) != $narg_expected) { printf STDERR ("ERROR, run_ssdraw_for_ssu_mask() entered with %d != %d input arguments.\n", scalar(@_), $narg_expected); exit(1); } 
-    my ($ssdraw, $template_file, $ssdraw_opts, $aln_file, $stk_suffix_AR, $key_out, 
+    my ($ssdraw, $template_file, $ssdraw_opts, $aln_file, $aln_file4draw, $stk_suffix_AR, $key_out, 
 	$draw_key, $max_width, $opt_HR, $n0, $n1, $do_column_breakdown, $files_to_unlink_AR, $sum_file, $log_file) = @_;
 
     my($draw_ps, $draw_pdf, $draw_ps2print, $draw_pdf2print, $command_worked);
     
     if($opt_H{"-a"}) { # save diagrams to CWD
-	$draw_ps        = SwapOrAppendFileSuffix($aln_file, \@stk_suffix_A, $key_out . "." . $draw_key . ".ps", 0);
+	$draw_ps        = SwapOrAppendFileSuffix($aln_file4draw, \@stk_suffix_A, $key_out . "." . $draw_key . ".ps", 0);
 	$draw_ps2print  = $draw_ps;
-	$draw_pdf       = SwapOrAppendFileSuffix($aln_file, \@stk_suffix_A, $key_out . "." . $draw_key . ".pdf", 0);
+	$draw_pdf       = SwapOrAppendFileSuffix($aln_file4draw, \@stk_suffix_A, $key_out . "." . $draw_key . ".pdf", 0);
 	$draw_pdf2print = $draw_pdf;
     }
     else { # save diagrams to same dir as aln
-	$draw_ps        = SwapOrAppendFileSuffix($aln_file, \@stk_suffix_A, $key_out . "." . $draw_key . ".ps", 1);
+	$draw_ps        = SwapOrAppendFileSuffix($aln_file4draw, \@stk_suffix_A, $key_out . "." . $draw_key . ".ps", 1);
 	$draw_ps2print  = RemoveDirPath($draw_ps);
-	$draw_pdf       = SwapOrAppendFileSuffix($aln_file, \@stk_suffix_A, $key_out . "." . $draw_key . ".pdf", 1);
+	$draw_pdf       = SwapOrAppendFileSuffix($aln_file4draw, \@stk_suffix_A, $key_out . "." . $draw_key . ".pdf", 1);
 	$draw_pdf2print = RemoveDirPath($draw_pdf);
     }
     

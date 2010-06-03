@@ -215,10 +215,13 @@ dist:
 	(cd ..;	tar cvf ${BASENAME}-${RELEASE}.tar ${BASENAME}-${RELEASE})
 	(cd ..; $(COMPRESS) ${BASENAME}-$(RELEASE).tar)
 
-# "make check" runs the SSU-ALIGN test scripts using a simple perl script.
-# These take a while (about 10 minutes).
+# "make check" runs the SSU-ALIGN test scripts using a simple perl script,
+# and a special set of Infernal tests
+# The SSU-ALIGN tests take a while (about 10 minutes). 
+# Infernal tests are much faster.
 #
 check:
+	(cd infernal/testsuite/; ../easel/devkit/sqc 4 ssu-exercises.sqc .. ../src)
 	(cd testsuite; perl testsuite.pl;)
 
 # install: installs the programs in BINDIR, the CM, seeds, masks and postscript templates in DATADIR,
@@ -268,9 +271,9 @@ actually-install:
 ssu-align:
 	@echo ""
 	@echo ""
-	@echo "==============="
-	@echo "SSU-ALIGN built"
-	@echo "==============="
+	@echo "====================================="
+	@echo "SSU-ALIGN has been successfully built"
+	@echo "====================================="
 
 setpaths:
 	@echo 'setenv PATH "$$PATH:$(BINDIR)"' > setup.ssu-align.csh
@@ -280,39 +283,36 @@ setpaths:
 	@echo 'setenv SSUALIGNDIR "$(datadir)/$(BASENAME)-$(RELEASE)"' >> setup.ssu-align.csh
 	@echo 'export SSUALIGNDIR="$(datadir)/$(BASENAME)-$(RELEASE)"' >> setup.ssu-align.bash
 	@echo ""
-	@echo "The files \"setup.ssu-align.bash\" and \"setup.ssu-align.csh\" have been created."
-	@echo "If you use the bash shell, type \"source setup.ssu-align.bash; rehash\"."
-	@echo "If you use the C shell, type \"source setup.ssu-align.csh; rehash\"."
-	@echo "This will update your environment for this session."
+	@echo "The final step is to update your environment variables:"
 	@echo ""
-	@echo "To update your environment upon every login, you should"
-	@echo "add the three lines:"
+	@echo "If you are using the bash shell, do:"
+	@echo ""
+	@echo "> source setup.ssu-align.bash"
+	@echo ""
+	@echo "and then add the following three lines to the '.bashrc'"
+	@echo "file in your home directory:" 
 	@echo ""
 	@echo 'export PATH="$$PATH:$(BINDIR)"'
 	@echo 'export MANPATH="$$MANPATH:$(MANDIR)"'
 	@echo 'export SSUALIGNDIR="$(datadir)/$(BASENAME)-$(RELEASE)"'
 	@echo ""
-	@echo "to the \".bashrc\" file in your home directory."
+	@echo "If you are using the C shell, do:"
 	@echo ""
-	@echo "or"
+	@echo "> source setup.ssu-align.csh"
+	@echo ""
+	@echo "and then add the following three lines to the '.cshrc'"
+	@echo "file in your home directory:"
 	@echo ""
 	@echo 'setenv PATH "$$PATH:$(BINDIR)"'
 	@echo 'setenv MANPATH "$$MANPATH:$(MANDIR)"'
 	@echo 'setenv SSUALIGNDIR "$(datadir)/$(BASENAME)-$(RELEASE)"'
 	@echo ""
-	@echo "to the \".cshrc\" file in your home directory."
+	@echo "(To determine which shell you use, type: 'echo \$$SHELL')"
 	@echo ""
-	@echo "To determine which shell you use, type:"
+	@echo "For more information on SSU-ALIGN see the user's guide"
+	@echo "in ./Userguide.pdf."
 	@echo ""
-	@echo "echo \$$SHELL"
-	@echo ""
-	@echo "If you prefer to manually update your environment variables,"
-	@echo "be sure to make the following changes:"
-	@echo ""
-	@echo "1. Add $(BINDIR) to your PATH variable"
-	@echo "2. Add $(MANDIR) to your MANPATH variable"
-	@echo "3. Set \$$SSUALIGNDIR as $(datadir)/$(BASENAME)-$(RELEASE)"
-	@echo ""
+
 
 # "make clean" removes almost everything except configuration files
 #              and binaries.
