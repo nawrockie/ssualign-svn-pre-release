@@ -236,7 +236,7 @@ check:
 	for file in $(ESLPROGS); do\
 		rm infernal/easel/miniapps/$$file;\
 	done
-	(cd infernal/testsuite; ../easel/devkit/sqc 4 ssu-exercises.sqc .. ../src)
+	(cd infernal/testsuite; ../easel/devkit/sqc 4 ../../testsuite/infernal-exercises.sqc .. ../src)
 	(cd testsuite; perl testsuite.pl;)
 
 # install: installs the programs in BINDIR, the CM, seeds, masks and postscript templates in DATADIR,
