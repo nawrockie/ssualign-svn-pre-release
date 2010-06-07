@@ -279,11 +279,11 @@ actually-install:
 # Copy MAN pages for SSU-ALIGN scripts
 # Use sed to replace non-'ssu-' prefixed Infernal and Easel program names in 
 # Infernal and Easel man pages as those are copied.
-	mkdir -p ${MANDIR}/man${MANSUFFIX}
-	for file in ssu $(PROGS); do\
+	@mkdir -p ${MANDIR}/man${MANSUFFIX}
+	@for file in ssu $(PROGS); do\
 	   $(INSTMAN) documentation/manpages/$$file.man $(MANDIR)/man$(MANSUFFIX)/$$file.$(MANSUFFIX);\
 	done
-	for file in $(INFPROGS); do\
+	@for file in $(INFPROGS); do\
 	   sed -e 's/cmalign/ssu-cmalign/g' \
 	    -e 's/cmbuild/ssu-cmbuild/g' \
 	    -e 's/cmcalibrate/ssu-cmcalibrate/g' \
@@ -296,7 +296,7 @@ actually-install:
 	    -e 's/esl-sfetch/ssu-esl-sfetch/g' \
 	    < infernal/documentation/manpages/$$file.man > $(MANDIR)/man$(MANSUFFIX)/ssu-$$file.$(MANSUFFIX);\
 	done
-	for file in $(ESLPROGS); do\
+	@for file in $(ESLPROGS); do\
 	   sed -e 's/cmalign/ssu-cmalign/g' \
 	    -e 's/cmbuild/ssu-cmbuild/g' \
 	    -e 's/cmcalibrate/ssu-cmcalibrate/g' \
@@ -335,36 +335,32 @@ ssu-align:
 	@echo "====================================="
 
 setpaths:
-	@echo 'setenv PATH "$$PATH:$(BINDIR)"' > setup.ssu-align.csh
-	@echo 'export PATH="$$PATH:$(BINDIR)"' > setup.ssu-align.bash
-	@echo 'setenv MANPATH "$$MANPATH:$(MANDIR)"' >> setup.ssu-align.csh
-	@echo 'export MANPATH="$$MANPATH:$(MANDIR)"' >> setup.ssu-align.bash
-	@echo 'setenv SSUALIGNDIR "$(datadir)/$(BASENAME)-$(RELEASE)"' >> setup.ssu-align.csh
-	@echo 'export SSUALIGNDIR="$(datadir)/$(BASENAME)-$(RELEASE)"' >> setup.ssu-align.bash
 	@echo ""
 	@echo "The final step is to update your environment variables:"
 	@echo ""
-	@echo "If you are using the bash shell, do:"
-	@echo ""
-	@echo "> source setup.ssu-align.bash"
-	@echo ""
-	@echo "and then add the following three lines to the '.bashrc'"
-	@echo "file in your home directory:" 
+	@echo "If you are using the bash shell, add the following three:"
+	@echo "lines to the '.bashrc' file in your home directory:"
 	@echo ""
 	@echo 'export PATH="$$PATH:$(BINDIR)"'
 	@echo 'export MANPATH="$$MANPATH:$(MANDIR)"'
 	@echo 'export SSUALIGNDIR="$(datadir)/$(BASENAME)-$(RELEASE)"'
 	@echo ""
-	@echo "If you are using the C shell, do:"
+	@echo "And then source that file to update your current"
+	@echo "environment with the command:"
 	@echo ""
-	@echo "> source setup.ssu-align.csh"
+	@echo "sh ~/.bashrc"
 	@echo ""
-	@echo "and then add the following three lines to the '.cshrc'"
-	@echo "file in your home directory:"
+	@echo "If you are using the C shell, add the following three:"
+	@echo "lines to the '.cshrc' file in your home directory:"
 	@echo ""
 	@echo 'setenv PATH "$$PATH:$(BINDIR)"'
 	@echo 'setenv MANPATH "$$MANPATH:$(MANDIR)"'
 	@echo 'setenv SSUALIGNDIR "$(datadir)/$(BASENAME)-$(RELEASE)"'
+	@echo ""
+	@echo "And then source that file to update your current"
+	@echo "environment with the command:"
+	@echo ""
+	@echo "sh ~/.cshrc"
 	@echo ""
 	@echo "(To determine which shell you use, type: 'echo \$$SHELL')"
 	@echo ""

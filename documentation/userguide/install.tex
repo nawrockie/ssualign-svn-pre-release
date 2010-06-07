@@ -76,27 +76,29 @@ SSU-ALIGN has been successfully built
 
 The final step is to update your environment variables:
 
-If you are using the bash shell, do:
-
-> source setup.ssu-align.bash
-
-and then add the following three lines to the '.bashrc'
-file in your home directory:
+If you are using the bash shell, add the following three:
+lines to the '.bashrc' file in your home directory:
 
 export PATH="\$PATH:/usr/local/bin"
 export MANPATH="\$MANPATH:/usr/local/share/man"
 export SSUALIGNDIR="/usr/local/share/ssu-align-0.1"
 
-If you are using the C shell, do:
+And then source that file to update your current
+environment with the command:
 
-> source setup.ssu-align.csh
+sh ~/.bashrc
 
-and then add the following three lines to the '.cshrc'
-file in your home directory:
+If you are using the C shell, add the following three:
+lines to the '.cshrc' file in your home directory:
 
 setenv PATH "\$PATH:/usr/local/bin"
 setenv MANPATH "\$MANPATH:/usr/local/share/man"
 setenv SSUALIGNDIR "/usr/local/share/ssu-align-0.1"
+
+And then source that file to update your current
+environment with the command:
+
+sh ~/.cshrc
 
 (To determine which shell you use, type: 'echo \$SHELL')
 
@@ -104,19 +106,13 @@ For more information on SSU-ALIGN see the user's guide
 in ./Userguide.pdf.
 \end{sreoutput}
 
-Follow these instructions to update your environment. You'll 
-want to both update the current session and add the three lines
-indicated above to your \prog{.bashrc} or \prog{.cshrc} file in your
-home directory so your environment is updated for every subsequent
-session. 
+Follow these instructions to update your environment for the current
+and every subsequent shell session.
 
-For instance, if you use the bash shell you'd do:
-
-\user{source setup.ssu-align.bash}
-
-to set up the environment for the current session only. You'd then go
-to your \prog{.bashrc} file in your home directory (e.g.
-\prog{Users/nawrockie/.bashrc}) and add the three lines: 
+For instance, if you use the bash shell you'd 
+open your \prog{.bashrc} file in your home directory (e.g.
+\prog{Users/nawrockie/.bashrc}, or just \prog{~/.bashrc}) and add the
+three lines: 
 
 \prog{export PATH="\$PATH:/usr/local/bin"}
 
@@ -126,10 +122,13 @@ to your \prog{.bashrc} file in your home directory (e.g.
 
 Note that these will only work for the current configuration (that is,
 they'll be different if you change the installation locations with
-\prog{--prefix} or something like it). After doing this, you can test
-if your environment is setup correctly by checking the following two
-commands: 
+\prog{--prefix} or something like it). Then, source this file to
+update the current session:
 
+\user{source ~/.bashrc}
+
+After doing this, you can test if your environment is setup correctly
+by checking the following two commands: 
 
 \user{which ssu-align} 
 
