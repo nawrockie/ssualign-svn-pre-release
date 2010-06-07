@@ -149,8 +149,10 @@ web page
 .SH AUTHOR
 
 .nf
+Eric Nawrocki
 Eddy/Rivas Laboratory
-Janelia Farm Research Campus
+
+HHMI Janelia Farm Research Campus
 19700 Helix Drive
 Ashburn VA 20147 USA
 http://eddylab.org

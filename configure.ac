@@ -80,7 +80,7 @@ fi
 
 PACKAGE_DATE="June 2010"
 PACKAGE_COPYRIGHT="Copyright (C) 2010 HHMI Janelia Farm Research Campus"
-PACKAGE_LICENSE="Freely distributed under the GNU General Public License (GPL)"
+PACKAGE_LICENSE="Freely distributed under the GNU General Public License (GPLv3)"
 PACKAGE_LICENSETAG=gnu
 PACKAGE_VERSION=$PACKAGE_VERSION
 PACKAGE_URL="http://selab.janelia.org/software.html"
