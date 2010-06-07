@@ -407,4 +407,10 @@ distclean:
 	if test -e infernal/hmmer/testsuite/Makefile; then (cd infernal/hmmer/testsuite; make distclean); fi
 	if test -e infernal/hmmer/documentation/userguide/Makefile; then (cd infernal/hmmer/documentation/userguide; make distclean); fi
 	-rm Makefile
+	for file in $(INFPROGS); do\
+		rm infernal/src/ssu-$$file;\
+	done;
+	for file in $(ESLPROGS); do\
+		rm infernal/easel/miniapps/ssu-$$file;\
+	done;
 
