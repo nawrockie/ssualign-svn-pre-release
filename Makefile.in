@@ -55,7 +55,7 @@ COPYRIGHT   = "@PACKAGE_COPYRIGHT@"
 LICENSELINE = "@PACKAGE_LICENSE@"
 LICENSETAG  = gnu
 COMPRESS    = gzip
-REPOSITORY  = https://svn.janelia.org/eddylab/eddys/src/
+REPOSITORY  = https://svn.janelia.org/eddylab/nawrockie/src/ssualign/
 
 
 PROGS = ssu-align\
