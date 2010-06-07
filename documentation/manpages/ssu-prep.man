@@ -323,7 +323,7 @@ for the list of available
 .B ssu-align
 options, which when specified to
 .B ssu-prep
-and will be propogated to the parallel 
+and will be propagated to the parallel 
 .B ssu-align
 jobs.
 

@@ -40,7 +40,7 @@ default CM file,
 .B ssu-align-0p1.cm,
 will be used by 
 .B ssu-align
-unelss the
+unless the
 .BI -m " <s>" 
 option is set to specify that CM file
 .I <s>
@@ -91,12 +91,12 @@ the SSU model are taken into account during alignment.
 .B ssu-align
 is a PERL script that executes C programs from the  INFERNAL 
 package (bundled within the SSU-ALIGN package), such as 
-.B cmalign
+.B ssu-cmalign
 and 
-.B cmsearch,
+.B ssu-cmsearch,
 as well as C executable 'miniapps' from the EASEL sequence analysis library
 package, such as 
-.B esl-sfetch.
+.B ssu-esl-sfetch.
 All necessary INFERNAL and EASEL programs are installed with the
 SSU-ALIGN package and are prefixed with 'ssu-' to differentiate them
 from programs from INFERNAL installations on your machine. For
@@ -125,9 +125,9 @@ the program. The file <output-dir>.ssu-align.log includes all of the
 commands (with options) executed by 
 .B ssu-align,
 such as 
-.B cmsearch 
+.B ssu-cmsearch 
 and
-.B cmalign 
+.B ssu-cmalign 
 commands.
 
 .SH OPTIONS
@@ -280,9 +280,9 @@ which allows partial SSU sequences to be found and aligned.
 .B --keep-int
 Keep some files that are normally removed by the program, including
 the 
-.B cmsearch
+.B ssu-cmsearch
 output from stage 1 and the input to the 
-.B esl-sfetch
+.B ssu-esl-sfetch
 program which is used to extract search hits prior to alignment.
  
 .SH EXPERT OPTIONS FOR TUNING THE ALIGNMENT STAGE:

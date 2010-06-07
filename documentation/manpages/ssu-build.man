@@ -101,9 +101,7 @@ SSU-ALIGN
 is actually called 
 .B ssu-cmbuild
 to distinguish it from any versions of the program distributed 
-with 
-INFERNAL
-on your system.
+with  INFERNAL on your system.
 
 .SH OPTIONS
 

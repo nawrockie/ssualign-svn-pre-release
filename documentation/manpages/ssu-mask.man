@@ -111,7 +111,7 @@ removed.
 .B ssu-mask 
 can either calculate an appropriate mask for each alignment based
 on alignment posterior probability values (confidence levels in the
-alignment) and/or gap frequencies,  or use a precalculated mask from an
+alignment) and/or gap frequencies,  or use a pre-calculated mask from an
 input file.
 In all cases, all non-consensus columns
 (called insert columns) are automatically removed. Residues in
@@ -245,7 +245,7 @@ file, not a directory.
 
 .TP
 .B -d
-Use the precalculated, default @PACKAGE@-@PACKAGE_VERSION@ masks.
+Use the pre-calculated, default @PACKAGE@-@PACKAGE_VERSION@ masks.
 These masks were determined by applying the default 95%/0.95 PP-based masking
 strategy described above on very deep SSU alignments. See the User's
 Guide for details. The default masks are named 
@@ -257,7 +257,7 @@ and are installed in SSUALIGNDIR (environment variable).
 
 .TP
 .BI -s " <f>"
-Use the precalculated mask in file 
+Use the pre-calculated mask in file 
 .I <f>.
 This option will only work on a single alignment so either
 .B -a
@@ -270,7 +270,7 @@ must exist either with respect to the current working directory or SSUALIGNDIR.
 
 .TP
 .BI -k " <s>"
-Use precalculated masks in files called
+Use pre-calculated masks in files called
 .I <modelname>.<s>.mask
 for masking alignments created by 
 .B ssu-align 
@@ -419,7 +419,7 @@ is used,
 .B ssu-mask 
 will attempt to draw secondary structure diagrams displaying which
 consensus columns are kept and which are removed by the mask(s).
-The diagrams will intially be created as postscript files, but will be
+The diagrams will initially be created as postscript files, but will be
 converted to pdf files if the program 
 .B ps2pdf
 (or another program <s> specified by 
@@ -449,7 +449,7 @@ Do not draw any mask diagrams.
 .TP 
 .B --list
 For each alignment, create a file that simply lists each sequence in
-the aligment on a separate line. Masking is not performed.
+the alignment on a separate line. Masking is not performed.
 
 .TP 
 .B --stk2afa

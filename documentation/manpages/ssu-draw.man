@@ -118,13 +118,13 @@ file, not a directory.
 
 .TP
 .B -d
-Display the precalculated, default @PACKAGE@-@PACKAGE_VERSION@ masks
+Display the pre-calculated, default @PACKAGE@-@PACKAGE_VERSION@ masks
 on the secondary structure diagrams. Positions excluded by the mask
 will appear as open circles. 
 
 .TP
 .BI -s " <f>"
-Display the precalculated mask in file 
+Display the pre-calculated mask in file 
 .I <f>.
 This option will only work on a single alignment, so either
 .B -a
@@ -138,7 +138,7 @@ SSUALIGNDIR (environment variable)..
 
 .TP
 .BI -k " <s>"
-Display precalculated masks in files called
+Display pre-calculate masks in files called
 .I <modelname>.<s>.mask
 on the secondary structure diagrams
 for alignments created by 
