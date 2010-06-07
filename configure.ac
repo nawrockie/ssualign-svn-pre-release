@@ -685,6 +685,7 @@ AC_CONFIG_HEADERS(infernal/src/config.h)
 AC_CONFIG_FILES(infernal/src/Makefile)
 AC_CONFIG_FILES(infernal/src/impl_sse/Makefile)
 AC_CONFIG_FILES(infernal/testsuite/Makefile)
+AC_CONFIG_FILES(infernal/testsuite/Makefile)
 
 # HMMER files
 if test -d infernal/hmmer/release-notes; then

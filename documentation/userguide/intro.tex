@@ -137,6 +137,11 @@ target sequence.
 
 \subsection{What is included in this guide}
 
+This user's guide is long. If you'd like to get started using the
+software right away, take a look at section \ref{sec:install},
+Installation and then section \ref{sec:tutorial}, Tutorial. You
+can come back to the other sections later if you'd like.
+
 Section~\ref{sec:install} describes how to install the
 package. Section~\ref{sec:background} provides background information
 on how SSU-ALIGN aligns SSU sequences, the distinction between
@@ -173,8 +178,14 @@ SSU-ALIGN bundles the INFERNAL software package, which is
 written in C and is installed along with SSU-ALIGN by following
 the directions in the Installation section of this
 guide. INFERNAL itself includes Sean Eddy's HMMER package
-and his sequence analysis library EASEL.
-
+and his sequence analysis library EASEL. All of the programs in
+INFERNAL as well as small-scale EASEL applications for sequence
+file manipulations are installed with SSU-ALIGN. Importantly, the
+versions of the INFERNAL and EASEL programs get renamed and given a
+\prog{ssu-} prefix to avoid namespace clashing with programs of the
+same names if you have INFERNAL installed on your system. For example,
+\prog{cmsearch} and \prog{esl-seqstat} as installed with SSU-ALIGN are
+actually called \prog{ssu-cmsearch} and \prog{ssu-esl-seqstat}.
 
 \subsection{What this package depends on}
 SSU-ALIGN was developed and tested on Mac OS/X and Linux

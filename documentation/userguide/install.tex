@@ -45,11 +45,24 @@ directories:
 
 \user{make install}
 
-By default, programs are installed in \prog{/usr/local/bin}, man
-pages in \prog{/usr/local/man/man1}, and data files and a PERL
-module required by the programs are placed in 
-\prog{/usr/local/share/ssu-align-0.1}. You might need special
-privileges to write to \prog{/usr/local}. (You may need to execute
+This will install three types of files: programs, man pages, and data
+files.  By default, programs are installed in
+\prog{/usr/local/bin}. Installed programs include the six main
+SSU-ALIGN scripts (\prog{ssu-align}, \prog{ssu-build},
+\prog{ssu-draw}, \prog{ssu-mask}, \prog{ssu-merge} and
+\prog{ssu-prep}), the INFERNAL programs, each of which is prefixed
+with 'ssu-cm', e.g. \prog{ssu-cmsearch}, and EASEL programs
+called \emph{miniapps}, these are all named with a 'ssu-esl'
+prefix, e.g. \prog{ssu-esl-seqstat}. The INFERNAL and
+EASEL programs are called internally by the SSU-ALIGN scripts. Normal
+users will probably never need to run them.  By default, man pages for
+all programs are installed in \prog{/usr/local/man/man1}.  Finally,
+data files and a PERL module (\prog{ssu.pm} required by the programs
+are placed in \prog{/usr/local/share/ssu-align-0.1}, by default. Data
+files include the default CM files, mask files, and postscript
+secondary structure template files.
+
+You might need special privileges to write to \prog{/usr/local}. (You may need to execute
 \prog{sudo make install}). You can change \prog{/usr/local} to any
 directory you want using the \prog{./configure --prefix} option, as in
 \prog{./configure --prefix /the/directory/you/want}.
@@ -57,42 +70,38 @@ directory you want using the \prog{./configure --prefix} option, as in
 After installing, you'll see the following:
 
 \begin{sreoutput}
-===============
-SSU-ALIGN built
-===============
+=====================================
+SSU-ALIGN has been successfully built
+=====================================
 
-The files "setup.ssu-align.bash" and "setup.ssu-align.csh" have been created.
-If you use the bash shell, type "source setup.ssu-align.bash; rehash".
-If you use the C shell, type "source setup.ssu-align.csh; rehash".
-This will update your environment for this session.
+The final step is to update your environment variables:
 
-To update your environment upon every login, you should
-add the three lines:
+If you are using the bash shell, do:
 
-export PATH="$PATH:/usr/local/bin"
-export MANPATH="$MANPATH:/usr/local/share/man"
+> source setup.ssu-align.bash
+
+and then add the following three lines to the '.bashrc'
+file in your home directory:
+
+export PATH="\$PATH:/usr/local/bin"
+export MANPATH="\$MANPATH:/usr/local/share/man"
 export SSUALIGNDIR="/usr/local/share/ssu-align-0.1"
 
-to the ".bashrc" file in your home directory
+If you are using the C shell, do:
 
-or
+> source setup.ssu-align.csh
 
-setenv PATH "$PATH:/usr/local/bin"
-setenv MANPATH "$MANPATH:/usr/local/share/man"
+and then add the following three lines to the '.cshrc'
+file in your home directory:
+
+setenv PATH "\$PATH:/usr/local/bin"
+setenv MANPATH "\$MANPATH:/usr/local/share/man"
 setenv SSUALIGNDIR "/usr/local/share/ssu-align-0.1"
 
-to the ".cshrc" file in your home directory
+(To determine which shell you use, type: 'echo \$SHELL')
 
-To determine which shell you use, type:
-
-echo $SHELL
-
-If you prefer to manually update your environment variables,
-be sure to make the following changes:
-
-1. Add /usr/local/bin to your PATH variable
-2. Add /usr/local/share/man to your MANPATH variable
-3. Set $SSUALIGNDIR as /usr/local/share/ssu-align-0.1
+For more information on SSU-ALIGN see the user's guide
+in ./Userguide.pdf.
 \end{sreoutput}
 
 Follow these instructions to update your environment. You'll 
@@ -100,7 +109,6 @@ want to both update the current session and add the three lines
 indicated above to your \prog{.bashrc} or \prog{.cshrc} file in your
 home directory so your environment is updated for every subsequent
 session. 
-\newpage
 
 For instance, if you use the bash shell you'd do:
 
@@ -126,15 +134,17 @@ commands:
 \user{which ssu-align} 
 
 should return the path to the \prog{ssu-align} script you
-just installed (\prog{/usr/local/bin/ssu-align} by default), and
+just installed (\prog{/usr/local/bin/ssu-align} if you configured
+with default settings), and
 
 \user{echo \$SSUALIGNDIR}
 
 should return the path to the your data directory
-(\prog{/usr/local/share/ssu-align-0.1} by default).
+(\prog{/usr/local/share/ssu-align-0.1} if you configured with default
+settings).
 
 That's it. You can keep reading if you want to know more about
-customizing a SSU-ALIGN installation, or you can skip ahead to
+customizing a \sft{ssu-align} installation, or you can skip ahead to
 section~\ref{sec:tutorial}, the tutorial.
 
 \subsection{More detailed installation notes}
