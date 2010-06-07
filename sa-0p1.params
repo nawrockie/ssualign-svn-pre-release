@@ -1,6 +1,0 @@
-# Replace these paths with the corresponding paths to the infernal
-# 1.01 executables on your file system.
-$cmsearch = "/groups/eddy/home/nawrockie/infernal-1.01/src/cmsearch";
-$cmalign = "/groups/eddy/home/nawrockie/infernal-1.01/src/cmalign";
-$esl_sfetch = "/groups/eddy/home/nawrockie/infernal-1.01/easel/miniapps/esl-sfetch";
-1;

@@ -157,7 +157,7 @@ dist:
 	# Make the configure scripts from configure.ac
 	#
 	(cd ../${BASENAME}-${RELEASE};          autoconf)
-	(cd ../${BASENAME}-${RELEASE}/easel;    autoconf)
+	(cd ../${BASENAME}-${RELEASE}/infernal/easel;    autoconf)
 	(cd ../${BASENAME}-${RELEASE}/infernal/hmmer;    autoconf)
 	(cd ../${BASENAME}-${RELEASE}/infernal; autoconf)
 	#
@@ -168,22 +168,38 @@ dist:
 	#
 	# Make symlinks and set file permissions
 	#
-	(cd ../${BASENAME}-${RELEASE}/testsuite; ln -s ../easel/devkit/sqc .)
+	(cd ../${BASENAME}-${RELEASE}/infernal/testsuite; ln -s ../easel/devkit/sqc .)
 	find ../${BASENAME}-${RELEASE} -type f -exec chmod +r {} \;
-	chmod +x ../${BASENAME}-${RELEASE}/easel/devkit/sqc
-	chmod +x ../${BASENAME}-${RELEASE}/easel/devkit/autodoc
+	chmod +x ../${BASENAME}-${RELEASE}/infernal/easel/devkit/sqc
+	chmod +x ../${BASENAME}-${RELEASE}/infernal/easel/devkit/autodoc
 	#
 	# Attach license stamps on all files that need 'em
 	# (e.g. replace LICENSE keyword everywhere)
 	#
-	find ../${BASENAME}-${RELEASE} -type f -exec easel/devkit/sedition-pp LICENSE Licenses/$(LICENSETAG) {} \;
+	find ../${BASENAME}-${RELEASE} -type f -exec infernal/easel/devkit/sedition-pp LICENSE Licenses/$(LICENSETAG) {} \;
 	#
 	# Other keyword replacements
 	#
-	easel/devkit/sedition RELEASE ${RELEASE} RELEASEDATE ${RELEASEDATE}                        ../${BASENAME}-${RELEASE}/documentation/userguide/titlepage.tex
-	easel/devkit/sedition RELEASE ${RELEASE} RELEASEDATE ${RELEASEDATE} COPYRIGHT ${COPYRIGHT} ../${BASENAME}-${RELEASE}/00README
+	infernal/easel/devkit/sedition RELEASE ${RELEASE} RELEASEDATE ${RELEASEDATE}                        ../${BASENAME}-${RELEASE}/documentation/userguide/titlepage.tex
+	infernal/easel/devkit/sedition RELEASE ${RELEASE} RELEASEDATE ${RELEASEDATE} COPYRIGHT ${COPYRIGHT} ../${BASENAME}-${RELEASE}/00README
 	for manpage in ../${BASENAME}-${RELEASE}/documentation/manpages/*; do\
-	   easel/devkit/sedition RELEASE ${RELEASE} RELEASEDATE ${RELEASEDATE} COPYRIGHT ${COPYRIGHT} PACKAGE ${PACKAGE} LICENSELINE ${LICENSELINE} $$manpage;\
+	   infernal/easel/devkit/sedition RELEASE ${RELEASE} RELEASEDATE ${RELEASEDATE} COPYRIGHT ${COPYRIGHT} PACKAGE ${PACKAGE} LICENSELINE ${LICENSELINE} $$manpage;\
+	done
+	for manpage in ../${BASENAME}-${RELEASE}/infernal/documentation/manpages/*; do\
+	   infernal/easel/devkit/sedition RELEASE ${RELEASE} RELEASEDATE ${RELEASEDATE} COPYRIGHT ${COPYRIGHT} PACKAGE ${PACKAGE} LICENSELINE ${LICENSELINE} $$manpage;\
+	done
+	for manpage in ../${BASENAME}-${RELEASE}/infernal/easel/miniapps/*.man; do\
+	   infernal/easel/devkit/sedition RELEASE ${RELEASE} RELEASEDATE ${RELEASEDATE} COPYRIGHT ${COPYRIGHT} PACKAGE ${PACKAGE} LICENSELINE ${LICENSELINE} $$manpage;\
+	done
+
+	for prog in $(PROGS); do\
+	   infernal/easel/devkit/sedition RELEASE ${RELEASE} RELEASEDATE ${RELEASEDATE} COPYRIGHT ${COPYRIGHT} PACKAGE ${PACKAGE} LICENSELINE ${LICENSELINE} ../${BASENAME}-${RELEASE}/documentation/manpages/$$prog.man;\
+	done
+	for prog in $(INFPROGS); do\
+	   infernal/easel/devkit/sedition RELEASE ${RELEASE} RELEASEDATE ${RELEASEDATE} COPYRIGHT ${COPYRIGHT} PACKAGE ${PACKAGE} LICENSELINE ${LICENSELINE} ../${BASENAME}-${RELEASE}/infernal/documentation/manpages/$$prog.man;\
+	done
+	for prog in $(ESLPROGS); do\
+	   infernal/easel/devkit/sedition RELEASE ${RELEASE} RELEASEDATE ${RELEASEDATE} COPYRIGHT ${COPYRIGHT} PACKAGE ${PACKAGE} LICENSELINE ${LICENSELINE} ../${BASENAME}-${RELEASE}/infernal/easel/miniapps/$$prog.man\;
 	done
 	#
 	# Make the User's Guide, and copy to top level. (We'll
@@ -201,18 +217,27 @@ dist:
 	for prog in $(PROGS); do\
 	   cat ../${BASENAME}-${RELEASE}/documentation/manpages/boilerplate.trailer >> ../${BASENAME}-${RELEASE}/documentation/manpages/$$prog.man;\
 	done
+	for prog in $(INFPROGS); do\
+	   cat ../${BASENAME}-${RELEASE}/documentation/manpages/boilerplate.trailer >> ../${BASENAME}-${RELEASE}/infernal/documentation/manpages/$$prog.man;\
+	done
+	for prog in $(PROGS); do\
+	   cat ../${BASENAME}-${RELEASE}/documentation/manpages/boilerplate.trailer >> ../${BASENAME}-${RELEASE}/infernal/easel/miniapps/$$prog.man;\
+	done
 	-rm -f ../${BASENAME}-${RELEASE}/documentation/manpages/boilerplate.trailer
 	#
 	# Remove SVN-controlled files/directories that don't belong in the
 	# distro
 	#
-	-rm -rf ../${BASENAME}-${RELEASE}/Licenses
-	-rm -rf ../${BASENAME}-${RELEASE}/00CHECKLIST
-	-rm -rf ../${BASENAME}-${RELEASE}/Bugs
-	-rm -rf ../${BASENAME}-${RELEASE}/Manuscripts
-	-rm -rf ../${BASENAME}-${RELEASE}/SUBPACKAGES
-	-rm -rf ../${BASENAME}-${RELEASE}/00WISHLIST
-	(cd ../${BASENAME}-${RELEASE}/easel; make implode)
+	-rm -rf ../${BASENAME}-${RELEASE}/5seeds
+	-rm -rf ../${BASENAME}-${RELEASE}/5tutorial
+	-rm -rf ../${BASENAME}-${RELEASE}/infernal/documentation/userguide
+	-rm -rf ../${BASENAME}-${RELEASE}/infernal/Licenses
+	-rm -rf ../${BASENAME}-${RELEASE}/infernal/00CHECKLIST
+	-rm -rf ../${BASENAME}-${RELEASE}/infernal/Bugs
+	-rm -rf ../${BASENAME}-${RELEASE}/infernal/Manuscripts
+	-rm -rf ../${BASENAME}-${RELEASE}/infernal/SUBPACKAGES
+	-rm -rf ../${BASENAME}-${RELEASE}/infernal/00WISHLIST
+	(cd ../${BASENAME}-${RELEASE}/infernal/easel; make implode)
 	(cd ../${BASENAME}-${RELEASE}/infernal/hmmer; make implode)
 	(cd ../${BASENAME}-${RELEASE}/infernal/; make implode)
 	(cd ../${BASENAME}-${RELEASE}/;      make distclean)
