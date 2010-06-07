@@ -68,7 +68,7 @@ option to
 ) unless the motivated user creates their own template postscript
 file for the models being used. For more information on this, see the 
 .B ssu-esl-ssdraw
-manual page included in ssu-align-0.1/infernal/easel/miniapps/.
+manual page.
 
 .SH OUTPUT
 The secondary structure diagrams created by
