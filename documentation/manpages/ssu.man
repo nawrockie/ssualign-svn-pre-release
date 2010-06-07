@@ -118,42 +118,16 @@ the alignments.
 .PP
 Each of the six programs has its own man page.
 
-
-.SH SEE ALSO 
-
-This is a summary man page for the entire SSU-ALIGN package.
-See individual man pages
-.B [ssu-mask(1),
-for example]
-for usage, options, and description of each program in the package.
-
 .PP
-For complete documentation, see the user guide that came with your
-SSU-ALIGN distribution (Userguide.pdf); or see the SSU-ALIGN web page
-(@SSUALIGN_URL@).
-
-
-.SH COPYRIGHT
-
-.nf
-@SSUALIGN_COPYRIGHT@
-@SSUALIGN_LICENSE@
-.fi
-
-For additional information on copyright and licensing, see the file
-called COPYRIGHT in your HMMER source distribution, or see the HMMER
-web page 
-(@HMMER_URL@).
-
-
-.SH AUTHOR
-
-.nf
-Eric Nawrocki
-Eddy/Rivas Laboratory
-
-HHMI Janelia Farm Research Campus
-19700 Helix Drive
-Ashburn VA 20147 USA
-http://eddylab.org
-.fi
+The SSU-ALIGN programs internally execute programs from the INFERNAL
+package and the Easel sequence analysis library. INFERNAL is developed
+by Eric Nawrocki, Diana Kolbe, and Sean Eddy. Easel is developed by
+Sean Eddy. The INFERNAL and Easel programs installed with SSU-ALIGN
+include a
+.I ssu-
+prefix to distinguish them from separate installations
+of INFERNAL and/or Easel that may be on your system. For example, the
+.B cmsearch
+INFERNAL program used by SSU-ALIGN is called
+.B ssu-cmsearch. 
+Each of these programs has its own man page as well.

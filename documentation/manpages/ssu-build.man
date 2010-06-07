@@ -285,36 +285,3 @@ Set the target mean match state relative entropy as
 .I <x>.
 By default the target relative entropy per match position is 0.59 bits.
 
-
-.SH SEE ALSO 
-
-See 
-.B ssu-align-package(1)
-for a master man page with a list of all the individual man pages
-for programs in the SSU-ALIGN package.
-
-.PP
-For complete documentation, see the user's guide that came with your
-SSU-ALIGN distribution (Userguide.pdf).
-
-.SH COPYRIGHT
-
-.nf
-@SSUALIGN_COPYRIGHT@
-@SSUALIGN_LICENSE@
-.fi
-
-For additional information on copyright and licensing, see the file
-called COPYRIGHT in your SSU-ALIGN source distribution.
-
-
-.SH AUTHOR
-
-.nf
-Eric Nawrocki
-Eddy/Rivas Laboratory
-HHMI Janelia Farm Research Campus
-19700 Helix Drive
-Ashburn VA 20147 USA
-http://eddylab.org
-.fi
