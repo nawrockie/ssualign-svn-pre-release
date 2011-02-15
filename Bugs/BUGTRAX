@@ -1,0 +1,30 @@
+BUGTRAX - SSU-ALIGN's bug log
+EPN, Tue Feb 15 16:20:00 2011
+---------------------------------------------------------
+
+ID              s1
+TITLE     	incorrect temp file output dir 
+STATUS          closed
+XREF            /groups/eddy/home/nawrockie/notebook/11_0215_ssu_bug_abs_path_outdir/00LOG
+REPORTED_BY     Paul Gardner and Orna Mizrahi-Man
+CLOSED_DATE     EPN, Tue Feb 15 17:08:27 2011
+DESCRIPTION	
+
+In ssu.pm's TempFilename() the output directory for all temporary
+files was being determined from the summary file name incorrectly. It
+was only correctly determined if the output dir did not contain any
+subdirectories. This was probably innocuous unless an absolute path to
+the output directory was supplied for 'ssu-align', 'ssu-draw',
+'ssu-mask' or 'ssu-prep', in which case the program would exit in
+error with the cryptic message:
+"ERROR, FileOpenForReadingFailure() entered with 4 != 5 input
+arguments." 
+
+Here is an SVN diff of the change the fixes the bug. The top line is
+the fixed version, the bottom is the ssu-align 0.1 version:
+612c613
+< 	$out_dir =~ s/\/[^\/]+$/\//; # remove file name
+---
+> 	$out_dir =~ s/\/.+$/\//; # replace final '/' plus file name with full dir path and final '/'
+
+//

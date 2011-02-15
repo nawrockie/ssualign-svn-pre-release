@@ -610,7 +610,7 @@ sub TempFilename {
     }
     else { 
 	$out_dir = $sum_file;
-	$out_dir =~ s/\/.+$/\//; # replace final '/' plus file name with full dir path and final '/'
+	$out_dir =~ s/\/[^\/]+$/\//; # remove file name, this will make $out_dir the output dir the sum file is in
     }
 
     foreach $suffix ("aa".."zz") {
