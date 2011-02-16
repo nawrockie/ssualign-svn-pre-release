@@ -27,4 +27,9 @@ the fixed version, the bottom is the ssu-align 0.1 version:
 ---
 > 	$out_dir =~ s/\/.+$/\//; # replace final '/' plus file name with full dir path and final '/'
 
+This bug was fixed as of svn revision 1103. In revision 1104, I
+modified the fix slightly so that the file name is stripped by a call
+to ReturnDirPath() instead of a substitution via regular expression in
+TempFilename(). 
+
 //
